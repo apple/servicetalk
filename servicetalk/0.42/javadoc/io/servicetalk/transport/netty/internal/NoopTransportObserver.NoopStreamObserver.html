@@ -11,15 +11,11 @@
 <link rel="stylesheet" type="text/css" href="../../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../../script.js"></script>
-<script type="text/javascript" src="../../../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../../../script-dir/jquery-3.7.1.min.js"></script>
 <script type="text/javascript" src="../../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
-<script type="text/javascript">var evenRowColor = "even-row-color";
-var oddRowColor = "odd-row-color";
-var tableTab = "table-tab";
-var activeTableTab = "active-table-tab";
-var pathtoroot = "../../../../../";
+<script type="text/javascript">var pathtoroot = "../../../../../";
 loadScripts(document, 'script');</script>
 <noscript>
 <div>JavaScript is disabled on your browser.</div>
@@ -53,7 +49,7 @@ loadScripts(document, 'script');</script>
 <li>Detail:&nbsp;</li>
 <li><a href="#field-detail">Field</a>&nbsp;|&nbsp;</li>
 <li>Constr&nbsp;|&nbsp;</li>
-<li><a href="#method-detail">Method</a></li>
+<li>Method</li>
 </ul>
 </div>
 <div class="nav-list-search"><label for="search-input">SEARCH:</label>
@@ -110,39 +106,12 @@ implements <a href="../../api/ConnectionObserver.StreamObserver.html" title="int
 <li>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
-<div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel">
-<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
-<div class="table-header col-first">Modifier and Type</div>
-<div class="table-header col-second">Method</div>
-<div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#streamClosed()" class="member-name-link">streamClosed</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback when the stream is closed.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#streamClosed(java.lang.Throwable)" class="member-name-link">streamClosed</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;error)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback when the stream is closed due to an <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>error</code></a>.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../api/ConnectionObserver.DataObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.DataObserver</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#streamEstablished()" class="member-name-link">streamEstablished</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback when the stream is established and ready to be used.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#streamIdAssigned(long)" class="member-name-link">streamIdAssigned</a><wbr>(long&nbsp;streamId)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback when a <code>streamId</code> is assigned.</div>
-</div>
-</div>
-</div>
-</div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-java.lang.Object">Methods inherited from class&nbsp;java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></h3>
 <code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#clone()" title="class or interface in java.lang" class="external-link">clone</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object)" title="class or interface in java.lang" class="external-link">equals</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#finalize()" title="class or interface in java.lang" class="external-link">finalize</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#getClass()" title="class or interface in java.lang" class="external-link">getClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#hashCode()" title="class or interface in java.lang" class="external-link">hashCode</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notify()" title="class or interface in java.lang" class="external-link">notify</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notifyAll()" title="class or interface in java.lang" class="external-link">notifyAll</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#toString()" title="class or interface in java.lang" class="external-link">toString</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait()" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long)" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long,int)" title="class or interface in java.lang" class="external-link">wait</a></code></div>
+<div class="inherited-list">
+<h3 id="methods-inherited-from-class-io.servicetalk.transport.api.ConnectionObserver.StreamObserver">Methods inherited from interface&nbsp;io.servicetalk.transport.api.<a href="../../api/ConnectionObserver.StreamObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.StreamObserver</a></h3>
+<code><a href="../../api/ConnectionObserver.StreamObserver.html#streamClosed()">streamClosed</a>, <a href="../../api/ConnectionObserver.StreamObserver.html#streamClosed(java.lang.Throwable)">streamClosed</a>, <a href="../../api/ConnectionObserver.StreamObserver.html#streamEstablished()">streamEstablished</a>, <a href="../../api/ConnectionObserver.StreamObserver.html#streamIdAssigned(long)">streamIdAssigned</a></code></div>
 </section>
 </li>
 </ul>
@@ -158,77 +127,6 @@ implements <a href="../../api/ConnectionObserver.StreamObserver.html" title="int
 <section class="detail" id="INSTANCE">
 <h3>INSTANCE</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="../../api/ConnectionObserver.StreamObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.StreamObserver</a></span>&nbsp;<span class="element-name">INSTANCE</span></div>
-</section>
-</li>
-</ul>
-</section>
-</li>
-<!-- ============ METHOD DETAIL ========== -->
-<li>
-<section class="method-details" id="method-detail">
-<h2>Method Details</h2>
-<ul class="member-list">
-<li>
-<section class="detail" id="streamIdAssigned(long)">
-<h3>streamIdAssigned</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">streamIdAssigned</span><wbr><span class="parameters">(long&nbsp;streamId)</span></div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.StreamObserver.html#streamIdAssigned(long)">ConnectionObserver.StreamObserver</a></code></span></div>
-<div class="block">Callback when a <code>streamId</code> is assigned.
- <p>
- Stream identifier may be deferred until after the first write is made on a newly established stream.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="../../api/ConnectionObserver.StreamObserver.html#streamIdAssigned(long)">streamIdAssigned</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.StreamObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.StreamObserver</a></code></dd>
-<dt>Parameters:</dt>
-<dd><code>streamId</code> - assigned stream identifier</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="streamEstablished()">
-<h3>streamEstablished</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../api/ConnectionObserver.DataObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.DataObserver</a></span>&nbsp;<span class="element-name">streamEstablished</span>()</div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.StreamObserver.html#streamEstablished()">ConnectionObserver.StreamObserver</a></code></span></div>
-<div class="block">Callback when the stream is established and ready to be used. It may or may not have an already assigned
- <code>streamId</code> at the time.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="../../api/ConnectionObserver.StreamObserver.html#streamEstablished()">streamEstablished</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.StreamObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.StreamObserver</a></code></dd>
-<dt>Returns:</dt>
-<dd>a new <a href="../../api/ConnectionObserver.DataObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.DataObserver</code></a> that provides visibility into read and write events</dd>
-<dt>See Also:</dt>
-<dd>
-<ul class="see-list-long">
-<li><a href="../../api/ConnectionObserver.StreamObserver.html#streamIdAssigned(long)"><code>ConnectionObserver.StreamObserver.streamIdAssigned(long)</code></a></li>
-</ul>
-</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="streamClosed(java.lang.Throwable)">
-<h3>streamClosed</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">streamClosed</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;error)</span></div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.StreamObserver.html#streamClosed(java.lang.Throwable)">ConnectionObserver.StreamObserver</a></code></span></div>
-<div class="block">Callback when the stream is closed due to an <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>error</code></a>.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="../../api/ConnectionObserver.StreamObserver.html#streamClosed(java.lang.Throwable)">streamClosed</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.StreamObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.StreamObserver</a></code></dd>
-<dt>Parameters:</dt>
-<dd><code>error</code> - an occurred error</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="streamClosed()">
-<h3>streamClosed</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">streamClosed</span>()</div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.StreamObserver.html#streamClosed()">ConnectionObserver.StreamObserver</a></code></span></div>
-<div class="block">Callback when the stream is closed.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="../../api/ConnectionObserver.StreamObserver.html#streamClosed()">streamClosed</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.StreamObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.StreamObserver</a></code></dd>
-</dl>
 </section>
 </li>
 </ul>

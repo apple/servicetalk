@@ -11,15 +11,11 @@
 <link rel="stylesheet" type="text/css" href="../../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../../script.js"></script>
-<script type="text/javascript" src="../../../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../../../script-dir/jquery-3.7.1.min.js"></script>
 <script type="text/javascript" src="../../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
-<script type="text/javascript">var evenRowColor = "even-row-color";
-var oddRowColor = "odd-row-color";
-var tableTab = "table-tab";
-var activeTableTab = "active-table-tab";
-var pathtoroot = "../../../../../";
+<script type="text/javascript">var pathtoroot = "../../../../../";
 loadScripts(document, 'script');</script>
 <noscript>
 <div>JavaScript is disabled on your browser.</div>
@@ -53,7 +49,7 @@ loadScripts(document, 'script');</script>
 <li>Detail:&nbsp;</li>
 <li><a href="#field-detail">Field</a>&nbsp;|&nbsp;</li>
 <li>Constr&nbsp;|&nbsp;</li>
-<li><a href="#method-detail">Method</a></li>
+<li>Method</li>
 </ul>
 </div>
 <div class="nav-list-search"><label for="search-input">SEARCH:</label>
@@ -119,84 +115,12 @@ implements <a href="../../api/ConnectionObserver.html" title="interface in io.se
 <li>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
-<div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel">
-<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
-<div class="table-header col-first">Modifier and Type</div>
-<div class="table-header col-second">Method</div>
-<div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#connectionClosed()" class="member-name-link">connectionClosed</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback when the connection is closed.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#connectionClosed(java.lang.Throwable)" class="member-name-link">connectionClosed</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;error)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback when the connection is closed due to an <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>error</code></a>.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../api/ConnectionObserver.DataObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.DataObserver</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#connectionEstablished(io.servicetalk.transport.api.ConnectionInfo)" class="member-name-link">connectionEstablished</a><wbr>(<a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a>&nbsp;info)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback when a non-multiplexed connection is established and ready.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#connectionWritabilityChanged(boolean)" class="member-name-link">connectionWritabilityChanged</a><wbr>(boolean&nbsp;isWritable)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback when a writable state of the connection changes.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../api/ConnectionObserver.MultiplexedObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.MultiplexedObserver</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#multiplexedConnectionEstablished(io.servicetalk.transport.api.ConnectionInfo)" class="member-name-link">multiplexedConnectionEstablished</a><wbr>(<a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a>&nbsp;info)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback when a multiplexed connection is established and ready.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onDataRead(int)" class="member-name-link">onDataRead</a><wbr>(int&nbsp;size)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback when <code>size</code> bytes are read from the connection.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onDataWrite(int)" class="member-name-link">onDataWrite</a><wbr>(int&nbsp;size)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback when <code>size</code> bytes are written to the connection.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onFlush()" class="member-name-link">onFlush</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback when previously written data is flushed to the connection.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../api/ConnectionObserver.ProxyConnectObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.ProxyConnectObserver</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onProxyConnect(java.lang.Object)" class="member-name-link">onProxyConnect</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;connectMsg)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback when a proxy connect is initiated.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../api/ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.SecurityHandshakeObserver</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onSecurityHandshake()" class="member-name-link">onSecurityHandshake</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback when a security handshake is initiated.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../api/ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.SecurityHandshakeObserver</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onSecurityHandshake(io.servicetalk.transport.api.SslConfig)" class="member-name-link">onSecurityHandshake</a><wbr>(<a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a>&nbsp;sslConfig)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback when a security handshake is initiated.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onTransportHandshakeComplete()" class="member-name-link">onTransportHandshakeComplete</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback when a transport handshake completes.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onTransportHandshakeComplete(io.servicetalk.transport.api.ConnectionInfo)" class="member-name-link">onTransportHandshakeComplete</a><wbr>(<a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a>&nbsp;info)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback when a transport handshake completes.</div>
-</div>
-</div>
-</div>
-</div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-java.lang.Object">Methods inherited from class&nbsp;java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></h3>
 <code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#clone()" title="class or interface in java.lang" class="external-link">clone</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object)" title="class or interface in java.lang" class="external-link">equals</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#finalize()" title="class or interface in java.lang" class="external-link">finalize</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#getClass()" title="class or interface in java.lang" class="external-link">getClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#hashCode()" title="class or interface in java.lang" class="external-link">hashCode</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notify()" title="class or interface in java.lang" class="external-link">notify</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notifyAll()" title="class or interface in java.lang" class="external-link">notifyAll</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#toString()" title="class or interface in java.lang" class="external-link">toString</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait()" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long)" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long,int)" title="class or interface in java.lang" class="external-link">wait</a></code></div>
+<div class="inherited-list">
+<h3 id="methods-inherited-from-class-io.servicetalk.transport.api.ConnectionObserver">Methods inherited from interface&nbsp;io.servicetalk.transport.api.<a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></h3>
+<code><a href="../../api/ConnectionObserver.html#connectionClosed()">connectionClosed</a>, <a href="../../api/ConnectionObserver.html#connectionClosed(java.lang.Throwable)">connectionClosed</a>, <a href="../../api/ConnectionObserver.html#connectionEstablished(io.servicetalk.transport.api.ConnectionInfo)">connectionEstablished</a>, <a href="../../api/ConnectionObserver.html#connectionWritabilityChanged(boolean)">connectionWritabilityChanged</a>, <a href="../../api/ConnectionObserver.html#multiplexedConnectionEstablished(io.servicetalk.transport.api.ConnectionInfo)">multiplexedConnectionEstablished</a>, <a href="../../api/ConnectionObserver.html#onDataRead(int)">onDataRead</a>, <a href="../../api/ConnectionObserver.html#onDataWrite(int)">onDataWrite</a>, <a href="../../api/ConnectionObserver.html#onFlush()">onFlush</a>, <a href="../../api/ConnectionObserver.html#onProxyConnect(java.lang.Object)">onProxyConnect</a>, <a href="../../api/ConnectionObserver.html#onSecurityHandshake()">onSecurityHandshake</a>, <a href="../../api/ConnectionObserver.html#onSecurityHandshake(io.servicetalk.transport.api.SslConfig)">onSecurityHandshake</a>, <a href="../../api/ConnectionObserver.html#onTransportHandshakeComplete()">onTransportHandshakeComplete</a>, <a href="../../api/ConnectionObserver.html#onTransportHandshakeComplete(io.servicetalk.transport.api.ConnectionInfo)">onTransportHandshakeComplete</a></code></div>
 </section>
 </li>
 </ul>
@@ -212,249 +136,6 @@ implements <a href="../../api/ConnectionObserver.html" title="interface in io.se
 <section class="detail" id="INSTANCE">
 <h3>INSTANCE</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></span>&nbsp;<span class="element-name">INSTANCE</span></div>
-</section>
-</li>
-</ul>
-</section>
-</li>
-<!-- ============ METHOD DETAIL ========== -->
-<li>
-<section class="method-details" id="method-detail">
-<h2>Method Details</h2>
-<ul class="member-list">
-<li>
-<section class="detail" id="onDataRead(int)">
-<h3>onDataRead</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onDataRead</span><wbr><span class="parameters">(int&nbsp;size)</span></div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.html#onDataRead(int)">ConnectionObserver</a></code></span></div>
-<div class="block">Callback when <code>size</code> bytes are read from the connection.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="../../api/ConnectionObserver.html#onDataRead(int)">onDataRead</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></code></dd>
-<dt>Parameters:</dt>
-<dd><code>size</code> - size of the data chunk read</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="onDataWrite(int)">
-<h3>onDataWrite</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onDataWrite</span><wbr><span class="parameters">(int&nbsp;size)</span></div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.html#onDataWrite(int)">ConnectionObserver</a></code></span></div>
-<div class="block">Callback when <code>size</code> bytes are written to the connection.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="../../api/ConnectionObserver.html#onDataWrite(int)">onDataWrite</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></code></dd>
-<dt>Parameters:</dt>
-<dd><code>size</code> - size of the data chunk written</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="onFlush()">
-<h3>onFlush</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onFlush</span>()</div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.html#onFlush()">ConnectionObserver</a></code></span></div>
-<div class="block">Callback when previously written data is flushed to the connection.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="../../api/ConnectionObserver.html#onFlush()">onFlush</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></code></dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="onTransportHandshakeComplete()">
-<h3>onTransportHandshakeComplete</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onTransportHandshakeComplete</span>()</div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.html#onTransportHandshakeComplete()">ConnectionObserver</a></code></span></div>
-<div class="block">Callback when a transport handshake completes.
- <p>
- Transport protocols that require a handshake in order to connect. Example:
- <a href="https://datatracker.ietf.org/doc/html/rfc793.html#section-3.4">TCP "three-way handshake"</a>.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="../../api/ConnectionObserver.html#onTransportHandshakeComplete()">onTransportHandshakeComplete</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></code></dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="onTransportHandshakeComplete(io.servicetalk.transport.api.ConnectionInfo)">
-<h3>onTransportHandshakeComplete</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onTransportHandshakeComplete</span><wbr><span class="parameters">(<a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a>&nbsp;info)</span></div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.html#onTransportHandshakeComplete(io.servicetalk.transport.api.ConnectionInfo)">ConnectionObserver</a></code></span></div>
-<div class="block">Callback when a transport handshake completes.
- <p>
- Transport protocols that require a handshake in order to connect. Example:
- <a href="https://datatracker.ietf.org/doc/html/rfc793.html#section-3.4">TCP "three-way handshake"</a>.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="../../api/ConnectionObserver.html#onTransportHandshakeComplete(io.servicetalk.transport.api.ConnectionInfo)">onTransportHandshakeComplete</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></code></dd>
-<dt>Parameters:</dt>
-<dd><code>info</code> - <a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a> for the connection after transport handshake completes. Note that the
- <a href="../../api/ConnectionInfo.html#sslSession()"><code>ConnectionInfo.sslSession()</code></a> will always return <code>null</code> since it is called before the
- <a href="../../api/ConnectionObserver.html#onSecurityHandshake(io.servicetalk.transport.api.SslConfig)"><code>ConnectionObserver.onSecurityHandshake(SslConfig)</code></a>  security handshake} is performed (and as a result
- no SSL session has been established). Also, <a href="../../api/ConnectionInfo.html#protocol()"><code>ConnectionInfo.protocol()</code></a> will return L4 (transport)
- protocol. Finalized <a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a> will be available via <a href="../../api/ConnectionObserver.html#connectionEstablished(io.servicetalk.transport.api.ConnectionInfo)"><code>ConnectionObserver.connectionEstablished(ConnectionInfo)</code></a>
- or <a href="../../api/ConnectionObserver.html#multiplexedConnectionEstablished(io.servicetalk.transport.api.ConnectionInfo)"><code>ConnectionObserver.multiplexedConnectionEstablished(ConnectionInfo)</code></a> callbacks.</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="onProxyConnect(java.lang.Object)">
-<h3>onProxyConnect</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../api/ConnectionObserver.ProxyConnectObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.ProxyConnectObserver</a></span>&nbsp;<span class="element-name">onProxyConnect</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;connectMsg)</span></div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.html#onProxyConnect(java.lang.Object)">ConnectionObserver</a></code></span></div>
-<div class="block">Callback when a proxy connect is initiated.
- <p>
- For a typical connection, this callback is invoked after <a href="../../api/ConnectionObserver.html#onTransportHandshakeComplete(io.servicetalk.transport.api.ConnectionInfo)"><code>ConnectionObserver.onTransportHandshakeComplete(ConnectionInfo)</code></a>.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="../../api/ConnectionObserver.html#onProxyConnect(java.lang.Object)">onProxyConnect</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></code></dd>
-<dt>Parameters:</dt>
-<dd><code>connectMsg</code> - a message sent to a proxy in request to establish a connection to the target server</dd>
-<dt>Returns:</dt>
-<dd>a new <a href="../../api/ConnectionObserver.ProxyConnectObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.ProxyConnectObserver</code></a> that provides visibility into proxy connect events.</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="onSecurityHandshake()">
-<h3>onSecurityHandshake</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../api/ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.SecurityHandshakeObserver</a></span>&nbsp;<span class="element-name">onSecurityHandshake</span>()</div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.html#onSecurityHandshake()">ConnectionObserver</a></code></span></div>
-<div class="block">Callback when a security handshake is initiated.
- <p>
- For a typical connection, this callback is invoked after <a href="../../api/ConnectionObserver.html#onTransportHandshakeComplete(io.servicetalk.transport.api.ConnectionInfo)"><code>ConnectionObserver.onTransportHandshakeComplete(ConnectionInfo)</code></a>.
- There are exceptions:
- <ol>
-     <li>For a TCP connection, when <a href="../../api/ServiceTalkSocketOptions.html#TCP_FASTOPEN_CONNECT"><code>ServiceTalkSocketOptions.TCP_FASTOPEN_CONNECT</code></a> option is configured and
-     the Fast Open feature is supported by the OS, this callback may be invoked earlier. Note, even if the Fast
-     Open is available and configured, it may not actually happen if the
-     <a href="https://datatracker.ietf.org/doc/html/rfc7413#section-4.1">Fast Open Cookie</a> is <code>null</code> or
-     rejected by the server.</li>
-     <li>For a proxy connections, the handshake may happen after an observer returned by
-     <a href="../../api/ConnectionObserver.html#onProxyConnect(java.lang.Object)"><code>ConnectionObserver.onProxyConnect(Object)</code></a> completes successfully.</li>
- </ol></div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="../../api/ConnectionObserver.html#onSecurityHandshake()">onSecurityHandshake</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></code></dd>
-<dt>Returns:</dt>
-<dd>a new <a href="../../api/ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.SecurityHandshakeObserver</code></a> that provides visibility into security handshake events</dd>
-<dt>See Also:</dt>
-<dd>
-<ul class="see-list">
-<li><a href="https://datatracker.ietf.org/doc/html/rfc7413">RFC7413: TCP Fast Open</a></li>
-</ul>
-</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="onSecurityHandshake(io.servicetalk.transport.api.SslConfig)">
-<h3>onSecurityHandshake</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../api/ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.SecurityHandshakeObserver</a></span>&nbsp;<span class="element-name">onSecurityHandshake</span><wbr><span class="parameters">(<a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a>&nbsp;sslConfig)</span></div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.html#onSecurityHandshake(io.servicetalk.transport.api.SslConfig)">ConnectionObserver</a></code></span></div>
-<div class="block">Callback when a security handshake is initiated.
- <p>
- For a typical connection, this callback is invoked after <a href="../../api/ConnectionObserver.html#onTransportHandshakeComplete(io.servicetalk.transport.api.ConnectionInfo)"><code>ConnectionObserver.onTransportHandshakeComplete(ConnectionInfo)</code></a>.
- There are exceptions:
- <ol>
-     <li>For a TCP connection, when <a href="../../api/ServiceTalkSocketOptions.html#TCP_FASTOPEN_CONNECT"><code>ServiceTalkSocketOptions.TCP_FASTOPEN_CONNECT</code></a> option is configured and
-     the Fast Open feature is supported by the OS, this callback may be invoked earlier. Note, even if the Fast
-     Open is available and configured, it may not actually happen if the
-     <a href="https://datatracker.ietf.org/doc/html/rfc7413#section-4.1">Fast Open Cookie</a> is <code>null</code> or
-     rejected by the server.</li>
-     <li>For a proxy connections, the handshake may happen after an observer returned by
-     <a href="../../api/ConnectionObserver.html#onProxyConnect(java.lang.Object)"><code>ConnectionObserver.onProxyConnect(Object)</code></a> completes successfully.</li>
- </ol></div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="../../api/ConnectionObserver.html#onSecurityHandshake(io.servicetalk.transport.api.SslConfig)">onSecurityHandshake</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></code></dd>
-<dt>Parameters:</dt>
-<dd><code>sslConfig</code> - the <a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api"><code>SslConfig</code></a> used when performing the security handshake.</dd>
-<dt>Returns:</dt>
-<dd>a new <a href="../../api/ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.SecurityHandshakeObserver</code></a> that provides visibility into security handshake events</dd>
-<dt>See Also:</dt>
-<dd>
-<ul class="see-list">
-<li><a href="https://datatracker.ietf.org/doc/html/rfc7413">RFC7413: TCP Fast Open</a></li>
-</ul>
-</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="connectionEstablished(io.servicetalk.transport.api.ConnectionInfo)">
-<h3>connectionEstablished</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../api/ConnectionObserver.DataObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.DataObserver</a></span>&nbsp;<span class="element-name">connectionEstablished</span><wbr><span class="parameters">(<a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a>&nbsp;info)</span></div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.html#connectionEstablished(io.servicetalk.transport.api.ConnectionInfo)">ConnectionObserver</a></code></span></div>
-<div class="block">Callback when a non-multiplexed connection is established and ready.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="../../api/ConnectionObserver.html#connectionEstablished(io.servicetalk.transport.api.ConnectionInfo)">connectionEstablished</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></code></dd>
-<dt>Parameters:</dt>
-<dd><code>info</code> - <a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a> for the established connection</dd>
-<dt>Returns:</dt>
-<dd>a new <a href="../../api/ConnectionObserver.DataObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.DataObserver</code></a> that provides visibility into read and write events</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="multiplexedConnectionEstablished(io.servicetalk.transport.api.ConnectionInfo)">
-<h3>multiplexedConnectionEstablished</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../api/ConnectionObserver.MultiplexedObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.MultiplexedObserver</a></span>&nbsp;<span class="element-name">multiplexedConnectionEstablished</span><wbr><span class="parameters">(<a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a>&nbsp;info)</span></div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.html#multiplexedConnectionEstablished(io.servicetalk.transport.api.ConnectionInfo)">ConnectionObserver</a></code></span></div>
-<div class="block">Callback when a multiplexed connection is established and ready.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="../../api/ConnectionObserver.html#multiplexedConnectionEstablished(io.servicetalk.transport.api.ConnectionInfo)">multiplexedConnectionEstablished</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></code></dd>
-<dt>Parameters:</dt>
-<dd><code>info</code> - <a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a> for the established connection</dd>
-<dt>Returns:</dt>
-<dd>a new <a href="../../api/ConnectionObserver.MultiplexedObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.MultiplexedObserver</code></a> that provides visibility into new streams</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="connectionWritabilityChanged(boolean)">
-<h3>connectionWritabilityChanged</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">connectionWritabilityChanged</span><wbr><span class="parameters">(boolean&nbsp;isWritable)</span></div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.html#connectionWritabilityChanged(boolean)">ConnectionObserver</a></code></span></div>
-<div class="block">Callback when a writable state of the connection changes.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="../../api/ConnectionObserver.html#connectionWritabilityChanged(boolean)">connectionWritabilityChanged</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></code></dd>
-<dt>Parameters:</dt>
-<dd><code>isWritable</code> - describes the current state of the connection: <code>true</code> when the I/O thread will perform
- the requested write operation immediately. If <code>false</code>, write requests will be queued until the I/O thread
- is ready to process the queued items and the transport will start applying backpressure.</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="connectionClosed(java.lang.Throwable)">
-<h3>connectionClosed</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">connectionClosed</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;error)</span></div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.html#connectionClosed(java.lang.Throwable)">ConnectionObserver</a></code></span></div>
-<div class="block">Callback when the connection is closed due to an <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>error</code></a>.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="../../api/ConnectionObserver.html#connectionClosed(java.lang.Throwable)">connectionClosed</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></code></dd>
-<dt>Parameters:</dt>
-<dd><code>error</code> - an occurred error</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="connectionClosed()">
-<h3>connectionClosed</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">connectionClosed</span>()</div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.html#connectionClosed()">ConnectionObserver</a></code></span></div>
-<div class="block">Callback when the connection is closed.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="../../api/ConnectionObserver.html#connectionClosed()">connectionClosed</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></code></dd>
-</dl>
 </section>
 </li>
 </ul>

@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -91,20 +91,20 @@ loadScripts(document, 'script');</script>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel">
-<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab5" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab5', 3)" class="table-tab">Default Methods</button></div>
+<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
+<div class="summary-table three-column-summary">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="ConnectionObserver.ReadObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.ReadObserver</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#onNewRead()" class="member-name-link">onNewRead</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="ConnectionObserver.ReadObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.ReadObserver</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#onNewRead()" class="member-name-link">onNewRead</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
 <div class="block">Callback when the connection starts reading a new message.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="ConnectionObserver.WriteObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.WriteObserver</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#onNewWrite()" class="member-name-link">onNewWrite</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="ConnectionObserver.WriteObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.WriteObserver</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#onNewWrite()" class="member-name-link">onNewWrite</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
 <div class="block">Callback when the connection starts writing a new message.</div>
 </div>
 </div>
@@ -124,7 +124,7 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="onNewRead()">
 <h3>onNewRead</h3>
-<div class="member-signature"><span class="return-type"><a href="ConnectionObserver.ReadObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.ReadObserver</a></span>&nbsp;<span class="element-name">onNewRead</span>()</div>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="ConnectionObserver.ReadObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.ReadObserver</a></span>&nbsp;<span class="element-name">onNewRead</span>()</div>
 <div class="block">Callback when the connection starts reading a new message.</div>
 <dl class="notes">
 <dt>Returns:</dt>
@@ -135,7 +135,7 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="onNewWrite()">
 <h3>onNewWrite</h3>
-<div class="member-signature"><span class="return-type"><a href="ConnectionObserver.WriteObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.WriteObserver</a></span>&nbsp;<span class="element-name">onNewWrite</span>()</div>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="ConnectionObserver.WriteObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.WriteObserver</a></span>&nbsp;<span class="element-name">onNewWrite</span>()</div>
 <div class="block">Callback when the connection starts writing a new message.</div>
 <dl class="notes">
 <dt>Returns:</dt>

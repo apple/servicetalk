@@ -11,15 +11,11 @@
 <link rel="stylesheet" type="text/css" href="../../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../../script.js"></script>
-<script type="text/javascript" src="../../../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../../../script-dir/jquery-3.7.1.min.js"></script>
 <script type="text/javascript" src="../../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
-<script type="text/javascript">var evenRowColor = "even-row-color";
-var oddRowColor = "odd-row-color";
-var tableTab = "table-tab";
-var activeTableTab = "active-table-tab";
-var pathtoroot = "../../../../../";
+<script type="text/javascript">var pathtoroot = "../../../../../";
 loadScripts(document, 'script');</script>
 <noscript>
 <div>JavaScript is disabled on your browser.</div>
@@ -53,7 +49,7 @@ loadScripts(document, 'script');</script>
 <li>Detail:&nbsp;</li>
 <li><a href="#field-detail">Field</a>&nbsp;|&nbsp;</li>
 <li>Constr&nbsp;|&nbsp;</li>
-<li><a href="#method-detail">Method</a></li>
+<li>Method</li>
 </ul>
 </div>
 <div class="nav-list-search"><label for="search-input">SEARCH:</label>
@@ -110,29 +106,12 @@ implements <a href="../../api/ConnectionObserver.ProxyConnectObserver.html" titl
 <li>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
-<div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel">
-<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
-<div class="table-header col-first">Modifier and Type</div>
-<div class="table-header col-second">Method</div>
-<div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#proxyConnectComplete(java.lang.Object)" class="member-name-link">proxyConnectComplete</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;responseMsg)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback when the proxy connect attempt is complete successfully.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#proxyConnectFailed(java.lang.Throwable)" class="member-name-link">proxyConnectFailed</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback when the proxy connect attempt is failed.</div>
-</div>
-</div>
-</div>
-</div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-java.lang.Object">Methods inherited from class&nbsp;java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></h3>
 <code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#clone()" title="class or interface in java.lang" class="external-link">clone</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object)" title="class or interface in java.lang" class="external-link">equals</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#finalize()" title="class or interface in java.lang" class="external-link">finalize</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#getClass()" title="class or interface in java.lang" class="external-link">getClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#hashCode()" title="class or interface in java.lang" class="external-link">hashCode</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notify()" title="class or interface in java.lang" class="external-link">notify</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notifyAll()" title="class or interface in java.lang" class="external-link">notifyAll</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#toString()" title="class or interface in java.lang" class="external-link">toString</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait()" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long)" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long,int)" title="class or interface in java.lang" class="external-link">wait</a></code></div>
+<div class="inherited-list">
+<h3 id="methods-inherited-from-class-io.servicetalk.transport.api.ConnectionObserver.ProxyConnectObserver">Methods inherited from interface&nbsp;io.servicetalk.transport.api.<a href="../../api/ConnectionObserver.ProxyConnectObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.ProxyConnectObserver</a></h3>
+<code><a href="../../api/ConnectionObserver.ProxyConnectObserver.html#proxyConnectComplete(java.lang.Object)">proxyConnectComplete</a>, <a href="../../api/ConnectionObserver.ProxyConnectObserver.html#proxyConnectFailed(java.lang.Throwable)">proxyConnectFailed</a></code></div>
 </section>
 </li>
 </ul>
@@ -148,44 +127,6 @@ implements <a href="../../api/ConnectionObserver.ProxyConnectObserver.html" titl
 <section class="detail" id="INSTANCE">
 <h3>INSTANCE</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="../../api/ConnectionObserver.ProxyConnectObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.ProxyConnectObserver</a></span>&nbsp;<span class="element-name">INSTANCE</span></div>
-</section>
-</li>
-</ul>
-</section>
-</li>
-<!-- ============ METHOD DETAIL ========== -->
-<li>
-<section class="method-details" id="method-detail">
-<h2>Method Details</h2>
-<ul class="member-list">
-<li>
-<section class="detail" id="proxyConnectFailed(java.lang.Throwable)">
-<h3>proxyConnectFailed</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">proxyConnectFailed</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause)</span></div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.ProxyConnectObserver.html#proxyConnectFailed(java.lang.Throwable)">ConnectionObserver.ProxyConnectObserver</a></code></span></div>
-<div class="block">Callback when the proxy connect attempt is failed.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="../../api/ConnectionObserver.ProxyConnectObserver.html#proxyConnectFailed(java.lang.Throwable)">proxyConnectFailed</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.ProxyConnectObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.ProxyConnectObserver</a></code></dd>
-<dt>Parameters:</dt>
-<dd><code>cause</code> - the cause of proxy connect failure</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="proxyConnectComplete(java.lang.Object)">
-<h3>proxyConnectComplete</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">proxyConnectComplete</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;responseMsg)</span></div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.ProxyConnectObserver.html#proxyConnectComplete(java.lang.Object)">ConnectionObserver.ProxyConnectObserver</a></code></span></div>
-<div class="block">Callback when the proxy connect attempt is complete successfully.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="../../api/ConnectionObserver.ProxyConnectObserver.html#proxyConnectComplete(java.lang.Object)">proxyConnectComplete</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.ProxyConnectObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.ProxyConnectObserver</a></code></dd>
-<dt>Parameters:</dt>
-<dd><code>responseMsg</code> - an object that represents a response message. The actual message type depends upon proxy
- protocol implementation (e.g. <a href="https://en.wikipedia.org/wiki/HTTP_tunnel">HTTP Tunnel</a>,
- <a href="https://en.wikipedia.org/wiki/SOCKS">SOCKS</a>, etc.)</dd>
-</dl>
 </section>
 </li>
 </ul>

@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../../script.js"></script>
-<script type="text/javascript" src="../../../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../../../script-dir/jquery-3.7.1.min.js"></script>
 <script type="text/javascript" src="../../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -80,9 +80,15 @@ loadScripts(document, 'script');</script>
 <dd><code><a href="../../api/TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a></code></dd>
 </dl>
 <hr>
-<div class="type-signature"><span class="modifiers">public final class </span><span class="element-name type-name-label">NoopTransportObserver</span>
+<div class="type-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public final class </span><span class="element-name type-name-label">NoopTransportObserver</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
 implements <a href="../../api/TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a></span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Starting from version 0.42.58 <a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver</code></a> provides default implementations for all of its
+ callbacks, making the need in this class less relevant. We plan to remove this class from future versions. Consider
+ using default implementations of the interface methods when you are not interested in specific callbacks.</div>
+</div>
 <div class="block">Noop version of <a href="../../api/TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a>.</div>
 </section>
 <section class="summary">
@@ -99,41 +105,49 @@ implements <a href="../../api/TransportObserver.html" title="interface in io.ser
 <div class="col-first even-row-color"><code>static final class&nbsp;</code></div>
 <div class="col-second even-row-color"><code><a href="NoopTransportObserver.NoopConnectionObserver.html" class="type-name-link" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopConnectionObserver</a></code></div>
 <div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Noop version of <a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver</code></a>.</div>
 </div>
 <div class="col-first odd-row-color"><code>static final class&nbsp;</code></div>
 <div class="col-second odd-row-color"><code><a href="NoopTransportObserver.NoopDataObserver.html" class="type-name-link" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopDataObserver</a></code></div>
 <div class="col-last odd-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Noop version of <a href="../../api/ConnectionObserver.DataObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.DataObserver</code></a>.</div>
 </div>
 <div class="col-first even-row-color"><code>static final class&nbsp;</code></div>
 <div class="col-second even-row-color"><code><a href="NoopTransportObserver.NoopMultiplexedObserver.html" class="type-name-link" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopMultiplexedObserver</a></code></div>
 <div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Noop version of <a href="../../api/ConnectionObserver.MultiplexedObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.MultiplexedObserver</code></a>.</div>
 </div>
 <div class="col-first odd-row-color"><code>static final class&nbsp;</code></div>
 <div class="col-second odd-row-color"><code><a href="NoopTransportObserver.NoopProxyConnectObserver.html" class="type-name-link" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopProxyConnectObserver</a></code></div>
 <div class="col-last odd-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Noop version of <a href="../../api/ConnectionObserver.ProxyConnectObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.ProxyConnectObserver</code></a>.</div>
 </div>
 <div class="col-first even-row-color"><code>static final class&nbsp;</code></div>
 <div class="col-second even-row-color"><code><a href="NoopTransportObserver.NoopReadObserver.html" class="type-name-link" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopReadObserver</a></code></div>
 <div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Noop version of <a href="../../api/ConnectionObserver.ReadObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.ReadObserver</code></a>.</div>
 </div>
 <div class="col-first odd-row-color"><code>static final class&nbsp;</code></div>
 <div class="col-second odd-row-color"><code><a href="NoopTransportObserver.NoopSecurityHandshakeObserver.html" class="type-name-link" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopSecurityHandshakeObserver</a></code></div>
 <div class="col-last odd-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Noop version of <a href="../../api/ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.SecurityHandshakeObserver</code></a>.</div>
 </div>
 <div class="col-first even-row-color"><code>static final class&nbsp;</code></div>
 <div class="col-second even-row-color"><code><a href="NoopTransportObserver.NoopStreamObserver.html" class="type-name-link" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopStreamObserver</a></code></div>
 <div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Noop version of <a href="../../api/ConnectionObserver.StreamObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.StreamObserver</code></a>.</div>
 </div>
 <div class="col-first odd-row-color"><code>static final class&nbsp;</code></div>
 <div class="col-second odd-row-color"><code><a href="NoopTransportObserver.NoopWriteObserver.html" class="type-name-link" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopWriteObserver</a></code></div>
 <div class="col-last odd-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Noop version of <a href="../../api/ConnectionObserver.WriteObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.WriteObserver</code></a>.</div>
 </div>
 </div>
@@ -150,7 +164,9 @@ implements <a href="../../api/TransportObserver.html" title="interface in io.ser
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><code>static final <a href="../../api/TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a></code></div>
 <div class="col-second even-row-color"><code><a href="#INSTANCE" class="member-name-link">INSTANCE</a></code></div>
-<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</div>
 </div>
 </section>
 </li>
@@ -159,16 +175,17 @@ implements <a href="../../api/TransportObserver.html" title="interface in io.ser
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel">
-<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
+<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
+<div class="summary-table three-column-summary">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onNewConnection(java.lang.Object,java.lang.Object)" class="member-name-link">onNewConnection</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;localAddress,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#onNewConnection(java.lang.Object,java.lang.Object)" class="member-name-link">onNewConnection</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;localAddress,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;remoteAddress)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Callback when transport starts initializing a new network connection.</div>
 </div>
 </div>
@@ -195,6 +212,7 @@ implements <a href="../../api/TransportObserver.html" title="interface in io.ser
 <section class="detail" id="INSTANCE">
 <h3>INSTANCE</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="../../api/TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a></span>&nbsp;<span class="element-name">INSTANCE</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 </section>
 </li>
 </ul>
@@ -211,6 +229,7 @@ implements <a href="../../api/TransportObserver.html" title="interface in io.ser
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></span>&nbsp;<span class="element-name">onNewConnection</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;localAddress,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;remoteAddress)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/TransportObserver.html#onNewConnection(java.lang.Object,java.lang.Object)">TransportObserver</a></code></span></div>
 <div class="block">Callback when transport starts initializing a new network connection.</div>
 <dl class="notes">

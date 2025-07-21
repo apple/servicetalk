@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -98,9 +98,16 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color">
 <div class="block">If set to true, forces creating a new connection versus potentially selecting an already established one.</div>
 </div>
-<div class="col-first even-row-color"><code>static final <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;</code></div>
-<div class="col-second even-row-color"><code><a href="#HTTP_TARGET_ADDRESS_BEHIND_PROXY" class="member-name-link">HTTP_TARGET_ADDRESS_BEHIND_PROXY</a></code></div>
+<div class="col-first even-row-color"><code>static final <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</code></div>
+<div class="col-second even-row-color"><code><a href="#HTTP_ROUTE" class="member-name-link">HTTP_ROUTE</a></code></div>
 <div class="col-last even-row-color">
+<div class="block">The key used by server-side routers to assign an
+ <a href="https://opentelemetry.io/docs/specs/semconv/registry/attributes/http/#http-route">http.route</a>
+ attribute for incoming requests.</div>
+</div>
+<div class="col-first odd-row-color"><code>static final <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;</code></div>
+<div class="col-second odd-row-color"><code><a href="#HTTP_TARGET_ADDRESS_BEHIND_PROXY" class="member-name-link">HTTP_TARGET_ADDRESS_BEHIND_PROXY</a></code></div>
+<div class="col-last odd-row-color">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="../../client/api/TransportObserverConnectionFactoryFilter.html" title="class in io.servicetalk.client.api"><code>TransportObserverConnectionFactoryFilter</code></a> to configure <a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a> and then
  listen <a href="../../transport/api/ConnectionObserver.html#onProxyConnect(java.lang.Object)"><code>ConnectionObserver.onProxyConnect(Object)</code></a> callback to distinguish between a regular connection and
@@ -181,6 +188,19 @@ loadScripts(document, 'script');</script>
 </ul>
 </dd>
 </dl>
+</section>
+</li>
+<li>
+<section class="detail" id="HTTP_ROUTE">
+<h3>HTTP_ROUTE</h3>
+<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</span>&nbsp;<span class="element-name">HTTP_ROUTE</span></div>
+<div class="block">The key used by server-side routers to assign an
+ <a href="https://opentelemetry.io/docs/specs/semconv/registry/attributes/http/#http-route">http.route</a>
+ attribute for incoming requests.
+ <p>
+ Router implementation are responsible for assigning this key to either <a href="HttpMetaData.html#context()"><code>HttpMetaData.context()</code></a>
+ (preferred) or <a href="../../concurrent/api/AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> if <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpRequestMetaData</code></a> is not available in the scope of the router.
+ This key can be used later by observability extensions to assign an attribute for emitted metrics or traces.</div>
 </section>
 </li>
 </ul>
