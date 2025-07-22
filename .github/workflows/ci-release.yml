@@ -60,6 +60,15 @@ jobs:
 
           # Execute the gradlew command to publish the build
           sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel -PreleaseBuild=true$FIRST_GRADLE_TARGETS && ./gradlew --no-daemon --no-parallel -PreleaseBuild=true$SECOND_GRADLE_TARGETS"
+      - name: Central Portal manual Repo Close
+        # Details at https://central.sonatype.org/publish/publish-portal-ossrh-staging-api/#configuring-the-repository
+        env:
+          SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
+          SONATYPE_TOKEN: ${{ secrets.SONATYPE_TOKEN }}
+        run: |
+          BEARER_TOKEN=printf "$SONATYPE_USER:$SONATYPE_TOKEN" | base64
+          curl -H "Authorization: Bearer $BEARER_TOKEN" -X POST https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/io.servicetalk
+          echo "Go to https://central.sonatype.com/publishing/deployments to finish publishing artifacts"
       - name: Publish Test Results
         if: always()
         uses: scacap/action-surefire-report@1a128e49c0585bc0b8e38e541ac3b6e35a5bc727
