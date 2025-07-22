@@ -4,7 +4,7 @@ on:
     branches: [ main, '0.41', '0.42' ]
     paths-ignore:
       - 'scripts/**'
-      - '.git.commit.template'
+      - '.github/pull_request_template.md'
       - '.gitignore'
       - 'gradlew'
       - 'gradlew.bat'

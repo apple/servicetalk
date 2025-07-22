@@ -5,7 +5,7 @@ on:
     paths-ignore:
       - 'docs/**'
       - 'scripts/**'
-      - '.git.commit.template'
+      - '.github/pull_request_template.md'
       - '.gitignore'
       - 'gradlew'
       - 'gradlew.bat'
