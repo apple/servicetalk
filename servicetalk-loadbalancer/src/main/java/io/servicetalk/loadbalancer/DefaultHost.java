@@ -54,6 +54,7 @@ import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflo
 import static io.servicetalk.loadbalancer.ConnectTracker.ErrorClass.CANCELLED;
 import static io.servicetalk.loadbalancer.ConnectTracker.ErrorClass.CONNECT_ERROR;
 import static io.servicetalk.loadbalancer.ConnectTracker.ErrorClass.CONNECT_TIMEOUT;
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
@@ -91,12 +92,14 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     private final HealthIndicator<Addr, C> healthIndicator;
     private final LoadBalancerObserver.HostObserver hostObserver;
     private final ConnectionFactory<Addr, ? extends C> connectionFactory;
+    private final int minConnections;
     private final ListenableAsyncCloseable closeable;
     private volatile ConnState connState = new ConnState(emptyList(), State.ACTIVE, 0, null);
 
     DefaultHost(final String lbDescription, final Addr address,
                 final ConnectionSelector<C> connectionSelector,
                 final ConnectionFactory<Addr, ? extends C> connectionFactory,
+                final int minConnections,
                 final HostObserver hostObserver, @Nullable final HealthCheckConfig healthCheckConfig,
                 @Nullable final HealthIndicator<Addr, C> healthIndicator) {
         this.lbDescription = requireNonNull(lbDescription, "lbDescription");
@@ -104,12 +107,21 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         this.healthIndicator = healthIndicator;
         this.connectionSelector = requireNonNull(connectionSelector, "connectionSelector");
         requireNonNull(connectionFactory, "connectionFactory");
+        this.minConnections = ensureNonNegative(minConnections, "minConnections");
         this.connectionFactory = healthIndicator == null ? connectionFactory :
                 new InstrumentedConnectionFactory<>(connectionFactory, healthIndicator);
         assert healthCheckConfig == null || healthCheckConfig.failedThreshold > 0;
         this.healthCheckConfig = healthCheckConfig;
         this.hostObserver = requireNonNull(hostObserver, "hostObserver");
         this.closeable = toAsyncCloseable(this::doClose);
+
+        // warm the connection pool.
+        // TODO: this will likely be racy with initial requests also wanting to create connections.
+        //   At a minimum, we should perhaps warm only a single connection at a time.
+        for (int i = 0; i < minConnections; i++) {
+            newConnection(cxn -> true, false, null)
+                    .toFuture();
+        }
     }
 
     @Override
@@ -136,7 +148,13 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         if (oldState.state == State.EXPIRED) {
             hostObserver.onExpiredHostRevived(oldState.connections.size());
         }
-        return oldState.state != State.CLOSED;
+        boolean success = oldState.state != State.CLOSED;
+        if (success) {
+            for (int i = minConnections - oldState.connections.size(); i > 0; i--) {
+                newConnection(cxn -> true, false, null).toFuture();
+            }
+        }
+        return success;
     }
 
     private ConnState closeConnState() {
@@ -356,46 +374,9 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         LOGGER.trace("{}: added a new connection {} to {} after {} attempt(s).",
                 lbDescription, connection, this, addAttempt);
         // Instrument the new connection so we prune it on close
-        connection.onClose().beforeFinally(() -> {
-            int removeAttempt = 0;
-            for (;;) {
-                final ConnState currentConnState = this.connState;
-                if (currentConnState.state == State.CLOSED) {
-                    break;
-                }
-                ++removeAttempt;
-                ConnState nextState = currentConnState.removeConnection(connection);
-                // Search for the connection in the list.
-                if (nextState == currentConnState) {
-                    // Connection was already removed, nothing to do.
-                    break;
-                } else if (nextState.connections.isEmpty()) {
-                    if (currentConnState.isActive()) {
-                        if (connStateUpdater.compareAndSet(this, currentConnState, nextState)) {
-                            break;
-                        }
-                    } else if (currentConnState.state == State.EXPIRED
-                            // We're closing the last connection, close the Host.
-                            // Closing the host will trigger the Host's onClose method, which will remove the host
-                            // from used hosts list. If a race condition appears and a new connection was added
-                            // in the meantime, that would mean the host is available again and the CAS operation
-                            // will allow for determining that. It will prevent closing the Host and will only
-                            // remove the connection (previously considered as the last one) from the array
-                            // in the next iteration.
-                            && connStateUpdater.compareAndSet(this, currentConnState, nextState.toClosed())) {
-                        closeAsync().subscribe();
-                        hostObserver.onExpiredHostRemoved(nextState.connections.size());
-                        break;
-                    }
-                } else {
-                    if (connStateUpdater.compareAndSet(this, currentConnState, nextState)) {
-                        break;
-                    }
-                }
-            }
-            LOGGER.trace("{}: removed connection {} from {} after {} attempt(s).",
-                    lbDescription, connection, this, removeAttempt);
-        }).onErrorComplete(t -> {
+        connection.onClose()
+                .beforeFinally(() -> removeConnection(connection))
+                .onErrorComplete(t -> {
             // Use onErrorComplete instead of whenOnError to avoid double logging of an error inside subscribe():
             // SimpleCompletableSubscriber.
             LOGGER.error("{}: unexpected error while processing connection.onClose() for {}.",
@@ -403,6 +384,54 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             return true;
         }).subscribe();
         return true;
+    }
+
+    private void removeConnection(final C connection) {
+        int removeAttempt = 0;
+        ConnState nextState;
+        for (;;) {
+            final ConnState currentConnState = nextState = this.connState;
+            if (currentConnState.state == State.CLOSED) {
+                break;
+            }
+            ++removeAttempt;
+            nextState = currentConnState.removeConnection(connection);
+            // Search for the connection in the list.
+            if (nextState == currentConnState) {
+                // Connection was already removed, nothing to do.
+                break;
+            } else if (nextState.connections.isEmpty()) {
+                if (currentConnState.isActive()) {
+                    if (connStateUpdater.compareAndSet(this, currentConnState, nextState)) {
+                        break;
+                    }
+                } else if (currentConnState.state == State.EXPIRED
+                        // We're closing the last connection, close the Host.
+                        // Closing the host will trigger the Host's onClose method, which will remove the host
+                        // from used hosts list. If a race condition appears and a new connection was added
+                        // in the meantime, that would mean the host is available again and the CAS operation
+                        // will allow for determining that. It will prevent closing the Host and will only
+                        // remove the connection (previously considered as the last one) from the array
+                        // in the next iteration.
+                        && connStateUpdater.compareAndSet(this, currentConnState, nextState = nextState.toClosed())) {
+                    closeAsync().subscribe();
+                    hostObserver.onExpiredHostRemoved(nextState.connections.size());
+                    break;
+                }
+            } else {
+                if (connStateUpdater.compareAndSet(this, currentConnState, nextState)) {
+                    break;
+                }
+            }
+        }
+        LOGGER.trace("{}: removed connection {} from {} after {} attempt(s).",
+                lbDescription, connection, this, removeAttempt);
+
+        if (nextState.isActive() && nextState.connections.size() < minConnections) {
+            LOGGER.debug("{}: Host connection count dropped to {} which is below min connections of {} - creating a " +
+                    "new connection.", lbDescription, nextState.connections.size(), minConnections);
+            newConnection(cxn -> true, false, null).subscribe(cxn -> { });
+        }
     }
 
     // Used for testing only

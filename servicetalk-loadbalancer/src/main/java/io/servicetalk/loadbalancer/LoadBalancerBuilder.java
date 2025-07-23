@@ -104,6 +104,10 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
     LoadBalancerBuilder<ResolvedAddress, C> connectionSelectorPolicy(
             ConnectionSelectorPolicy<C> connectionSelectorPolicy);
 
+    default LoadBalancerBuilder<ResolvedAddress, C> minConnectionsPerHost(int minConnectionsPerHost) {
+        throw new UnsupportedOperationException("minConnectionsPerHost is not implemented");
+    }
+
     /**
      * Set the maximum number of healthy backends to load balance against using a random-subsetting strategy.
      *

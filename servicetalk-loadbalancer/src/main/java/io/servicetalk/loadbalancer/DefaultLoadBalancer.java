@@ -110,6 +110,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     private final ConnectionSelector<C> connectionSelector;
     private final Subsetter subsetter;
     private final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory;
+    private final int minConnectionsPerHost;
     @Nullable
     private final HealthCheckConfig healthCheckConfig;
     private final HostPriorityStrategy priorityStrategy;
@@ -130,6 +131,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
      * @param subsetterFactory a factory that generates subsetters.
      * @param connectionSelectorPolicy factory of the connection pool strategy to use with this load balancer.
      * @param connectionFactory a function which creates new connections.
+     * @param minConnectionsPerHost the minimum number of connections allowed for active hosts.
      * @param loadBalancerObserverFactory factory used to build a {@link LoadBalancerObserver} to use with this
      *                                    load balancer.
      * @param healthCheckConfig configuration for the health checking mechanism, which monitors hosts that
@@ -146,6 +148,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final Subsetter.SubsetterFactory subsetterFactory,
             final ConnectionSelectorPolicy<C> connectionSelectorPolicy,
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
+            final int minConnectionsPerHost,
             final LoadBalancerObserverFactory loadBalancerObserverFactory,
             @Nullable final HealthCheckConfig healthCheckConfig,
             final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory) {
@@ -162,6 +165,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.eventStream = fromSource(eventStreamProcessor)
                 .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.
         this.connectionFactory = requireNonNull(connectionFactory);
+        this.minConnectionsPerHost = ensureNonNegative(minConnectionsPerHost, "minConnectionsPerHost");
         this.loadBalancerObserver = CatchAllLoadBalancerObserver.wrap(
                 requireNonNull(loadBalancerObserverFactory, "loadBalancerObserverFactory")
                 .newObserver(lbDescription));
@@ -422,7 +426,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                     healthCheckConfig == null || healthCheckConfig.failedThreshold < 0 ? null : healthCheckConfig;
             final PrioritizedHostImpl<ResolvedAddress, C> host = new PrioritizedHostImpl<>(
                     new DefaultHost<>(lbDescription, addr, connectionSelector,
-                    connectionFactory, hostObserver, hostHealthCheckConfig, indicator),
+                    connectionFactory, minConnectionsPerHost, hostObserver, hostHealthCheckConfig, indicator),
                     eventWeight(event), eventPriority(event));
             if (indicator != null) {
                 indicator.setHost(host);
