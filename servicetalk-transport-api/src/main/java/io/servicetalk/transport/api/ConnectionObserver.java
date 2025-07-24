@@ -52,8 +52,12 @@ public interface ConnectionObserver {
     /**
      * Callback when a transport handshake completes.
      * <p>
-     * Transport protocols that require a handshake in order to connect. Example:
+     * Transport protocols that require a handshake to connect. Example:
      * <a href="https://datatracker.ietf.org/doc/html/rfc793.html#section-3.4">TCP "three-way handshake"</a>.
+     * Note that in the case of TCP on the server-side, this callback is invoked immediately because it can only be
+     * notified about a new connection after the OS completes the handshake.
+     * <p>
+     * Transport implementations that do not have a concept of a "handshake" are not required to invoke this callback.
      *
      * @deprecated Use {@link #onTransportHandshakeComplete(ConnectionInfo)}
      */
@@ -64,13 +68,17 @@ public interface ConnectionObserver {
     /**
      * Callback when a transport handshake completes.
      * <p>
-     * Transport protocols that require a handshake in order to connect. Example:
+     * Transport protocols that require a handshake to connect. Example:
      * <a href="https://datatracker.ietf.org/doc/html/rfc793.html#section-3.4">TCP "three-way handshake"</a>.
+     * Note that in the case of TCP on the server-side, this callback is invoked immediately because it can only be
+     * notified about a new connection after the OS completes the handshake.
+     * <p>
+     * Transport implementations that do not have a concept of a "handshake" are not required to invoke this callback.
      *
-     * @param info {@link ConnectionInfo} for the connection after transport handshake completes. Note that the
+     * @param info {@link ConnectionInfo} for the connection after the transport handshake completes. Note that the
      * {@link ConnectionInfo#sslSession()} will always return {@code null} since it is called before the
-     * {@link ConnectionObserver#onSecurityHandshake(SslConfig)}  security handshake} is performed (and as a result
-     * no SSL session has been established). Also, {@link ConnectionInfo#protocol()} will return L4 (transport)
+     * {@link ConnectionObserver#onSecurityHandshake(SslConfig) security handshake} is performed (and as a result
+     * no SSL session has been established). Also, {@link ConnectionInfo#protocol()} will return the L4 (transport)
      * protocol. Finalized {@link ConnectionInfo} will be available via {@link #connectionEstablished(ConnectionInfo)}
      * or {@link #multiplexedConnectionEstablished(ConnectionInfo)} callbacks.
      */
@@ -84,7 +92,7 @@ public interface ConnectionObserver {
      * For a typical connection, this callback is invoked after {@link #onTransportHandshakeComplete(ConnectionInfo)}.
      *
      * @param connectMsg a message sent to a proxy in request to establish a connection to the target server
-     * @return a new {@link ProxyConnectObserver} that provides visibility into proxy connect events.
+     * @return a new {@link ProxyConnectObserver} that provides visibility into proxy connect events
      */
     default ProxyConnectObserver onProxyConnect(Object connectMsg) {
         return NoopTransportObserver.NoopProxyConnectObserver.INSTANCE;
@@ -101,7 +109,7 @@ public interface ConnectionObserver {
      *     Open is available and configured, it may not actually happen if the
      *     <a href="https://datatracker.ietf.org/doc/html/rfc7413#section-4.1">Fast Open Cookie</a> is {@code null} or
      *     rejected by the server.</li>
-     *     <li>For a proxy connections, the handshake may happen after an observer returned by
+     *     <li>For proxy connections, the handshake may happen after an observer returned by
      *     {@link #onProxyConnect(Object)} completes successfully.</li>
      * </ol>
      *
@@ -125,11 +133,11 @@ public interface ConnectionObserver {
      *     Open is available and configured, it may not actually happen if the
      *     <a href="https://datatracker.ietf.org/doc/html/rfc7413#section-4.1">Fast Open Cookie</a> is {@code null} or
      *     rejected by the server.</li>
-     *     <li>For a proxy connections, the handshake may happen after an observer returned by
+     *     <li>For proxy connections, the handshake may happen after an observer returned by
      *     {@link #onProxyConnect(Object)} completes successfully.</li>
      * </ol>
      *
-     * @param sslConfig the {@link SslConfig} used when performing the security handshake.
+     * @param sslConfig the {@link SslConfig} used when performing the security handshake
      * @return a new {@link SecurityHandshakeObserver} that provides visibility into security handshake events
      * @see <a href="https://datatracker.ietf.org/doc/html/rfc7413">RFC7413: TCP Fast Open</a>
      */
@@ -138,7 +146,7 @@ public interface ConnectionObserver {
     }
 
     /**
-     * Callback when a non-multiplexed connection is established and ready.
+     * Callback when a non-multiplexed connection is established and ready to start reading/writing protocol messages.
      *
      * @param info {@link ConnectionInfo} for the established connection
      * @return a new {@link DataObserver} that provides visibility into read and write events
@@ -148,7 +156,8 @@ public interface ConnectionObserver {
     }
 
     /**
-     * Callback when a multiplexed connection is established and ready.
+     * Callback when a multiplexed connection is established and ready to start creating streams that will read/write
+     * protocol messages.
      *
      * @param info {@link ConnectionInfo} for the established connection
      * @return a new {@link MultiplexedObserver} that provides visibility into new streams
@@ -158,7 +167,7 @@ public interface ConnectionObserver {
     }
 
     /**
-     * Callback when a writable state of the connection changes.
+     * Callback when the writable state of the connection changes.
      *
      * @param isWritable describes the current state of the connection: {@code true} when the I/O thread will perform
      * the requested write operation immediately. If {@code false}, write requests will be queued until the I/O thread
@@ -169,14 +178,18 @@ public interface ConnectionObserver {
 
     /**
      * Callback when the connection is closed due to an {@link Throwable error}.
+     * <p>
+     * Connections can be closed at any time, even before they are fully established.
      *
-     * @param error an occurred error
+     * @param error the error that occurred
      */
     default void connectionClosed(Throwable error) {
     }
 
     /**
      * Callback when the connection is closed.
+     * <p>
+     * Connections can be closed at any time, even before they are fully established.
      */
     default void connectionClosed() {
     }
@@ -185,23 +198,23 @@ public interface ConnectionObserver {
      * An observer interface that provides visibility into proxy connect events for establishing a tunnel.
      * <p>
      * Either {@link #proxyConnectComplete(Object)} or {@link #proxyConnectFailed(Throwable)} will be invoked to signal
-     * successful or failed connection via proxy tunnel.
+     * successful or failed connection via a proxy tunnel.
      */
     interface ProxyConnectObserver {
 
         /**
-         * Callback when the proxy connect attempt is failed.
+         * Callback when the proxy connect attempt fails.
          *
-         * @param cause the cause of proxy connect failure
+         * @param cause the cause of the proxy connect failure
          */
         default void proxyConnectFailed(Throwable cause) {
         }
 
         /**
-         * Callback when the proxy connect attempt is complete successfully.
+         * Callback when the proxy connect attempt completes successfully.
          *
-         * @param responseMsg an object that represents a response message. The actual message type depends upon proxy
-         * protocol implementation (e.g. <a href="https://en.wikipedia.org/wiki/HTTP_tunnel">HTTP Tunnel</a>,
+         * @param responseMsg an object that represents a response message. The actual message type depends upon the
+         * proxy protocol implementation (e.g. <a href="https://en.wikipedia.org/wiki/HTTP_tunnel">HTTP Tunnel</a>,
          * <a href="https://en.wikipedia.org/wiki/SOCKS">SOCKS</a>, etc.)
          */
         default void proxyConnectComplete(Object responseMsg) {
@@ -217,15 +230,15 @@ public interface ConnectionObserver {
     interface SecurityHandshakeObserver {
 
         /**
-         * Callback when the handshake is failed.
+         * Callback when the handshake fails.
          *
-         * @param cause the cause of handshake failure
+         * @param cause the cause of the handshake failure
          */
         default void handshakeFailed(Throwable cause) {
         }
 
         /**
-         * Callback when the handshake is complete successfully.
+         * Callback when the handshake completes successfully.
          *
          * @param sslSession the {@link SSLSession} for this connection
          */
@@ -283,16 +296,17 @@ public interface ConnectionObserver {
         /**
          * Callback when a {@code streamId} is assigned.
          * <p>
-         * Stream identifier may be deferred until after the first write is made on a newly established stream.
+         * The stream identifier may be deferred until after the first write is made on a newly established stream.
          *
-         * @param streamId assigned stream identifier
+         * @param streamId the assigned stream identifier
          */
         default void streamIdAssigned(long streamId) {   // Use long to comply with HTTP/3 requirements
         }
 
         /**
-         * Callback when the stream is established and ready to be used. It may or may not have an already assigned
-         * {@code streamId} at the time.
+         * Callback when the stream is established and ready to be used.
+         * <p>
+         * It may or may not have an already assigned {@code streamId} at this time.
          *
          * @return a new {@link DataObserver} that provides visibility into read and write events
          * @see #streamIdAssigned(long)
@@ -304,7 +318,7 @@ public interface ConnectionObserver {
         /**
          * Callback when the stream is closed due to an {@link Throwable error}.
          *
-         * @param error an occurred error
+         * @param error the error that occurred
          */
         default void streamClosed(Throwable error) {
         }
@@ -326,7 +340,7 @@ public interface ConnectionObserver {
     interface ReadObserver {
 
         /**
-         * Callback when new items are requested to read.
+         * Callback when new items are requested to be read.
          *
          * @param n number of requested items to read
          */
@@ -334,7 +348,7 @@ public interface ConnectionObserver {
         }
 
         /**
-         * Invokes when a new item is read.
+         * Callback when a new item is read.
          * <p>
          * Content of the read items should be inspected at the higher level API when these items are consumed.
          *
@@ -345,9 +359,9 @@ public interface ConnectionObserver {
         }
 
         /**
-         * Invokes when a new item is read.
+         * Callback when a new item is read.
          *
-         * @param item an item that was read
+         * @param item the item that was read
          */
         default void itemRead(@Nullable Object item) {
         }
@@ -383,7 +397,7 @@ public interface ConnectionObserver {
     interface WriteObserver {
 
         /**
-         * Callback when new items are requested to write.
+         * Callback when new items are requested to be written.
          *
          * @param n number of requested items to write
          */
@@ -404,13 +418,13 @@ public interface ConnectionObserver {
         /**
          * Callback when an item is received and ready to be written.
          *
-         * @param item received item
+         * @param item the received item
          */
         default void itemReceived(@Nullable Object item) {
         }
 
         /**
-         * Callback when flush operation is requested.
+         * Callback when a flush operation is requested.
          */
         default void onFlushRequest() {
         }
@@ -429,13 +443,13 @@ public interface ConnectionObserver {
         /**
          * Callback when an item is serialized and written to the socket.
          *
-         * @param item written item
+         * @param item the written item
          */
         default void itemWritten(@Nullable Object item) {
         }
 
         /**
-         * Callback when an item is flushed to the network. Items are flushed in order they have been written.
+         * Callback when an item is flushed to the network. Items are flushed in the order they have been written.
          */
         default void itemFlushed() {
         }
