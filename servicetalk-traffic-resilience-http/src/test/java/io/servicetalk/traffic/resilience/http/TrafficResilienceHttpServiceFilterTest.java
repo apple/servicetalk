@@ -47,10 +47,12 @@ import io.servicetalk.transport.api.ServerContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static io.netty.util.internal.PlatformDependent.normalizedOs;
 import static io.servicetalk.capacity.limiter.api.CapacityLimiters.fixedCapacity;
@@ -61,6 +63,7 @@ import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifySer
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.traffic.resilience.http.NoOpTrafficResiliencyObserver.NO_OP_TICKET_OBSERVER;
+import static io.servicetalk.traffic.resilience.http.TrafficResilienceHttpClientFilterTest.newRequest;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.CONNECT_TIMEOUT;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.SO_BACKLOG;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -74,7 +77,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -122,8 +127,9 @@ class TrafficResilienceHttpServiceFilterTest {
         }
     }
 
-    @Test
-    void releaseCapacityIfDelegateThrows() {
+    @ParameterizedTest(name = "{displayName} [{index}] consumeRequestBodyFirst={0}")
+    @ValueSource(booleans = {true, false})
+    void releaseCapacityIfDelegateThrows(boolean consumeRequestBodyFirst) throws Exception {
         CapacityLimiter limiter = mock(CapacityLimiter.class);
         CapacityLimiter.Ticket ticket = mock(CapacityLimiter.Ticket.class);
         when(limiter.tryAcquire(any(), any())).thenReturn(ticket);
@@ -132,14 +138,29 @@ class TrafficResilienceHttpServiceFilterTest {
                 new TrafficResilienceHttpServiceFilter.Builder(() -> limiter).build();
 
         StreamingHttpServiceFilter service = mock(StreamingHttpServiceFilter.class);
-        when(service.handle(any(), any(), any())).thenThrow(DELIBERATE_EXCEPTION);
+        AtomicReference<StreamingHttpRequest> request = new AtomicReference<>();
+        doAnswer(invocation -> {
+            request.set(invocation.getArgument(1));
+            if (consumeRequestBodyFirst) {
+                request.get().payloadBody().ignoreElements().toFuture().get();
+            }
+            throw DELIBERATE_EXCEPTION;
+        }).when(service).handle(any(), any(), any());
 
         StreamingHttpServiceFilter serviceWithFilter = filter.create(service);
-        StepVerifiers.create(serviceWithFilter.handle(mock(HttpServiceContext.class), mock(StreamingHttpRequest.class),
+        StepVerifiers.create(serviceWithFilter.handle(mock(HttpServiceContext.class), newRequest(),
                         mock(StreamingHttpResponseFactory.class)))
                 .expectError(DeliberateException.class)
                 .verify();
         verify(limiter).tryAcquire(any(), any());
+
+        if (!consumeRequestBodyFirst) {
+            // We shouldn't have released the ticket because the request body hasn't been consumed.
+            verify(ticket, never()).failed(DELIBERATE_EXCEPTION);
+            // Consume the request body and we should now see the failed ticket response.
+            request.get().payloadBody().ignoreElements().toFuture().get();
+        }
+
         verify(ticket).failed(DELIBERATE_EXCEPTION);
         verify(ticket, atLeastOnce()).state();
         verifyNoMoreInteractions(limiter, ticket);

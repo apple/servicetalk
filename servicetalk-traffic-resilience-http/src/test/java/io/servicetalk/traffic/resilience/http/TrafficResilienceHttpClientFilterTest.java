@@ -34,11 +34,13 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.ByteArrayInputStream;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -53,7 +55,9 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -62,8 +66,6 @@ class TrafficResilienceHttpClientFilterTest {
     private static final StreamingHttpRequestResponseFactory REQ_RES_FACTORY =
             new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE,
                     HTTP_1_1);
-
-    private static final StreamingHttpRequest REQUEST = REQ_RES_FACTORY.newRequest(HttpRequestMethod.GET, "");
 
     @ParameterizedTest(name = "{displayName} [{index}] dryRun={0}")
     @ValueSource(booleans = {false, true})
@@ -79,13 +81,13 @@ class TrafficResilienceHttpClientFilterTest {
 
         final StreamingHttpClientFilter clientWithFilter = trafficResilienceHttpClientFilter.create(client);
         if (dryRun) {
-            StreamingHttpResponse response = clientWithFilter.request(REQUEST).toFuture().get();
+            StreamingHttpResponse response = clientWithFilter.request(newRequest()).toFuture().get();
             response.messageBody().ignoreElements().toFuture().get();
             assertThat(response.status(), equalTo(BAD_GATEWAY));
         } else {
             assertThrows(DelayedRetryRequestDroppedException.class, () -> {
                 try {
-                    clientWithFilter.request(REQUEST).toFuture().get();
+                    clientWithFilter.request(newRequest()).toFuture().get();
                 } catch (ExecutionException e) {
                     throw e.getCause();
                 }
@@ -112,13 +114,13 @@ class TrafficResilienceHttpClientFilterTest {
 
         final StreamingHttpClientFilter clientWithFilter = trafficResilienceHttpClientFilter.create(client);
         if (dryRun) {
-            StreamingHttpResponse response = clientWithFilter.request(REQUEST).toFuture().get();
+            StreamingHttpResponse response = clientWithFilter.request(newRequest()).toFuture().get();
             assertThat(response.status(), equalTo(BAD_GATEWAY));
             response.messageBody().ignoreElements().toFuture().get();
         } else {
             assertThrows(RequestDroppedException.class, () -> {
                 try {
-                    clientWithFilter.request(REQUEST).toFuture().get();
+                    clientWithFilter.request(newRequest()).toFuture().get();
                 } catch (ExecutionException e) {
                     throw e.getCause();
                 }
@@ -144,15 +146,15 @@ class TrafficResilienceHttpClientFilterTest {
                         .map(DEFAULT_ALLOCATOR::wrap))));
 
         final StreamingHttpClientFilter clientWithFilter = trafficResilienceHttpClientFilter.create(client);
-        final HttpResponse response = clientWithFilter.request(REQUEST)
+        final HttpResponse response = clientWithFilter.request(newRequest())
                 .flatMap(StreamingHttpResponse::toResponse).toFuture().get();
         assertThat(response.status(), equalTo(BAD_GATEWAY));
         assertThat(response.payloadBody().toString(UTF_8), is(equalTo("content")));
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] dryRun={0}")
-    @ValueSource(booleans = {false, true})
-    void releaseCapacityIfDelegateThrows(boolean dryRun) {
+    @ParameterizedTest(name = "{displayName} [{index}] dryRun={0}, consumeBodyFirst={1}")
+    @CsvSource({"false, false", "false, true", "true, false", "true, true"})
+    void releaseCapacityIfDelegateThrows(boolean dryRun, boolean consumeBodyFirst) throws Exception {
         CapacityLimiter limiter = mock(CapacityLimiter.class);
         Ticket ticket = mock(Ticket.class);
         when(limiter.tryAcquire(any(), any())).thenReturn(ticket);
@@ -163,15 +165,32 @@ class TrafficResilienceHttpClientFilterTest {
                         .build();
 
         FilterableStreamingHttpClient client = mock(FilterableStreamingHttpClient.class);
-        when(client.request(any())).thenThrow(DELIBERATE_EXCEPTION);
+        AtomicReference<StreamingHttpRequest> request = new AtomicReference<>();
+        doAnswer(invocation -> {
+            request.set(invocation.getArgument(0));
+            if (consumeBodyFirst) {
+                request.get().payloadBody().ignoreElements().toFuture().get();
+            }
+            throw DELIBERATE_EXCEPTION;
+        }).when(client).request(any());
 
         StreamingHttpClientFilter clientWithFilter = filter.create(client);
-        StepVerifiers.create(clientWithFilter.request(mock(StreamingHttpRequest.class)))
+        StepVerifiers.create(clientWithFilter.request(newRequest()))
                 .expectError(DeliberateException.class)
                 .verify();
         verify(limiter).tryAcquire(any(), any());
+        if (!consumeBodyFirst) {
+            // We shouldn't have released the ticket because the request body hasn't been consumed.
+            verify(ticket, never()).failed(DELIBERATE_EXCEPTION);
+            // Consume the request body and we should now see the failed ticket response.
+            request.get().payloadBody().ignoreElements().toFuture().get();
+        }
         verify(ticket).failed(DELIBERATE_EXCEPTION);
         verify(ticket, atLeastOnce()).state();
         verifyNoMoreInteractions(limiter, ticket);
+    }
+
+    static StreamingHttpRequest newRequest() {
+        return REQ_RES_FACTORY.newRequest(HttpRequestMethod.GET, "");
     }
 }

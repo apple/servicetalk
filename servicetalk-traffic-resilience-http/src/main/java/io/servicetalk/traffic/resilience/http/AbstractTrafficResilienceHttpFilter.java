@@ -30,7 +30,7 @@ import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
+import io.servicetalk.http.utils.AfterFinallyHttpOperator;
 import io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy.PassthroughRequestDroppedException;
 import io.servicetalk.traffic.resilience.http.TrafficResiliencyObserver.TicketObserver;
 import io.servicetalk.transport.api.ServerListenContext;
@@ -282,8 +282,8 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
                     }
                     return Single.succeeded(resp).shareContextOnSubscribe();
                 })
-                .liftSync(new BeforeFinallyHttpOperator(
-                        new SignalConsumer(this, ticket, ticketObserver, breaker, startTimeNs), true));
+                .liftSync(new AfterFinallyHttpOperator(
+                        new SignalConsumer(this, request, ticket, ticketObserver, breaker, startTimeNs), true));
     }
 
     private Single<StreamingHttpResponse> dryRunHandleAllow(
@@ -292,7 +292,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
             final Ticket ticket,
             final TicketObserver ticketObserver, @Nullable final CircuitBreaker breaker, final long startTimeNs) {
         SignalConsumer signalConsumer = new SignalConsumer(
-                this, ticket, ticketObserver, breaker, startTimeNs);
+                this, request, ticket, ticketObserver, breaker, startTimeNs);
         return delegate.apply(request)
                 // This logic has the same general structure as the `handleAllow` case, but there is a twist: we want
                 // to always return the successful single even when we fail the predicates. Because we use a latch in
@@ -308,13 +308,17 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
                     }
                     return resp;
                 })
-                .liftSync(new BeforeFinallyHttpOperator(signalConsumer, true));
+                .liftSync(new AfterFinallyHttpOperator(signalConsumer, true));
     }
 
-    private static final class SignalConsumer implements TerminalSignalConsumer {
+    private static class SignalConsumer implements TerminalSignalConsumer {
 
-        private static final AtomicIntegerFieldUpdater<SignalConsumer> SIGNALLED_UPDATER =
-                AtomicIntegerFieldUpdater.newUpdater(SignalConsumer.class, "signalled");
+        private static final AtomicIntegerFieldUpdater<SignalConsumer> STATE_UPDATER =
+                AtomicIntegerFieldUpdater.newUpdater(SignalConsumer.class, "state");
+        private static final int IDLE = 0;
+        private static final int REQUEST_COMPLETE = 1;
+        private static final int RESPONSE_COMPLETE = 2;
+        private static final int FINISHED = 3;
 
         private final AbstractTrafficResilienceHttpFilter parent;
         private final Ticket ticket;
@@ -323,23 +327,49 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
         private final CircuitBreaker breaker;
         private final long startTimeNs;
 
-        private volatile int signalled;
+        // We store our state in the `state` variable. For responses, we must also store whether we cancelled
+        // or if we errored. In those cases we set the field before transitioning state so we get memory visibility
+        // without needing to make those fields volatile as well.
+        private volatile int state = IDLE;
+        @Nullable
+        private Throwable responseError;
+        private boolean cancelled;
 
-        SignalConsumer(final AbstractTrafficResilienceHttpFilter parent, final Ticket ticket,
-                              final TicketObserver ticketObserver, @Nullable final CircuitBreaker breaker,
-                              final long startTimeNs) {
+        SignalConsumer(final AbstractTrafficResilienceHttpFilter parent, StreamingHttpRequest request,
+                              final Ticket ticket, final TicketObserver ticketObserver,
+                              @Nullable final CircuitBreaker breaker, final long startTimeNs) {
             this.parent = parent;
             this.ticket = ticket;
             this.ticketObserver = ticketObserver;
             this.breaker = breaker;
             this.startTimeNs = startTimeNs;
+            request.transformMessageBody(body -> body.afterFinally(this::requestComplete));
         }
 
         @Override
         public void onComplete() {
-            if (!once()) {
-                return;
+            if (responseFinished()) {
+                doOnComplete();
             }
+        }
+
+        @Override
+        public void onError(final Throwable throwable) {
+            responseError = throwable;
+            if (responseFinished()) {
+                doOnError(throwable);
+            }
+        }
+
+        @Override
+        public void cancel() {
+            cancelled = true;
+            if (responseFinished()) {
+                doCancel();
+            }
+        }
+
+        private void doOnComplete() {
             try {
                 if (breaker != null) {
                     breaker.onSuccess(nanoTime() - startTimeNs, NANOSECONDS);
@@ -350,20 +380,12 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
             }
         }
 
-        @Override
-        public void onError(final Throwable throwable) {
-            if (!once()) {
-                return;
-            }
+        private void doOnError(final Throwable throwable) {
             parent.onError(throwable, breaker, startTimeNs, ticket);
             ticketObserver.onError(throwable);
         }
 
-        @Override
-        public void cancel() {
-            if (!once()) {
-                return;
-            }
+        private void doCancel() {
             try {
                 if (breaker != null) {
                     breaker.ignorePermit();
@@ -374,8 +396,32 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
             }
         }
 
-        private boolean once() {
-            return SIGNALLED_UPDATER.compareAndSet(this, 0, 1);
+        private void requestComplete() {
+            if (STATE_UPDATER.compareAndSet(this, IDLE, REQUEST_COMPLETE)) {
+                // nothing to do: it's up to the response to finish now.
+                return;
+            }
+            if (STATE_UPDATER.compareAndSet(this, RESPONSE_COMPLETE, FINISHED)) {
+                // This operation completed the sequence. We need to finish according to how the response completed.
+                // Technically response error and cancellation can race. We give preference to the response error
+                // form because that will likely be the more interesting in terms of observability.
+                Throwable responseError = this.responseError;
+                if (responseError != null) {
+                    doOnError(responseError);
+                } else if (cancelled) {
+                    doCancel();
+                } else {
+                    doOnComplete();
+                }
+            }
+        }
+
+        private boolean responseFinished() {
+            if (STATE_UPDATER.compareAndSet(this, IDLE, RESPONSE_COMPLETE)) {
+                // nothing to do: it's up to the request to finish now.
+                return false;
+            }
+            return STATE_UPDATER.compareAndSet(this, REQUEST_COMPLETE, FINISHED);
         }
     }
 
