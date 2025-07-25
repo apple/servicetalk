@@ -104,6 +104,16 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
     LoadBalancerBuilder<ResolvedAddress, C> connectionSelectorPolicy(
             ConnectionSelectorPolicy<C> connectionSelectorPolicy);
 
+    /**
+     * Set the minimum number of connections an active host should maintain in its pool.
+     * <p>
+     * Setting a minimum number of connections can help reduce the occurrences where connection establishment happens
+     * on the request path, thereby reducing tail latencies, particularly for links which are prone idle-connection
+     * closure. The tradeoff is that it may require tuning and will create more connection overhead overall.
+     *
+     * @param minConnectionsPerHost the minimum number of connections a host should maintain.
+     * @return {@code this}
+     */
     default LoadBalancerBuilder<ResolvedAddress, C> minConnectionsPerHost(int minConnectionsPerHost) {
         throw new UnsupportedOperationException("minConnectionsPerHost is not implemented");
     }
