@@ -116,12 +116,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         this.closeable = toAsyncCloseable(this::doClose);
 
         // warm the connection pool.
-        // TODO: this will likely be racy with initial requests also wanting to create connections.
-        //   At a minimum, we should perhaps warm only a single connection at a time.
-        for (int i = 0; i < minConnections; i++) {
-            newConnection(cxn -> true, false, null)
-                    .toFuture();
-        }
+        warmConnections();
     }
 
     @Override
@@ -147,14 +142,10 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         });
         if (oldState.state == State.EXPIRED) {
             hostObserver.onExpiredHostRevived(oldState.connections.size());
+            // Only begin warming if the state was previously expired.
+            warmConnections();
         }
-        boolean success = oldState.state != State.CLOSED;
-        if (success) {
-            for (int i = minConnections - oldState.connections.size(); i > 0; i--) {
-                newConnection(cxn -> true, false, null).toFuture();
-            }
-        }
-        return success;
+        return oldState.state != State.CLOSED;
     }
 
     private ConnState closeConnState() {
@@ -426,12 +417,8 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         }
         LOGGER.trace("{}: removed connection {} from {} after {} attempt(s).",
                 lbDescription, connection, this, removeAttempt);
-
-        if (nextState.isActive() && nextState.connections.size() < minConnections) {
-            LOGGER.debug("{}: Host connection count dropped to {} which is below min connections of {} - creating a " +
-                    "new connection.", lbDescription, nextState.connections.size(), minConnections);
-            newConnection(cxn -> true, false, null).subscribe(cxn -> { });
-        }
+        // Make sure we have enough warm connections.
+        warmConnections();
     }
 
     // Used for testing only
@@ -505,6 +492,31 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                 '}';
     }
 
+    private void warmConnections() {
+        if (minConnections <= 0) {
+            // nothing to do, so just short circuit.
+            return;
+        }
+        ConnState state = this.connState;
+        if (!state.isActive() || state.connections.size() >= minConnections) {
+            // nothing to do.
+            return;
+        }
+        LOGGER.debug("{}: Pool size of {} below the minimum threshold of {} - warming new connection",
+                lbDescription, state.connections.size(), minConnections);
+
+        newConnection(cxn -> true, false, null)
+                .subscribe(cxn -> {
+                    LOGGER.debug("{}: Connection successfully warmed. Pool size: {}, minimum: {}",
+                            lbDescription, state.connections.size(), minConnections);
+                    warmConnections();
+                }, ex -> {
+                    // for now lets not worry about retrying to minimize complexity.
+                    LOGGER.info("{}: Connection failed to warm new connection. Pool size: {}, minimum: {}",
+                            lbDescription, state.connections.size(), minConnections);
+                });
+    }
+
     private final class HealthCheck extends DelayedCancellable {
         private final Throwable lastError;
 
@@ -539,6 +551,8 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                                 LOGGER.info("{}: health check passed for {}, marked this " +
                                                 "host as ACTIVE for the selection algorithm.",
                                         lbDescription, DefaultHost.this);
+                                // Now that we have recovered we may need to warm connections
+                                warmConnections();
                                 return completed();
                             })
                             // Use onErrorComplete instead of whenOnError to avoid double logging of an error inside
