@@ -20,4 +20,11 @@
     <Source name="~.*Test\.java"/>
     <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
   </Match>
+  <!--  Generated files can be ignored-->
+  <Match>
+    <Or>
+      <Source name="~TesterGrpc\.java"/>
+      <Source name="~TesterProto\.java"/>
+    </Or>
+  </Match>
 </FindBugsFilter>

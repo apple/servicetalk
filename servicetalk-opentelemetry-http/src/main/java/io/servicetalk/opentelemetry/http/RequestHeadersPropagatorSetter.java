@@ -16,23 +16,22 @@
 
 package io.servicetalk.opentelemetry.http;
 
-import io.servicetalk.http.api.HttpRequestMetaData;
-
 import io.opentelemetry.context.propagation.TextMapSetter;
 
+import java.util.Locale;
 import javax.annotation.Nullable;
 
-final class RequestHeadersPropagatorSetter implements TextMapSetter<HttpRequestMetaData> {
+final class RequestHeadersPropagatorSetter implements TextMapSetter<RequestInfo> {
 
-    static final TextMapSetter<HttpRequestMetaData> INSTANCE = new RequestHeadersPropagatorSetter();
+    static final TextMapSetter<RequestInfo> INSTANCE = new RequestHeadersPropagatorSetter();
 
     private RequestHeadersPropagatorSetter() {
     }
 
     @Override
-    public void set(@Nullable final HttpRequestMetaData carrier, final String key, final String value) {
-        if (carrier != null) {
-            HeadersPropagatorSetter.INSTANCE.set(carrier.headers(), key, value);
+    public void set(@Nullable final RequestInfo requestInfo, final String key, final String value) {
+        if (requestInfo != null) {
+            requestInfo.getMetadata().headers().set(key.toLowerCase(Locale.ENGLISH), value);
         }
     }
 }

@@ -48,9 +48,10 @@ class ServicetalkSpanStatusExtractorTest {
     @ParameterizedTest(name = "{displayName} [{index}]: isServer={0}")
     @ValueSource(booleans = {true, false})
     void testStatus200To399(boolean isServer) {
+        RequestInfo requestInfo = new RequestInfo(requestMetaData, null);
         for (int code = 100; code < 400; code++) {
             when(responseMetaData.status()).thenReturn(HttpResponseStatus.of(code, "any"));
-            getExtractor(isServer).extract(spanStatusBuilder, requestMetaData, responseMetaData, null);
+            getExtractor(isServer).extract(spanStatusBuilder, requestInfo, responseMetaData, null);
         }
         // Should remain at the default value of UNSET
         verify(spanStatusBuilder, times(0)).setStatus(any());
@@ -59,11 +60,12 @@ class ServicetalkSpanStatusExtractorTest {
     @ParameterizedTest(name = "{displayName} [{index}]: isServer={0}")
     @ValueSource(booleans = {true, false})
     void testStatus400to499(boolean isServer) {
+        RequestInfo requestInfo = new RequestInfo(requestMetaData, null);
         int executions = 0;
         for (int code = 400; code < 500; code++) {
             executions++;
             when(responseMetaData.status()).thenReturn(HttpResponseStatus.of(code, "any"));
-            getExtractor(isServer).extract(spanStatusBuilder, requestMetaData, responseMetaData, null);
+            getExtractor(isServer).extract(spanStatusBuilder, requestInfo, responseMetaData, null);
         }
         if (isServer) {
             // Should remain at the default value of UNSET
@@ -76,11 +78,12 @@ class ServicetalkSpanStatusExtractorTest {
     @ParameterizedTest(name = "{displayName} [{index}]: isServer={0}")
     @ValueSource(booleans = {true, false})
     void testStatus500to599(boolean isServer) {
+        RequestInfo requestInfo = new RequestInfo(requestMetaData, null);
         int executions = 0;
         for (int code = 500; code < 600; code++) {
             executions++;
             when(responseMetaData.status()).thenReturn(HttpResponseStatus.of(code, "any"));
-            getExtractor(isServer).extract(spanStatusBuilder, requestMetaData, responseMetaData, null);
+            getExtractor(isServer).extract(spanStatusBuilder, requestInfo, responseMetaData, null);
         }
         verify(spanStatusBuilder, times(executions)).setStatus(StatusCode.ERROR);
     }
@@ -88,15 +91,17 @@ class ServicetalkSpanStatusExtractorTest {
     @ParameterizedTest(name = "{displayName} [{index}]: isServer={0}")
     @ValueSource(booleans = {true, false})
     void testStatusUnknown(boolean isServer) {
+        RequestInfo requestInfo = new RequestInfo(requestMetaData, null);
         when(responseMetaData.status()).thenReturn(HttpResponseStatus.of(600, "any"));
-        getExtractor(isServer).extract(spanStatusBuilder, requestMetaData, responseMetaData, null);
+        getExtractor(isServer).extract(spanStatusBuilder, requestInfo, responseMetaData, null);
         verify(spanStatusBuilder, times(0)).setStatus(any());
     }
 
     @ParameterizedTest(name = "{displayName} [{index}]: isServer={0}")
     @ValueSource(booleans = {true, false})
     void testExceptionError(boolean isServer) {
-        getExtractor(isServer).extract(spanStatusBuilder, requestMetaData, responseMetaData,
+        RequestInfo requestInfo = new RequestInfo(requestMetaData, null);
+        getExtractor(isServer).extract(spanStatusBuilder, requestInfo, responseMetaData,
             new RuntimeException());
         verify(spanStatusBuilder).setStatus(StatusCode.ERROR);
     }
