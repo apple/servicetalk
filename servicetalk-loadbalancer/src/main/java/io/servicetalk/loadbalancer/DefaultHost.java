@@ -116,7 +116,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         this.closeable = toAsyncCloseable(this::doClose);
 
         // warm the connection pool.
-        warmConnections();
+        maybeWarmConnectionPool();
     }
 
     @Override
@@ -143,7 +143,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         if (oldState.state == State.EXPIRED) {
             hostObserver.onExpiredHostRevived(oldState.connections.size());
             // Only begin warming if the state was previously expired.
-            warmConnections();
+            maybeWarmConnectionPool();
         }
         return oldState.state != State.CLOSED;
     }
@@ -418,7 +418,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         LOGGER.trace("{}: removed connection {} from {} after {} attempt(s).",
                 lbDescription, connection, this, removeAttempt);
         // Make sure we have enough warm connections.
-        warmConnections();
+        maybeWarmConnectionPool();
     }
 
     // Used for testing only
@@ -492,7 +492,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                 '}';
     }
 
-    private void warmConnections() {
+    private void maybeWarmConnectionPool() {
         if (minConnections <= 0) {
             // nothing to do, so just short circuit.
             return;
@@ -509,9 +509,11 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                 .subscribe(cxn -> {
                     LOGGER.debug("{}: Connection successfully warmed. Pool size: {}, minimum: {}",
                             lbDescription, state.connections.size(), minConnections);
-                    warmConnections();
+                    // We may now need to warm another connection.
+                    maybeWarmConnectionPool();
                 }, ex -> {
-                    // for now lets not worry about retrying to minimize complexity.
+                    // For now lets not worry about retrying failed connects to minimize complexity.
+                    // We'll start pre-warming again as soon as we get some connection churn.
                     LOGGER.info("{}: Connection failed to warm new connection. Pool size: {}, minimum: {}",
                             lbDescription, state.connections.size(), minConnections);
                 });
@@ -552,7 +554,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                                                 "host as ACTIVE for the selection algorithm.",
                                         lbDescription, DefaultHost.this);
                                 // Now that we have recovered we may need to warm connections
-                                warmConnections();
+                                maybeWarmConnectionPool();
                                 return completed();
                             })
                             // Use onErrorComplete instead of whenOnError to avoid double logging of an error inside

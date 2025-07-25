@@ -48,7 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -281,7 +280,7 @@ class DefaultHostTest {
         List<ListenableAsyncCloseable> old = new ArrayList<>(createdConnections);
         for (int i = 0; i < 2; i++) {
             ListenableAsyncCloseable cxn = createdConnections.pop();
-            cxn.closeAsync().toFuture();
+            cxn.closeAsync().subscribe();
         }
 
         // We should have two more pending requests
@@ -289,16 +288,21 @@ class DefaultHostTest {
         assertNotEquals(old, new ArrayList<>(createdConnections));
 
         assertFalse(host.markExpired());
+        verify(mockHostObserver).onHostMarkedExpired(2);
         ListenableAsyncCloseable cxn = createdConnections.pop();
-        cxn.closeAsync().toFuture();
+        cxn.closeAsync().subscribe();
 
         assertEquals(1, createdConnections.size());
         assertTrue(host.markActiveIfNotClosed());
+        verify(mockHostObserver).onExpiredHostRevived(1);
 
-        // We should pop back up to 2 connections after revival.
+        // We should add one more connection (for a total of two) after revival.
         assertEquals(2, createdConnections.size());
 
-        // TODO: don't care about this right now.
-        clearInvocations(mockHostObserver);
+        host.closeAsync().subscribe();
+        verify(mockHostObserver).onActiveHostRemoved(2);
+        createdConnections.pop().closeAsync().subscribe();
+        createdConnections.pop().closeAsync().subscribe();
+        assertTrue(createdConnections.isEmpty());
     }
 }
