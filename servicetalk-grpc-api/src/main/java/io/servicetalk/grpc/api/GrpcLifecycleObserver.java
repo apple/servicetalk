@@ -84,8 +84,8 @@ public interface GrpcLifecycleObserver extends HttpLifecycleObserver {
     /**
      * An observer interface that provides visibility into events associated with a single gRPC request.
      * <p>
-     * The request is considered complete when one of the terminal events is invoked. It is guaranteed only one terminal
-     * event will be invoked per request.
+     * The request is considered complete when one of the terminal events is invoked. It is guaranteed that only one
+     * terminal event will be invoked per request.
      */
     interface GrpcRequestObserver extends HttpRequestObserver {
 
@@ -104,7 +104,7 @@ public interface GrpcLifecycleObserver extends HttpLifecycleObserver {
     /**
      * An observer interface that provides visibility into events associated with a single gRPC response.
      * <p>
-     * The response is considered complete when one of the terminal events is invoked. It is guaranteed only one
+     * The response is considered complete when one of the terminal events is invoked. It is guaranteed that only one
      * terminal event will be invoked per response.
      */
     interface GrpcResponseObserver extends HttpResponseObserver {

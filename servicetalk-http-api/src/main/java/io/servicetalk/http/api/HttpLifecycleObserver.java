@@ -127,8 +127,8 @@ public interface HttpLifecycleObserver {
     /**
      * An observer interface that provides visibility into events associated with a single HTTP request.
      * <p>
-     * The request is considered complete when one of the terminal events is invoked. It is guaranteed only one terminal
-     * event will be invoked per request.
+     * The request is considered complete when one of the terminal events is invoked. It is guaranteed that only one
+     * terminal event will be invoked per request.
      */
     interface HttpRequestObserver {
 
@@ -197,7 +197,7 @@ public interface HttpLifecycleObserver {
     /**
      * An observer interface that provides visibility into events associated with a single HTTP response.
      * <p>
-     * The response is considered complete when one of the terminal events is invoked. It is guaranteed only one
+     * The response is considered complete when one of the terminal events is invoked. It is guaranteed that only one
      * terminal event will be invoked per response.
      */
     interface HttpResponseObserver {
