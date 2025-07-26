@@ -137,7 +137,7 @@ public interface HttpLifecycleObserver {
          * <p>
          * May be invoked multiple times and concurrently with other callbacks on this observer. Therefore, it should
          * have its own isolated state or should be synchronized if the state is shared with other callbacks.
-         * It can help track when items are requested and when they are {@link #onRequestData(Buffer) delivered}.
+         * It can help to track when items are requested and when they are {@link #onRequestData(Buffer) delivered}.
          *
          * @param n number of requested items
          */
@@ -207,7 +207,7 @@ public interface HttpLifecycleObserver {
          * <p>
          * May be invoked multiple times and concurrently with other callbacks on this observer. Therefore, it should
          * have its own isolated state or should be synchronized if the state is shared with other callbacks.
-         * It can help track when items are requested and when they are {@link #onResponseData(Buffer) delivered}.
+         * It can help to track when items are requested and when they are {@link #onResponseData(Buffer) delivered}.
          *
          * @param n number of requested items
          */
