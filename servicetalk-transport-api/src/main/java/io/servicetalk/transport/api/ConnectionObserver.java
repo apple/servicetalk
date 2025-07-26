@@ -50,6 +50,16 @@ public interface ConnectionObserver {
     }
 
     /**
+     * Callback when the writable state of the connection changes.
+     *
+     * @param isWritable describes the current state of the connection: {@code true} when the I/O thread will perform
+     * the requested write operation immediately. If {@code false}, write requests will be queued until the I/O thread
+     * is ready to process the queued items and the transport will start applying backpressure.
+     */
+    default void connectionWritabilityChanged(boolean isWritable) {
+    }
+
+    /**
      * Callback when a transport handshake completes.
      * <p>
      * Transport protocols that require a handshake to connect. Example:
@@ -164,16 +174,6 @@ public interface ConnectionObserver {
      */
     default MultiplexedObserver multiplexedConnectionEstablished(ConnectionInfo info) {
         return NoopTransportObserver.NoopMultiplexedObserver.INSTANCE;
-    }
-
-    /**
-     * Callback when the writable state of the connection changes.
-     *
-     * @param isWritable describes the current state of the connection: {@code true} when the I/O thread will perform
-     * the requested write operation immediately. If {@code false}, write requests will be queued until the I/O thread
-     * is ready to process the queued items and the transport will start applying backpressure.
-     */
-    default void connectionWritabilityChanged(boolean isWritable) {
     }
 
     /**
