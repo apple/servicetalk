@@ -23,16 +23,21 @@ import io.servicetalk.transport.api.IoExecutor;
 /**
  * An observer interface that provides visibility into HTTP lifecycle events.
  * <p>
- * In order to deliver events at accurate time, callbacks on this interface can be invoked from the {@link IoExecutor}.
+ * To deliver events at accurate time, callbacks on this interface can be invoked from the {@link IoExecutor}.
  * Implementation of this observer <b>must</b> be non-blocking. If the consumer of events may block (uses a blocking
  * library or <a href="https://logging.apache.org/log4j/2.x/manual/async.html">logger configuration is not async</a>),
- * it has to offload publications to another {@link Executor} <b>after</b> capturing timing of events. If blocking code
+ * it must offload publications to another {@link Executor} <b>after</b> capturing timing of events. If blocking code
  * is executed inside callbacks without offloading, it will negatively impact {@link IoExecutor} and overall performance
  * of the application.
  * <p>
- * To install this observer for the server use {@link HttpServerBuilder#lifecycleObserver(HttpLifecycleObserver)}, for
- * the client use {@link SingleAddressHttpClientBuilder#appendClientFilter(StreamingHttpClientFilterFactory)} with
- * {@code io.servicetalk.http.netty.HttpLifecycleObserverRequesterFilter}.
+ * To install this observer for the server use
+ * {@link HttpServerBuilder#lifecycleObserver(HttpLifecycleObserver) lifecycleObserver} method or
+ * {@link HttpServerBuilder#appendNonOffloadingServiceFilter(StreamingHttpServiceFilterFactory)
+ * appendNonOffloadingServiceFilter} with
+ * {@code io.servicetalk.http.netty.HttpLifecycleObserverServiceFilter}. For the client use either
+ * {@link SingleAddressHttpClientBuilder#appendClientFilter(StreamingHttpClientFilterFactory) appendClientFilter} or
+ * {@link SingleAddressHttpClientBuilder#appendConnectionFilter(StreamingHttpConnectionFilterFactory)
+ * appendConnectionFilter} with {@code io.servicetalk.http.netty.HttpLifecycleObserverRequesterFilter}.
  */
 @FunctionalInterface
 public interface HttpLifecycleObserver {
@@ -41,7 +46,7 @@ public interface HttpLifecycleObserver {
      * Callback when a new HTTP exchange starts.
      * <p>
      * Depending on the order in which the observer is applied, this callback can be invoked either for every retry
-     * attempt (if an observer is added after retrying filter) or only once per exchange.
+     * attempt (if an observer is added after the retrying filter) or only once per exchange.
      *
      * @return an {@link HttpExchangeObserver} that provides visibility into exchange events
      */
@@ -51,16 +56,15 @@ public interface HttpLifecycleObserver {
      * An observer interface that provides visibility into events associated with a single HTTP exchange.
      * <p>
      * An exchange is represented by a {@link HttpRequestObserver request} and a {@link HttpResponseObserver response}.
-     * Both can be observed independently and may publish their events concurrently because connections are full-duplex.
-     * The {@link #onExchangeFinally() terminal event} for the exchange is signaled only when nested observers signal
-     * terminal events. Cancellation is the best effort, more events may be signaled after cancel.
+     * Both can be observed independently via their corresponding observers and may publish their events concurrently
+     * with each other because connections are full-duplex. The {@link #onExchangeFinally() final event} for the
+     * exchange is signaled only after both nested observers terminate. It guarantees visibility of both observers
+     * internal states inside the final callback.
      */
     interface HttpExchangeObserver {
 
         /**
          * Callback when a connection is selected for this exchange execution.
-         * <p>
-         * This callback may be invoked for every retry attempt.
          *
          * @param info {@link ConnectionInfo} of the selected connection
          */
@@ -79,6 +83,8 @@ public interface HttpLifecycleObserver {
 
         /**
          * Callback when a response meta-data was observed.
+         * <p>
+         * Either this or {@link #onResponseError(Throwable)} callback can be invoked, but not both.
          *
          * @param responseMetaData the corresponding {@link HttpResponseMetaData}
          * @return an {@link HttpResponseObserver} that provides visibility into response events
@@ -89,6 +95,9 @@ public interface HttpLifecycleObserver {
 
         /**
          * Callback if the response meta-data was not received due to an error.
+         * <p>
+         * Either this or {@link #onResponse(HttpResponseMetaData)} callback can be invoked, but not both.
+         *
          *
          * @param cause the cause of a response meta-data failure
          */
@@ -106,9 +115,10 @@ public interface HttpLifecycleObserver {
         /**
          * Callback when the exchange completes.
          * <p>
-         * This is the final callback that is invoked after {@link HttpRequestObserver} terminate and either
-         * {@link HttpResponseObserver} terminate or {@link #onResponseError(Throwable)}/{@link #onResponseCancel()}
-         * method is invoked.
+         * This is the final callback that is invoked after {@link HttpRequestObserver} terminates and either
+         * {@link HttpResponseObserver} terminates or {@link #onResponseError(Throwable)}/{@link #onResponseCancel()}
+         * method is invoked. Inside this callback, users can safely consume the internal state of all other callbacks
+         * without the need for additional synchronization.
          */
         default void onExchangeFinally() {
         }
@@ -117,16 +127,17 @@ public interface HttpLifecycleObserver {
     /**
      * An observer interface that provides visibility into events associated with a single HTTP request.
      * <p>
-     * The request is considered complete when one of the terminal events is invoked. It's guaranteed only one terminal
-     * event will be invoked per request.
+     * The request is considered complete when one of the terminal events is invoked. It is guaranteed that only one
+     * terminal event will be invoked per request.
      */
     interface HttpRequestObserver {
 
         /**
-         * Callback when subscriber requests {@code n} items of the request payload body.
+         * Callback when the subscriber requests {@code n} items of the request payload body.
          * <p>
-         * May be invoked multiple times. Helps to track when items are requested and when they are
-         * {@link #onRequestData(Buffer) delivered}.
+         * May be invoked multiple times and concurrently with other callbacks on this observer. Therefore, it should
+         * have its own isolated state or should be synchronized if the state is shared with other callbacks.
+         * It can help to track when items are requested and when they are {@link #onRequestData(Buffer) delivered}.
          *
          * @param n number of requested items
          */
@@ -134,9 +145,10 @@ public interface HttpLifecycleObserver {
         }
 
         /**
-         * Callback when the request payload body data chunk was observed.
+         * Callback when a request payload body data chunk was observed.
          * <p>
-         * May be invoked multiple times if the payload body is split into multiple chunks.
+         * May be invoked multiple times if the payload body is split into multiple chunks. All invocations are
+         * sequential between this and other callbacks except {@link #onRequestDataRequested(long)}.
          *
          * @param data the request payload body data chunk
          */
@@ -145,6 +157,9 @@ public interface HttpLifecycleObserver {
 
         /**
          * Callback when request trailers were observed.
+         * <p>
+         * May be invoked zero times (if no trailers are present in the request) or once after all
+         * {@link #onRequestData(Buffer) request data chunks} are observed.
          *
          * @param trailers trailers of the request
          */
@@ -182,16 +197,17 @@ public interface HttpLifecycleObserver {
     /**
      * An observer interface that provides visibility into events associated with a single HTTP response.
      * <p>
-     * The response is considered complete when one of the terminal events is invoked. It's guaranteed only one terminal
-     * event will be invoked per response.
+     * The response is considered complete when one of the terminal events is invoked. It is guaranteed that only one
+     * terminal event will be invoked per response.
      */
     interface HttpResponseObserver {
 
         /**
-         * Callback when subscriber requests {@code n} items of the response payload body.
+         * Callback when the subscriber requests {@code n} items of the response payload body.
          * <p>
-         * May be invoked multiple times. Helps to track when items are requested and when they are
-         * {@link #onResponseData delivered}.
+         * May be invoked multiple times and concurrently with other callbacks on this observer. Therefore, it should
+         * have its own isolated state or should be synchronized if the state is shared with other callbacks.
+         * It can help to track when items are requested and when they are {@link #onResponseData(Buffer) delivered}.
          *
          * @param n number of requested items
          */
@@ -199,9 +215,10 @@ public interface HttpLifecycleObserver {
         }
 
         /**
-         * Callback when the response payload body data chunk was observed.
+         * Callback when a response payload body data chunk was observed.
          * <p>
-         * May be invoked multiple times if the payload body is split into multiple chunks.
+         * May be invoked multiple times if the payload body is split into multiple chunks. All invocations are
+         * sequential between this and other callbacks except {@link #onResponseDataRequested(long)}.
          *
          * @param data the response payload body data chunk
          */
@@ -210,6 +227,9 @@ public interface HttpLifecycleObserver {
 
         /**
          * Callback when response trailers were observed.
+         * <p>
+         * May be invoked zero times (if no trailers are present in the response) or once after all
+         * {@link #onResponseData(Buffer) response data chunks} are observed.
          *
          * @param trailers trailers of the response
          */
