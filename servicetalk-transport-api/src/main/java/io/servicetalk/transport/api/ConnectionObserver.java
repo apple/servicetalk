@@ -20,10 +20,6 @@ import javax.net.ssl.SSLSession;
 
 /**
  * An observer interface that provides visibility into events associated with a network connection.
- * <p>
- * Either {@link #connectionClosed()} or {@link #connectionClosed(Throwable)} will be invoked to signal when connection
- * is closed. The "closed" event is considered terminal and other callbacks after that can be safely discarded because
- * nothing happens on the network interface after closure.
  */
 public interface ConnectionObserver {
 
@@ -157,9 +153,15 @@ public interface ConnectionObserver {
 
     /**
      * Callback when a non-multiplexed connection is established and ready to start reading/writing protocol messages.
+     * <p>
+     * If this callback was invoked, then {@link #multiplexedConnectionEstablished(ConnectionInfo)} can not be invoked
+     * because a connection can only be of a one type (multiplexed or non-multiplexed).
+     * <p>
+     * Lifetime of an established connection ends when it's closed.
      *
      * @param info {@link ConnectionInfo} for the established connection
      * @return a new {@link DataObserver} that provides visibility into read and write events
+     * @see #multiplexedConnectionEstablished(ConnectionInfo)
      */
     default DataObserver connectionEstablished(ConnectionInfo info) {
         return NoopTransportObserver.NoopDataObserver.INSTANCE;
@@ -168,30 +170,41 @@ public interface ConnectionObserver {
     /**
      * Callback when a multiplexed connection is established and ready to start creating streams that will read/write
      * protocol messages.
+     * <p>
+     * If this callback was invoked, then {@link #connectionEstablished(ConnectionInfo)} can not be invoked
+     * because a connection can only be of a one type (multiplexed or non-multiplexed).
+     * <p>
+     * Lifetime of an established connection ends when it's closed.
      *
      * @param info {@link ConnectionInfo} for the established connection
      * @return a new {@link MultiplexedObserver} that provides visibility into new streams
+     * @see #connectionEstablished(ConnectionInfo)
      */
     default MultiplexedObserver multiplexedConnectionEstablished(ConnectionInfo info) {
         return NoopTransportObserver.NoopMultiplexedObserver.INSTANCE;
     }
 
     /**
-     * Callback when the connection is closed due to an {@link Throwable error}.
+     * Callback when the connection is closed.
      * <p>
-     * Connections can be closed at any time, even before they are fully established.
+     * Connections can be closed at any time, even before they are fully established. This is a terminal event and other
+     * callbacks after this one can be safely discarded because nothing happens on the network interface after closure.
      *
-     * @param error the error that occurred
+     * @see #connectionClosed(Throwable)
      */
-    default void connectionClosed(Throwable error) {
+    default void connectionClosed() {
     }
 
     /**
-     * Callback when the connection is closed.
+     * Callback when the connection is closed due to an {@link Throwable error}.
      * <p>
-     * Connections can be closed at any time, even before they are fully established.
+     * Connections can be closed at any time, even before they are fully established. This is a terminal event and other
+     * callbacks after this one can be safely discarded because nothing happens on the network interface after closure.
+     *
+     * @param error the error that occurred
+     * @see #connectionClosed()
      */
-    default void connectionClosed() {
+    default void connectionClosed(Throwable error) {
     }
 
     /**
