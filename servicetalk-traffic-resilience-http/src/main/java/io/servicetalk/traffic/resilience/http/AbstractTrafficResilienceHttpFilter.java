@@ -30,7 +30,7 @@ import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.utils.AfterFinallyHttpOperator;
+import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
 import io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy.PassthroughRequestDroppedException;
 import io.servicetalk.traffic.resilience.http.TrafficResiliencyObserver.TicketObserver;
 import io.servicetalk.transport.api.ServerListenContext;
@@ -282,7 +282,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
                     }
                     return Single.succeeded(resp).shareContextOnSubscribe();
                 })
-                .liftSync(new AfterFinallyHttpOperator(
+                .liftSync(new BeforeFinallyHttpOperator(
                         new SignalConsumer(this, request, ticket, ticketObserver, breaker, startTimeNs), true));
     }
 
@@ -308,10 +308,10 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
                     }
                     return resp;
                 })
-                .liftSync(new AfterFinallyHttpOperator(signalConsumer, true));
+                .liftSync(new BeforeFinallyHttpOperator(signalConsumer, true));
     }
 
-    private static class SignalConsumer implements TerminalSignalConsumer {
+    private static final class SignalConsumer implements TerminalSignalConsumer {
 
         private static final AtomicIntegerFieldUpdater<SignalConsumer> STATE_UPDATER =
                 AtomicIntegerFieldUpdater.newUpdater(SignalConsumer.class, "state");
@@ -343,7 +343,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
             this.ticketObserver = ticketObserver;
             this.breaker = breaker;
             this.startTimeNs = startTimeNs;
-            request.transformMessageBody(body -> body.afterFinally(this::requestComplete));
+            request.transformMessageBody(body -> body.beforeFinally(this::requestComplete));
         }
 
         @Override
