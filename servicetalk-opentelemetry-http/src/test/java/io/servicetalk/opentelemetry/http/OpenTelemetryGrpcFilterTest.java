@@ -23,13 +23,6 @@ import io.servicetalk.grpc.api.GrpcStatusCode;
 import io.servicetalk.grpc.api.GrpcStatusException;
 import io.servicetalk.grpc.netty.GrpcClients;
 import io.servicetalk.grpc.netty.GrpcServers;
-import io.servicetalk.opentelemetry.http.TesterProto.TestRequest;
-import io.servicetalk.opentelemetry.http.TesterProto.TestResponse;
-import io.servicetalk.opentelemetry.http.TesterProto.Tester.BlockingTesterClient;
-import io.servicetalk.opentelemetry.http.TesterProto.Tester.ClientFactory;
-import io.servicetalk.opentelemetry.http.TesterProto.Tester.ServiceFactory;
-import io.servicetalk.opentelemetry.http.TesterProto.Tester.TesterClient;
-import io.servicetalk.opentelemetry.http.TesterProto.Tester.TesterService;
 import io.servicetalk.transport.api.ServerContext;
 
 import io.opentelemetry.api.common.AttributeKey;
@@ -41,6 +34,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -53,7 +47,8 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class OpenTelemetryGrpcServiceFilterTest {
+@SuppressWarnings("PMD.AvoidUsingHardCodedIP")
+class OpenTelemetryGrpcFilterTest {
 
     private static final String CONTENT = "test-content";
 
@@ -63,18 +58,13 @@ class OpenTelemetryGrpcServiceFilterTest {
     @Nullable
     private ServerContext serverContext;
     @Nullable
-    private TesterClient client;
-    @Nullable
-    private BlockingTesterClient blockingClient;
+    private Tester.TesterClient client;
 
     @AfterEach
     void tearDown() throws Exception {
         try {
             if (client != null) {
                 client.close();
-            }
-            if (blockingClient != null) {
-                blockingClient.close();
             }
         } finally {
             if (serverContext != null) {
@@ -87,34 +77,17 @@ class OpenTelemetryGrpcServiceFilterTest {
     void testGrpcServiceFilterSuccess() throws Exception {
         setUp(false);
 
-        TestResponse response = blockingClient.test(newRequest());
+        TestResponse response = client.asBlockingClient().test(newRequest());
 
         assertThat(response.getMessage()).isEqualTo(CONTENT);
-        Thread.sleep(500);
-        assertThat(otelTesting.getSpans()).hasSize(2); // client + server spans
-
-        // Verify server span
-        SpanData serverSpan = findSpanByKind(SpanKind.SERVER);
-        assertThat(serverSpan.getName()).isEqualTo("opentelemetry.grpc.Tester/test");
-        assertThat(serverSpan.getInstrumentationScopeInfo().getName()).isEqualTo("io.servicetalk");
+        assertTraceStructure();
 
         // Verify client span
-        SpanData clientSpan = findSpanByKind(SpanKind.CLIENT);
-        assertThat(clientSpan.getName()).isEqualTo("opentelemetry.grpc.Tester/test");
-        assertThat(clientSpan.getInstrumentationScopeInfo().getName()).isEqualTo("io.servicetalk");
+        assertCommonRpcAttributes(SpanKind.CLIENT, "test", 0);
+        // Note that we don't get address info on the client span because the filter is in the wrong location.
 
-        // Verify they're part of the same trace
-        assertThat(serverSpan.getTraceId()).isEqualTo(clientSpan.getTraceId());
-
-        // Verify gRPC attributes are set correctly
-        assertThat(serverSpan.getAttributes().get(AttributeKey.stringKey("rpc.system")))
-                .isEqualTo("grpc");
-        assertThat(serverSpan.getAttributes().get(AttributeKey.stringKey("rpc.service")))
-                .isEqualTo("opentelemetry.grpc.Tester");
-        assertThat(serverSpan.getAttributes().get(AttributeKey.stringKey("rpc.method")))
-                .isEqualTo("test");
-        assertThat(serverSpan.getAttributes().get(AttributeKey.longKey("rpc.grpc.status_code")))
-                .isEqualTo(0L);
+        // Verify server span
+        assertCommonRpcAttributes(SpanKind.SERVER, "test", 0);
     }
 
     @Test
@@ -122,23 +95,16 @@ class OpenTelemetryGrpcServiceFilterTest {
         setUp(true);
 
         GrpcStatusException exception = assertThrows(GrpcStatusException.class,
-                () -> blockingClient.test(newRequest()));
+                () -> client.asBlockingClient().test(newRequest()));
 
         assertThat(exception.status().code()).isEqualTo(GrpcStatusCode.UNKNOWN);
-        Thread.sleep(500);
-        assertThat(otelTesting.getSpans()).hasSize(2); // client + server spans
+        assertTraceStructure();
 
         // Verify server span shows error
-        SpanData serverSpan = findSpanByKind(SpanKind.SERVER);
-        assertThat(serverSpan.getName()).isEqualTo("opentelemetry.grpc.Tester/test");
-        assertThat(serverSpan.getStatus().getStatusCode()).isEqualTo(io.opentelemetry.api.trace.StatusCode.ERROR);
-        assertThat(serverSpan.getAttributes().get(AttributeKey.longKey("rpc.grpc.status_code")))
-                .isEqualTo(2L); // UNKNOWN
+        assertCommonRpcAttributes(SpanKind.SERVER, "test", 2);
 
         // Verify client span shows error
-        SpanData clientSpan = findSpanByKind(SpanKind.CLIENT);
-        assertThat(clientSpan.getName()).isEqualTo("opentelemetry.grpc.Tester/test");
-        assertThat(clientSpan.getStatus().getStatusCode()).isEqualTo(io.opentelemetry.api.trace.StatusCode.ERROR);
+        assertCommonRpcAttributes(SpanKind.CLIENT, "test", 2);
     }
 
     @Test
@@ -149,15 +115,11 @@ class OpenTelemetryGrpcServiceFilterTest {
         TestResponse response = responses.firstOrError().toFuture().get();
 
         assertThat(response.getMessage()).isEqualTo(CONTENT);
-        Thread.sleep(500);
-        assertThat(otelTesting.getSpans()).hasSize(2); // client + server spans
+        assertTraceStructure();
 
         // Verify spans are created for streaming calls too
-        SpanData serverSpan = findSpanByKind(SpanKind.SERVER);
-        assertThat(serverSpan.getName()).isEqualTo("opentelemetry.grpc.Tester/testResponseStream");
-
-        SpanData clientSpan = findSpanByKind(SpanKind.CLIENT);
-        assertThat(clientSpan.getName()).isEqualTo("opentelemetry.grpc.Tester/testResponseStream");
+        assertCommonRpcAttributes(SpanKind.SERVER, "testResponseStream", 0);
+        assertCommonRpcAttributes(SpanKind.CLIENT, "testResponseStream", 0);
     }
 
     @Test
@@ -172,16 +134,15 @@ class OpenTelemetryGrpcServiceFilterTest {
             assertThat(received.getMessage()).isEqualTo(CONTENT);
         }
 
-        Thread.sleep(500);
-        assertThat(otelTesting.getSpans()).hasSize(2); // client + server spans
+        assertTraceStructure();
 
         // Verify spans for bidirectional streaming
         SpanData serverSpan = findSpanByKind(SpanKind.SERVER);
-        assertThat(serverSpan.getName()).isEqualTo("opentelemetry.grpc.Tester/testBiDiStream");
+        assertCommonRpcAttributes(SpanKind.SERVER, "testBiDiStream", 0);
         assertThat(serverSpan.getStatus().getStatusCode()).isEqualTo(StatusCode.UNSET);
 
         SpanData clientSpan = findSpanByKind(SpanKind.CLIENT);
-        assertThat(clientSpan.getName()).isEqualTo("opentelemetry.grpc.Tester/testBiDiStream");
+        assertCommonRpcAttributes(SpanKind.CLIENT, "testBiDiStream", 0);
         assertThat(clientSpan.getStatus().getStatusCode()).isEqualTo(StatusCode.UNSET);
     }
 
@@ -195,16 +156,15 @@ class OpenTelemetryGrpcServiceFilterTest {
         GrpcStatusException cause = (GrpcStatusException) exception.getCause();
         assertThat(cause.status().code()).isEqualTo(GrpcStatusCode.UNKNOWN);
 
-        Thread.sleep(500);
-        assertThat(otelTesting.getSpans()).hasSize(2); // client + server spans
+        assertTraceStructure();
 
         // Verify spans for bidirectional streaming
         SpanData serverSpan = findSpanByKind(SpanKind.SERVER);
-        assertThat(serverSpan.getName()).isEqualTo("opentelemetry.grpc.Tester/testBiDiStream");
+        assertCommonRpcAttributes(SpanKind.SERVER, "testBiDiStream", 2);
         assertThat(serverSpan.getStatus().getStatusCode()).isEqualTo(StatusCode.ERROR);
 
         SpanData clientSpan = findSpanByKind(SpanKind.CLIENT);
-        assertThat(clientSpan.getName()).isEqualTo("opentelemetry.grpc.Tester/testBiDiStream");
+        assertCommonRpcAttributes(SpanKind.CLIENT, "testBiDiStream", 2);
         assertThat(clientSpan.getStatus().getStatusCode()).isEqualTo(StatusCode.ERROR);
     }
 
@@ -216,7 +176,7 @@ class OpenTelemetryGrpcServiceFilterTest {
                         .appendServiceFilter(new OpenTelemetryHttpServiceFilter(
                                 otelTesting.getOpenTelemetry(),
                                 new OpenTelemetryOptions.Builder().build())))
-                .listenAndAwait(new ServiceFactory(new TestTesterService(error)));
+                .listenAndAwait(new Tester.ServiceFactory(new TestTesterService(error)));
 
         // Create gRPC client with unified OpenTelemetry HTTP requester filter
         // The filter will automatically detect gRPC requests and handle them appropriately
@@ -224,16 +184,45 @@ class OpenTelemetryGrpcServiceFilterTest {
                 .initializeHttp(builder -> builder.appendClientFilter(new OpenTelemetryHttpRequesterFilter(
                         otelTesting.getOpenTelemetry(), "test-client",
                         new OpenTelemetryOptions.Builder().build())))
-                .build(new ClientFactory());
-
-        blockingClient = GrpcClients.forAddress(serverHostAndPort(serverContext))
-                .initializeHttp(builder -> builder.appendClientFilter(new OpenTelemetryHttpRequesterFilter(
-                        otelTesting.getOpenTelemetry(), "test-client",
-                        new OpenTelemetryOptions.Builder().build())))
-                .buildBlocking(new ClientFactory());
+                .build(new Tester.ClientFactory());
     }
 
-    private SpanData findSpanByKind(SpanKind kind) {
+    private void assertTraceStructure() throws InterruptedException {
+        Thread.sleep(500);
+        assertThat(otelTesting.getSpans()).hasSize(2); // client + server spans
+        // Verify they're part of the same trace
+        assertThat(findSpanByKind(SpanKind.CLIENT).getTraceId())
+                .isEqualTo(findSpanByKind(SpanKind.SERVER).getTraceId());
+    }
+
+    private void assertCommonRpcAttributes(SpanKind spanKind, String methodName, long statusCode) {
+        SpanData spanData = findSpanByKind(spanKind);
+        assertThat(spanData.getName()).isEqualTo("opentelemetry.grpc.Tester/" + methodName);
+        assertThat(spanData.getInstrumentationScopeInfo().getName()).isEqualTo("io.servicetalk");
+        InetSocketAddress serverAddress = (InetSocketAddress) serverContext.listenAddress();
+        assertThat(spanData.getAttributes().get(AttributeKey.stringKey("server.address")))
+                .isEqualTo(serverAddress.getAddress().getHostAddress());
+        assertThat(spanData.getAttributes().get(AttributeKey.longKey("server.port")))
+                .isEqualTo(serverAddress.getPort());
+        assertThat(spanData.getAttributes().get(AttributeKey.stringKey("rpc.system")))
+                .isEqualTo("grpc");
+        assertThat(spanData.getAttributes().get(AttributeKey.stringKey("rpc.service")))
+                .isEqualTo("opentelemetry.grpc.Tester");
+        assertThat(spanData.getAttributes().get(AttributeKey.stringKey("rpc.method")))
+                .isEqualTo(methodName);
+        assertThat(spanData.getAttributes().get(AttributeKey.longKey("rpc.grpc.status_code")))
+                .isEqualTo(statusCode);
+
+        if (SpanKind.SERVER.equals(spanKind)) {
+            assertThat(spanData.getAttributes().get(AttributeKey.stringKey("network.peer.address")))
+                    .isEqualTo("127.0.0.1");
+            // hard to tell what it is, but it shouldn't be null
+            assertThat(spanData.getAttributes().get(AttributeKey.longKey("network.peer.port")))
+                    .isNotNull();
+        }
+    }
+
+    private static SpanData findSpanByKind(SpanKind kind) {
         return otelTesting.getSpans().stream()
                 .filter(span -> span.getKind() == kind)
                 .findFirst()
@@ -244,7 +233,7 @@ class OpenTelemetryGrpcServiceFilterTest {
         return TestRequest.newBuilder().setName(CONTENT).build();
     }
 
-    private static class TestTesterService implements TesterService {
+    private static class TestTesterService implements Tester.TesterService {
         private final boolean error;
 
         TestTesterService(boolean error) {

@@ -35,6 +35,8 @@ import io.opentelemetry.context.Scope;
 abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInfluencer {
     static final OpenTelemetryOptions DEFAULT_OPTIONS = new OpenTelemetryOptions.Builder().build();
     static final String INSTRUMENTATION_SCOPE_NAME = "io.servicetalk";
+
+    // https://opentelemetry.io/docs/specs/semconv/registry/attributes/peer/
     static final AttributeKey<String> PEER_SERVICE = AttributeKey.stringKey("peer.service");
 
     @Override

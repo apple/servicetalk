@@ -81,8 +81,8 @@ final class HttpInstrumentationHelper {
 
         final Context context = instrumenter.start(parentContext, requestInfo);
         try (Scope unused = context.makeCurrent()) {
-            final ScopeTracker tracker = isClient ? ScopeTracker.client(context, request, instrumenter) :
-                    ScopeTracker.server(context, request, instrumenter);
+            final HttpScopeTracker tracker = isClient ? HttpScopeTracker.client(context, requestInfo, instrumenter) :
+                    HttpScopeTracker.server(context, requestInfo, instrumenter);
             try {
                 Single<StreamingHttpResponse> response = requestHandler.apply(request);
                 return withContext(tracker.track(response), context);
@@ -105,7 +105,7 @@ final class HttpInstrumentationHelper {
                 HttpSpanNameExtractor.create(ServiceTalkHttpAttributesGetter.SERVER_INSTANCE);
         InstrumenterBuilder<RequestInfo, io.servicetalk.http.api.HttpResponseMetaData> serverInstrumenterBuilder =
                 Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, serverSpanNameExtractor);
-        serverInstrumenterBuilder.setSpanStatusExtractor(ServicetalkSpanStatusExtractor.SERVER_INSTANCE);
+        serverInstrumenterBuilder.setSpanStatusExtractor(HttpSpanStatusExtractor.SERVER_INSTANCE);
 
         serverInstrumenterBuilder
                 .addAttributesExtractor(HttpServerAttributesExtractor
@@ -138,7 +138,7 @@ final class HttpInstrumentationHelper {
         InstrumenterBuilder<RequestInfo, io.servicetalk.http.api.HttpResponseMetaData> clientInstrumenterBuilder =
                 Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, clientSpanNameExtractor);
         clientInstrumenterBuilder
-                .setSpanStatusExtractor(ServicetalkSpanStatusExtractor.CLIENT_INSTANCE)
+                .setSpanStatusExtractor(HttpSpanStatusExtractor.CLIENT_INSTANCE)
                 .addAttributesExtractor(new DeferredHttpClientAttributesExtractor(options));
 
         if (options.enableMetrics()) {
@@ -161,7 +161,7 @@ final class HttpInstrumentationHelper {
 
         private final AttributesExtractor<RequestInfo, io.servicetalk.http.api.HttpResponseMetaData> delegate;
 
-        private DeferredHttpClientAttributesExtractor(OpenTelemetryOptions openTelemetryOptions) {
+        DeferredHttpClientAttributesExtractor(OpenTelemetryOptions openTelemetryOptions) {
             this.delegate = HttpClientAttributesExtractor
                     .builder(ServiceTalkHttpAttributesGetter.CLIENT_INSTANCE)
                     .setCapturedRequestHeaders(openTelemetryOptions.capturedRequestHeaders())

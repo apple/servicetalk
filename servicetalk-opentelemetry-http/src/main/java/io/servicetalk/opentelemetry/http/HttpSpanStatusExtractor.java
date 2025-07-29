@@ -24,14 +24,14 @@ import io.opentelemetry.instrumentation.api.instrumenter.SpanStatusExtractor;
 
 import javax.annotation.Nullable;
 
-final class ServicetalkSpanStatusExtractor implements SpanStatusExtractor<RequestInfo, HttpResponseMetaData> {
+final class HttpSpanStatusExtractor implements SpanStatusExtractor<RequestInfo, HttpResponseMetaData> {
 
-    static final ServicetalkSpanStatusExtractor CLIENT_INSTANCE = new ServicetalkSpanStatusExtractor(true);
-    static final ServicetalkSpanStatusExtractor SERVER_INSTANCE = new ServicetalkSpanStatusExtractor(false);
+    static final HttpSpanStatusExtractor CLIENT_INSTANCE = new HttpSpanStatusExtractor(true);
+    static final HttpSpanStatusExtractor SERVER_INSTANCE = new HttpSpanStatusExtractor(false);
 
     private final boolean isClient;
 
-    private ServicetalkSpanStatusExtractor(final boolean isClient) {
+    private HttpSpanStatusExtractor(final boolean isClient) {
         this.isClient = isClient;
     }
 
@@ -39,13 +39,13 @@ final class ServicetalkSpanStatusExtractor implements SpanStatusExtractor<Reques
     public void extract(
             SpanStatusBuilder spanStatusBuilder,
             RequestInfo requestInfo,
-            @Nullable HttpResponseMetaData status,
+            @Nullable HttpResponseMetaData responseMetaData,
             @Nullable Throwable error) {
         if (error != null) {
             spanStatusBuilder.setStatus(StatusCode.ERROR);
-        } else if (status != null) {
+        } else if (responseMetaData != null) {
             // See https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status for the conventions.
-            switch (status.status().statusClass()) {
+            switch (responseMetaData.status().statusClass()) {
                 case INFORMATIONAL_1XX:
                 case SUCCESSFUL_2XX:
                 case REDIRECTION_3XX:

@@ -23,8 +23,10 @@
   <!--  Generated files can be ignored-->
   <Match>
     <Or>
-      <Source name="~TesterGrpc\.java"/>
-      <Source name="~TesterProto\.java"/>
+      <Source name="~Tester.java"/>
+      <Source name="~TesterProto.java"/>
+      <Source name="~TestRequest.java"/>
+      <Source name="~TestResponse.java"/>
     </Or>
   </Match>
 </FindBugsFilter>

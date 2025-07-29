@@ -31,7 +31,7 @@ final class RequestHeadersPropagatorSetter implements TextMapSetter<RequestInfo>
     @Override
     public void set(@Nullable final RequestInfo requestInfo, final String key, final String value) {
         if (requestInfo != null) {
-            requestInfo.getMetadata().headers().set(key.toLowerCase(Locale.ENGLISH), value);
+            requestInfo.request().headers().set(key.toLowerCase(Locale.ENGLISH), value);
         }
     }
 }

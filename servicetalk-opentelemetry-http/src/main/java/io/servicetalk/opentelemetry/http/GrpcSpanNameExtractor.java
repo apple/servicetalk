@@ -32,15 +32,17 @@ final class GrpcSpanNameExtractor implements SpanNameExtractor<RequestInfo> {
     }
 
     @Override
-    public String extract(RequestInfo request) {
-        String path = request.getMetadata().path();
-        if (path == null || path.isEmpty()) {
+    public String extract(RequestInfo requestInfo) {
+        requestInfo.request().requestTarget();
+        // Note that for grpc, the request target is always origin form.
+        String path = requestInfo.request().requestTarget();
+        if (path.isEmpty()) {
             return "grpc.request";
         }
 
         // gRPC path format: /service.name/MethodName
         // Remove leading slash for span name
-        if (path.startsWith("/")) {
+        if (path.charAt(0) == '/') {
             return path.substring(1);
         }
 

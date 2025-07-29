@@ -29,7 +29,7 @@ final class RequestHeadersPropagatorGetter implements TextMapGetter<RequestInfo>
 
     @Override
     public Iterable<String> keys(final RequestInfo carrier) {
-        return HeadersPropagatorGetter.INSTANCE.keys(carrier.getMetadata().headers());
+        return HeadersPropagatorGetter.INSTANCE.keys(carrier.request().headers());
     }
 
     @Override
@@ -38,7 +38,6 @@ final class RequestHeadersPropagatorGetter implements TextMapGetter<RequestInfo>
         if (carrier == null) {
             return null;
         }
-        CharSequence value = carrier.getMetadata().headers().get(key);
-        return value == null ? null : value.toString();
+        return HeadersPropagatorGetter.INSTANCE.get(carrier.request().headers(), key);
     }
 }

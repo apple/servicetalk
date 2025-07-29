@@ -36,56 +36,51 @@ import static java.util.Collections.emptyList;
  */
 final class GrpcCapturedHeadersExtractor implements AttributesExtractor<RequestInfo, GrpcTelemetryStatus> {
 
+    // https://opentelemetry.io/docs/specs/semconv/rpc/grpc/
+    private static final String GRPC_REQUEST_METADATA_PREFIX = "rpc.grpc.request.metadata.";
+    private static final String GRPC_RESPONSE_METADATA_PREFIX = "rpc.grpc.response.metadata.";
+
     private final List<CapturedHeader> capturedRequestHeaders;
     private final List<CapturedHeader> capturedResponseHeaders;
 
     GrpcCapturedHeadersExtractor(List<String> capturedRequestHeaders, List<String> capturedResponseHeaders) {
-        this.capturedRequestHeaders = convert(capturedRequestHeaders);
-        this.capturedResponseHeaders = convert(capturedResponseHeaders);
+        this.capturedRequestHeaders = convert(true, capturedRequestHeaders);
+        this.capturedResponseHeaders = convert(false, capturedResponseHeaders);
     }
 
     @Override
-    public void onStart(AttributesBuilder attributes, Context parentContext, RequestInfo request) {
+    public void onStart(AttributesBuilder attributesBuilder, Context parentContext, RequestInfo requestInfo) {
         // Capture configured request headers as gRPC metadata attributes
         for (CapturedHeader entry : capturedRequestHeaders) {
-            CharSequence headerValue = request.getMetadata().headers().get(entry.headerName);
+            CharSequence headerValue = requestInfo.request().headers().get(entry.headerName);
             if (headerValue != null) {
-                attributes.put(entry.attributeKey, headerValue.toString());
+                attributesBuilder.put(entry.attributeKey, headerValue.toString());
             }
         }
     }
 
     @Override
-    public void onEnd(AttributesBuilder attributes, Context context, RequestInfo request,
+    public void onEnd(AttributesBuilder attributesBuilder, Context context, RequestInfo requestInfo,
                       @Nullable GrpcTelemetryStatus response, @Nullable Throwable error) {
         // Capture configured response headers as gRPC metadata attributes
-        // Check both response headers and trailers for metadata
-        if (response != null) {
-            for (CapturedHeader entry : capturedResponseHeaders) {
-                // First check trailers (more likely for gRPC metadata)
-                CharSequence headerValue = null;
-                if (response.getTrailers() != null) {
-                    headerValue = response.getTrailers().get(entry.headerName);
-                }
-                // Fallback to response headers if not found in trailers
-                if (headerValue == null && response.getResponseMetaData() != null) {
-                    headerValue = response.getResponseMetaData().headers().get(entry.headerName);
-                }
-
-                if (headerValue != null) {
-                    attributes.put(entry.attributeKey, headerValue.toString());
-                }
+        if (response == null || response.responseMetaData() == null) {
+            return;
+        }
+        for (CapturedHeader entry : capturedResponseHeaders) {
+            CharSequence headerValue = response.responseMetaData().headers().get(entry.headerName);
+            if (headerValue != null) {
+                attributesBuilder.put(entry.attributeKey, headerValue.toString());
             }
         }
     }
 
-    private static List<CapturedHeader> convert(@Nullable List<String> headerNames) {
+    private static List<CapturedHeader> convert(boolean isRequest, @Nullable List<String> headerNames) {
         if (headerNames == null || headerNames.isEmpty()) {
             return emptyList();
         }
         List<CapturedHeader> result = new ArrayList<>(headerNames.size());
         for (String headerName : headerNames) {
-            result.add(new CapturedHeader(headerName));
+            result.add(new CapturedHeader(isRequest, headerName));
         }
         return result;
     }
@@ -94,10 +89,11 @@ final class GrpcCapturedHeadersExtractor implements AttributesExtractor<RequestI
         final String headerName;
         final AttributeKey<String> attributeKey;
 
-        CapturedHeader(String headerName) {
+        CapturedHeader(boolean isRequest, String headerName) {
             this.headerName = headerName;
             this.attributeKey = AttributeKey.stringKey(
-                    "rpc.grpc.response.metadata." + headerName.toLowerCase(Locale.ENGLISH));
+                    (isRequest ? GRPC_REQUEST_METADATA_PREFIX : GRPC_RESPONSE_METADATA_PREFIX) +
+                            headerName.toLowerCase(Locale.ENGLISH));
         }
     }
 }

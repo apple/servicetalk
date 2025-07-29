@@ -18,43 +18,28 @@ package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
-import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.transport.api.ConnectionInfo;
 
-import io.opentelemetry.context.Context;
-import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
-
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
-
-import static java.util.Objects.requireNonNull;
 
 abstract class AbstractScopeTracker<T> implements TerminalSignalConsumer {
 
     private static final AtomicIntegerFieldUpdater<AbstractScopeTracker> STATE_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(AbstractScopeTracker.class, "state");
 
-    protected static final int IDLE = 0;
-    protected static final int REQUEST_COMPLETE = 1;
-    protected static final int RESPONSE_COMPLETE = 2;
-    protected static final int FINISHED = 3;
-
-    protected final Context context;
-    protected final RequestInfo requestInfo;
-    protected final Instrumenter<RequestInfo, T> instrumenter;
+    private static final int IDLE = 0;
+    private static final int REQUEST_COMPLETE = 1;
+    private static final int RESPONSE_COMPLETE = 2;
+    private static final int FINISHED = 3;
 
     @Nullable
-    protected Throwable responseCompleteCause;
+    private Throwable responseCompleteCause;
     private volatile int state;
 
-    protected AbstractScopeTracker(boolean isClient, Context context, StreamingHttpRequest request,
-                                   @Nullable ConnectionInfo connectionInfo,
-                                   Instrumenter<RequestInfo, T> instrumenter) {
+    AbstractScopeTracker(boolean isClient) {
         this.state = isClient ? REQUEST_COMPLETE : IDLE;
-        this.context = requireNonNull(context);
-        this.requestInfo = new RequestInfo(request, connectionInfo);
-        this.instrumenter = requireNonNull(instrumenter);
     }
 
     @Override
@@ -69,10 +54,10 @@ abstract class AbstractScopeTracker<T> implements TerminalSignalConsumer {
 
     @Override
     public final void cancel() {
-        responseFinished(CancelledRequestException.INSTANCE);
+        responseFinished(ExchangeCancellationException.INSTANCE);
     }
 
-    protected final void requestComplete() {
+    final void requestComplete() {
         if (STATE_UPDATER.compareAndSet(this, IDLE, REQUEST_COMPLETE)) {
             // nothing to do: it's up to the response to finish now.
         } else if (STATE_UPDATER.compareAndSet(this, RESPONSE_COMPLETE, FINISHED)) {
@@ -93,7 +78,7 @@ abstract class AbstractScopeTracker<T> implements TerminalSignalConsumer {
         }
     }
 
-    protected abstract void finishSpan(@Nullable Throwable error);
+    abstract void finishSpan(@Nullable Throwable error);
 
     /**
      * Track a response Single, applying the appropriate monitoring and lifecycle management.
@@ -104,14 +89,14 @@ abstract class AbstractScopeTracker<T> implements TerminalSignalConsumer {
      * @param responseSingle the response Single to track
      * @return the tracked response Single
      */
-    public abstract Single<StreamingHttpResponse> track(Single<StreamingHttpResponse> responseSingle);
+    abstract Single<StreamingHttpResponse> track(Single<StreamingHttpResponse> responseSingle);
 
-    private static final class CancelledRequestException extends Exception {
+    private static final class ExchangeCancellationException extends CancellationException {
         private static final long serialVersionUID = 6357694797622093267L;
-        static final CancelledRequestException INSTANCE = new CancelledRequestException();
+        static final ExchangeCancellationException INSTANCE = new ExchangeCancellationException();
 
-        CancelledRequestException() {
-            super("cancelled", null, false, false);
+        private ExchangeCancellationException() {
+            super("cancelled");
         }
     }
 }

@@ -16,11 +16,9 @@
 
 package io.servicetalk.opentelemetry.http;
 
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.context.Context;
-import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
-
-import javax.annotation.Nullable;
 
 /**
  * gRPC server attributes extractor using stable HTTP-based APIs.
@@ -28,33 +26,20 @@ import javax.annotation.Nullable;
  * This extractor combines stable HTTP server attributes with gRPC-specific
  * semantic conventions, avoiding dependencies on alpha/incubator APIs.
  */
-final class GrpcServerAttributesExtractor implements AttributesExtractor<RequestInfo, GrpcTelemetryStatus> {
+final class GrpcServerAttributesExtractor extends GrpcSemanticAttributesExtractor {
 
-    private final AttributesExtractor<RequestInfo, GrpcTelemetryStatus> capturedHeadersExtractor;
+    // https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/#rpc-server-span
+    private static final AttributeKey<String> CLIENT_ADDRESS = AttributeKey.stringKey("client.address");
+    private static final AttributeKey<Long> CLIENT_PORT = AttributeKey.longKey("client.port");
 
-    GrpcServerAttributesExtractor(OpenTelemetryOptions options) {
-        this.capturedHeadersExtractor = new GrpcCapturedHeadersExtractor(
-                options.capturedRequestHeaders(),
-                options.capturedResponseHeaders()
-        );
+    GrpcServerAttributesExtractor(OpenTelemetryOptions openTelemetryOptions) {
+        super(openTelemetryOptions);
     }
 
     @Override
-    public void onStart(AttributesBuilder attributes, Context parentContext, RequestInfo request) {
+    public void onStart(AttributesBuilder attributesBuilder, Context parentContext, RequestInfo requestInfo) {
         // Apply pure gRPC/RPC semantic conventions
-        GrpcSemanticAttributesExtractor.INSTANCE.onStart(attributes, parentContext, request);
-
-        // Handle captured headers
-        capturedHeadersExtractor.onStart(attributes, parentContext, request);
-    }
-
-    @Override
-    public void onEnd(AttributesBuilder attributes, Context context, RequestInfo request,
-                      @Nullable GrpcTelemetryStatus response, @Nullable Throwable error) {
-        // Apply pure gRPC/RPC semantic conventions
-        GrpcSemanticAttributesExtractor.INSTANCE.onEnd(attributes, context, request, response, error);
-
-        // Handle captured headers
-        capturedHeadersExtractor.onEnd(attributes, context, request, response, error);
+        super.onStart(attributesBuilder, parentContext, requestInfo);
+        extractAddress(requestInfo, attributesBuilder, CLIENT_ADDRESS, CLIENT_PORT, false);
     }
 }

@@ -16,9 +16,9 @@
 
 package io.servicetalk.opentelemetry.http;
 
-import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.StreamingHttpRequest;
 
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanStatusBuilder;
@@ -34,13 +34,13 @@ import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith(MockitoExtension.class)
-class ServicetalkSpanStatusExtractorTest {
+class HttpSpanStatusExtractorTest {
 
     @Mock
     private SpanStatusBuilder spanStatusBuilder;
 
     @Mock
-    HttpRequestMetaData requestMetaData;
+    StreamingHttpRequest requestMetaData;
 
     @Mock
     HttpResponseMetaData responseMetaData;
@@ -106,8 +106,8 @@ class ServicetalkSpanStatusExtractorTest {
         verify(spanStatusBuilder).setStatus(StatusCode.ERROR);
     }
 
-    private static ServicetalkSpanStatusExtractor getExtractor(boolean isServer) {
-        return isServer ? ServicetalkSpanStatusExtractor.SERVER_INSTANCE :
-                ServicetalkSpanStatusExtractor.CLIENT_INSTANCE;
+    private static HttpSpanStatusExtractor getExtractor(boolean isServer) {
+        return isServer ? HttpSpanStatusExtractor.SERVER_INSTANCE :
+                HttpSpanStatusExtractor.CLIENT_INSTANCE;
     }
 }

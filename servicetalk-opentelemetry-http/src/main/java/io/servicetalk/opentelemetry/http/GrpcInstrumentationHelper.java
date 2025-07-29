@@ -34,6 +34,7 @@ import io.opentelemetry.instrumentation.api.semconv.http.HttpServerMetrics;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.api.CharSequences.equalsIgnoreCaseLower;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.INSTRUMENTATION_SCOPE_NAME;
 import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.PEER_SERVICE;
@@ -80,8 +81,8 @@ final class GrpcInstrumentationHelper {
         final Context context = instrumenter.start(parentContext, requestInfo);
         try (Scope unused = context.makeCurrent()) {
             final GrpcScopeTracker tracker = isClient ?
-                    GrpcScopeTracker.client(context, request, connectionInfo, instrumenter) :
-                    GrpcScopeTracker.server(context, request, connectionInfo, instrumenter);
+                    GrpcScopeTracker.client(context, requestInfo, instrumenter) :
+                    GrpcScopeTracker.server(context, requestInfo, instrumenter);
             try {
                 Single<StreamingHttpResponse> response = requestHandler.apply(request);
                 return withContext(tracker.track(response), context);
@@ -103,7 +104,7 @@ final class GrpcInstrumentationHelper {
         SpanNameExtractor<RequestInfo> serverSpanNameExtractor = GrpcSpanNameExtractor.INSTANCE;
         InstrumenterBuilder<RequestInfo, GrpcTelemetryStatus> serverInstrumenterBuilder =
                 Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, serverSpanNameExtractor);
-        serverInstrumenterBuilder.setSpanStatusExtractor(GrpcSpanStatusExtractor.INSTANCE);
+        serverInstrumenterBuilder.setSpanStatusExtractor(GrpcSpanStatusExtractor.SERVER_INSTANCE);
 
         serverInstrumenterBuilder
                 .addAttributesExtractor(new GrpcServerAttributesExtractor(options));
@@ -131,7 +132,7 @@ final class GrpcInstrumentationHelper {
         InstrumenterBuilder<RequestInfo, GrpcTelemetryStatus> clientInstrumenterBuilder =
                 Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, clientSpanNameExtractor);
         clientInstrumenterBuilder
-                .setSpanStatusExtractor(GrpcSpanStatusExtractor.INSTANCE)
+                .setSpanStatusExtractor(GrpcSpanStatusExtractor.CLIENT_INSTANCE)
                 .addAttributesExtractor(new DeferredGrpcClientAttributesExtractor(options));
 
         if (options.enableMetrics()) {
@@ -174,7 +175,7 @@ final class GrpcInstrumentationHelper {
         // Start at the end since many content types start with 'application/' so we're more likely
         // to be able to abort early by checking that the prefix ends with 'grpc'.
         for (int i = GRPC_CONTENT_TYPE.length() - 1; i >= 0; i--) {
-            if (charSequence.charAt(i) != GRPC_CONTENT_TYPE.charAt(i)) {
+            if (!equalsIgnoreCaseLower(charSequence.charAt(i), GRPC_CONTENT_TYPE.charAt(i))) {
                 return false;
             }
         }
@@ -186,7 +187,7 @@ final class GrpcInstrumentationHelper {
 
         private final AttributesExtractor<RequestInfo, GrpcTelemetryStatus> delegate;
 
-        private DeferredGrpcClientAttributesExtractor(OpenTelemetryOptions openTelemetryOptions) {
+        DeferredGrpcClientAttributesExtractor(OpenTelemetryOptions openTelemetryOptions) {
             this.delegate = new GrpcClientAttributesExtractor(openTelemetryOptions);
         }
 

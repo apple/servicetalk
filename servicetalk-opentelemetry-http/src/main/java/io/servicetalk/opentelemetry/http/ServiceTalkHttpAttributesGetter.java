@@ -55,13 +55,13 @@ abstract class ServiceTalkHttpAttributesGetter
 
     @Override
     public String getHttpRequestMethod(final RequestInfo requestInfo) {
-        return requestInfo.getMetadata().method().name();
+        return requestInfo.request().method().name();
     }
 
     @Override
     public List<String> getHttpRequestHeader(
             final RequestInfo requestInfo, final String name) {
-        return getHeaderValues(requestInfo.getMetadata().headers(), name);
+        return getHeaderValues(requestInfo.request().headers(), name);
     }
 
     @Override
@@ -89,7 +89,7 @@ abstract class ServiceTalkHttpAttributesGetter
     @Override
     public final String getNetworkProtocolVersion(
             final RequestInfo request, @Nullable final HttpResponseMetaData response) {
-        HttpRequestMetaData metadata = request.getMetadata();
+        HttpRequestMetaData metadata = request.request();
         if (response == null) {
             return metadata.version().fullVersion();
         }
@@ -120,7 +120,7 @@ abstract class ServiceTalkHttpAttributesGetter
         @Override
         @Nullable
         public String getUrlFull(final RequestInfo requestInfo) {
-            HttpRequestMetaData request = requestInfo.getMetadata();
+            HttpRequestMetaData request = requestInfo.request();
             String requestTarget = request.requestTarget();
             if (requestTarget.startsWith("https://") || requestTarget.startsWith("http://")) {
                 // request target is already absolute-form: just return it.
@@ -146,22 +146,32 @@ abstract class ServiceTalkHttpAttributesGetter
             return scheme + "://" + authority + authoritySeparator + requestTarget;
         }
 
+        // TODO: these should be sharable with grpc.
         @Override
         @Nullable
         public String getServerAddress(final RequestInfo requestInfo) {
-            HostAndPort effectiveHostAndPort = requestInfo.getMetadata().effectiveHostAndPort();
-            return effectiveHostAndPort != null ? effectiveHostAndPort.hostName() : null;
+            // For the server address we prefer the unresolved address, if possible. If we don't have that we'll
+            // fall back to the resolved address.
+            HostAndPort effectiveHostAndPort = requestInfo.request().effectiveHostAndPort();
+            return effectiveHostAndPort != null ? effectiveHostAndPort.hostName() :
+                    ServiceTalkHttpAttributesGetter.getResolvedAddress(requestInfo);
         }
 
         @Nullable
         @Override
         public Integer getServerPort(RequestInfo requestInfo) {
-            final HostAndPort effectiveHostAndPort = requestInfo.getMetadata().effectiveHostAndPort();
+            // In contrast to the server address, we want to use the resolved port if possible since it is
+            // simply more accurate than an inferred port.
+            Integer serverPort = getResolvedPort(requestInfo);
+            if (serverPort != null) {
+                return serverPort;
+            }
+            final HostAndPort effectiveHostAndPort = requestInfo.request().effectiveHostAndPort();
             if (effectiveHostAndPort != null) {
                 return effectiveHostAndPort.port();
             }
             // No port. See if we can infer it from the scheme.
-            String scheme = requestInfo.getMetadata().scheme();
+            String scheme = requestInfo.request().scheme();
             if (scheme != null) {
                 if (HTTP_SCHEME.equals(scheme)) {
                     return 80;
@@ -184,45 +194,67 @@ abstract class ServiceTalkHttpAttributesGetter
         @Nullable
         @Override
         public String getClientAddress(RequestInfo requestInfo) {
-            ConnectionInfo connectionInfo = requestInfo.getConnectionInfo();
-            if (connectionInfo == null) {
-                return null;
-            }
-            SocketAddress address = connectionInfo.remoteAddress();
-            if (address instanceof InetSocketAddress) {
-                return ((InetSocketAddress) address).getAddress().getHostAddress();
-            } else {
-                // Try to turn it into something meaningful.
-                return address.toString();
-            }
+            return getResolvedAddress(requestInfo);
         }
 
         @Nullable
         @Override
         public Integer getClientPort(RequestInfo requestInfo) {
-            ConnectionInfo connectionInfo = requestInfo.getConnectionInfo();
-            if (connectionInfo == null) {
-                return null;
-            }
-            SocketAddress address = connectionInfo.remoteAddress();
-            return address instanceof InetSocketAddress ? ((InetSocketAddress) address).getPort() : null;
+            return getResolvedPort(requestInfo);
         }
 
         @Override
         public String getUrlScheme(final RequestInfo requestInfo) {
-            final String scheme = requestInfo.getMetadata().scheme();
+            final String scheme = requestInfo.request().scheme();
             return scheme == null ? HTTP_SCHEME : scheme;
         }
 
         @Override
         public String getUrlPath(final RequestInfo requestInfo) {
-            return requestInfo.getMetadata().path();
+            return requestInfo.request().path();
         }
 
         @Nullable
         @Override
         public String getUrlQuery(final RequestInfo requestInfo) {
-            return requestInfo.getMetadata().query();
+            return requestInfo.request().query();
+        }
+
+        @Nullable
+        @Override
+        public String getNetworkPeerAddress(RequestInfo requestInfo, @Nullable HttpResponseMetaData responseMetaData) {
+            return getResolvedAddress(requestInfo);
+        }
+
+        @Nullable
+        @Override
+        public Integer getNetworkPeerPort(RequestInfo requestInfo, @Nullable HttpResponseMetaData responseMetaData) {
+            return getResolvedPort(requestInfo);
+        }
+    }
+
+    @Nullable
+    private static Integer getResolvedPort(RequestInfo requestInfo) {
+        ConnectionInfo connectionInfo = requestInfo.connectionInfo();
+        if (connectionInfo == null) {
+            return null;
+        }
+        SocketAddress address = connectionInfo.remoteAddress();
+        return address instanceof InetSocketAddress ? ((InetSocketAddress) address).getPort() : null;
+    }
+
+    @Nullable
+    private static String getResolvedAddress(RequestInfo requestInfo) {
+        ConnectionInfo connectionInfo = requestInfo.connectionInfo();
+        if (connectionInfo == null) {
+            return null;
+        }
+        SocketAddress address = connectionInfo.remoteAddress();
+        if (address instanceof InetSocketAddress) {
+            return ((InetSocketAddress) address).getAddress().getHostAddress();
+        } else {
+            // Try to turn it into something meaningful.
+            return address.toString();
         }
     }
 }

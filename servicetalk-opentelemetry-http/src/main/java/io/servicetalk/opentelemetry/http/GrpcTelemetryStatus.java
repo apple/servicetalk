@@ -16,14 +16,17 @@
 
 package io.servicetalk.opentelemetry.http;
 
+import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpResponseMetaData;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
+
 final class GrpcTelemetryStatus {
 
-    private static final String GRPC_STATUS_HEADER_NAME = "grpc-status";
+    private static final CharSequence GRPC_STATUS = newAsciiString("grpc-status");
 
     @Nullable
     private final HttpResponseMetaData responseMetaData;
@@ -32,7 +35,7 @@ final class GrpcTelemetryStatus {
     private final HttpHeaders trailers;
 
 
-    private final long statusCode;
+    private final int statusCode;
 
     GrpcTelemetryStatus(@Nullable HttpResponseMetaData responseMetaData,
                         @Nullable HttpHeaders trailers) {
@@ -42,13 +45,8 @@ final class GrpcTelemetryStatus {
     }
 
     @Nullable
-    HttpResponseMetaData getResponseMetaData() {
+    HttpResponseMetaData responseMetaData() {
         return responseMetaData;
-    }
-
-    @Nullable
-    HttpHeaders getTrailers() {
-        return trailers;
     }
 
     /**
@@ -56,7 +54,7 @@ final class GrpcTelemetryStatus {
      *
      * @return gRPC status code as long, or Long.MIN_VALUE if not found or invalid
      */
-    long getGrpcStatusCode() {
+    int grpcStatusCode() {
         return statusCode;
     }
 
@@ -66,7 +64,7 @@ final class GrpcTelemetryStatus {
      * @return true if a valid gRPC status code is present, false otherwise
      */
     boolean hasGrpcStatusCode() {
-        return statusCode != Long.MIN_VALUE;
+        return statusCode != Integer.MIN_VALUE;
     }
 
     /**
@@ -75,31 +73,33 @@ final class GrpcTelemetryStatus {
      *
      * @return parsed gRPC status code as long, or Long.MIN_VALUE if not found or invalid
      */
-    private long parseGrpcStatusCode() {
-        String statusString = null;
+    private int parseGrpcStatusCode() {
+        CharSequence statusString = null;
 
         // Check trailers first (gRPC HTTP/2 specification compliance)
         if (trailers != null) {
-            CharSequence statusFromTrailers = trailers.get(GRPC_STATUS_HEADER_NAME);
+            CharSequence statusFromTrailers = trailers.get(GRPC_STATUS);
             if (statusFromTrailers != null) {
-                statusString = statusFromTrailers.toString();
+                statusString = statusFromTrailers;
             }
         }
         // Fallback to response headers
         if (statusString == null && responseMetaData != null) {
-            CharSequence statusFromHeaders = responseMetaData.headers().get(GRPC_STATUS_HEADER_NAME);
-            if (statusFromHeaders != null) {
-                statusString = statusFromHeaders.toString();
-            }
+            statusString = responseMetaData.headers().get(GRPC_STATUS);
         }
         if (statusString != null) {
             try {
-                return Long.parseLong(statusString);
+                long result = CharSequences.parseLong(statusString);
+                if (result < 0 || result > Integer.MAX_VALUE) {
+                    // invalid result, so just pretend it doesn't exist.
+                    return Integer.MIN_VALUE;
+                }
+                return (int) result;
             } catch (NumberFormatException nfe) {
                 // Invalid status code format
             }
         }
 
-        return Long.MIN_VALUE;
+        return Integer.MIN_VALUE;
     }
 }

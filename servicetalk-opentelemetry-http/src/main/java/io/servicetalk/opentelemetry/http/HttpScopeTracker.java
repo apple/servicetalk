@@ -18,7 +18,6 @@ package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.AfterFinallyHttpOperator;
 
@@ -27,35 +26,41 @@ import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 
 import javax.annotation.Nullable;
 
-final class ScopeTracker extends AbstractScopeTracker<HttpResponseMetaData> {
+final class HttpScopeTracker extends AbstractScopeTracker<HttpResponseMetaData> {
 
+    private final Context context;
+    private final RequestInfo requestInfo;
+    private final Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter;
     @Nullable
     private HttpResponseMetaData responseMetaData;
 
-    private ScopeTracker(boolean isClient, Context context, StreamingHttpRequest request,
-                 Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter) {
-        super(isClient, context, request, null, instrumenter);
+    private HttpScopeTracker(boolean isClient, Context context, RequestInfo requestInfo,
+                             Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter) {
+        super(isClient);
+        this.context = context;
+        this.requestInfo = requestInfo;
+        this.instrumenter = instrumenter;
     }
 
-    static ScopeTracker client(Context context, StreamingHttpRequest request,
-                               Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter) {
-        return new ScopeTracker(true, context, request, instrumenter);
+    static HttpScopeTracker client(Context context, RequestInfo requestInfo,
+                                   Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter) {
+        return new HttpScopeTracker(true, context, requestInfo, instrumenter);
     }
 
-    static ScopeTracker server(Context context, StreamingHttpRequest request,
-                               Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter) {
-        ScopeTracker tracker = new ScopeTracker(false, context, request, instrumenter);
-        request.transformMessageBody(body -> body.afterFinally(tracker::requestComplete));
+    static HttpScopeTracker server(Context context, RequestInfo requestInfo,
+                                   Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter) {
+        HttpScopeTracker tracker = new HttpScopeTracker(false, context, requestInfo, instrumenter);
+        requestInfo.request().transformMessageBody(body -> body.afterFinally(tracker::requestComplete));
         return tracker;
     }
 
     @Override
-    protected void finishSpan(@Nullable Throwable error) {
+    void finishSpan(@Nullable Throwable error) {
         instrumenter.end(context, requestInfo, responseMetaData, error);
     }
 
     @Override
-    public Single<StreamingHttpResponse> track(Single<StreamingHttpResponse> responseSingle) {
+    Single<StreamingHttpResponse> track(Single<StreamingHttpResponse> responseSingle) {
         // Note that we use `discardEventsAfterCancel` to make sure the events that the observer sees are the
         // same that the users see.
         return responseSingle.liftSync(new AfterFinallyHttpOperator(this, true))

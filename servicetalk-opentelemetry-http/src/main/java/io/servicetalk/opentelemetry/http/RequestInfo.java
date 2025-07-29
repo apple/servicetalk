@@ -16,10 +16,9 @@
 
 package io.servicetalk.opentelemetry.http;
 
-import io.servicetalk.http.api.HttpRequestMetaData;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.ConnectionInfo;
 
-import java.net.SocketAddress;
 import javax.annotation.Nullable;
 
 /**
@@ -29,31 +28,21 @@ import javax.annotation.Nullable;
  * connection information needed for complete observability attributes.
  */
 final class RequestInfo {
-    private final HttpRequestMetaData metadata;
+    private final StreamingHttpRequest request;
     @Nullable
     private final ConnectionInfo connectionInfo;
 
-    RequestInfo(HttpRequestMetaData metadata, @Nullable ConnectionInfo connectionInfo) {
-        this.metadata = metadata;
+    RequestInfo(StreamingHttpRequest request, @Nullable ConnectionInfo connectionInfo) {
+        this.request = request;
         this.connectionInfo = connectionInfo;
     }
 
-    HttpRequestMetaData getMetadata() {
-        return metadata;
+    StreamingHttpRequest request() {
+        return request;
     }
 
     @Nullable
-    ConnectionInfo getConnectionInfo() {
+    ConnectionInfo connectionInfo() {
         return connectionInfo;
-    }
-
-    @Nullable
-    SocketAddress getLocalAddress() {
-        return connectionInfo != null ? connectionInfo.localAddress() : null;
-    }
-
-    @Nullable
-    SocketAddress getRemoteAddress() {
-        return connectionInfo != null ? connectionInfo.remoteAddress() : null;
     }
 }
