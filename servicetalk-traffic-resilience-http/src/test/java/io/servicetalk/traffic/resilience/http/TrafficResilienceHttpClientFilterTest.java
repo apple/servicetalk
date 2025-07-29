@@ -307,6 +307,9 @@ class TrafficResilienceHttpClientFilterTest {
                 // Verify first request completes successfully
                 HttpResponse response = firstResponse.get();
                 assertThat(response.status(), is(OK));
+
+                // Now try a new request to make our limiter has recovered.
+                client.request(client.newRequest(HttpRequestMethod.GET, "/third")).toFuture().get();
             }
         }
     }
