@@ -16,30 +16,28 @@
 
 package io.servicetalk.opentelemetry.http;
 
-import io.servicetalk.http.api.HttpRequestMetaData;
-
 import io.opentelemetry.context.propagation.TextMapGetter;
 
 import javax.annotation.Nullable;
 
-final class RequestHeadersPropagatorGetter implements TextMapGetter<HttpRequestMetaData> {
+final class RequestHeadersPropagatorGetter implements TextMapGetter<RequestInfo> {
 
-    static final TextMapGetter<HttpRequestMetaData> INSTANCE = new RequestHeadersPropagatorGetter();
+    static final TextMapGetter<RequestInfo> INSTANCE = new RequestHeadersPropagatorGetter();
 
     private RequestHeadersPropagatorGetter() {
     }
 
     @Override
-    public Iterable<String> keys(final HttpRequestMetaData carrier) {
-        return HeadersPropagatorGetter.INSTANCE.keys(carrier.headers());
+    public Iterable<String> keys(final RequestInfo carrier) {
+        return HeadersPropagatorGetter.INSTANCE.keys(carrier.request().headers());
     }
 
     @Override
     @Nullable
-    public String get(@Nullable HttpRequestMetaData carrier, final String key) {
+    public String get(@Nullable RequestInfo carrier, final String key) {
         if (carrier == null) {
             return null;
         }
-        return HeadersPropagatorGetter.INSTANCE.get(carrier.headers(), key);
+        return HeadersPropagatorGetter.INSTANCE.get(carrier.request().headers(), key);
     }
 }

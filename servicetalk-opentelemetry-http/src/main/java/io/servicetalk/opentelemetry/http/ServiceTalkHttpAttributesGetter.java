@@ -19,6 +19,7 @@ package io.servicetalk.opentelemetry.http;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.HostAndPort;
 
 import io.opentelemetry.instrumentation.api.semconv.http.HttpClientAttributesGetter;
@@ -26,6 +27,8 @@ import io.opentelemetry.instrumentation.api.semconv.http.HttpCommonAttributesGet
 import io.opentelemetry.instrumentation.api.semconv.http.HttpServerAttributesGetter;
 import io.opentelemetry.instrumentation.api.semconv.network.NetworkAttributesGetter;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -36,34 +39,34 @@ import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
 
 abstract class ServiceTalkHttpAttributesGetter
-        implements NetworkAttributesGetter<HttpRequestMetaData, HttpResponseMetaData>,
-        HttpCommonAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> {
+        implements NetworkAttributesGetter<RequestInfo, HttpResponseMetaData>,
+        HttpCommonAttributesGetter<RequestInfo, HttpResponseMetaData> {
 
     private static final String HTTP_SCHEME = "http";
     private static final String HTTPS_SCHEME = "https";
 
-    static final HttpClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData>
+    static final HttpClientAttributesGetter<RequestInfo, HttpResponseMetaData>
             CLIENT_INSTANCE = new ClientGetter();
 
-    static final HttpServerAttributesGetter<HttpRequestMetaData, HttpResponseMetaData>
+    static final HttpServerAttributesGetter<RequestInfo, HttpResponseMetaData>
             SERVER_INSTANCE = new ServerGetter();
 
     private ServiceTalkHttpAttributesGetter() {}
 
     @Override
-    public String getHttpRequestMethod(final HttpRequestMetaData httpRequestMetaData) {
-        return httpRequestMetaData.method().name();
+    public String getHttpRequestMethod(final RequestInfo requestInfo) {
+        return requestInfo.request().method().name();
     }
 
     @Override
     public List<String> getHttpRequestHeader(
-            final HttpRequestMetaData httpRequestMetaData, final String name) {
-        return getHeaderValues(httpRequestMetaData.headers(), name);
+            final RequestInfo requestInfo, final String name) {
+        return getHeaderValues(requestInfo.request().headers(), name);
     }
 
     @Override
     public Integer getHttpResponseStatusCode(
-            final HttpRequestMetaData httpRequestMetaData,
+            final RequestInfo requestInfo,
             final HttpResponseMetaData httpResponseMetaData,
             @Nullable final Throwable error) {
         return httpResponseMetaData.status().code();
@@ -71,7 +74,7 @@ abstract class ServiceTalkHttpAttributesGetter
 
     @Override
     public List<String> getHttpResponseHeader(
-            final HttpRequestMetaData httpRequestMetaData,
+            final RequestInfo requestInfo,
             final HttpResponseMetaData httpResponseMetaData,
             final String name) {
         return getHeaderValues(httpResponseMetaData.headers(), name);
@@ -79,15 +82,16 @@ abstract class ServiceTalkHttpAttributesGetter
 
     @Override
     public final String getNetworkProtocolName(
-            final HttpRequestMetaData request, @Nullable final HttpResponseMetaData response) {
+            final RequestInfo request, @Nullable final HttpResponseMetaData response) {
         return HTTP_SCHEME;
     }
 
     @Override
     public final String getNetworkProtocolVersion(
-            final HttpRequestMetaData request, @Nullable final HttpResponseMetaData response) {
+            final RequestInfo request, @Nullable final HttpResponseMetaData response) {
+        HttpRequestMetaData metadata = request.request();
         if (response == null) {
-            return request.version().fullVersion();
+            return metadata.version().fullVersion();
         }
         return response.version().fullVersion();
     }
@@ -111,11 +115,12 @@ abstract class ServiceTalkHttpAttributesGetter
     }
 
     private static final class ClientGetter extends ServiceTalkHttpAttributesGetter
-            implements HttpClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> {
+            implements HttpClientAttributesGetter<RequestInfo, HttpResponseMetaData> {
 
         @Override
         @Nullable
-        public String getUrlFull(final HttpRequestMetaData request) {
+        public String getUrlFull(final RequestInfo requestInfo) {
+            HttpRequestMetaData request = requestInfo.request();
             String requestTarget = request.requestTarget();
             if (requestTarget.startsWith("https://") || requestTarget.startsWith("http://")) {
                 // request target is already absolute-form: just return it.
@@ -143,20 +148,29 @@ abstract class ServiceTalkHttpAttributesGetter
 
         @Override
         @Nullable
-        public String getServerAddress(final HttpRequestMetaData request) {
-            HostAndPort effectiveHostAndPort = request.effectiveHostAndPort();
-            return effectiveHostAndPort != null ? effectiveHostAndPort.hostName() : null;
+        public String getServerAddress(final RequestInfo requestInfo) {
+            // For the server address we prefer the unresolved address, if possible. If we don't have that we'll
+            // fall back to the resolved address.
+            HostAndPort effectiveHostAndPort = requestInfo.request().effectiveHostAndPort();
+            return effectiveHostAndPort != null ? effectiveHostAndPort.hostName() :
+                    ServiceTalkHttpAttributesGetter.getResolvedAddress(requestInfo);
         }
 
         @Nullable
         @Override
-        public Integer getServerPort(HttpRequestMetaData metaData) {
-            final HostAndPort effectiveHostAndPort = metaData.effectiveHostAndPort();
+        public Integer getServerPort(RequestInfo requestInfo) {
+            // In contrast to the server address, we want to use the resolved port if possible since it is
+            // simply more accurate than an inferred port.
+            Integer serverPort = getResolvedPort(requestInfo);
+            if (serverPort != null) {
+                return serverPort;
+            }
+            final HostAndPort effectiveHostAndPort = requestInfo.request().effectiveHostAndPort();
             if (effectiveHostAndPort != null) {
                 return effectiveHostAndPort.port();
             }
             // No port. See if we can infer it from the scheme.
-            String scheme = metaData.scheme();
+            String scheme = requestInfo.request().scheme();
             if (scheme != null) {
                 if (HTTP_SCHEME.equals(scheme)) {
                     return 80;
@@ -174,35 +188,72 @@ abstract class ServiceTalkHttpAttributesGetter
     }
 
     private static final class ServerGetter extends ServiceTalkHttpAttributesGetter
-            implements HttpServerAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> {
+            implements HttpServerAttributesGetter<RequestInfo, HttpResponseMetaData> {
 
         @Nullable
         @Override
-        public String getClientAddress(HttpRequestMetaData metaData) {
-            return null;
+        public String getClientAddress(RequestInfo requestInfo) {
+            return getResolvedAddress(requestInfo);
         }
 
         @Nullable
         @Override
-        public Integer getClientPort(HttpRequestMetaData metaData) {
-            return null;
+        public Integer getClientPort(RequestInfo requestInfo) {
+            return getResolvedPort(requestInfo);
         }
 
         @Override
-        public String getUrlScheme(final HttpRequestMetaData httpRequestMetaData) {
-            final String scheme = httpRequestMetaData.scheme();
+        public String getUrlScheme(final RequestInfo requestInfo) {
+            final String scheme = requestInfo.request().scheme();
             return scheme == null ? HTTP_SCHEME : scheme;
         }
 
         @Override
-        public String getUrlPath(final HttpRequestMetaData httpRequestMetaData) {
-            return httpRequestMetaData.path();
+        public String getUrlPath(final RequestInfo requestInfo) {
+            return requestInfo.request().path();
         }
 
         @Nullable
         @Override
-        public String getUrlQuery(final HttpRequestMetaData httpRequestMetaData) {
-            return httpRequestMetaData.query();
+        public String getUrlQuery(final RequestInfo requestInfo) {
+            return requestInfo.request().query();
+        }
+
+        @Nullable
+        @Override
+        public String getNetworkPeerAddress(RequestInfo requestInfo, @Nullable HttpResponseMetaData responseMetaData) {
+            return getResolvedAddress(requestInfo);
+        }
+
+        @Nullable
+        @Override
+        public Integer getNetworkPeerPort(RequestInfo requestInfo, @Nullable HttpResponseMetaData responseMetaData) {
+            return getResolvedPort(requestInfo);
+        }
+    }
+
+    @Nullable
+    private static Integer getResolvedPort(RequestInfo requestInfo) {
+        ConnectionInfo connectionInfo = requestInfo.connectionInfo();
+        if (connectionInfo == null) {
+            return null;
+        }
+        SocketAddress address = connectionInfo.remoteAddress();
+        return address instanceof InetSocketAddress ? ((InetSocketAddress) address).getPort() : null;
+    }
+
+    @Nullable
+    private static String getResolvedAddress(RequestInfo requestInfo) {
+        ConnectionInfo connectionInfo = requestInfo.connectionInfo();
+        if (connectionInfo == null) {
+            return null;
+        }
+        SocketAddress address = connectionInfo.remoteAddress();
+        if (address instanceof InetSocketAddress) {
+            return ((InetSocketAddress) address).getAddress().getHostAddress();
+        } else {
+            // Try to turn it into something meaningful.
+            return address.toString();
         }
     }
 }

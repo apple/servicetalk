@@ -16,14 +16,16 @@
 package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
-import io.servicetalk.http.api.HttpRequestMetaData;
+import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpRequestMethod;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 
 import org.junit.jupiter.api.Test;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.opentelemetry.http.ServiceTalkHttpAttributesGetter.CLIENT_INSTANCE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -31,63 +33,73 @@ import static org.hamcrest.Matchers.nullValue;
 
 class ServiceTalkHttpAttributesGetterTest {
 
+    private static final StreamingHttpRequestResponseFactory REQ_RES_FACTORY =
+            new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE,
+                    HTTP_1_1);
+
     @Test
     void clientUrlExtractionNoHostAndPort() {
         String pathQueryFrag = "/foo?bar=baz#frag";
-        HttpRequestMetaData request = newRequest(pathQueryFrag);
-        assertThat(CLIENT_INSTANCE.getUrlFull(request), nullValue());
+        StreamingHttpRequest request = newRequest(pathQueryFrag);
+        RequestInfo requestInfo = new RequestInfo(request, null);
+        assertThat(CLIENT_INSTANCE.getUrlFull(requestInfo), nullValue());
     }
 
     @Test
     void clientUrlExtractionHostHeader() {
         String pathQueryFrag = "/foo?bar=baz#frag";
-        HttpRequestMetaData request = newRequest(pathQueryFrag);
+        StreamingHttpRequest request = newRequest(pathQueryFrag);
         request.addHeader(HOST, "myservice");
-        assertThat(CLIENT_INSTANCE.getUrlFull(request), equalTo("http://myservice" + pathQueryFrag));
+        RequestInfo requestInfo = new RequestInfo(request, null);
+        assertThat(CLIENT_INSTANCE.getUrlFull(requestInfo), equalTo("http://myservice" + pathQueryFrag));
     }
 
     @Test
     void clientUrlExtractionNoLeadingSlashPath() {
         String pathQueryFrag = "foo";
-        HttpRequestMetaData request = newRequest(pathQueryFrag);
+        StreamingHttpRequest request = newRequest(pathQueryFrag);
         request.addHeader(HOST, "myservice:8080");
-        assertThat(CLIENT_INSTANCE.getUrlFull(request), equalTo("http://myservice:8080/" + pathQueryFrag));
+        RequestInfo requestInfo = new RequestInfo(request, null);
+        assertThat(CLIENT_INSTANCE.getUrlFull(requestInfo), equalTo("http://myservice:8080/" + pathQueryFrag));
     }
 
     @Test
     void clientUrlExtractionHostAndPortHttpNonDefaultScheme() {
         String pathQueryFrag = "/foo?bar=baz#frag";
-        HttpRequestMetaData request = newRequest(pathQueryFrag);
+        StreamingHttpRequest request = newRequest(pathQueryFrag);
         request.addHeader(HOST, "myservice:8080");
-        assertThat(CLIENT_INSTANCE.getUrlFull(request), equalTo("http://myservice:8080" + pathQueryFrag));
+        RequestInfo requestInfo = new RequestInfo(request, null);
+        assertThat(CLIENT_INSTANCE.getUrlFull(requestInfo), equalTo("http://myservice:8080" + pathQueryFrag));
     }
 
     @Test
     void clientUrlExtractionHostAndPortHttpDefaultScheme() {
         String pathQueryFrag = "/foo?bar=baz#frag";
-        HttpRequestMetaData request = newRequest(pathQueryFrag);
+        StreamingHttpRequest request = newRequest(pathQueryFrag);
         request.addHeader(HOST, "myservice:80");
-        assertThat(CLIENT_INSTANCE.getUrlFull(request), equalTo("http://myservice" + pathQueryFrag));
+        RequestInfo requestInfo = new RequestInfo(request, null);
+        assertThat(CLIENT_INSTANCE.getUrlFull(requestInfo), equalTo("http://myservice" + pathQueryFrag));
     }
 
     @Test
     void clientUrlExtractionHostAndPortHttpsDefaultScheme() {
         String pathQueryFrag = "/foo?bar=baz#frag";
-        HttpRequestMetaData request = newRequest(pathQueryFrag);
+        StreamingHttpRequest request = newRequest(pathQueryFrag);
         request.addHeader(HOST, "myservice:443");
-        assertThat(CLIENT_INSTANCE.getUrlFull(request), equalTo("https://myservice" + pathQueryFrag));
+        RequestInfo requestInfo = new RequestInfo(request, null);
+        assertThat(CLIENT_INSTANCE.getUrlFull(requestInfo), equalTo("https://myservice" + pathQueryFrag));
     }
 
     @Test
     void clientAbsoluteUrl() {
         String requestTarget = "https://myservice/foo?bar=baz#frag";
-        HttpRequestMetaData request = newRequest(requestTarget);
+        StreamingHttpRequest request = newRequest(requestTarget);
         request.addHeader(HOST, "badservice"); // should be unused
-        assertThat(CLIENT_INSTANCE.getUrlFull(request), equalTo(requestTarget));
+        RequestInfo requestInfo = new RequestInfo(request, null);
+        assertThat(CLIENT_INSTANCE.getUrlFull(requestInfo), equalTo(requestTarget));
     }
 
-    private static HttpRequestMetaData newRequest(String requestTarget) {
-        return newRequestMetaData(HTTP_1_1, HttpRequestMethod.GET, requestTarget,
-                DefaultHttpHeadersFactory.INSTANCE.newHeaders());
+    private static StreamingHttpRequest newRequest(String requestTarget) {
+        return REQ_RES_FACTORY.newRequest(HttpRequestMethod.GET, requestTarget);
     }
 }

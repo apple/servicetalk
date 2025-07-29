@@ -17,8 +17,6 @@
 package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpRequestMetaData;
-import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -28,38 +26,15 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.context.Context;
-import io.opentelemetry.context.Scope;
-import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
-import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
-import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
-import io.opentelemetry.instrumentation.api.semconv.http.HttpServerAttributesExtractor;
-import io.opentelemetry.instrumentation.api.semconv.http.HttpServerMetrics;
-import io.opentelemetry.instrumentation.api.semconv.http.HttpSpanNameExtractor;
 
 abstract class AbstractOpenTelemetryHttpServiceFilter extends AbstractOpenTelemetryFilter
         implements StreamingHttpServiceFilterFactory {
-    private final Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter;
+    private final HttpInstrumentationHelper httpHelper;
 
     AbstractOpenTelemetryHttpServiceFilter(final OpenTelemetry openTelemetry,
                                            final OpenTelemetryOptions openTelemetryOptions) {
-        SpanNameExtractor<HttpRequestMetaData> serverSpanNameExtractor =
-                HttpSpanNameExtractor.create(ServiceTalkHttpAttributesGetter.SERVER_INSTANCE);
-        InstrumenterBuilder<HttpRequestMetaData, HttpResponseMetaData> serverInstrumenterBuilder =
-                Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, serverSpanNameExtractor);
-        serverInstrumenterBuilder.setSpanStatusExtractor(ServicetalkSpanStatusExtractor.SERVER_INSTANCE);
-
-        serverInstrumenterBuilder
-                .addAttributesExtractor(HttpServerAttributesExtractor
-                        .builder(ServiceTalkHttpAttributesGetter.SERVER_INSTANCE)
-                        .setCapturedRequestHeaders(openTelemetryOptions.capturedRequestHeaders())
-                        .setCapturedResponseHeaders(openTelemetryOptions.capturedResponseHeaders())
-                        .build());
-        if (openTelemetryOptions.enableMetrics()) {
-            serverInstrumenterBuilder.addOperationMetrics(HttpServerMetrics.get());
-        }
-        instrumenter =
-                serverInstrumenterBuilder.buildServerInstrumenter(RequestHeadersPropagatorGetter.INSTANCE);
+        // Create HTTP instrumentation helper
+        this.httpHelper = HttpInstrumentationHelper.createServer(openTelemetry, openTelemetryOptions);
     }
 
     @Override
@@ -78,20 +53,9 @@ abstract class AbstractOpenTelemetryHttpServiceFilter extends AbstractOpenTeleme
                                                        final HttpServiceContext ctx,
                                                        final StreamingHttpRequest request,
                                                        final StreamingHttpResponseFactory responseFactory) {
-        final Context parentContext = Context.root();
-        if (!instrumenter.shouldStart(parentContext, request)) {
-            return delegate.handle(ctx, request, responseFactory);
-        }
-        final Context context = instrumenter.start(parentContext, request);
-        try (Scope unused = context.makeCurrent()) {
-            final ScopeTracker tracker = ScopeTracker.server(context, request, instrumenter);
-            try {
-                Single<StreamingHttpResponse> response = delegate.handle(ctx, request, responseFactory);
-                return withContext(tracker.track(response), context);
-            } catch (Throwable t) {
-                tracker.onError(t);
-                return Single.failed(t);
-            }
-        }
+        return httpHelper.trackHttpRequest(
+                req -> delegate.handle(ctx, req, responseFactory),
+                request,
+                ctx);
     }
 }

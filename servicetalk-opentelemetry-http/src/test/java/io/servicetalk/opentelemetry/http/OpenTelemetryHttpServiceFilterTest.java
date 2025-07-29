@@ -80,6 +80,8 @@ import java.util.concurrent.Future;
 
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_RESPONSE_STATUS_CODE;
+import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PEER_ADDRESS;
+import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PEER_PORT;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PROTOCOL_NAME;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PROTOCOL_VERSION;
 import static io.opentelemetry.semconv.UrlAttributes.URL_FULL;
@@ -100,6 +102,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
+@SuppressWarnings("PMD.AvoidUsingHardCodedIP")
 class OpenTelemetryHttpServiceFilterTest {
 
     private static final Publisher<Buffer> DEFAULT_BODY = Publisher.from(
@@ -150,6 +153,10 @@ class OpenTelemetryHttpServiceFilterTest {
                             .isNull(); // only required for != http
                         assertThat(span.getAttributes().get(NETWORK_PROTOCOL_VERSION))
                             .isEqualTo("1.1");
+                        assertThat(span.getAttributes().get(NETWORK_PEER_ADDRESS))
+                                .isEqualTo("127.0.0.1");
+                        assertThat(span.getAttributes().get(NETWORK_PEER_PORT))
+                                .isNotNull(); // We're not sure what it is, but it shouldn't be null.
                         assertThat(span.getAttributes().get(HTTP_REQUEST_METHOD))
                             .isEqualTo("GET");
                         assertThat(span.getName()).isEqualTo("GET");
