@@ -26,19 +26,27 @@ import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.netty.HttpClients;
+import io.servicetalk.http.netty.HttpServers;
+import io.servicetalk.transport.api.ServerContext;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.ByteArrayInputStream;
+import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -46,11 +54,17 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_GATEWAY;
+import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.api.HttpResponseStatus.TOO_MANY_REQUESTS;
 import static io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy.ofPassthrough;
 import static io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy.ofRejection;
+import static io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy.ofRejectionWithRetries;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -188,6 +202,140 @@ class TrafficResilienceHttpClientFilterTest {
         verify(ticket).failed(DELIBERATE_EXCEPTION);
         verify(ticket, atLeastOnce()).state();
         verifyNoMoreInteractions(limiter, ticket);
+    }
+
+    @Test
+    void testPassThroughUnderCapacity() throws Exception {
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok())) {
+
+            final TrafficResilienceHttpClientFilter filter =
+                    new TrafficResilienceHttpClientFilter.Builder(() -> CapacityLimiters.fixedCapacity(2).build())
+                            .build();
+
+            try (HttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                    .appendClientFilter(filter)
+                    .build()) {
+
+                HttpResponse response = client.request(client.newRequest(HttpRequestMethod.GET, "/"))
+                        .toFuture().get();
+
+                assertThat(response.status(), is(OK));
+            }
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] dryRun={0}")
+    @ValueSource(booleans = {false, true})
+    void testPeerRejectionHandling(boolean dryRun) throws Exception {
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> {
+                    // Simulate peer rejection
+                    return responseFactory.badGateway();
+                })) {
+
+            final TrafficResilienceHttpClientFilter filter =
+                    new TrafficResilienceHttpClientFilter.Builder(() -> CapacityLimiters.fixedCapacity(5).build())
+                            .rejectionPolicy(ofRejection(resp -> BAD_GATEWAY.equals(resp.status())))
+                            .dryRun(dryRun)
+                            .build();
+
+            try (HttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                    .appendClientFilter(filter)
+                    .build()) {
+
+                if (dryRun) {
+                    // In dry run mode, the response should pass through
+                    HttpResponse response = client.request(client.newRequest(HttpRequestMethod.GET, "/"))
+                            .toFuture().get();
+                    assertThat(response.status(), is(BAD_GATEWAY));
+                } else {
+                    // In normal mode, should throw RequestDroppedException
+                    ExecutionException exception = assertThrows(ExecutionException.class, () ->
+                            client.request(client.newRequest(HttpRequestMethod.GET, "/")).toFuture().get());
+
+                    assertThat(exception.getCause(), is(instanceOf(RequestDroppedException.class)));
+                }
+            }
+        }
+    }
+
+    @Test
+    void testRejectionWhenHittingWatermark() throws Exception {
+        // Use CountDownLatch to control when server responses are sent
+        final CountDownLatch releaseFirstRequest = new CountDownLatch(1);
+        final CountDownLatch firstRequestStarted = new CountDownLatch(1);
+
+        final TrafficResilienceHttpClientFilter filter =
+                new TrafficResilienceHttpClientFilter.Builder(() -> CapacityLimiters.fixedCapacity(1).build())
+                        .build();
+
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> {
+                    // Signal that first request has started
+                    firstRequestStarted.countDown();
+                    try {
+                        // Block until we signal to release
+                        releaseFirstRequest.await();
+                        return responseFactory.ok();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException(e);
+                    }
+                })) {
+
+            try (HttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                    .appendClientFilter(filter)
+                    .build()) {
+
+                // Start first request asynchronously (will hold capacity)
+                Future<HttpResponse> firstResponse = client.request(
+                        client.newRequest(HttpRequestMethod.GET, "/first")).toFuture();
+
+                // Wait for first request to reach server and hold capacity
+                firstRequestStarted.await();
+
+                // Second request should be rejected immediately due to capacity limit
+                ExecutionException exception = assertThrows(ExecutionException.class, () ->
+                        client.request(client.newRequest(HttpRequestMethod.GET, "/second")).toFuture().get());
+
+                assertThat(exception.getCause(), is(instanceOf(RequestDroppedException.class)));
+
+                // Release the first request
+                releaseFirstRequest.countDown();
+
+                // Verify first request completes successfully
+                HttpResponse response = firstResponse.get();
+                assertThat(response.status(), is(OK));
+            }
+        }
+    }
+
+    @Test
+    void testRetryablePeerRejectionHandling() throws Exception {
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> {
+                    // Simulate peer rejection with TOO_MANY_REQUESTS
+                    return responseFactory.tooManyRequests();
+                })) {
+
+            final TrafficResilienceHttpClientFilter filter =
+                    new TrafficResilienceHttpClientFilter.Builder(() -> CapacityLimiters.fixedCapacity(5).build())
+                            .rejectionPolicy(ofRejectionWithRetries(
+                                    resp -> TOO_MANY_REQUESTS.equals(resp.status()),
+                                    resp -> Duration.ofMillis(100)))
+                            .build();
+
+            try (HttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                    .appendClientFilter(filter)
+                    .build()) {
+
+                ExecutionException exception = assertThrows(ExecutionException.class, () ->
+                        client.request(client.newRequest(HttpRequestMethod.GET, "/")).toFuture().get());
+
+                assertThat(exception.getCause(), is(instanceOf(DelayedRetryRequestDroppedException.class)));
+            }
+        }
     }
 
     static StreamingHttpRequest newRequest() {
