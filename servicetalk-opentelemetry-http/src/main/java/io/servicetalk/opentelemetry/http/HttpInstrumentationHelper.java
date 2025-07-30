@@ -23,6 +23,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ConnectionInfo;
 
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
@@ -50,11 +51,11 @@ import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.with
  */
 final class HttpInstrumentationHelper {
 
-    private final Instrumenter<RequestInfo, io.servicetalk.http.api.HttpResponseMetaData> instrumenter;
+    private final Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter;
     private final boolean isClient;
 
     private HttpInstrumentationHelper(
-            Instrumenter<RequestInfo, io.servicetalk.http.api.HttpResponseMetaData> instrumenter, boolean isClient) {
+            Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter, boolean isClient) {
         this.instrumenter = instrumenter;
         this.isClient = isClient;
     }
@@ -102,14 +103,14 @@ final class HttpInstrumentationHelper {
      */
     static HttpInstrumentationHelper createServer(OpenTelemetry openTelemetry, OpenTelemetryOptions options) {
         SpanNameExtractor<RequestInfo> serverSpanNameExtractor =
-                HttpSpanNameExtractor.create(ServiceTalkHttpAttributesGetter.SERVER_INSTANCE);
-        InstrumenterBuilder<RequestInfo, io.servicetalk.http.api.HttpResponseMetaData> serverInstrumenterBuilder =
+                HttpSpanNameExtractor.create(HttpAttributesGetter.SERVER_INSTANCE);
+        InstrumenterBuilder<RequestInfo, HttpResponseMetaData> serverInstrumenterBuilder =
                 Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, serverSpanNameExtractor);
         serverInstrumenterBuilder.setSpanStatusExtractor(HttpSpanStatusExtractor.SERVER_INSTANCE);
 
         serverInstrumenterBuilder
                 .addAttributesExtractor(HttpServerAttributesExtractor
-                        .builder(ServiceTalkHttpAttributesGetter.SERVER_INSTANCE)
+                        .builder(HttpAttributesGetter.SERVER_INSTANCE)
                         .setCapturedRequestHeaders(options.capturedRequestHeaders())
                         .setCapturedResponseHeaders(options.capturedResponseHeaders())
                         .build());
@@ -117,7 +118,7 @@ final class HttpInstrumentationHelper {
             serverInstrumenterBuilder.addOperationMetrics(HttpServerMetrics.get());
         }
 
-        Instrumenter<RequestInfo, io.servicetalk.http.api.HttpResponseMetaData> instrumenter =
+        Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter =
                 serverInstrumenterBuilder.buildServerInstrumenter(RequestHeadersPropagatorGetter.INSTANCE);
 
         return new HttpInstrumentationHelper(instrumenter, false);
@@ -134,8 +135,8 @@ final class HttpInstrumentationHelper {
     static HttpInstrumentationHelper createClient(OpenTelemetry openTelemetry, OpenTelemetryOptions options,
                                                   String componentName) {
         SpanNameExtractor<RequestInfo> clientSpanNameExtractor =
-                HttpSpanNameExtractor.create(ServiceTalkHttpAttributesGetter.CLIENT_INSTANCE);
-        InstrumenterBuilder<RequestInfo, io.servicetalk.http.api.HttpResponseMetaData> clientInstrumenterBuilder =
+                HttpSpanNameExtractor.create(HttpAttributesGetter.CLIENT_INSTANCE);
+        InstrumenterBuilder<RequestInfo, HttpResponseMetaData> clientInstrumenterBuilder =
                 Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, clientSpanNameExtractor);
         clientInstrumenterBuilder
                 .setSpanStatusExtractor(HttpSpanStatusExtractor.CLIENT_INSTANCE)
@@ -150,33 +151,33 @@ final class HttpInstrumentationHelper {
                     AttributesExtractor.constant(PEER_SERVICE, componentName));
         }
 
-        Instrumenter<RequestInfo, io.servicetalk.http.api.HttpResponseMetaData> instrumenter =
+        Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter =
                 clientInstrumenterBuilder.buildClientInstrumenter(RequestHeadersPropagatorSetter.INSTANCE);
 
         return new HttpInstrumentationHelper(instrumenter, true);
     }
 
     private static final class DeferredHttpClientAttributesExtractor implements
-            AttributesExtractor<RequestInfo, io.servicetalk.http.api.HttpResponseMetaData> {
+            AttributesExtractor<RequestInfo, HttpResponseMetaData> {
 
-        private final AttributesExtractor<RequestInfo, io.servicetalk.http.api.HttpResponseMetaData> delegate;
+        private final AttributesExtractor<RequestInfo, HttpResponseMetaData> delegate;
 
         DeferredHttpClientAttributesExtractor(OpenTelemetryOptions openTelemetryOptions) {
             this.delegate = HttpClientAttributesExtractor
-                    .builder(ServiceTalkHttpAttributesGetter.CLIENT_INSTANCE)
+                    .builder(HttpAttributesGetter.CLIENT_INSTANCE)
                     .setCapturedRequestHeaders(openTelemetryOptions.capturedRequestHeaders())
                     .setCapturedResponseHeaders(openTelemetryOptions.capturedResponseHeaders())
                     .build();
         }
 
         @Override
-        public void onStart(io.opentelemetry.api.common.AttributesBuilder attributes, Context parentContext,
+        public void onStart(AttributesBuilder attributes, Context parentContext,
                             RequestInfo requestInfo) {
             // noop: we will defer this until the `onEnd` call.
         }
 
         @Override
-        public void onEnd(io.opentelemetry.api.common.AttributesBuilder attributes, Context context,
+        public void onEnd(AttributesBuilder attributes, Context context,
                           RequestInfo requestInfo, @Nullable HttpResponseMetaData responseMetaData,
                           @Nullable Throwable error) {
             delegate.onStart(attributes, context, requestInfo);

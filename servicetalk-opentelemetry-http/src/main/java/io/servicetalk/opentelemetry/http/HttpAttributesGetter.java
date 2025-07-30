@@ -20,6 +20,7 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.transport.api.ConnectionInfo;
+import io.servicetalk.transport.api.DomainSocketAddress;
 import io.servicetalk.transport.api.HostAndPort;
 
 import io.opentelemetry.instrumentation.api.semconv.http.HttpClientAttributesGetter;
@@ -27,6 +28,7 @@ import io.opentelemetry.instrumentation.api.semconv.http.HttpCommonAttributesGet
 import io.opentelemetry.instrumentation.api.semconv.http.HttpServerAttributesGetter;
 import io.opentelemetry.instrumentation.api.semconv.network.NetworkAttributesGetter;
 
+import java.net.Inet6Address;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
@@ -38,12 +40,18 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
 
-abstract class ServiceTalkHttpAttributesGetter
+abstract class HttpAttributesGetter
         implements NetworkAttributesGetter<RequestInfo, HttpResponseMetaData>,
         HttpCommonAttributesGetter<RequestInfo, HttpResponseMetaData> {
 
     private static final String HTTP_SCHEME = "http";
     private static final String HTTPS_SCHEME = "https";
+    private static final String IPV4 = "ipv4";
+    private static final String IPV6 = "ipv6";
+    private static final String TCP = "tcp";
+    private static final String UNIX = "unix";
+    private static final Integer PORT_80 = 80;
+    private static final Integer PORT_443 = 443;
 
     static final HttpClientAttributesGetter<RequestInfo, HttpResponseMetaData>
             CLIENT_INSTANCE = new ClientGetter();
@@ -51,7 +59,7 @@ abstract class ServiceTalkHttpAttributesGetter
     static final HttpServerAttributesGetter<RequestInfo, HttpResponseMetaData>
             SERVER_INSTANCE = new ServerGetter();
 
-    private ServiceTalkHttpAttributesGetter() {}
+    private HttpAttributesGetter() {}
 
     @Override
     public String getHttpRequestMethod(final RequestInfo requestInfo) {
@@ -96,6 +104,37 @@ abstract class ServiceTalkHttpAttributesGetter
         return response.version().fullVersion();
     }
 
+    @Nullable
+    @Override
+    public String getNetworkTransport(RequestInfo requestInfo, @Nullable HttpResponseMetaData responseMetaData) {
+        ConnectionInfo connectionInfo = requestInfo.connectionInfo();
+        if (connectionInfo == null) {
+            return null;
+        }
+        if (connectionInfo.remoteAddress() instanceof InetSocketAddress) {
+            return TCP;
+        } else if (connectionInfo.remoteAddress() instanceof DomainSocketAddress) {
+            return UNIX;
+        } else {
+            // we don't know.
+            return null;
+        }
+    }
+
+    @Nullable
+    @Override
+    public String getNetworkType(RequestInfo requestInfo, @Nullable HttpResponseMetaData responseMetaData) {
+        ConnectionInfo connectionInfo = requestInfo.connectionInfo();
+        if (connectionInfo == null) {
+            return null;
+        }
+        if (connectionInfo.remoteAddress() instanceof InetSocketAddress) {
+            return ((InetSocketAddress) connectionInfo.remoteAddress()).getAddress() instanceof Inet6Address ?
+                    IPV6 : IPV4;
+        }
+        return null;
+    }
+
     private static List<String> getHeaderValues(final HttpHeaders headers, final String name) {
         final Iterator<? extends CharSequence> iterator = headers.valuesIterator(name);
         if (!iterator.hasNext()) {
@@ -114,7 +153,7 @@ abstract class ServiceTalkHttpAttributesGetter
         return unmodifiableList(result);
     }
 
-    private static final class ClientGetter extends ServiceTalkHttpAttributesGetter
+    private static final class ClientGetter extends HttpAttributesGetter
             implements HttpClientAttributesGetter<RequestInfo, HttpResponseMetaData> {
 
         @Override
@@ -152,42 +191,55 @@ abstract class ServiceTalkHttpAttributesGetter
             // For the server address we prefer the unresolved address, if possible. If we don't have that we'll
             // fall back to the resolved address.
             HostAndPort effectiveHostAndPort = requestInfo.request().effectiveHostAndPort();
-            return effectiveHostAndPort != null ? effectiveHostAndPort.hostName() :
-                    ServiceTalkHttpAttributesGetter.getResolvedAddress(requestInfo);
+            if (effectiveHostAndPort != null) {
+                return effectiveHostAndPort.hostName();
+            }
+            ConnectionInfo connectionInfo = requestInfo.connectionInfo();
+            if (connectionInfo == null) {
+                return null;
+            }
+            SocketAddress address = connectionInfo.remoteAddress();
+            if (address instanceof InetSocketAddress) {
+                return ((InetSocketAddress) address).getHostString();
+            } else if (address instanceof DomainSocketAddress) {
+                return ((DomainSocketAddress) address).getPath();
+            } else {
+                // Try to turn it into something meaningful.
+                return address.toString();
+            }
         }
 
         @Nullable
         @Override
         public Integer getServerPort(RequestInfo requestInfo) {
-            // In contrast to the server address, we want to use the resolved port if possible since it is
-            // simply more accurate than an inferred port.
-            Integer serverPort = getResolvedPort(requestInfo);
-            if (serverPort != null) {
-                return serverPort;
-            }
             final HostAndPort effectiveHostAndPort = requestInfo.request().effectiveHostAndPort();
             if (effectiveHostAndPort != null) {
                 return effectiveHostAndPort.port();
             }
-            // No port. See if we can infer it from the scheme.
+            Integer serverPort = getResolvedPort(requestInfo);
+            if (serverPort != null) {
+                return serverPort;
+            }
+            // No port from the request or from the peer address. We'll try to infer it from the scheme.
             String scheme = requestInfo.request().scheme();
             if (scheme != null) {
                 if (HTTP_SCHEME.equals(scheme)) {
-                    return 80;
+                    return PORT_80;
                 }
                 if (HTTPS_SCHEME.equals(scheme)) {
-                    return 443;
+                    return PORT_443;
                 }
             }
             return null;
         }
 
         private static boolean isDefaultPort(String scheme, int port) {
-            return port < 1 || HTTPS_SCHEME.equals(scheme) && port == 443 || HTTP_SCHEME.equals(scheme) && port == 80;
+            return port < 1 || HTTPS_SCHEME.equals(scheme) && port == PORT_443 ||
+                    HTTP_SCHEME.equals(scheme) && port == PORT_80;
         }
     }
 
-    private static final class ServerGetter extends ServiceTalkHttpAttributesGetter
+    private static final class ServerGetter extends HttpAttributesGetter
             implements HttpServerAttributesGetter<RequestInfo, HttpResponseMetaData> {
 
         @Nullable
@@ -251,6 +303,8 @@ abstract class ServiceTalkHttpAttributesGetter
         SocketAddress address = connectionInfo.remoteAddress();
         if (address instanceof InetSocketAddress) {
             return ((InetSocketAddress) address).getAddress().getHostAddress();
+        } else if (address instanceof DomainSocketAddress) {
+            return ((DomainSocketAddress) address).getPath();
         } else {
             // Try to turn it into something meaningful.
             return address.toString();
