@@ -53,7 +53,7 @@ final class GrpcSpanStatusExtractor implements SpanStatusExtractor<RequestInfo, 
                 !grpcTelemetryStatus.hasGrpcStatusCode()) {
             // We consider it an error without worry about grpc-status if:
             // 1. we have an explicit error
-            // 2. didn't receive a response metadata
+            // 2. didn't receive response metadata
             // 3. we didn't get a 200 HTTP status
             // 4. didn't get a grpc-status header
             spanStatusBuilder.setStatus(StatusCode.ERROR);

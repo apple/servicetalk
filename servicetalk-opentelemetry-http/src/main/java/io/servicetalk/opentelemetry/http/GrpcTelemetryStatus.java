@@ -30,11 +30,8 @@ final class GrpcTelemetryStatus {
 
     @Nullable
     private final HttpResponseMetaData responseMetaData;
-
     @Nullable
     private final HttpHeaders trailers;
-
-
     private final int statusCode;
 
     GrpcTelemetryStatus(@Nullable HttpResponseMetaData responseMetaData,

@@ -65,7 +65,7 @@ final class GrpcScopeTracker extends AbstractScopeTracker {
     }
 
     @Override
-    public Single<StreamingHttpResponse> track(Single<StreamingHttpResponse> responseSingle) {
+    Single<StreamingHttpResponse> track(Single<StreamingHttpResponse> responseSingle) {
         // Note that we use `discardEventsAfterCancel` to make sure the events that the observer sees are the
         // same that the users see.
         return responseSingle

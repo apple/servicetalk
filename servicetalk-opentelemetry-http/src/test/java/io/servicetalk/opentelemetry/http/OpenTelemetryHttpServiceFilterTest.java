@@ -114,12 +114,12 @@ class OpenTelemetryHttpServiceFilterTest {
     private final LoggerStringWriter loggerStringWriter = new LoggerStringWriter();
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         loggerStringWriter.reset();
     }
 
     @AfterEach
-    public void tearDown() {
+    void tearDown() {
         loggerStringWriter.remove();
     }
 
@@ -461,7 +461,8 @@ class OpenTelemetryHttpServiceFilterTest {
         }
     }
 
-    private void runWithClient(boolean http2, boolean useOffloading, RunWithClient runWithClient) throws Exception {
+    private static void runWithClient(boolean http2, boolean useOffloading, RunWithClient runWithClient)
+            throws Exception {
         HttpProtocolConfig config = http2 ? HttpProtocolConfigs.h2Default() : HttpProtocolConfigs.h1Default();
         Queue<Error> errorQueue = new ConcurrentLinkedQueue<>();
         try (ServerContext context = buildStreamingServer(http2, otelTesting.getOpenTelemetry(),
