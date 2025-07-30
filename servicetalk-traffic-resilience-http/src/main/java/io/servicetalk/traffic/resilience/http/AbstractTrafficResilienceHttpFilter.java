@@ -88,6 +88,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
     private final Supplier<Function<HttpRequestMetaData, CircuitBreaker>> circuitBreakerPartitionsSupplier;
 
     private final TrafficResiliencyObserver observer;
+    private final boolean isClient;
     private final boolean dryRun;
 
     AbstractTrafficResilienceHttpFilter(
@@ -101,6 +102,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
             final BiConsumer<Ticket, Throwable> onErrorTicketTerminal,
             final Supplier<Function<HttpRequestMetaData, CircuitBreaker>> circuitBreakerPartitionsSupplier,
             final TrafficResiliencyObserver observer,
+            final boolean isClient,
             final boolean dryRun
             ) {
         this.capacityPartitionsSupplier = requireNonNull(capacityPartitionsSupplier, "capacityPartitionsSupplier");
@@ -115,6 +117,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
         this.circuitBreakerPartitionsSupplier = requireNonNull(circuitBreakerPartitionsSupplier,
                 "circuitBreakerPartitionsSupplier");
         this.observer = requireNonNull(observer, "observer");
+        this.isClient = isClient;
         this.dryRun = dryRun;
     }
 
@@ -283,7 +286,8 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
                     return Single.succeeded(resp).shareContextOnSubscribe();
                 })
                 .liftSync(new BeforeFinallyHttpOperator(
-                        new SignalConsumer(this, request, ticket, ticketObserver, breaker, startTimeNs), true));
+                        new SignalConsumer(this, isClient, request, ticket, ticketObserver, breaker, startTimeNs),
+                        true));
     }
 
     private Single<StreamingHttpResponse> dryRunHandleAllow(
@@ -292,7 +296,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
             final Ticket ticket,
             final TicketObserver ticketObserver, @Nullable final CircuitBreaker breaker, final long startTimeNs) {
         SignalConsumer signalConsumer = new SignalConsumer(
-                this, request, ticket, ticketObserver, breaker, startTimeNs);
+                this, isClient, request, ticket, ticketObserver, breaker, startTimeNs);
         return delegate.apply(request)
                 // This logic has the same general structure as the `handleAllow` case, but there is a twist: we want
                 // to always return the successful single even when we fail the predicates. Because we use a latch in
@@ -330,12 +334,12 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
         // We store our state in the `state` variable. For responses, we must also store whether we cancelled
         // or if we errored. In those cases we set the field before transitioning state so we get memory visibility
         // without needing to make those fields volatile as well.
-        private volatile int state = IDLE;
+        private volatile int state;
         @Nullable
         private Throwable responseError;
         private boolean cancelled;
 
-        SignalConsumer(final AbstractTrafficResilienceHttpFilter parent, StreamingHttpRequest request,
+        SignalConsumer(final AbstractTrafficResilienceHttpFilter parent, boolean isClient, StreamingHttpRequest request,
                               final Ticket ticket, final TicketObserver ticketObserver,
                               @Nullable final CircuitBreaker breaker, final long startTimeNs) {
             this.parent = parent;
@@ -343,7 +347,11 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
             this.ticketObserver = ticketObserver;
             this.breaker = breaker;
             this.startTimeNs = startTimeNs;
-            request.transformMessageBody(body -> body.beforeFinally(this::requestComplete));
+            if (isClient) {
+                state = REQUEST_COMPLETE;
+            } else {
+                request.transformMessageBody(body -> body.beforeFinally(this::requestComplete));
+            }
         }
 
         @Override

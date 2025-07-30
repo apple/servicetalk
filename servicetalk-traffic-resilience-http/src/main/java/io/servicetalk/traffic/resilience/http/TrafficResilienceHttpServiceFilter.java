@@ -96,7 +96,8 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficRes
                                                final TrafficResiliencyObserver observer,
                                                final boolean dryRun) {
         super(capacityPartitionsSupplier, rejectNotMatched, classifier, __ -> false, __ -> false,
-                onCompletion, onCancellation, onError, circuitBreakerPartitionsSupplier, observer, dryRun);
+                onCompletion, onCancellation, onError, circuitBreakerPartitionsSupplier, observer,
+                /*isClient*/ false, dryRun);
         this.serviceRejectionPolicy = onServiceRejectionPolicy;
     }
 
@@ -108,7 +109,7 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficRes
             final Function<HttpRequestMetaData, CapacityLimiter> capacityPartitions = newCapacityPartitions();
             final Function<HttpRequestMetaData, CircuitBreaker> circuitBreakerPartitions =
                     newCircuitBreakerPartitions();
-            final Function<HttpRequestMetaData, Classification> clacifier = newClassifier();
+            final Function<HttpRequestMetaData, Classification> classifier = newClassifier();
             final Function<HttpResponseMetaData, Duration> delayProvider = newDelayProvider();
 
             @Override
@@ -118,7 +119,7 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficRes
                 final ServerListenContext actualContext = ctx.parent() instanceof ServerListenContext ?
                         (ServerListenContext) ctx.parent() :
                         ctx;
-                return applyCapacityControl(capacityPartitions, circuitBreakerPartitions, clacifier, delayProvider,
+                return applyCapacityControl(capacityPartitions, circuitBreakerPartitions, classifier, delayProvider,
                         actualContext, request, responseFactory,
                         request1 -> delegate().handle(ctx, request1, responseFactory));
             }

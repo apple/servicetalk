@@ -39,7 +39,6 @@ import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.ByteArrayInputStream;
@@ -71,7 +70,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -166,9 +164,9 @@ class TrafficResilienceHttpClientFilterTest {
         assertThat(response.payloadBody().toString(UTF_8), is(equalTo("content")));
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] dryRun={0}, consumeBodyFirst={1}")
-    @CsvSource({"false, false", "false, true", "true, false", "true, true"})
-    void releaseCapacityIfDelegateThrows(boolean dryRun, boolean consumeBodyFirst) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] dryRun={0}")
+    @ValueSource(booleans = {true, false})
+    void releaseCapacityIfDelegateThrows(boolean dryRun) throws Exception {
         CapacityLimiter limiter = mock(CapacityLimiter.class);
         Ticket ticket = mock(Ticket.class);
         when(limiter.tryAcquire(any(), any())).thenReturn(ticket);
@@ -182,9 +180,6 @@ class TrafficResilienceHttpClientFilterTest {
         AtomicReference<StreamingHttpRequest> request = new AtomicReference<>();
         doAnswer(invocation -> {
             request.set(invocation.getArgument(0));
-            if (consumeBodyFirst) {
-                request.get().payloadBody().ignoreElements().toFuture().get();
-            }
             throw DELIBERATE_EXCEPTION;
         }).when(client).request(any());
 
@@ -193,12 +188,6 @@ class TrafficResilienceHttpClientFilterTest {
                 .expectError(DeliberateException.class)
                 .verify();
         verify(limiter).tryAcquire(any(), any());
-        if (!consumeBodyFirst) {
-            // We shouldn't have released the ticket because the request body hasn't been consumed.
-            verify(ticket, never()).failed(DELIBERATE_EXCEPTION);
-            // Consume the request body and we should now see the failed ticket response.
-            request.get().payloadBody().ignoreElements().toFuture().get();
-        }
         verify(ticket).failed(DELIBERATE_EXCEPTION);
         verify(ticket, atLeastOnce()).state();
         verifyNoMoreInteractions(limiter, ticket);
