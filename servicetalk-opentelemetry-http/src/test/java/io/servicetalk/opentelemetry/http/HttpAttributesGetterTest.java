@@ -25,8 +25,6 @@ import io.servicetalk.transport.api.DomainSocketAddress;
 
 import org.junit.jupiter.api.Test;
 
-import java.net.Inet4Address;
-import java.net.Inet6Address;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 
@@ -111,198 +109,189 @@ class HttpAttributesGetterTest {
     }
 
     @Test
-    void networkTypeIpv4() throws UnknownHostException {
+    void attributesWithIpv4Connection() throws UnknownHostException {
         StreamingHttpRequest request = newRequest("/path");
         ConnectionInfo connectionInfo = mock(ConnectionInfo.class);
-        InetSocketAddress ipv4Address = new InetSocketAddress(Inet4Address.getByName("192.168.1.1"), 8080);
-        when(connectionInfo.remoteAddress()).thenReturn(ipv4Address);
-
+        InetSocketAddress inetAddress = new InetSocketAddress("192.168.1.1", 8080);
+        when(connectionInfo.remoteAddress()).thenReturn(inetAddress);
         RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
+
+        // Network attributes
         assertThat(CLIENT_INSTANCE.getNetworkType(requestInfo, null), equalTo("ipv4"));
         assertThat(SERVER_INSTANCE.getNetworkType(requestInfo, null), equalTo("ipv4"));
-    }
-
-    @Test
-    void networkTypeIpv6() throws UnknownHostException {
-        StreamingHttpRequest request = newRequest("/path");
-        ConnectionInfo connectionInfo = mock(ConnectionInfo.class);
-        InetSocketAddress ipv6Address = new InetSocketAddress(Inet6Address.getByName("::1"), 8080);
-        when(connectionInfo.remoteAddress()).thenReturn(ipv6Address);
-
-        RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
-        assertThat(CLIENT_INSTANCE.getNetworkType(requestInfo, null), equalTo("ipv6"));
-        assertThat(SERVER_INSTANCE.getNetworkType(requestInfo, null), equalTo("ipv6"));
-    }
-
-    @Test
-    void networkTypeNoConnectionInfo() {
-        StreamingHttpRequest request = newRequest("/path");
-        RequestInfo requestInfo = new RequestInfo(request, null);
-        assertThat(CLIENT_INSTANCE.getNetworkType(requestInfo, null), nullValue());
-        assertThat(SERVER_INSTANCE.getNetworkType(requestInfo, null), nullValue());
-    }
-
-    @Test
-    void networkTransportTcp() throws UnknownHostException {
-        StreamingHttpRequest request = newRequest("/path");
-        ConnectionInfo connectionInfo = mock(ConnectionInfo.class);
-        InetSocketAddress inetAddress = new InetSocketAddress(Inet4Address.getByName("192.168.1.1"), 8080);
-        when(connectionInfo.remoteAddress()).thenReturn(inetAddress);
-
-        RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
         assertThat(CLIENT_INSTANCE.getNetworkTransport(requestInfo, null), equalTo("tcp"));
         assertThat(SERVER_INSTANCE.getNetworkTransport(requestInfo, null), equalTo("tcp"));
-    }
 
-    @Test
-    void networkTransportUnix() {
-        StreamingHttpRequest request = newRequest("/path");
-        ConnectionInfo connectionInfo = mock(ConnectionInfo.class);
-        DomainSocketAddress unixAddress = new DomainSocketAddress("/tmp/socket");
-        when(connectionInfo.remoteAddress()).thenReturn(unixAddress);
-
-        RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
-        assertThat(CLIENT_INSTANCE.getNetworkTransport(requestInfo, null), equalTo("unix"));
-        assertThat(SERVER_INSTANCE.getNetworkTransport(requestInfo, null), equalTo("unix"));
-    }
-
-    @Test
-    void networkTransportNoConnectionInfo() {
-        StreamingHttpRequest request = newRequest("/path");
-        RequestInfo requestInfo = new RequestInfo(request, null);
-        assertThat(CLIENT_INSTANCE.getNetworkTransport(requestInfo, null), nullValue());
-        assertThat(SERVER_INSTANCE.getNetworkTransport(requestInfo, null), nullValue());
-    }
-
-    @Test
-    void networkPeerAddressAndPortInet() throws UnknownHostException {
-        StreamingHttpRequest request = newRequest("/path");
-        ConnectionInfo connectionInfo = mock(ConnectionInfo.class);
-        InetSocketAddress inetAddress = new InetSocketAddress(Inet4Address.getByName("192.168.1.1"), 8080);
-        when(connectionInfo.remoteAddress()).thenReturn(inetAddress);
-
-        RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
+        // Network peer attributes (server-side only)
         assertThat(SERVER_INSTANCE.getNetworkPeerAddress(requestInfo, null), equalTo("192.168.1.1"));
         assertThat(SERVER_INSTANCE.getNetworkPeerPort(requestInfo, null), equalTo(8080));
+
+        // Server attributes (client-side, fallback to connection)
+        assertThat(CLIENT_INSTANCE.getServerAddress(requestInfo), equalTo("192.168.1.1"));
+        assertThat(CLIENT_INSTANCE.getServerPort(requestInfo), equalTo(8080));
+
+        // Client attributes (server-side)
+        assertThat(SERVER_INSTANCE.getClientAddress(requestInfo), equalTo("192.168.1.1"));
+        assertThat(SERVER_INSTANCE.getClientPort(requestInfo), equalTo(8080));
     }
 
     @Test
-    void networkPeerAddressAndPortUnix() {
+    void attributesWithIpv6Connection() throws UnknownHostException {
+        StreamingHttpRequest request = newRequest("/path");
+        ConnectionInfo connectionInfo = mock(ConnectionInfo.class);
+        InetSocketAddress inetAddress = new InetSocketAddress("::1", 8080);
+        when(connectionInfo.remoteAddress()).thenReturn(inetAddress);
+        RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
+
+        // Network attributes
+        assertThat(CLIENT_INSTANCE.getNetworkType(requestInfo, null), equalTo("ipv6"));
+        assertThat(SERVER_INSTANCE.getNetworkType(requestInfo, null), equalTo("ipv6"));
+        assertThat(CLIENT_INSTANCE.getNetworkTransport(requestInfo, null), equalTo("tcp"));
+        assertThat(SERVER_INSTANCE.getNetworkTransport(requestInfo, null), equalTo("tcp"));
+
+        // Network peer attributes (server-side only)
+        assertThat(SERVER_INSTANCE.getNetworkPeerAddress(requestInfo, null), equalTo("0:0:0:0:0:0:0:1"));
+        assertThat(SERVER_INSTANCE.getNetworkPeerPort(requestInfo, null), equalTo(8080));
+
+        // Server attributes (client-side, fallback to connection)
+        assertThat(CLIENT_INSTANCE.getServerAddress(requestInfo), equalTo("0:0:0:0:0:0:0:1"));
+        assertThat(CLIENT_INSTANCE.getServerPort(requestInfo), equalTo(8080));
+
+        // Client attributes (server-side)
+        assertThat(SERVER_INSTANCE.getClientAddress(requestInfo), equalTo("0:0:0:0:0:0:0:1"));
+        assertThat(SERVER_INSTANCE.getClientPort(requestInfo), equalTo(8080));
+    }
+
+    @Test
+    void attributesWithUnixSocketConnection() {
         StreamingHttpRequest request = newRequest("/path");
         ConnectionInfo connectionInfo = mock(ConnectionInfo.class);
         DomainSocketAddress unixAddress = new DomainSocketAddress("/tmp/socket");
         when(connectionInfo.remoteAddress()).thenReturn(unixAddress);
-
         RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
+
+        // Network attributes
+        assertThat(CLIENT_INSTANCE.getNetworkType(requestInfo, null), nullValue());
+        assertThat(SERVER_INSTANCE.getNetworkType(requestInfo, null), nullValue());
+        assertThat(CLIENT_INSTANCE.getNetworkTransport(requestInfo, null), equalTo("unix"));
+        assertThat(SERVER_INSTANCE.getNetworkTransport(requestInfo, null), equalTo("unix"));
+
+        // Network peer attributes (server-side only)
         assertThat(SERVER_INSTANCE.getNetworkPeerAddress(requestInfo, null), equalTo("/tmp/socket"));
         assertThat(SERVER_INSTANCE.getNetworkPeerPort(requestInfo, null), nullValue());
+
+        // Server attributes (client-side, fallback to connection)
+        assertThat(CLIENT_INSTANCE.getServerAddress(requestInfo), equalTo("/tmp/socket"));
+        assertThat(CLIENT_INSTANCE.getServerPort(requestInfo), nullValue());
+
+        // Client attributes (server-side)
+        assertThat(SERVER_INSTANCE.getClientAddress(requestInfo), equalTo("/tmp/socket"));
+        assertThat(SERVER_INSTANCE.getClientPort(requestInfo), nullValue());
     }
 
     @Test
-    void networkPeerAddressAndPortNoConnectionInfo() {
+    void attributesWithHostHeaderOnly() {
         StreamingHttpRequest request = newRequest("/path");
+        request.addHeader(HOST, "example.com:8080");
         RequestInfo requestInfo = new RequestInfo(request, null);
+
+        // Network attributes (null without connection info)
+        assertThat(CLIENT_INSTANCE.getNetworkType(requestInfo, null), nullValue());
+        assertThat(SERVER_INSTANCE.getNetworkType(requestInfo, null), nullValue());
+        assertThat(CLIENT_INSTANCE.getNetworkTransport(requestInfo, null), nullValue());
+        assertThat(SERVER_INSTANCE.getNetworkTransport(requestInfo, null), nullValue());
+
+        // Network peer attributes (null without connection info)
         assertThat(SERVER_INSTANCE.getNetworkPeerAddress(requestInfo, null), nullValue());
         assertThat(SERVER_INSTANCE.getNetworkPeerPort(requestInfo, null), nullValue());
-    }
 
-    @Test
-    void serverAddressFromHostHeader() {
-        StreamingHttpRequest request = newRequest("/path");
-        request.addHeader(HOST, "example.com:8080");
-        RequestInfo requestInfo = new RequestInfo(request, null);
-
+        // Server attributes (client-side, from host header)
         assertThat(CLIENT_INSTANCE.getServerAddress(requestInfo), equalTo("example.com"));
-    }
-
-    @Test
-    void serverPortFromHostHeader() {
-        StreamingHttpRequest request = newRequest("/path");
-        request.addHeader(HOST, "example.com:8080");
-        RequestInfo requestInfo = new RequestInfo(request, null);
-
         assertThat(CLIENT_INSTANCE.getServerPort(requestInfo), equalTo(8080));
+
+        // Client attributes (null without connection info)
+        assertThat(SERVER_INSTANCE.getClientAddress(requestInfo), nullValue());
+        assertThat(SERVER_INSTANCE.getClientPort(requestInfo), nullValue());
     }
 
     @Test
-    void serverAddressFallbackToRemoteAddress() throws UnknownHostException {
-        StreamingHttpRequest request = newRequest("/path");
-        ConnectionInfo connectionInfo = mock(ConnectionInfo.class);
-        InetSocketAddress inetAddress = new InetSocketAddress(Inet4Address.getByName("192.168.1.1"), 8080);
-        when(connectionInfo.remoteAddress()).thenReturn(inetAddress);
-
-        RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
-        assertThat(CLIENT_INSTANCE.getServerAddress(requestInfo), equalTo("192.168.1.1"));
-    }
-
-    @Test
-    void serverPortFallbackToRemoteAddress() throws UnknownHostException {
-        StreamingHttpRequest request = newRequest("/path");
-        ConnectionInfo connectionInfo = mock(ConnectionInfo.class);
-        InetSocketAddress inetAddress = new InetSocketAddress(Inet4Address.getByName("192.168.1.1"), 8080);
-        when(connectionInfo.remoteAddress()).thenReturn(inetAddress);
-
-        RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
-        assertThat(CLIENT_INSTANCE.getServerPort(requestInfo), equalTo(8080));
-    }
-
-    @Test
-    void serverAddressHostHeaderPreferredOverRemoteAddress() throws UnknownHostException {
+    void attributesWithHostHeaderAndIpv4Connection() throws UnknownHostException {
         StreamingHttpRequest request = newRequest("/path");
         request.addHeader(HOST, "example.com:9090");
         ConnectionInfo connectionInfo = mock(ConnectionInfo.class);
-        InetSocketAddress inetAddress = new InetSocketAddress(Inet4Address.getByName("192.168.1.1"), 8080);
+        InetSocketAddress inetAddress = new InetSocketAddress("192.168.1.1", 8080);
         when(connectionInfo.remoteAddress()).thenReturn(inetAddress);
-
         RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
+
+        // Network attributes (from connection)
+        assertThat(CLIENT_INSTANCE.getNetworkType(requestInfo, null), equalTo("ipv4"));
+        assertThat(SERVER_INSTANCE.getNetworkType(requestInfo, null), equalTo("ipv4"));
+        assertThat(CLIENT_INSTANCE.getNetworkTransport(requestInfo, null), equalTo("tcp"));
+        assertThat(SERVER_INSTANCE.getNetworkTransport(requestInfo, null), equalTo("tcp"));
+
+        // Network peer attributes (from connection)
+        assertThat(SERVER_INSTANCE.getNetworkPeerAddress(requestInfo, null), equalTo("192.168.1.1"));
+        assertThat(SERVER_INSTANCE.getNetworkPeerPort(requestInfo, null), equalTo(8080));
+
+        // Server attributes (host header preferred for address, host header for port)
         assertThat(CLIENT_INSTANCE.getServerAddress(requestInfo), equalTo("example.com"));
-    }
-
-    @Test
-    void serverHostHeaderPortPreferredOverResolvedAddress() throws UnknownHostException {
-        StreamingHttpRequest request = newRequest("/path");
-        request.addHeader(HOST, "example.com:9090");
-        ConnectionInfo connectionInfo = mock(ConnectionInfo.class);
-        InetSocketAddress inetAddress = new InetSocketAddress(Inet4Address.getByName("192.168.1.1"), 8080);
-        when(connectionInfo.remoteAddress()).thenReturn(inetAddress);
-
-        RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
-        // The implementation prefers resolved port over host header port for accuracy
         assertThat(CLIENT_INSTANCE.getServerPort(requestInfo), equalTo(9090));
+
+        // Client attributes (from connection)
+        assertThat(SERVER_INSTANCE.getClientAddress(requestInfo), equalTo("192.168.1.1"));
+        assertThat(SERVER_INSTANCE.getClientPort(requestInfo), equalTo(8080));
     }
 
     @Test
-    void serverPortFallbackToResolvedAddress() throws UnknownHostException {
+    void attributesWithHostHeaderAndUnixSocketConnection() {
         StreamingHttpRequest request = newRequest("/path");
-        ConnectionInfo connectionInfo = mock(ConnectionInfo.class);
-        InetSocketAddress inetAddress = new InetSocketAddress(Inet4Address.getByName("192.168.1.1"), 8080);
-        when(connectionInfo.remoteAddress()).thenReturn(inetAddress);
-
-        RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
-
-        // When there's no connection info, falls back to host header port
-        assertThat(CLIENT_INSTANCE.getServerPort(requestInfo), equalTo(8080));
-    }
-
-    @Test
-    void serverAddressAndPortNoHostNoConnection() {
-        StreamingHttpRequest request = newRequest("/path");
-        RequestInfo requestInfo = new RequestInfo(request, null);
-
-        assertThat(CLIENT_INSTANCE.getServerAddress(requestInfo), nullValue());
-        assertThat(CLIENT_INSTANCE.getServerPort(requestInfo), nullValue());
-    }
-
-    @Test
-    void serverAddressAndPortUnixSocket() {
-        StreamingHttpRequest request = newRequest("/path");
+        request.addHeader(HOST, "example.com");
         ConnectionInfo connectionInfo = mock(ConnectionInfo.class);
         DomainSocketAddress unixAddress = new DomainSocketAddress("/tmp/socket");
         when(connectionInfo.remoteAddress()).thenReturn(unixAddress);
-
         RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
-        assertThat(CLIENT_INSTANCE.getServerAddress(requestInfo), equalTo("/tmp/socket"));
+
+        // Network attributes (from connection)
+        assertThat(CLIENT_INSTANCE.getNetworkType(requestInfo, null), nullValue());
+        assertThat(SERVER_INSTANCE.getNetworkType(requestInfo, null), nullValue());
+        assertThat(CLIENT_INSTANCE.getNetworkTransport(requestInfo, null), equalTo("unix"));
+        assertThat(SERVER_INSTANCE.getNetworkTransport(requestInfo, null), equalTo("unix"));
+
+        // Network peer attributes (from connection)
+        assertThat(SERVER_INSTANCE.getNetworkPeerAddress(requestInfo, null), equalTo("/tmp/socket"));
+        assertThat(SERVER_INSTANCE.getNetworkPeerPort(requestInfo, null), nullValue());
+
+        // Server attributes (host header preferred for address, no port specified in host header returns -1)
+        assertThat(CLIENT_INSTANCE.getServerAddress(requestInfo), equalTo("example.com"));
+        assertThat(CLIENT_INSTANCE.getServerPort(requestInfo), equalTo(-1));
+
+        // Client attributes (from connection)
+        assertThat(SERVER_INSTANCE.getClientAddress(requestInfo), equalTo("/tmp/socket"));
+        assertThat(SERVER_INSTANCE.getClientPort(requestInfo), nullValue());
+    }
+
+    @Test
+    void attributesWithNoConnectionInfo() {
+        StreamingHttpRequest request = newRequest("/path");
+        RequestInfo requestInfo = new RequestInfo(request, null);
+
+        // Network attributes (all null without connection)
+        assertThat(CLIENT_INSTANCE.getNetworkType(requestInfo, null), nullValue());
+        assertThat(SERVER_INSTANCE.getNetworkType(requestInfo, null), nullValue());
+        assertThat(CLIENT_INSTANCE.getNetworkTransport(requestInfo, null), nullValue());
+        assertThat(SERVER_INSTANCE.getNetworkTransport(requestInfo, null), nullValue());
+
+        // Network peer attributes (all null without connection)
+        assertThat(SERVER_INSTANCE.getNetworkPeerAddress(requestInfo, null), nullValue());
+        assertThat(SERVER_INSTANCE.getNetworkPeerPort(requestInfo, null), nullValue());
+
+        // Server attributes (all null without host header or connection)
+        assertThat(CLIENT_INSTANCE.getServerAddress(requestInfo), nullValue());
         assertThat(CLIENT_INSTANCE.getServerPort(requestInfo), nullValue());
+
+        // Client attributes (null without connection)
+        assertThat(SERVER_INSTANCE.getClientAddress(requestInfo), nullValue());
+        assertThat(SERVER_INSTANCE.getClientPort(requestInfo), nullValue());
     }
 
     private static StreamingHttpRequest newRequest(String requestTarget) {

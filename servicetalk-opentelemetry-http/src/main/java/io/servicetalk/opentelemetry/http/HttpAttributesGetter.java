@@ -28,7 +28,9 @@ import io.opentelemetry.instrumentation.api.semconv.http.HttpCommonAttributesGet
 import io.opentelemetry.instrumentation.api.semconv.http.HttpServerAttributesGetter;
 import io.opentelemetry.instrumentation.api.semconv.network.NetworkAttributesGetter;
 
+import java.net.Inet4Address;
 import java.net.Inet6Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
@@ -129,8 +131,12 @@ abstract class HttpAttributesGetter
             return null;
         }
         if (connectionInfo.remoteAddress() instanceof InetSocketAddress) {
-            return ((InetSocketAddress) connectionInfo.remoteAddress()).getAddress() instanceof Inet6Address ?
-                    IPV6 : IPV4;
+            InetAddress address = ((InetSocketAddress) connectionInfo.remoteAddress()).getAddress();
+            if (address instanceof Inet6Address) {
+                return IPV6;
+            } else if (address instanceof Inet4Address) {
+                return IPV4;
+            }
         }
         return null;
     }
@@ -194,19 +200,7 @@ abstract class HttpAttributesGetter
             if (effectiveHostAndPort != null) {
                 return effectiveHostAndPort.hostName();
             }
-            ConnectionInfo connectionInfo = requestInfo.connectionInfo();
-            if (connectionInfo == null) {
-                return null;
-            }
-            SocketAddress address = connectionInfo.remoteAddress();
-            if (address instanceof InetSocketAddress) {
-                return ((InetSocketAddress) address).getHostString();
-            } else if (address instanceof DomainSocketAddress) {
-                return ((DomainSocketAddress) address).getPath();
-            } else {
-                // Try to turn it into something meaningful.
-                return address.toString();
-            }
+            return getRemoteHostOrAddress(requestInfo);
         }
 
         @Nullable
@@ -245,7 +239,7 @@ abstract class HttpAttributesGetter
         @Nullable
         @Override
         public String getClientAddress(RequestInfo requestInfo) {
-            return getResolvedAddress(requestInfo);
+            return getRemoteHostOrAddress(requestInfo);
         }
 
         @Nullable
@@ -274,7 +268,7 @@ abstract class HttpAttributesGetter
         @Nullable
         @Override
         public String getNetworkPeerAddress(RequestInfo requestInfo, @Nullable HttpResponseMetaData responseMetaData) {
-            return getResolvedAddress(requestInfo);
+            return getResolvedPeerAddress(requestInfo);
         }
 
         @Nullable
@@ -295,7 +289,7 @@ abstract class HttpAttributesGetter
     }
 
     @Nullable
-    private static String getResolvedAddress(RequestInfo requestInfo) {
+    private static String getResolvedPeerAddress(RequestInfo requestInfo) {
         ConnectionInfo connectionInfo = requestInfo.connectionInfo();
         if (connectionInfo == null) {
             return null;
@@ -303,6 +297,24 @@ abstract class HttpAttributesGetter
         SocketAddress address = connectionInfo.remoteAddress();
         if (address instanceof InetSocketAddress) {
             return ((InetSocketAddress) address).getAddress().getHostAddress();
+        } else if (address instanceof DomainSocketAddress) {
+            return ((DomainSocketAddress) address).getPath();
+        } else {
+            // Try to turn it into something meaningful.
+            return address.toString();
+        }
+    }
+
+    // This variant prefers to use a hostname, if possible, but will fall back to an IP address, if available.
+    @Nullable
+    private static String getRemoteHostOrAddress(final RequestInfo requestInfo) {
+        ConnectionInfo connectionInfo = requestInfo.connectionInfo();
+        if (connectionInfo == null) {
+            return null;
+        }
+        SocketAddress address = connectionInfo.remoteAddress();
+        if (address instanceof InetSocketAddress) {
+            return ((InetSocketAddress) address).getHostString();
         } else if (address instanceof DomainSocketAddress) {
             return ((DomainSocketAddress) address).getPath();
         } else {
