@@ -28,12 +28,16 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 
 abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInfluencer {
     static final OpenTelemetryOptions DEFAULT_OPTIONS = new OpenTelemetryOptions.Builder().build();
     static final String INSTRUMENTATION_SCOPE_NAME = "io.servicetalk";
+
+    // https://opentelemetry.io/docs/specs/semconv/registry/attributes/peer/
+    static final AttributeKey<String> PEER_SERVICE = AttributeKey.stringKey("peer.service");
 
     @Override
     public final HttpExecutionStrategy requiredOffloads() {
