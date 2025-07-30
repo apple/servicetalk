@@ -202,11 +202,11 @@ public final class TcpConnector {
     private static ChannelFuture connectWithBootstrap(
             @Nullable SocketAddress localAddress, Object resolvedRemoteAddress, ReadOnlyTcpClientConfig config,
             boolean autoRead, EventLoop loop, ChannelHandler handler) {
-        final SocketAddress nettyresolvedRemoteAddress = toNettyAddress(resolvedRemoteAddress);
+        final SocketAddress nettyResolvedRemoteAddress = toNettyAddress(resolvedRemoteAddress);
         Bootstrap bs = new Bootstrap();
         bs.resolver(NoopNettyAddressResolverGroup.INSTANCE);
         bs.group(loop);
-        bs.channel(socketChannel(loop, nettyresolvedRemoteAddress.getClass()));
+        bs.channel(socketChannel(loop, nettyResolvedRemoteAddress.getClass()));
         bs.handler(handler);
 
         for (@SuppressWarnings("rawtypes") Map.Entry<ChannelOption, Object> opt : config.options().entrySet()) {
@@ -219,7 +219,7 @@ public final class TcpConnector {
         bs.option(ChannelOption.ALLOCATOR, POOLED_ALLOCATOR);
 
         // If the connect operation fails we must take care to fail the promise.
-        return bs.connect(nettyresolvedRemoteAddress, localAddress);
+        return bs.connect(nettyResolvedRemoteAddress, localAddress);
     }
 
     private static ChannelFuture initFileDescriptorBasedChannel(

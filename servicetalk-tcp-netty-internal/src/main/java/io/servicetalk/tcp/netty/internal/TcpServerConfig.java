@@ -59,9 +59,17 @@ public final class TcpServerConfig extends AbstractTcpConfig {
     private Duration sniClientHelloTimeout = DEFAULT_CLIENT_HELLO_TIMEOUT;
     private boolean acceptInsecureConnections;
 
+    /**
+     * New instance.
+     */
     public TcpServerConfig() {
     }
 
+    /**
+     * Copy constructor.
+     *
+     * @param from the source {@link TcpServerConfig} to copy from
+     */
     public TcpServerConfig(final TcpServerConfig from) {
         super(from);
         sslConfig = from.sslConfig;

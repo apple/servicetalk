@@ -35,7 +35,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.addOption;
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
-import static java.net.StandardSocketOptions.SO_KEEPALIVE;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -55,7 +54,6 @@ abstract class AbstractTcpConfig {
     private TransportConfig transportConfig = DEFAULT_TRANSPORT_CONFIG;
 
     protected AbstractTcpConfig() {
-        socketOption(SO_KEEPALIVE, true);
     }
 
     protected AbstractTcpConfig(final AbstractTcpConfig from) {
