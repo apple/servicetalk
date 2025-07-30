@@ -31,6 +31,7 @@ import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequestMethod;
+import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -47,20 +48,27 @@ import io.servicetalk.transport.api.ServerContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static io.netty.util.internal.PlatformDependent.normalizedOs;
 import static io.servicetalk.capacity.limiter.api.CapacityLimiters.fixedCapacity;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpResponseStatus.GATEWAY_TIMEOUT;
+import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.traffic.resilience.http.NoOpTrafficResiliencyObserver.NO_OP_TICKET_OBSERVER;
+import static io.servicetalk.traffic.resilience.http.TrafficResilienceHttpClientFilterTest.newRequest;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.CONNECT_TIMEOUT;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.SO_BACKLOG;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -74,7 +82,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -122,8 +132,9 @@ class TrafficResilienceHttpServiceFilterTest {
         }
     }
 
-    @Test
-    void releaseCapacityIfDelegateThrows() {
+    @ParameterizedTest(name = "{displayName} [{index}] consumeRequestBodyFirst={0}")
+    @ValueSource(booleans = {true, false})
+    void releaseCapacityIfDelegateThrows(boolean consumeRequestBodyFirst) throws Exception {
         CapacityLimiter limiter = mock(CapacityLimiter.class);
         CapacityLimiter.Ticket ticket = mock(CapacityLimiter.Ticket.class);
         when(limiter.tryAcquire(any(), any())).thenReturn(ticket);
@@ -132,14 +143,29 @@ class TrafficResilienceHttpServiceFilterTest {
                 new TrafficResilienceHttpServiceFilter.Builder(() -> limiter).build();
 
         StreamingHttpServiceFilter service = mock(StreamingHttpServiceFilter.class);
-        when(service.handle(any(), any(), any())).thenThrow(DELIBERATE_EXCEPTION);
+        AtomicReference<StreamingHttpRequest> request = new AtomicReference<>();
+        doAnswer(invocation -> {
+            request.set(invocation.getArgument(1));
+            if (consumeRequestBodyFirst) {
+                request.get().payloadBody().ignoreElements().toFuture().get();
+            }
+            throw DELIBERATE_EXCEPTION;
+        }).when(service).handle(any(), any(), any());
 
         StreamingHttpServiceFilter serviceWithFilter = filter.create(service);
-        StepVerifiers.create(serviceWithFilter.handle(mock(HttpServiceContext.class), mock(StreamingHttpRequest.class),
+        StepVerifiers.create(serviceWithFilter.handle(mock(HttpServiceContext.class), newRequest(),
                         mock(StreamingHttpResponseFactory.class)))
                 .expectError(DeliberateException.class)
                 .verify();
         verify(limiter).tryAcquire(any(), any());
+
+        if (!consumeRequestBodyFirst) {
+            // We shouldn't have released the ticket because the request body hasn't been consumed.
+            verify(ticket, never()).failed(DELIBERATE_EXCEPTION);
+            // Consume the request body and we should now see the failed ticket response.
+            request.get().payloadBody().ignoreElements().toFuture().get();
+        }
+
         verify(ticket).failed(DELIBERATE_EXCEPTION);
         verify(ticket, atLeastOnce()).state();
         verifyNoMoreInteractions(limiter, ticket);
@@ -269,6 +295,181 @@ class TrafficResilienceHttpServiceFilterTest {
                 if (!dryRun) {
                     fail("Connection was never rejected.");
                 }
+            }
+        }
+    }
+
+    @Test
+    void testPassThroughUnderCapacity() throws Exception {
+        final TrafficResilienceHttpServiceFilter filter =
+                new TrafficResilienceHttpServiceFilter.Builder(() -> CapacityLimiters.fixedCapacity(2).build())
+                        .build();
+
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .appendServiceFilter(filter)
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok())) {
+
+            try (HttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                    .build()) {
+
+                HttpResponse response = client.request(client.newRequest(HttpRequestMethod.GET, "/"))
+                        .toFuture().get();
+
+                assertThat(response.status(), is(OK));
+            }
+        }
+    }
+
+    @Test
+    void testRejectionWhenHittingWatermark() throws Exception {
+        // Use CountDownLatch to control when service responses are sent
+        final CountDownLatch releaseFirstRequest = new CountDownLatch(1);
+        final CountDownLatch firstRequestStarted = new CountDownLatch(1);
+
+        final TrafficResilienceHttpServiceFilter filter =
+                new TrafficResilienceHttpServiceFilter.Builder(() -> CapacityLimiters.fixedCapacity(1).build())
+                        .rejectionPolicy(new ServiceRejectionPolicy.Builder()
+                                .onLimitResponseBuilder(ServiceRejectionPolicy.serviceUnavailable())
+                                .build())
+                        .build();
+
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .appendServiceFilter(filter)
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> {
+                    firstRequestStarted.countDown();
+                    try {
+                        releaseFirstRequest.await();
+                        return responseFactory.ok();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException(e);
+                    }
+                })) {
+
+            try (HttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                    .build()) {
+                Future<HttpResponse> firstResponse = client.request(
+                        client.newRequest(HttpRequestMethod.GET, "/first")).toFuture();
+                firstRequestStarted.await();
+
+                // Second request should be rejected due to capacity limit
+                HttpResponse secondResponse = client.request(client.newRequest(HttpRequestMethod.GET, "/second"))
+                        .toFuture().get();
+
+                assertThat(secondResponse.status(), is(SERVICE_UNAVAILABLE));
+                releaseFirstRequest.countDown();
+
+                // Verify first request completes successfully
+                HttpResponse response = firstResponse.get();
+                assertThat(response.status(), is(OK));
+
+                // Make sure our capacity is now restored.
+                client.request(client.newRequest(HttpRequestMethod.GET, "/third")).toFuture().get();
+            }
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] dryRun={0}")
+    @ValueSource(booleans = {false, true})
+    void testServiceRejectionHandling(boolean dryRun) throws Exception {
+        final TrafficResilienceHttpServiceFilter filter =
+                new TrafficResilienceHttpServiceFilter.Builder(() -> CapacityLimiters.fixedCapacity(1).build())
+                        .rejectionPolicy(new ServiceRejectionPolicy.Builder()
+                                .onLimitResponseBuilder((meta, respFactory) ->
+                                        Single.succeeded(respFactory.gatewayTimeout()))
+                                .build())
+                        .dryRun(dryRun)
+                        .build();
+
+        if (dryRun) {
+            // In dry run mode, test that requests pass through even when capacity is exceeded
+            try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                    .appendServiceFilter(filter)
+                    .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok())) {
+
+                try (HttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                        .build()) {
+
+                    // Make multiple requests that would exceed capacity
+                    HttpResponse firstResponse = client.request(client.newRequest(HttpRequestMethod.GET, "/first"))
+                            .toFuture().get();
+                    HttpResponse secondResponse = client.request(client.newRequest(HttpRequestMethod.GET, "/second"))
+                            .toFuture().get();
+
+                    // Both should succeed in dry run mode
+                    assertThat(firstResponse.status(), is(OK));
+                    assertThat(secondResponse.status(), is(OK));
+                }
+            }
+        } else {
+            // In normal mode, test actual rejection when capacity is exceeded
+            final CountDownLatch holdCapacity = new CountDownLatch(1);
+            final CountDownLatch firstRequestStarted = new CountDownLatch(1);
+
+            try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                    .appendServiceFilter(filter)
+                    .listenBlockingAndAwait((ctx, request, responseFactory) -> {
+                        firstRequestStarted.countDown();
+                        try {
+                            holdCapacity.await();
+                            return responseFactory.ok();
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            throw new RuntimeException(e);
+                        }
+                    })) {
+
+                try (HttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                        .build()) {
+
+                    // Start first request to consume capacity
+                    Future<HttpResponse> firstResponse = client.request(
+                            client.newRequest(HttpRequestMethod.GET, "/first")).toFuture();
+                    firstRequestStarted.await();
+
+                    // Second request should be rejected due to capacity limit
+                    HttpResponse secondResponse = client.request(client.newRequest(HttpRequestMethod.GET, "/second"))
+                            .toFuture().get();
+                    assertThat(secondResponse.status(), is(GATEWAY_TIMEOUT));
+                    // Release the first request
+                    holdCapacity.countDown();
+                    // Verify first request completes successfully
+                    HttpResponse response = firstResponse.get();
+                    assertThat(response.status(), is(OK));
+                }
+            }
+        }
+    }
+
+    @Test
+    void testServiceCapacityObserverCallbacks() throws Exception {
+        final AtomicInteger consumedCount = new AtomicInteger();
+        final CountDownLatch callbackLatch = new CountDownLatch(2); // Expect 2 state changes (acquire + release)
+
+        final TrafficResilienceHttpServiceFilter filter =
+                new TrafficResilienceHttpServiceFilter.Builder(() ->
+                        CapacityLimiters.fixedCapacity(1)
+                                .stateObserver((capacity, consumed) -> {
+                                    consumedCount.set(consumed);
+                                    callbackLatch.countDown();
+                                })
+                                .build())
+                        .build();
+
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .appendServiceFilter(filter)
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok())) {
+
+            try (HttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                    .build()) {
+
+                HttpResponse response = client.request(client.newRequest(HttpRequestMethod.GET, "/"))
+                        .toFuture().get();
+                assertThat(response.status(), is(OK));
+                // Wait for capacity observer callbacks
+                callbackLatch.await();
+                // Final consumed count should be 0 after request completes
+                assertThat(consumedCount.get(), is(0));
             }
         }
     }

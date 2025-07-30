@@ -149,7 +149,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficResi
                                               final boolean dryRun) {
         super(capacityPartitionsSupplier, rejectWhenNotMatchedCapacityPartition, classifier,
                 clientPeerRejectionPolicy.predicate(), breakerRejectionPredicate, onCompletion, onCancellation,
-                onError, circuitBreakerPartitionsSupplier, observer, dryRun);
+                onError, circuitBreakerPartitionsSupplier, observer, /*isClient*/ true, dryRun);
         this.clientPeerRejectionPolicy = clientPeerRejectionPolicy;
         this.forceOpenCircuitOnPeerCircuitRejections = forceOpenCircuitOnPeerCircuitRejections;
         this.focreOpenCircuitOnPeerCircuitRejectionsDelayProvider =
