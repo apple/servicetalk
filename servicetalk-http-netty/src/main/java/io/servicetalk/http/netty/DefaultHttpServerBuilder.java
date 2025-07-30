@@ -138,13 +138,13 @@ class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
-    public HttpServerBuilder drainRequestPayloadBody(final boolean enable) {
+    public final HttpServerBuilder drainRequestPayloadBody(final boolean enable) {
         this.drainRequestPayloadBody = enable;
         return this;
     }
 
     @Override
-    public HttpServerBuilder appendConnectionAcceptorFilter(final ConnectionAcceptorFactory factory) {
+    public final HttpServerBuilder appendConnectionAcceptorFilter(final ConnectionAcceptorFactory factory) {
         if (connectionAcceptorFactory == null) {
             connectionAcceptorFactory = factory;
         } else {
@@ -154,19 +154,19 @@ class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
-    public HttpServerBuilder appendEarlyConnectionAcceptor(final EarlyConnectionAcceptor acceptor) {
+    public final HttpServerBuilder appendEarlyConnectionAcceptor(final EarlyConnectionAcceptor acceptor) {
         earlyConnectionAcceptors.add(requireNonNull(acceptor));
         return this;
     }
 
     @Override
-    public HttpServerBuilder appendLateConnectionAcceptor(final LateConnectionAcceptor acceptor) {
+    public final HttpServerBuilder appendLateConnectionAcceptor(final LateConnectionAcceptor acceptor) {
         lateConnectionAcceptors.add(requireNonNull(acceptor));
         return this;
     }
 
     @Override
-    public HttpServerBuilder appendNonOffloadingServiceFilter(final StreamingHttpServiceFilterFactory factory) {
+    public final HttpServerBuilder appendNonOffloadingServiceFilter(final StreamingHttpServiceFilterFactory factory) {
         appendNonOffloadingServiceFilter(noOffloadServiceFilters, factory);
         return this;
     }
@@ -178,8 +178,8 @@ class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
-    public HttpServerBuilder appendNonOffloadingServiceFilter(final Predicate<StreamingHttpRequest> predicate,
-                                                              final StreamingHttpServiceFilterFactory factory) {
+    public final HttpServerBuilder appendNonOffloadingServiceFilter(final Predicate<StreamingHttpRequest> predicate,
+                                                                    final StreamingHttpServiceFilterFactory factory) {
         checkNonOffloading("Predicate", offloadNone(), predicate);
         checkNonOffloading("Filter", defaultStrategy(), factory);
         noOffloadServiceFilters.add(toConditionalServiceFilterFactory(predicate, factory));
@@ -187,41 +187,44 @@ class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
-    public HttpServerBuilder appendServiceFilter(final StreamingHttpServiceFilterFactory factory) {
+    public final HttpServerBuilder appendServiceFilter(final StreamingHttpServiceFilterFactory factory) {
         requireNonNull(factory);
         serviceFilters.add(factory);
         return this;
     }
 
     @Override
-    public HttpServerBuilder appendServiceFilter(final Predicate<StreamingHttpRequest> predicate,
-                                                 final StreamingHttpServiceFilterFactory factory) {
+    public final HttpServerBuilder appendServiceFilter(final Predicate<StreamingHttpRequest> predicate,
+                                                       final StreamingHttpServiceFilterFactory factory) {
         appendServiceFilter(toConditionalServiceFilterFactory(predicate, factory));
         return this;
     }
 
     @Override
-    public HttpServerBuilder protocols(final HttpProtocolConfig... protocols) {
+    public final HttpServerBuilder protocols(final HttpProtocolConfig... protocols) {
         config.httpConfig().protocols(protocols);
         return this;
     }
 
     @Override
-    public HttpServerBuilder sslConfig(final ServerSslConfig config) {
+    public final HttpServerBuilder sslConfig(final ServerSslConfig config) {
         this.config.tcpConfig().sslConfig(requireNonNull(config, "config"));
         return this;
     }
 
     @Override
-    public HttpServerBuilder sslConfig(final ServerSslConfig defaultConfig, final Map<String, ServerSslConfig> sniMap) {
+    public final HttpServerBuilder sslConfig(final ServerSslConfig defaultConfig,
+                                             final Map<String, ServerSslConfig> sniMap) {
         this.config.tcpConfig().sslConfig(requireNonNull(defaultConfig, "defaultConfig"),
                 requireNonNull(sniMap, "sniMap"));
         return this;
     }
 
     @Override
-    public HttpServerBuilder sslConfig(final ServerSslConfig defaultConfig, final Map<String, ServerSslConfig> sniMap,
-                                       final int maxClientHelloLength, final Duration clientHelloTimeout) {
+    public final HttpServerBuilder sslConfig(final ServerSslConfig defaultConfig,
+                                             final Map<String, ServerSslConfig> sniMap,
+                                             final int maxClientHelloLength,
+                                             final Duration clientHelloTimeout) {
         this.config.tcpConfig().sslConfig(requireNonNull(defaultConfig, "defaultConfig"),
                 requireNonNull(sniMap, "sniMap"), maxClientHelloLength,
                 requireNonNull(clientHelloTimeout, "clientHelloTimeout"));
@@ -229,80 +232,80 @@ class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
-    public HttpServerBuilder sslConfig(final ServerSslConfig config, final boolean acceptInsecureConnections) {
+    public final HttpServerBuilder sslConfig(final ServerSslConfig config, final boolean acceptInsecureConnections) {
         this.config.tcpConfig().sslConfig(config, acceptInsecureConnections);
         return this;
     }
 
     @Override
-    public HttpServerBuilder transportConfig(final TransportConfig transportConfig) {
+    public final HttpServerBuilder transportConfig(final TransportConfig transportConfig) {
         config.tcpConfig().transportConfig(transportConfig);
         return this;
     }
 
     @Override
-    public <T> HttpServerBuilder socketOption(final SocketOption<T> option, final T value) {
+    public final <T> HttpServerBuilder socketOption(final SocketOption<T> option, final T value) {
         config.tcpConfig().socketOption(option, value);
         return this;
     }
 
     @Override
-    public <T> HttpServerBuilder listenSocketOption(final SocketOption<T> option, final T value) {
+    public final <T> HttpServerBuilder listenSocketOption(final SocketOption<T> option, final T value) {
         config.tcpConfig().listenSocketOption(option, value);
         return this;
     }
 
     @Override
-    public HttpServerBuilder enableWireLogging(final String loggerName, final LogLevel logLevel,
+    public final HttpServerBuilder enableWireLogging(final String loggerName, final LogLevel logLevel,
                                                final BooleanSupplier logUserData) {
         config.tcpConfig().enableWireLogging(loggerName, logLevel, logUserData);
         return this;
     }
 
     @Override
-    public HttpServerBuilder transportObserver(final TransportObserver transportObserver) {
+    public final HttpServerBuilder transportObserver(final TransportObserver transportObserver) {
         config.tcpConfig().transportObserver(transportObserver);
         return this;
     }
 
     @Override
-    public HttpServerBuilder lifecycleObserver(final HttpLifecycleObserver lifecycleObserver) {
+    public final HttpServerBuilder lifecycleObserver(final HttpLifecycleObserver lifecycleObserver) {
         config.lifecycleObserver(lifecycleObserver);
         return this;
     }
 
     @Override
-    public HttpServerBuilder allowDropRequestTrailers(final boolean allowDrop) {
+    public final HttpServerBuilder allowDropRequestTrailers(final boolean allowDrop) {
         config.httpConfig().allowDropTrailersReadFromTransport(allowDrop);
         return this;
     }
 
     @Override
-    public HttpServerBuilder executor(final Executor executor) {
+    public final HttpServerBuilder executor(final Executor executor) {
         executionContextBuilder.executor(executor);
         return this;
     }
 
     @Override
-    public HttpServerBuilder executionStrategy(HttpExecutionStrategy strategy) {
+    public final HttpServerBuilder executionStrategy(HttpExecutionStrategy strategy) {
         this.strategy = requireNonNull(strategy);
         return this;
     }
 
     @Override
-    public HttpServerBuilder ioExecutor(final IoExecutor ioExecutor) {
+    public final HttpServerBuilder ioExecutor(final IoExecutor ioExecutor) {
         executionContextBuilder.ioExecutor(ioExecutor);
         return this;
     }
 
     @Override
-    public HttpServerBuilder bufferAllocator(final BufferAllocator allocator) {
+    public final HttpServerBuilder bufferAllocator(final BufferAllocator allocator) {
         executionContextBuilder.bufferAllocator(allocator);
         return this;
     }
 
     @Override
-    public Single<HttpServerContext> listen(final HttpService service) {
+    public final Single<HttpServerContext> listen(final HttpService service) {
         final List<StreamingHttpServiceFilterFactory> serviceFilters = initServiceFilters();
         final StreamingHttpService streamingService = toStreamingHttpService(computeServiceStrategy(
                 HttpService.class, service, this.strategy, serviceFilters), service);
@@ -310,14 +313,14 @@ class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
-    public Single<HttpServerContext> listenStreaming(final StreamingHttpService service) {
+    public final Single<HttpServerContext> listenStreaming(final StreamingHttpService service) {
         final List<StreamingHttpServiceFilterFactory> serviceFilters = initServiceFilters();
         return listenForService(service, serviceFilters, computeServiceStrategy(
                 StreamingHttpService.class, service, this.strategy, serviceFilters));
     }
 
     @Override
-    public Single<HttpServerContext> listenBlocking(final BlockingHttpService service) {
+    public final Single<HttpServerContext> listenBlocking(final BlockingHttpService service) {
         final List<StreamingHttpServiceFilterFactory> serviceFilters = initServiceFilters();
         final StreamingHttpService streamingService = toStreamingHttpService(computeServiceStrategy(
                 BlockingHttpService.class, service, this.strategy, serviceFilters), service);
@@ -325,7 +328,7 @@ class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
-    public Single<HttpServerContext> listenBlockingStreaming(final BlockingStreamingHttpService service) {
+    public final Single<HttpServerContext> listenBlockingStreaming(final BlockingStreamingHttpService service) {
         final List<StreamingHttpServiceFilterFactory> serviceFilters = initServiceFilters();
         final StreamingHttpService streamingService = toStreamingHttpService(computeServiceStrategy(
                 BlockingStreamingHttpService.class, service, this.strategy, serviceFilters), service);
