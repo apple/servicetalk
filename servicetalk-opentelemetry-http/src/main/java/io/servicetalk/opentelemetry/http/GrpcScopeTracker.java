@@ -27,7 +27,7 @@ import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 
 import javax.annotation.Nullable;
 
-final class GrpcScopeTracker extends AbstractScopeTracker<GrpcTelemetryStatus> {
+final class GrpcScopeTracker extends AbstractScopeTracker {
 
     private final Context context;
     private final RequestInfo requestInfo;

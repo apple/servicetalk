@@ -16,16 +16,15 @@
 
 package io.servicetalk.opentelemetry.http;
 
-import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.DomainSocketAddress;
-import io.servicetalk.transport.api.HostAndPort;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
 
+import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -39,12 +38,8 @@ import javax.annotation.Nullable;
  */
 abstract class GrpcSemanticAttributesExtractor implements AttributesExtractor<RequestInfo, GrpcTelemetryStatus> {
 
-    private static final CharSequence AUTHORITY = CharSequences.newAsciiString(":authority");
-
     // RPC semantic convention attribute keys
     // https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/
-    private static final AttributeKey<String> SERVER_ADDRESS = AttributeKey.stringKey("server.address");
-    private static final AttributeKey<Long> SERVER_PORT = AttributeKey.longKey("server.port");
     private static final AttributeKey<String> NETWORK_PEER_ADDRESS = AttributeKey.stringKey("network.peer.address");
     private static final AttributeKey<String> NETWORK_TRANSPORT = AttributeKey.stringKey("network.transport");
     private static final AttributeKey<String> NETWORK_TYPE = AttributeKey.stringKey("network.type");
@@ -74,8 +69,7 @@ abstract class GrpcSemanticAttributesExtractor implements AttributesExtractor<Re
         // Note that for grpc, the request target is always origin form.
         String path = requestInfo.request().requestTarget();
         extractServiceAndMethod(path, attributesBuilder);
-        extractAddress(requestInfo, attributesBuilder, NETWORK_PEER_ADDRESS, NETWORK_PEER_PORT, true);
-        addServerAddressAndPort(attributesBuilder, requestInfo);
+        extractNetworkAttributes(requestInfo, attributesBuilder);
 
         // Handle captured headers
         capturedHeadersExtractor.onStart(attributesBuilder, parentContext, requestInfo);
@@ -117,55 +111,32 @@ abstract class GrpcSemanticAttributesExtractor implements AttributesExtractor<Re
         }
     }
 
-    static void extractAddress(RequestInfo requestInfo,
-                               AttributesBuilder attributesBuilder,
-                               AttributeKey<String> addressKey,
-                               AttributeKey<Long> portKey,
-                               boolean addTransportAndType) {
+    private static void extractNetworkAttributes(RequestInfo requestInfo,
+                                         AttributesBuilder attributesBuilder) {
         ConnectionInfo connectionInfo = requestInfo.connectionInfo();
-        if (connectionInfo != null) {
-            SocketAddress peerResolvedAddress = connectionInfo.remoteAddress();
-            if (peerResolvedAddress instanceof InetSocketAddress) {
-                InetSocketAddress inetSocketAddress = (InetSocketAddress) peerResolvedAddress;
-                attributesBuilder.put(
-                        addressKey, inetSocketAddress.getAddress().getHostAddress());
-                attributesBuilder.put(portKey, inetSocketAddress.getPort());
-                if (addTransportAndType) {
-                    attributesBuilder.put(NETWORK_TRANSPORT, "tcp");
-                    attributesBuilder.put(NETWORK_TYPE,
-                            inetSocketAddress.getAddress() instanceof Inet6Address ? "ipv6" : "ipv4");
-                }
-            } else if (peerResolvedAddress instanceof DomainSocketAddress) {
-                DomainSocketAddress domainSocketAddress = (DomainSocketAddress) peerResolvedAddress;
-                attributesBuilder.put(addressKey, domainSocketAddress.getPath());
-                if (addTransportAndType) {
-                    attributesBuilder.put(NETWORK_TRANSPORT, "unix");
-                }
-            } else {
-                // This is unlikely since the resolved form is almost always an `InetSocketAddress`, and
-                // we don't know what the format is, but at least we can try to give users the string
-                // representation.
-                attributesBuilder.put(addressKey, peerResolvedAddress.toString());
-            }
+        if (connectionInfo == null) {
+            return;
         }
-    }
-
-    // the 'server.address' and 'server.port' attributes.
-    private static void addServerAddressAndPort(AttributesBuilder attributesBuilder, RequestInfo requestInfo) {
-        // Add server.address and server.port for client spans (per RPC semantic conventions)
-        HostAndPort hostAndPort = requestInfo.request().effectiveHostAndPort();
-        if (hostAndPort == null) {
-            // On the client side we lazily populate the attributes because adding the host header happens last.
-            // For HTTP/2, this host header will get turned into an ':authority' header by the ServiceTalk internals
-            // and that is what we typically observer after the request.
-            CharSequence authority = requestInfo.request().headers().get(AUTHORITY);
-            if (authority != null) {
-                hostAndPort = HostAndPort.ofIpPort(authority.toString());
-            }
-        }
-        if (hostAndPort != null) {
-            attributesBuilder.put(SERVER_ADDRESS, hostAndPort.hostName());
-            attributesBuilder.put(SERVER_PORT, (long) hostAndPort.port());
+        SocketAddress peerResolvedAddress = connectionInfo.remoteAddress();
+        if (peerResolvedAddress instanceof InetSocketAddress) {
+            InetSocketAddress inetSocketAddress = (InetSocketAddress) peerResolvedAddress;
+            attributesBuilder.put(NETWORK_PEER_ADDRESS, inetSocketAddress.getAddress().getHostAddress());
+            attributesBuilder.put(NETWORK_PEER_PORT, inetSocketAddress.getPort());
+                attributesBuilder.put(NETWORK_TRANSPORT, Constants.TCP);
+                if (inetSocketAddress.getAddress() instanceof Inet4Address) {
+                    attributesBuilder.put(NETWORK_TYPE, Constants.IPV4);
+                } else if (inetSocketAddress.getAddress() instanceof Inet6Address) {
+                    attributesBuilder.put(NETWORK_TYPE, Constants.IPV6);
+                }
+        } else if (peerResolvedAddress instanceof DomainSocketAddress) {
+            DomainSocketAddress domainSocketAddress = (DomainSocketAddress) peerResolvedAddress;
+            attributesBuilder.put(NETWORK_PEER_ADDRESS, domainSocketAddress.getPath());
+            attributesBuilder.put(NETWORK_TRANSPORT, Constants.UNIX);
+        } else {
+            // This is unlikely since the resolved form is almost always an `InetSocketAddress`, and
+            // we don't know what the format is, but at least we can try to give users the string
+            // representation.
+            attributesBuilder.put(NETWORK_PEER_ADDRESS, peerResolvedAddress.toString());
         }
     }
 }

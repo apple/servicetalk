@@ -83,11 +83,11 @@ class OpenTelemetryGrpcFilterTest {
         assertTraceStructure();
 
         // Verify client span
-        assertCommonRpcAttributes(SpanKind.CLIENT, "test", 0);
+        assertGRpcAttributes(SpanKind.CLIENT, "test", 0);
         // Note that we don't get address info on the client span because the filter is in the wrong location.
 
         // Verify server span
-        assertCommonRpcAttributes(SpanKind.SERVER, "test", 0);
+        assertGRpcAttributes(SpanKind.SERVER, "test", 0);
     }
 
     @Test
@@ -101,10 +101,10 @@ class OpenTelemetryGrpcFilterTest {
         assertTraceStructure();
 
         // Verify server span shows error
-        assertCommonRpcAttributes(SpanKind.SERVER, "test", 2);
+        assertGRpcAttributes(SpanKind.SERVER, "test", 2);
 
         // Verify client span shows error
-        assertCommonRpcAttributes(SpanKind.CLIENT, "test", 2);
+        assertGRpcAttributes(SpanKind.CLIENT, "test", 2);
     }
 
     @Test
@@ -118,8 +118,8 @@ class OpenTelemetryGrpcFilterTest {
         assertTraceStructure();
 
         // Verify spans are created for streaming calls too
-        assertCommonRpcAttributes(SpanKind.SERVER, "testResponseStream", 0);
-        assertCommonRpcAttributes(SpanKind.CLIENT, "testResponseStream", 0);
+        assertGRpcAttributes(SpanKind.SERVER, "testResponseStream", 0);
+        assertGRpcAttributes(SpanKind.CLIENT, "testResponseStream", 0);
     }
 
     @Test
@@ -138,11 +138,11 @@ class OpenTelemetryGrpcFilterTest {
 
         // Verify spans for bidirectional streaming
         SpanData serverSpan = findSpanByKind(SpanKind.SERVER);
-        assertCommonRpcAttributes(SpanKind.SERVER, "testBiDiStream", 0);
+        assertGRpcAttributes(SpanKind.SERVER, "testBiDiStream", 0);
         assertThat(serverSpan.getStatus().getStatusCode()).isEqualTo(StatusCode.UNSET);
 
         SpanData clientSpan = findSpanByKind(SpanKind.CLIENT);
-        assertCommonRpcAttributes(SpanKind.CLIENT, "testBiDiStream", 0);
+        assertGRpcAttributes(SpanKind.CLIENT, "testBiDiStream", 0);
         assertThat(clientSpan.getStatus().getStatusCode()).isEqualTo(StatusCode.UNSET);
     }
 
@@ -160,11 +160,11 @@ class OpenTelemetryGrpcFilterTest {
 
         // Verify spans for bidirectional streaming
         SpanData serverSpan = findSpanByKind(SpanKind.SERVER);
-        assertCommonRpcAttributes(SpanKind.SERVER, "testBiDiStream", 2);
+        assertGRpcAttributes(SpanKind.SERVER, "testBiDiStream", 2);
         assertThat(serverSpan.getStatus().getStatusCode()).isEqualTo(StatusCode.ERROR);
 
         SpanData clientSpan = findSpanByKind(SpanKind.CLIENT);
-        assertCommonRpcAttributes(SpanKind.CLIENT, "testBiDiStream", 2);
+        assertGRpcAttributes(SpanKind.CLIENT, "testBiDiStream", 2);
         assertThat(clientSpan.getStatus().getStatusCode()).isEqualTo(StatusCode.ERROR);
     }
 
@@ -195,15 +195,22 @@ class OpenTelemetryGrpcFilterTest {
                 .isEqualTo(findSpanByKind(SpanKind.SERVER).getTraceId());
     }
 
-    private void assertCommonRpcAttributes(SpanKind spanKind, String methodName, long statusCode) {
+    private void assertGRpcAttributes(SpanKind spanKind, String methodName, long statusCode) {
         SpanData spanData = findSpanByKind(spanKind);
         assertThat(spanData.getName()).isEqualTo("opentelemetry.grpc.Tester/" + methodName);
         assertThat(spanData.getInstrumentationScopeInfo().getName()).isEqualTo("io.servicetalk");
         InetSocketAddress serverAddress = (InetSocketAddress) serverContext.listenAddress();
-        assertThat(spanData.getAttributes().get(AttributeKey.stringKey("server.address")))
-                .isEqualTo(serverAddress.getAddress().getHostAddress());
-        assertThat(spanData.getAttributes().get(AttributeKey.longKey("server.port")))
-                .isEqualTo(serverAddress.getPort());
+        if (spanKind == SpanKind.SERVER) {
+            assertThat(spanData.getAttributes().get(AttributeKey.stringKey("client.address")))
+                    .isEqualTo(serverAddress.getAddress().getHostAddress());
+            assertThat(spanData.getAttributes().get(AttributeKey.longKey("client.port")))
+                    .isNotNull(); // we don't know what it is for sure but it shouldn't be null.
+        } else {
+            assertThat(spanData.getAttributes().get(AttributeKey.stringKey("server.address")))
+                    .isEqualTo(serverAddress.getAddress().getHostAddress());
+            assertThat(spanData.getAttributes().get(AttributeKey.longKey("server.port")))
+                    .isEqualTo(serverAddress.getPort());
+        }
         assertThat(spanData.getAttributes().get(AttributeKey.stringKey("rpc.system")))
                 .isEqualTo("grpc");
         assertThat(spanData.getAttributes().get(AttributeKey.stringKey("rpc.service")))
@@ -213,7 +220,8 @@ class OpenTelemetryGrpcFilterTest {
         assertThat(spanData.getAttributes().get(AttributeKey.longKey("rpc.grpc.status_code")))
                 .isEqualTo(statusCode);
 
-        if (SpanKind.SERVER.equals(spanKind)) {
+        // TODO: right now we don't have a way to get the servers address from this filters position in the client.
+        if (spanKind == SpanKind.SERVER) {
             assertThat(spanData.getAttributes().get(AttributeKey.stringKey("network.peer.address")))
                     .isEqualTo("127.0.0.1");
             // hard to tell what it is, but it shouldn't be null

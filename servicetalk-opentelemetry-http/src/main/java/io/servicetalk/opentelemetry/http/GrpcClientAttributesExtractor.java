@@ -16,6 +16,13 @@
 
 package io.servicetalk.opentelemetry.http;
 
+import io.servicetalk.buffer.api.CharSequences;
+import io.servicetalk.transport.api.HostAndPort;
+
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.AttributesBuilder;
+import io.opentelemetry.context.Context;
+
 /**
  * gRPC client attributes extractor using stable HTTP-based APIs.
  * <p>
@@ -24,7 +31,38 @@ package io.servicetalk.opentelemetry.http;
  */
 final class GrpcClientAttributesExtractor extends GrpcSemanticAttributesExtractor {
 
+    private static final CharSequence AUTHORITY = CharSequences.newAsciiString(":authority");
+
+    // RPC semantic convention attribute keys
+    // See https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/#rpc-client-span
+    private static final AttributeKey<String> SERVER_ADDRESS = AttributeKey.stringKey("server.address");
+    private static final AttributeKey<Long> SERVER_PORT = AttributeKey.longKey("server.port");
+
     GrpcClientAttributesExtractor(OpenTelemetryOptions options) {
         super(options);
+    }
+
+    @Override
+    public void onStart(AttributesBuilder attributesBuilder, Context parentContext, RequestInfo requestInfo) {
+        super.onStart(attributesBuilder, parentContext, requestInfo);
+        addServerAddressAndPort(attributesBuilder, requestInfo);
+    }
+
+    private static void addServerAddressAndPort(AttributesBuilder attributesBuilder, RequestInfo requestInfo) {
+        // Add server.address and server.port for client spans (per RPC semantic conventions)
+        HostAndPort hostAndPort = requestInfo.request().effectiveHostAndPort();
+        if (hostAndPort == null) {
+            // On the client side we lazily populate the attributes because adding the host header happens last.
+            // For HTTP/2, this host header will get turned into an ':authority' header by the ServiceTalk internals
+            // and that is what we typically observer after the request.
+            CharSequence authority = requestInfo.request().headers().get(AUTHORITY);
+            if (authority != null) {
+                hostAndPort = HostAndPort.ofIpPort(authority.toString());
+            }
+        }
+        if (hostAndPort != null) {
+            attributesBuilder.put(SERVER_ADDRESS, hostAndPort.hostName());
+            attributesBuilder.put(SERVER_PORT, (long) hostAndPort.port());
+        }
     }
 }

@@ -62,12 +62,9 @@ Please use the following checklist before pushing your commits or issuing a pull
 - Does your work build without any failure when you run `./gradlew build` from shell?
 - Does your commit message or pull request description follow our <<Commit Message Template>>?
 
-=== Commit Message Template
-We require that your commit messages match our template. The easiest way to do that is to get git
-to help you by explicitly using the template. To do that, `cd` to the root of our repository and run:
-```
-git config commit.template .git.commit.template
-```
+=== Pull Request Message Template
+We require that your Pull Request description matches our template. A new Pull Request description will be automatically
+autopopulated based on `pull_request_template.md` content.
 
 === Project Communication Requirements
 For consistency and clarity reasons we use the following standards in all ServiceTalk communications:

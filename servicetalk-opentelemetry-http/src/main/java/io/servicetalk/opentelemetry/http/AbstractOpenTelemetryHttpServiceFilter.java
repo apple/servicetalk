@@ -34,10 +34,7 @@ abstract class AbstractOpenTelemetryHttpServiceFilter extends AbstractOpenTeleme
 
     AbstractOpenTelemetryHttpServiceFilter(final OpenTelemetry openTelemetry,
                                            final OpenTelemetryOptions openTelemetryOptions) {
-        // Create HTTP instrumentation helper
         this.httpHelper = HttpInstrumentationHelper.createServer(openTelemetry, openTelemetryOptions);
-
-        // Create gRPC instrumentation helper only if gRPC support is available
         this.grpcHelper = GrpcInstrumentationHelper.createServer(openTelemetry, openTelemetryOptions);
     }
 

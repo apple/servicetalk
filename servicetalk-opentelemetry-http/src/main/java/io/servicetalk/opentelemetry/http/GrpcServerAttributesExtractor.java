@@ -16,9 +16,15 @@
 
 package io.servicetalk.opentelemetry.http;
 
+import io.servicetalk.transport.api.ConnectionInfo;
+import io.servicetalk.transport.api.DomainSocketAddress;
+
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.context.Context;
+
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 
 /**
  * gRPC server attributes extractor using stable HTTP-based APIs.
@@ -28,7 +34,8 @@ import io.opentelemetry.context.Context;
  */
 final class GrpcServerAttributesExtractor extends GrpcSemanticAttributesExtractor {
 
-    // https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/#rpc-server-span
+    // RPC semantic convention attribute keys
+    // See https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/#rpc-server-span
     private static final AttributeKey<String> CLIENT_ADDRESS = AttributeKey.stringKey("client.address");
     private static final AttributeKey<Long> CLIENT_PORT = AttributeKey.longKey("client.port");
 
@@ -40,6 +47,25 @@ final class GrpcServerAttributesExtractor extends GrpcSemanticAttributesExtracto
     public void onStart(AttributesBuilder attributesBuilder, Context parentContext, RequestInfo requestInfo) {
         // Apply pure gRPC/RPC semantic conventions
         super.onStart(attributesBuilder, parentContext, requestInfo);
-        extractAddress(requestInfo, attributesBuilder, CLIENT_ADDRESS, CLIENT_PORT, false);
+        addClientAddressAndPort(attributesBuilder, requestInfo);
+    }
+
+    // the 'server.address' and 'server.port' attributes.
+    private static void addClientAddressAndPort(AttributesBuilder attributesBuilder, RequestInfo requestInfo) {
+        ConnectionInfo connectionInfo = requestInfo.connectionInfo();
+        if (connectionInfo == null) {
+            return;
+        }
+        SocketAddress address = connectionInfo.remoteAddress();
+        if (address instanceof InetSocketAddress) {
+            InetSocketAddress inetSocketAddress = (InetSocketAddress) address;
+            attributesBuilder.put(CLIENT_ADDRESS, inetSocketAddress.getHostString());
+            attributesBuilder.put(CLIENT_PORT, inetSocketAddress.getPort());
+        } else if (address instanceof DomainSocketAddress) {
+            attributesBuilder.put(CLIENT_ADDRESS, ((DomainSocketAddress) address).getPath());
+        } else {
+            // Try to turn it into something meaningful.
+            attributesBuilder.put(CLIENT_ADDRESS, address.toString());
+        }
     }
 }

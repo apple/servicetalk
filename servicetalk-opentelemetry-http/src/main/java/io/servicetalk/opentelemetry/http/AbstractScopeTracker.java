@@ -20,11 +20,10 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
-abstract class AbstractScopeTracker<T> implements TerminalSignalConsumer {
+abstract class AbstractScopeTracker implements TerminalSignalConsumer {
 
     private static final AtomicIntegerFieldUpdater<AbstractScopeTracker> STATE_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(AbstractScopeTracker.class, "state");
@@ -91,12 +90,12 @@ abstract class AbstractScopeTracker<T> implements TerminalSignalConsumer {
      */
     abstract Single<StreamingHttpResponse> track(Single<StreamingHttpResponse> responseSingle);
 
-    private static final class ExchangeCancellationException extends CancellationException {
+    private static final class ExchangeCancellationException extends Exception {
         private static final long serialVersionUID = 6357694797622093267L;
         static final ExchangeCancellationException INSTANCE = new ExchangeCancellationException();
 
-        private ExchangeCancellationException() {
-            super("cancelled");
+        ExchangeCancellationException() {
+            super("cancelled", null, false, false);
         }
     }
 }
