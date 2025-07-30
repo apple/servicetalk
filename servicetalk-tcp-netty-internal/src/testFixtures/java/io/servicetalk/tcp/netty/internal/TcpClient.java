@@ -37,7 +37,6 @@ import io.netty.channel.kqueue.KQueueSocketChannel;
 import io.netty.channel.unix.UnixChannel;
 
 import java.net.SocketAddress;
-import java.net.StandardSocketOptions;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -156,13 +155,6 @@ final class TcpClient {
      * @return {@link ReadOnlyTcpClientConfig} for this client.
      */
     public ReadOnlyTcpClientConfig config() {
-        return config;
-    }
-
-    private static TcpClientConfig defaultConfig() {
-        TcpClientConfig config = new TcpClientConfig();
-        // To test coverage of options.
-        config.socketOption(StandardSocketOptions.SO_KEEPALIVE, true);
         return config;
     }
 }

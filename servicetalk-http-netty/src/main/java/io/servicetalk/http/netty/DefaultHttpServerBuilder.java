@@ -45,6 +45,7 @@ import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ConnectionInfo;
+import io.servicetalk.transport.api.DomainSocketAddress;
 import io.servicetalk.transport.api.EarlyConnectionAcceptor;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
@@ -75,6 +76,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalServiceFilterFactory;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
+import static java.net.StandardSocketOptions.SO_KEEPALIVE;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
@@ -101,6 +103,10 @@ class DefaultHttpServerBuilder implements HttpServerBuilder {
     // Do not use this ctor directly, HttpServers is the entry point for creating a new builder.
     DefaultHttpServerBuilder(SocketAddress address) {
         this.address = address;
+        // Skip default options not supported by this address type
+        if (!(address instanceof DomainSocketAddress || address instanceof io.netty.channel.unix.DomainSocketAddress)) {
+            socketOption(SO_KEEPALIVE, true);
+        }
     }
 
     private static StreamingHttpService buildService(Stream<StreamingHttpServiceFilterFactory> filters,

@@ -57,6 +57,7 @@ import io.servicetalk.http.utils.IdleTimeoutConnectionFilter;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancers;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSslConfig;
+import io.servicetalk.transport.api.DomainSocketAddress;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
@@ -87,6 +88,7 @@ import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
 import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalClientFilterFactory;
 import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalConnectionFilterFactory;
 import static java.lang.Integer.parseInt;
+import static java.net.StandardSocketOptions.SO_KEEPALIVE;
 import static java.time.Duration.ofMinutes;
 import static java.util.Objects.requireNonNull;
 
@@ -138,6 +140,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             final U address, final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
         this.address = requireNonNull(address);
         config = new HttpClientConfig();
+        // Skip default options not supported by this address type
+        if (!(address instanceof DomainSocketAddress || address instanceof io.netty.channel.unix.DomainSocketAddress)) {
+            socketOption(SO_KEEPALIVE, true);
+        }
         executionContextBuilder = new HttpExecutionContextBuilder();
         strategyComputation = new ClientStrategyInfluencerChainBuilder();
         this.loadBalancerFactory = defaultLoadBalancer();
