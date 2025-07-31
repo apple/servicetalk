@@ -315,6 +315,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                         ctx.builder.proxyAbsoluteAddressFilterFactory());
             }
             if (ctx.builder.addHostHeaderFallbackFilter) {
+                // TODO: if we move this filter to the beginning of the client filter chain we will benefit from
+                //  being able to see the current host header in the filter pipeline. This will let filters see
+                //  it before it goes through the dispatch process, which may mutate it. See
+                //  GrpcClientAttributesExtractor.java for an example which needs to inspect the ":authority" header
+                //  since the H2 dispatcher has replaced the Host header with the H2 specific ":authority" header.
                 currClientFilterFactory = appendFilter(currClientFilterFactory, new HostHeaderHttpRequesterFilter(
                         ctx.builder.hostToCharSequenceFunction.apply(ctx.builder.address)));
             }

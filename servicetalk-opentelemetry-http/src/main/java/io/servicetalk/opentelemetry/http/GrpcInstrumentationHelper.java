@@ -34,7 +34,9 @@ import io.opentelemetry.instrumentation.api.semconv.http.HttpServerMetrics;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.buffer.api.CharSequences.equalsIgnoreCaseLower;
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.INSTRUMENTATION_SCOPE_NAME;
 import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.PEER_SERVICE;
@@ -48,7 +50,7 @@ import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.with
  */
 final class GrpcInstrumentationHelper {
 
-    private static final String GRPC_CONTENT_TYPE = "application/grpc";
+    private static final CharSequence GRPC_CONTENT_TYPE = newAsciiString("application/grpc");
 
     private final Instrumenter<RequestInfo, GrpcTelemetryStatus> instrumenter;
     private final boolean isClient;
@@ -163,14 +165,13 @@ final class GrpcInstrumentationHelper {
         return contentType != null && startsWithPrefix(contentType);
     }
 
-    // TODO: maybe there is a more efficient way to do this comparison.
     private static boolean startsWithPrefix(CharSequence charSequence) {
         int seqLength = charSequence.length();
         if (seqLength < GRPC_CONTENT_TYPE.length()) {
             return false;
         }
         if (seqLength == GRPC_CONTENT_TYPE.length()) {
-            return GRPC_CONTENT_TYPE.contentEquals(charSequence);
+            return contentEqualsIgnoreCase(GRPC_CONTENT_TYPE, charSequence);
         }
         // Start at the end since many content types start with 'application/' so we're more likely
         // to be able to abort early by checking that the prefix ends with 'grpc'.

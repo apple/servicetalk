@@ -33,7 +33,6 @@ final class GrpcSpanNameExtractor implements SpanNameExtractor<RequestInfo> {
 
     @Override
     public String extract(RequestInfo requestInfo) {
-        requestInfo.request().requestTarget();
         // Note that for grpc, the request target is always origin form.
         String path = requestInfo.request().requestTarget();
         if (path.isEmpty()) {

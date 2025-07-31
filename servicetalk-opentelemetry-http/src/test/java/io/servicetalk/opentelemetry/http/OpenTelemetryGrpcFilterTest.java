@@ -42,12 +42,12 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.INSTRUMENTATION_SCOPE_NAME;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@SuppressWarnings("PMD.AvoidUsingHardCodedIP")
 class OpenTelemetryGrpcFilterTest {
 
     private static final String CONTENT = "test-content";
@@ -198,7 +198,7 @@ class OpenTelemetryGrpcFilterTest {
     private void assertGRpcAttributes(SpanKind spanKind, String methodName, long statusCode) {
         SpanData spanData = findSpanByKind(spanKind);
         assertThat(spanData.getName()).isEqualTo("opentelemetry.grpc.Tester/" + methodName);
-        assertThat(spanData.getInstrumentationScopeInfo().getName()).isEqualTo("io.servicetalk");
+        assertThat(spanData.getInstrumentationScopeInfo().getName()).isEqualTo(INSTRUMENTATION_SCOPE_NAME);
         InetSocketAddress serverAddress = (InetSocketAddress) serverContext.listenAddress();
         if (spanKind == SpanKind.SERVER) {
             assertThat(spanData.getAttributes().get(AttributeKey.stringKey("client.address")))
@@ -223,10 +223,11 @@ class OpenTelemetryGrpcFilterTest {
         // TODO: right now we don't have a way to get the servers address from this filters position in the client.
         if (spanKind == SpanKind.SERVER) {
             assertThat(spanData.getAttributes().get(AttributeKey.stringKey("network.peer.address")))
-                    .isEqualTo("127.0.0.1");
+                    .isEqualTo(serverAddress.getAddress().getHostAddress());
             // hard to tell what it is, but it shouldn't be null
             assertThat(spanData.getAttributes().get(AttributeKey.longKey("network.peer.port")))
                     .isNotNull();
+
         }
     }
 
