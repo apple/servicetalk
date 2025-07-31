@@ -227,7 +227,6 @@ class OpenTelemetryGrpcFilterTest {
             // hard to tell what it is, but it shouldn't be null
             assertThat(spanData.getAttributes().get(AttributeKey.longKey("network.peer.port")))
                     .isNotNull();
-
         }
     }
 
