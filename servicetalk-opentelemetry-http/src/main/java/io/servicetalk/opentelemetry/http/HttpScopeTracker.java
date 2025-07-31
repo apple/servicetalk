@@ -26,7 +26,7 @@ import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 
 import javax.annotation.Nullable;
 
-final class HttpScopeTracker extends AbstractScopeTracker<HttpResponseMetaData> {
+final class HttpScopeTracker extends AbstractScopeTracker {
 
     private final Context context;
     private final RequestInfo requestInfo;

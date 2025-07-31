@@ -46,12 +46,6 @@ abstract class HttpAttributesGetter
         implements NetworkAttributesGetter<RequestInfo, HttpResponseMetaData>,
         HttpCommonAttributesGetter<RequestInfo, HttpResponseMetaData> {
 
-    private static final String HTTP_SCHEME = "http";
-    private static final String HTTPS_SCHEME = "https";
-    private static final String IPV4 = "ipv4";
-    private static final String IPV6 = "ipv6";
-    private static final String TCP = "tcp";
-    private static final String UNIX = "unix";
     private static final Integer PORT_80 = 80;
     private static final Integer PORT_443 = 443;
 
@@ -93,7 +87,7 @@ abstract class HttpAttributesGetter
     @Override
     public final String getNetworkProtocolName(
             final RequestInfo request, @Nullable final HttpResponseMetaData response) {
-        return HTTP_SCHEME;
+        return Constants.HTTP_SCHEME;
     }
 
     @Override
@@ -114,9 +108,9 @@ abstract class HttpAttributesGetter
             return null;
         }
         if (connectionInfo.remoteAddress() instanceof InetSocketAddress) {
-            return TCP;
+            return Constants.TCP;
         } else if (connectionInfo.remoteAddress() instanceof DomainSocketAddress) {
-            return UNIX;
+            return Constants.UNIX;
         } else {
             // we don't know.
             return null;
@@ -133,9 +127,9 @@ abstract class HttpAttributesGetter
         if (connectionInfo.remoteAddress() instanceof InetSocketAddress) {
             InetAddress address = ((InetSocketAddress) connectionInfo.remoteAddress()).getAddress();
             if (address instanceof Inet6Address) {
-                return IPV6;
+                return Constants.IPV6;
             } else if (address instanceof Inet4Address) {
-                return IPV4;
+                return Constants.IPV4;
             }
         }
         return null;
@@ -181,7 +175,7 @@ abstract class HttpAttributesGetter
             String scheme = request.scheme();
             if (scheme == null) {
                 // Note that this is best effort guessing: we cannot know if the connection is actually secure.
-                scheme = effectiveHostAndPort.port() == 443 ? HTTPS_SCHEME : HTTP_SCHEME;
+                scheme = effectiveHostAndPort.port() == 443 ? Constants.HTTPS_SCHEME : Constants.HTTP_SCHEME;
             }
             String authority = effectiveHostAndPort.hostName();
             if (!isDefaultPort(scheme, effectiveHostAndPort.port())) {
@@ -217,10 +211,10 @@ abstract class HttpAttributesGetter
             // No port from the request or from the peer address. We'll try to infer it from the scheme.
             String scheme = requestInfo.request().scheme();
             if (scheme != null) {
-                if (HTTP_SCHEME.equals(scheme)) {
+                if (Constants.HTTP_SCHEME.equals(scheme)) {
                     return PORT_80;
                 }
-                if (HTTPS_SCHEME.equals(scheme)) {
+                if (Constants.HTTPS_SCHEME.equals(scheme)) {
                     return PORT_443;
                 }
             }
@@ -228,8 +222,8 @@ abstract class HttpAttributesGetter
         }
 
         private static boolean isDefaultPort(String scheme, int port) {
-            return port < 1 || HTTPS_SCHEME.equals(scheme) && port == PORT_443 ||
-                    HTTP_SCHEME.equals(scheme) && port == PORT_80;
+            return port < 1 || Constants.HTTPS_SCHEME.equals(scheme) && port == PORT_443 ||
+                    Constants.HTTP_SCHEME.equals(scheme) && port == PORT_80;
         }
     }
 
@@ -251,7 +245,7 @@ abstract class HttpAttributesGetter
         @Override
         public String getUrlScheme(final RequestInfo requestInfo) {
             final String scheme = requestInfo.request().scheme();
-            return scheme == null ? HTTP_SCHEME : scheme;
+            return scheme == null ? Constants.HTTP_SCHEME : scheme;
         }
 
         @Override

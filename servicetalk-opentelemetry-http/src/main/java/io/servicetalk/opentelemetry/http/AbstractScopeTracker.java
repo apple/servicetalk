@@ -23,7 +23,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
-abstract class AbstractScopeTracker<T> implements TerminalSignalConsumer {
+abstract class AbstractScopeTracker implements TerminalSignalConsumer {
 
     private static final AtomicIntegerFieldUpdater<AbstractScopeTracker> STATE_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(AbstractScopeTracker.class, "state");

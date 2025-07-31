@@ -36,6 +36,7 @@ abstract class AbstractOpenTelemetryHttpRequesterFilter extends AbstractOpenTele
         implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
 
     private final HttpInstrumentationHelper httpHelper;
+    private final GrpcInstrumentationHelper grpcHelper;
 
     /**
      * Create a new instance.
@@ -46,8 +47,9 @@ abstract class AbstractOpenTelemetryHttpRequesterFilter extends AbstractOpenTele
      */
     AbstractOpenTelemetryHttpRequesterFilter(final OpenTelemetry openTelemetry, String componentName,
                                              final OpenTelemetryOptions opentelemetryOptions) {
-        // Create HTTP instrumentation helper
         this.httpHelper = HttpInstrumentationHelper.createClient(openTelemetry, opentelemetryOptions, componentName);
+
+        this.grpcHelper = GrpcInstrumentationHelper.createClient(openTelemetry, opentelemetryOptions, componentName);
     }
 
     @Override
@@ -79,9 +81,20 @@ abstract class AbstractOpenTelemetryHttpRequesterFilter extends AbstractOpenTele
         // This should be (essentially) the first filter in the client filter chain, so here is where we initialize
         // all the little bits and pieces that will end up being part of the request context. This includes setting
         // up the retry counter context entry since retries will happen further down in the filter chain.
-        return httpHelper.trackHttpRequest(
-                delegate::request,
-                request,
-                connectionInfo);
+
+        // Detect protocol and delegate to appropriate instrumentation helper
+        if (grpcHelper.isGrpcRequest(request)) {
+            // Handle as gRPC request
+            return grpcHelper.trackGrpcRequest(
+                    delegate::request,
+                    request,
+                    connectionInfo);
+        } else {
+            // Handle as HTTP request
+            return httpHelper.trackHttpRequest(
+                    delegate::request,
+                    request,
+                    connectionInfo);
+        }
     }
 }

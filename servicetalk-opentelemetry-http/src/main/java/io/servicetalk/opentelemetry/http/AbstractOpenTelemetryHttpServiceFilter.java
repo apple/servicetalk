@@ -30,11 +30,12 @@ import io.opentelemetry.api.OpenTelemetry;
 abstract class AbstractOpenTelemetryHttpServiceFilter extends AbstractOpenTelemetryFilter
         implements StreamingHttpServiceFilterFactory {
     private final HttpInstrumentationHelper httpHelper;
+    private final GrpcInstrumentationHelper grpcHelper;
 
     AbstractOpenTelemetryHttpServiceFilter(final OpenTelemetry openTelemetry,
                                            final OpenTelemetryOptions openTelemetryOptions) {
-        // Create HTTP instrumentation helper
         this.httpHelper = HttpInstrumentationHelper.createServer(openTelemetry, openTelemetryOptions);
+        this.grpcHelper = GrpcInstrumentationHelper.createServer(openTelemetry, openTelemetryOptions);
     }
 
     @Override
@@ -53,9 +54,19 @@ abstract class AbstractOpenTelemetryHttpServiceFilter extends AbstractOpenTeleme
                                                        final HttpServiceContext ctx,
                                                        final StreamingHttpRequest request,
                                                        final StreamingHttpResponseFactory responseFactory) {
-        return httpHelper.trackHttpRequest(
-                req -> delegate.handle(ctx, req, responseFactory),
-                request,
-                ctx);
+        // Detect protocol and delegate to appropriate instrumentation helper
+        if (grpcHelper.isGrpcRequest(request)) {
+            // Handle as gRPC request
+            return grpcHelper.trackGrpcRequest(
+                    req -> delegate.handle(ctx, req, responseFactory),
+                    request,
+                    ctx);
+        } else {
+            // Handle as HTTP request
+            return httpHelper.trackHttpRequest(
+                    req -> delegate.handle(ctx, req, responseFactory),
+                    request,
+                    ctx);
+        }
     }
 }
