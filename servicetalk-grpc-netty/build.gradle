@@ -86,7 +86,6 @@ dependencies {
   testImplementation project(":servicetalk-serializer-api")
   testImplementation project(":servicetalk-serializer-utils")
   testImplementation project(":servicetalk-test-resources")
-  testImplementation project(":servicetalk-transport-netty")
   testImplementation "com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion"
   testImplementation "com.google.protobuf:protobuf-java"
   testImplementation "io.grpc:grpc-api"

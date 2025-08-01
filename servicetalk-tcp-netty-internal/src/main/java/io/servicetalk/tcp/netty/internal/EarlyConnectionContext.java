@@ -27,6 +27,7 @@ import java.net.SocketOption;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
+import static io.servicetalk.transport.netty.internal.BuilderUtils.fromNettyAddress;
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
 
 final class EarlyConnectionContext extends NettyChannelListenableAsyncCloseable implements ConnectionContext {
@@ -57,12 +58,12 @@ final class EarlyConnectionContext extends NettyChannelListenableAsyncCloseable 
 
     @Override
     public SocketAddress localAddress() {
-        return channel.localAddress();
+        return fromNettyAddress(channel.localAddress());
     }
 
     @Override
     public SocketAddress remoteAddress() {
-        return channel.remoteAddress();
+        return fromNettyAddress(channel.remoteAddress());
     }
 
     @Override

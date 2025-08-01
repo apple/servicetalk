@@ -58,6 +58,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.HttpExecutionContextUtils.channelExecutionContext;
 import static io.servicetalk.http.netty.NettyHttp2ExceptionUtils.wrapIfNecessary;
+import static io.servicetalk.transport.netty.internal.BuilderUtils.fromNettyAddress;
 import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSession;
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
 
@@ -111,12 +112,12 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
 
     @Override
     public final SocketAddress localAddress() {
-        return channel().localAddress();
+        return fromNettyAddress(channel().localAddress());
     }
 
     @Override
     public final SocketAddress remoteAddress() {
-        return channel().remoteAddress();
+        return fromNettyAddress(channel().remoteAddress());
     }
 
     @Nullable

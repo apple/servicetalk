@@ -82,6 +82,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
+import static io.servicetalk.transport.netty.internal.BuilderUtils.fromNettyAddress;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
@@ -686,12 +687,12 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
     @Override
     public SocketAddress localAddress() {
-        return channel().localAddress();
+        return fromNettyAddress(channel().localAddress());
     }
 
     @Override
     public SocketAddress remoteAddress() {
-        return channel().remoteAddress();
+        return fromNettyAddress(channel().remoteAddress());
     }
 
     @Nullable
