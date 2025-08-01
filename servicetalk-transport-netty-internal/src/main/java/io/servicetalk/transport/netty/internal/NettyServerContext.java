@@ -53,7 +53,10 @@ public final class NettyServerContext implements ServerContext {
      * @param toWrap {@link NettyServerContext} to wrap.
      * @param closeBefore {@link Completable} which needs to be closed first before {@code toWrap} will be closed.
      * @return A new {@link NettyServerContext} instance.
+     * @deprecated This method is not used by ServiceTalk internals anymore and will be removed in the future releases.
+     * Replacement API is {@link #wrap(Channel, ListenableAsyncCloseable, AsyncCloseable, ExecutionContext)}.
      */
+    @Deprecated
     public static ServerContext wrap(NettyServerContext toWrap, AsyncCloseable closeBefore) {
         return new NettyServerContext(toWrap.listenChannel,
                 toListenableAsyncCloseable(newCompositeCloseable().appendAll(closeBefore, toWrap.closeable)),
