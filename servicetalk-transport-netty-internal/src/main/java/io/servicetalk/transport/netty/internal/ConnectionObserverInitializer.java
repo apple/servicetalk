@@ -39,6 +39,7 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static io.netty.channel.ChannelOption.TCP_FASTOPEN_CONNECT;
+import static io.servicetalk.transport.netty.internal.BuilderUtils.fromNettyAddress;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.channelError;
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
 import static java.util.Objects.requireNonNull;
@@ -285,12 +286,12 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
 
         @Override
         public SocketAddress localAddress() {
-            return channel.localAddress();
+            return fromNettyAddress(channel.localAddress());
         }
 
         @Override
         public SocketAddress remoteAddress() {
-            return channel.remoteAddress();
+            return fromNettyAddress(channel.remoteAddress());
         }
 
         @Override
