@@ -25,7 +25,6 @@ import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 
 import java.io.IOException;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -55,7 +54,6 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
         futureGetCancelOnInterrupt(handleBlockingRequest(ctx, request, svcResponse).toFuture());
     }
 
-    @Nonnull
     private Completable handleBlockingRequest(final HttpServiceContext ctx,
                                               final BlockingStreamingHttpRequest request,
                                               final BlockingStreamingHttpServerResponse svcResponse) {

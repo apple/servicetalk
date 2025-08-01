@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -218,7 +217,6 @@ final class FirstAndTailToPackedSingle<Packed, T> implements PublisherToSingleOp
             }
         }
 
-        @Nonnull
         private Publisher<T> newTailPublisher() {
             return new SubscribablePublisher<T>() {
                 @Override

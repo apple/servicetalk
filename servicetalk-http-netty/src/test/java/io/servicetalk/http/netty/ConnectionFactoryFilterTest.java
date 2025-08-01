@@ -50,7 +50,6 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.UnaryOperator;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -133,7 +132,6 @@ class ConnectionFactoryFilterTest {
         return response;
     }
 
-    @Nonnull
     private static UnaryOperator<FilterableStreamingHttpConnection> connectionCounter(
             final AtomicInteger activeConnections, @Nullable final CountDownLatch doneLatch) {
         return connection -> {

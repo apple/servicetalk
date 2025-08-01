@@ -82,7 +82,6 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -415,7 +414,6 @@ final class NettyHttpServer {
             return handleMultipleRequests ? defer(() -> exchange).repeat(__ -> true).ignoreElements() : exchange;
         }
 
-        @Nonnull
         private static Publisher<Object> handleResponse(final HttpProtocolVersion protocolVersion,
                                                         final HttpRequestMethod requestMethod,
                                                         final StreamingHttpResponse response) {

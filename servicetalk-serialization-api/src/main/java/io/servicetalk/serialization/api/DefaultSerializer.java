@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -258,7 +257,6 @@ public final class DefaultSerializer implements Serializer {
                 .collect(toList());
     }
 
-    @Nonnull
     private static <T> BlockingIterable<Buffer> applySerializer0(final BufferAllocator allocator,
                                                                  final IntUnaryOperator bytesEstimator,
                                                                  final BlockingIterable<T> source,
@@ -305,13 +303,11 @@ public final class DefaultSerializer implements Serializer {
                 .subscribe(subscriber);
     }
 
-    @Nonnull
     private static <T> CloseableIterable<T> applyDeserializer0(final Iterable<Buffer> source,
                                                       final StreamingDeserializer<T> deSerializer) {
         return deserializeAndClose(source, deSerializer::deserialize, deSerializer);
     }
 
-    @Nonnull
     private static <T> CloseableIterable<T> deserializeAggregated0(final Buffer serializedData,
                                                    final StreamingDeserializer<T> deSerializer) {
         return deserializeAndClose(serializedData, deSerializer::deserialize, deSerializer);

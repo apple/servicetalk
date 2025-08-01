@@ -36,7 +36,6 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -263,8 +262,8 @@ public class AsynchronousResources {
     @Produces(TEXT_PLAIN)
     @Path("/delayed-text")
     @GET
-    public CompletionStage<String> getDelayedText(@Nonnull @QueryParam("delay") final long delay,
-                                                  @Nonnull @QueryParam("unit") final TimeUnit unit) {
+    public CompletionStage<String> getDelayedText(@QueryParam("delay") final long delay,
+                                                  @QueryParam("unit") final TimeUnit unit) {
         return newCompletionStage(() -> "DONE", delay, unit);
     }
 
@@ -393,8 +392,8 @@ public class AsynchronousResources {
     @Produces(TEXT_PLAIN)
     @Path("/delayed-response-comsta")
     @GET
-    public Response getDelayedResponseCompletionStage(@Nonnull @QueryParam("delay") final long delay,
-                                                      @Nonnull @QueryParam("unit") final TimeUnit unit) {
+    public Response getDelayedResponseCompletionStage(@QueryParam("delay") final long delay,
+                                                      @QueryParam("unit") final TimeUnit unit) {
         final CompletableFuture<String> cf = new CompletableFuture<>();
         final Cancellable cancellable =
                 ctx.executionContext().executor().schedule(() -> cf.complete("DONE"), delay, unit);

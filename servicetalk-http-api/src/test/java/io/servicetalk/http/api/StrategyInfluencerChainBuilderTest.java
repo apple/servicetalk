@@ -20,8 +20,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InOrder;
 
-import javax.annotation.Nonnull;
-
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -93,7 +91,6 @@ class StrategyInfluencerChainBuilderTest {
         inOrder.verify(influencer3).requiredOffloads();
     }
 
-    @Nonnull
     private HttpExecutionStrategyInfluencer newNoInfluenceInfluencer() {
         HttpExecutionStrategyInfluencer influencer1 = mock(HttpExecutionStrategyInfluencer.class);
         when(influencer1.requiredOffloads()).thenReturn(HttpExecutionStrategies.offloadNone());

@@ -37,7 +37,6 @@ import io.servicetalk.context.api.ContextMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -107,7 +106,7 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
     }
 
     @Override
-    public HostSelector<ResolvedAddress, C> rebuildWithHosts(@Nonnull List<? extends Host<ResolvedAddress, C>> hosts) {
+    public HostSelector<ResolvedAddress, C> rebuildWithHosts(List<? extends Host<ResolvedAddress, C>> hosts) {
         return new RoundRobinSelector<>(index, hosts, lbDescription(), failOpen, ignoreWeights);
     }
 
