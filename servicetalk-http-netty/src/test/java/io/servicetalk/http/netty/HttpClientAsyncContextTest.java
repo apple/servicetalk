@@ -38,7 +38,6 @@ import java.net.InetSocketAddress;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
-import javax.annotation.Nonnull;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -72,7 +71,6 @@ class HttpClientAsyncContextTest {
         }
     }
 
-    @Nonnull
     private static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> buildClient(
             final boolean useImmediate, final Queue<Throwable> errorQueue, final ServerContext serverContext) {
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder = HttpClients.forSingleAddress(

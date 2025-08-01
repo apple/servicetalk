@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static java.util.Collections.singletonList;
@@ -248,7 +247,6 @@ class JacksonSerializationProviderTest {
         }
     }
 
-    @Nonnull
     private Buffer serializePojo(final TestPojo expected) {
         final Buffer serialized = DEFAULT_ALLOCATOR.newBuffer();
         serializationProvider.serialize(expected, serialized);
