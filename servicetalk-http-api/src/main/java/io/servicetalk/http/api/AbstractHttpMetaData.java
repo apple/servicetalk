@@ -61,9 +61,10 @@ abstract class AbstractHttpMetaData implements HttpMetaData {
         return this;
     }
 
+    @Nullable
     @Deprecated
     @Override
-    public ContentCodec encoding() {
+    public final ContentCodec encoding() {
         return encoding;
     }
 

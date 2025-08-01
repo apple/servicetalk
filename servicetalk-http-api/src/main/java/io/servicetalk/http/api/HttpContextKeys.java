@@ -80,6 +80,20 @@ public final class HttpContextKeys {
      */
     public static final Key<String> HTTP_ROUTE = newKey("http.route", String.class);
 
+    /**
+     * The key used to retrieve a virtual stream identifier from the corresponding
+     * {@link HttpRequestMetaData#context() request context}.
+     * <p>
+     * Multiplexed protocols, like <a href="https://datatracker.ietf.org/doc/html/rfc9113">HTTP/2</a>, use streams to
+     * precess every request. The Stream ID is lazy and typically assigned after the request headers are written to the
+     * transport. Therefore, it can not be known in advance on the client-side, but often useful to retrieve later for
+     * correlation with other events.
+     *
+     * @see <a href="https://datatracker.ietf.org/doc/html/rfc9113#name-stream-identifiers">
+     * HTTP/2 Stream Identifiers</a>
+     */
+    public static final Key<Long> STREAM_ID = newKey("STREAM_ID", Long.class);
+
     private HttpContextKeys() {
         // No instances
     }

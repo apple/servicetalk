@@ -18,8 +18,11 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.http.api.Http2Exception;
+import io.servicetalk.http.api.HttpContextKeys;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.api.HttpRequestMetaData;
+import io.servicetalk.http.api.HttpRequestMetaDataFactory;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
@@ -40,7 +43,6 @@ import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.AUTHORI
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.METHOD;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.PATH;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
-import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
 import static io.servicetalk.http.netty.H2ToStH1ClientDuplexHandler.isInterim;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
@@ -113,7 +115,8 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
 
             if (headersFrame.isEndStream()) {
                 if (httpMethod != null) {
-                    fireFullRequest(ctx, h2Headers, httpMethod, path, streamId);
+                    ctx.fireChannelRead(newRequestMetaData(httpMethod, path,
+                            h2HeadersToH1HeadersServer(ctx, h2Headers, httpMethod, true, streamId), streamId));
                 } else {
                     ctx.fireChannelRead(h2TrailersToH1TrailersServer(h2Headers));
                 }
@@ -122,21 +125,14 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
                 throw protocolError(ctx, streamId, false,
                         "Incoming request must have '" + METHOD.value() + "' header");
             } else {
-                ctx.fireChannelRead(newRequestMetaData(HTTP_2_0, httpMethod, path,
-                        h2HeadersToH1HeadersServer(ctx, h2Headers, httpMethod, false, streamId)));
+                ctx.fireChannelRead(newRequestMetaData(httpMethod, path,
+                        h2HeadersToH1HeadersServer(ctx, h2Headers, httpMethod, false, streamId), streamId));
             }
         } else if (msg instanceof Http2DataFrame) {
             readDataFrame(ctx, msg);
         } else {
             ctx.fireChannelRead(msg);
         }
-    }
-
-    private void fireFullRequest(final ChannelHandlerContext ctx, final Http2Headers h2Headers,
-                                 final HttpRequestMethod httpMethod, final String path,
-                                 final int streamId) throws Http2Exception {
-        ctx.fireChannelRead(newRequestMetaData(HTTP_2_0, httpMethod, path,
-                h2HeadersToH1HeadersServer(ctx, h2Headers, httpMethod, true, streamId)));
     }
 
     private HttpHeaders h2HeadersToH1HeadersServer(final ChannelHandlerContext ctx,
@@ -168,6 +164,14 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
     private HttpHeaders h2TrailersToH1TrailersServer(Http2Headers h2Headers) {
         return new NettyH2HeadersToHttpHeaders(h2Headers, headersFactory.validateCookies(),
                 headersFactory.validateValues());
+    }
+
+    private static HttpRequestMetaData newRequestMetaData(
+            HttpRequestMethod method, String requestTarget, HttpHeaders headers, long streamId) {
+        final HttpRequestMetaData metaData = HttpRequestMetaDataFactory.newRequestMetaData(
+                HTTP_2_0, method, requestTarget, headers);
+        metaData.context().put(HttpContextKeys.STREAM_ID, streamId);
+        return metaData;
     }
 
     private static HttpRequestMethod sequenceToHttpRequestMethod(CharSequence sequence) {

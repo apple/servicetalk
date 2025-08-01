@@ -17,6 +17,9 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.context.api.ContextMap;
+
+import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.DefaultPayloadInfo.forTransportReceive;
 import static io.servicetalk.http.api.DefaultPayloadInfo.forUserCreated;
@@ -65,12 +68,40 @@ public final class StreamingHttpRequests {
      * header is required to accept trailers. {@code false} assumes trailers may be present if other criteria allows.
      * @param headersFactory {@link HttpHeadersFactory} to use.
      * @return a new {@link StreamingHttpRequest}.
+     * @deprecated Use {@link #newTransportRequest(HttpRequestMetaData, BufferAllocator, Publisher, boolean,
+     * HttpHeadersFactory)} instead.
      */
+    @Deprecated
     public static StreamingHttpRequest newTransportRequest(
             final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
             final HttpHeaders headers, final BufferAllocator allocator, final Publisher<Object> payload,
             final boolean requireTrailerHeader, final HttpHeadersFactory headersFactory) {
         return new DefaultStreamingHttpRequest(method, requestTarget, version, headers, null, null, null, allocator,
                 payload, forTransportReceive(requireTrailerHeader, version, headers), headersFactory);
+    }
+
+    /**
+     * Creates a new {@link StreamingHttpRequest} which is read from the transport. If the request contains
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a> then the passed {@code payload}
+     * {@link Publisher} must also emit {@link HttpHeaders} before completion.
+     *
+     * @param metaData the {@link HttpRequestMetaData} of the request parsed by the transport layer.
+     * @param allocator the allocator to use for serialization purposes if necessary.
+     * @param payload a {@link Publisher} for payload that optionally emits {@link HttpHeaders} if the request contains
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
+     * @param requireTrailerHeader {@code true} if <a href="https://tools.ietf.org/html/rfc7230#section-4.4">Trailer</a>
+     * header is required to accept trailers. {@code false} assumes trailers may be present if other criteria allows.
+     * @param headersFactory {@link HttpHeadersFactory} to use to allocate trailers if necessary.
+     * @return a new {@link StreamingHttpRequest}.
+     */
+    public static StreamingHttpRequest newTransportRequest(
+            final HttpRequestMetaData metaData, final BufferAllocator allocator, final Publisher<Object> payload,
+            final boolean requireTrailerHeader, final HttpHeadersFactory headersFactory) {
+        @Nullable
+        ContextMap context = metaData instanceof DefaultHttpRequestMetaData ?
+                ((DefaultHttpRequestMetaData) metaData).context0() : metaData.context();
+        return new DefaultStreamingHttpRequest(metaData.method(), metaData.requestTarget(), metaData.version(),
+                metaData.headers(), context, metaData.encoding(), metaData.contentEncoding(), allocator, payload,
+                forTransportReceive(requireTrailerHeader, metaData.version(), metaData.headers()), headersFactory);
     }
 }
