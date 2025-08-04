@@ -39,7 +39,6 @@ import org.mockito.stubbing.Answer;
 
 import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.annotation.Nonnull;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_READY_EVENT;
@@ -320,7 +319,6 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
         return f;
     }
 
-    @Nonnull
     private Completable applyRetry(final ContextAwareRetryingHttpClientFilter filter,
                                    final int count, final Throwable t) {
         return filter.retryStrategy(REQUEST_META_DATA, filter.executionContext(), true).apply(count, t);

@@ -34,7 +34,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
@@ -159,7 +158,6 @@ class InsufficientlySizedExecutorHttpTest {
         closeable.close();
     }
 
-    @Nonnull
     private static Executor getExecutorForCapacity(final int capacity) {
         return capacity == 0 ?
                 from(task -> {

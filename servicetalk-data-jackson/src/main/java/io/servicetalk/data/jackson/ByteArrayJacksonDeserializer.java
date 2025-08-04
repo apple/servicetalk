@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.ObjectReader;
 
 import java.io.IOException;
 import java.util.List;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static java.util.Collections.emptyList;
@@ -37,7 +36,6 @@ final class ByteArrayJacksonDeserializer<T> extends AbstractJacksonDeserializer<
         this.feeder = feeder;
     }
 
-    @Nonnull
     @Override
     Iterable<T> doDeserialize(final Buffer buffer, @Nullable List<T> resultHolder) throws IOException {
         if (buffer.hasArray()) {
