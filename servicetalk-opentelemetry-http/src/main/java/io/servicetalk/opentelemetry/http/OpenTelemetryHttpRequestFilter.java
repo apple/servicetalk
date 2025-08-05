@@ -36,7 +36,7 @@ import java.util.function.UnaryOperator;
  * Append this filter before others that are expected to see {@link Scope} for this request/response. Filters
  * appended after this filter that use operators with the <strong>after*</strong> prefix on
  * {@link io.servicetalk.http.api.StreamingHttpClient#request(StreamingHttpRequest) response meta data} or the
- * {@link StreamingHttpResponse#transformMessageBody(UnaryOperator)} response message body}
+ * {@link StreamingHttpResponse#transformMessageBody(UnaryOperator)} response message body.
  * (e.g. {@link Publisher#afterFinally(Runnable)}) will execute after this filter invokes {@link Scope#close()} and
  * therefore will not see the {@link Span} for the current request/response.
  * @deprecated use {@link OpenTelemetryHttpRequesterFilter} instead.
@@ -57,7 +57,10 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryH
      */
     @Deprecated // FIXME: 0.43 - remove deprecated ctor
     public OpenTelemetryHttpRequestFilter(final OpenTelemetry openTelemetry, String componentName) {
-        super(openTelemetry, componentName, DEFAULT_OPTIONS);
+        super(new OpenTelemetryOptions.Builder()
+                .openTelemetry(openTelemetry)
+                .componentName(componentName)
+                .build());
     }
 
     /**
@@ -76,7 +79,9 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryH
      * @param opentelemetryOptions extra options to create the opentelemetry filter
      */
     public OpenTelemetryHttpRequestFilter(final String componentName, final OpenTelemetryOptions opentelemetryOptions) {
-        super(GlobalOpenTelemetry.get(), componentName, opentelemetryOptions);
+        super(new OpenTelemetryOptions.Builder(opentelemetryOptions)
+                .componentName(componentName)
+                .build());
     }
 
     /**

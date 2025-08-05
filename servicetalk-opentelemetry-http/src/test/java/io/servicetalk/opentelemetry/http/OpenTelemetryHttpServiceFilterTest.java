@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.buffer.api.Buffer;
@@ -37,6 +36,8 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.api.StreamingHttpServiceFilter;
+import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.http.netty.HttpLifecycleObserverServiceFilter;
 import io.servicetalk.http.netty.HttpProtocolConfigs;
 import io.servicetalk.http.netty.HttpServers;
@@ -77,7 +78,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicReference;
 
+import static io.opentelemetry.api.internal.InstrumentationUtil.suppressInstrumentation;
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_RESPONSE_STATUS_CODE;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PEER_ADDRESS;
@@ -177,7 +180,11 @@ class OpenTelemetryHttpServiceFilterTest {
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         try (ServerContext context = buildServer(openTelemetry)) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
-                .appendClientFilter(new OpenTelemetryHttpRequesterFilter(openTelemetry, "testClient", DEFAULT_OPTIONS))
+                .appendClientFilter(new OpenTelemetryHttpRequesterFilter(
+                        new OpenTelemetryOptions.Builder(DEFAULT_OPTIONS)
+                                .openTelemetry(openTelemetry)
+                                .componentName("testClient")
+                                .build()))
                 .build()) {
                 HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
@@ -484,8 +491,17 @@ class OpenTelemetryHttpServiceFilterTest {
     }
 
     private static ServerContext buildServer(OpenTelemetry givenOpentelemetry,
-                                             OpenTelemetryOptions opentelemetryOptions) throws Exception {
-        return HttpServers.forAddress(localAddress(0))
+                                             OpenTelemetryOptions opentelemetryOptions,
+                                             boolean addSuppressionFilter) throws Exception {
+        HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
+
+        if (addSuppressionFilter) {
+            // IMPORTANT: SuppressionTestServiceFilter must come BEFORE OpenTelemetryHttpServiceFilter
+            // so that suppression context is established before OpenTelemetry tries to create spans
+            serverBuilder = serverBuilder.appendServiceFilter(new SuppressionTestServiceFilter());
+        }
+
+        return serverBuilder
             .appendServiceFilter(new OpenTelemetryHttpServiceFilter(givenOpentelemetry, opentelemetryOptions))
             .appendServiceFilter(new TestTracingServerLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX))
             .listenAndAwait((ctx, request, responseFactory) -> {
@@ -502,6 +518,11 @@ class OpenTelemetryHttpServiceFilterTest {
                         .addHeader("my-header", "header-value")
                         .payloadBody(new TestSpanState(span.getSpanContext()), SPAN_STATE_SERIALIZER));
             });
+    }
+
+    private static ServerContext buildServer(OpenTelemetry givenOpentelemetry,
+                                             OpenTelemetryOptions opentelemetryOptions) throws Exception {
+        return buildServer(givenOpentelemetry, opentelemetryOptions, false);
     }
 
     private static ServerContext buildServer(OpenTelemetry givenOpentelemetry) throws Exception {
@@ -571,6 +592,63 @@ class OpenTelemetryHttpServiceFilterTest {
                                 HttpExecutionStrategies.offloadAll() : HttpExecutionStrategies.offloadNone();
                     }
                 });
+    }
+
+    @Test
+    void serverSuppressionCanBeSuppressed() throws Exception {
+        final String requestUrl = "/server-suppression-test";
+        OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
+
+        try (ServerContext context = buildServer(openTelemetry,
+                new OpenTelemetryOptions.Builder().ignoreSpanSuppression(true).build(), true)) {
+            try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
+                HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
+                TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
+
+                sleep();
+
+                // Should have 1 server span even though suppression context was active
+                // because ignoreSpanSuppression = true
+                assertThat(otelTesting.getSpans()).hasSize(1);
+                assertThat(otelTesting.getSpans()).extracting("traceId")
+                        .containsExactly(serverSpanState.getTraceId());
+            }
+        }
+    }
+
+    @Test
+    void serverSuppressionCanBeHonored() throws Exception {
+        final String requestUrl = "/server-suppression-test";
+        OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
+
+        try (ServerContext context = buildServer(openTelemetry,
+                new OpenTelemetryOptions.Builder().ignoreSpanSuppression(false).build(), true)) {
+            try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
+                client.request(client.get(requestUrl)).toFuture().get();
+                sleep();
+
+                // Should have 0 spans because suppression context was active
+                // and ignoreSpanSuppression = false
+                assertThat(otelTesting.getSpans()).hasSize(0);
+            }
+        }
+    }
+
+    private static class SuppressionTestServiceFilter implements StreamingHttpServiceFilterFactory {
+        @Override
+        public StreamingHttpServiceFilter create(StreamingHttpService service) {
+            return new StreamingHttpServiceFilter(service) {
+                @Override
+                public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
+                                                          StreamingHttpResponseFactory responseFactory) {
+                    // Create suppression context and execute the rest of the filter chain within it
+                    AtomicReference<Single<StreamingHttpResponse>> result = new AtomicReference<>();
+                    suppressInstrumentation(() -> result.set(delegate().handle(ctx, request, responseFactory)));
+                    assert result.get() != null;
+                    return result.get();
+                }
+            };
+        }
     }
 
     private static void sleep() {
