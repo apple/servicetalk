@@ -178,26 +178,57 @@ final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver {
                 // It's possible that request can be cancelled before transport subscribed to its payload body
                 unwrappedRequestResult = Result.cancelled;
             }
+            final Throwable throwable = combine(responseResult, requestResult);
             if (responseMetaData != null) {
-                logger.log("connection='{}' " +
-                "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailersCount={} requestResult={} " +
-                "responseCode={} responseHeadersCount={} responseSize={} responseTrailersCount={} grpcStatus={} " +
-                "responseResult={} responseTime={}ms totalTime={}ms",
-                connInfo == null ? "unknown" : connInfo,
-                requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
-                requestMetaData.headers().size(), requestSize, requestTrailersCount, unwrappedRequestResult,
-                responseMetaData.status().code(), responseMetaData.headers().size(), responseSize,
-                responseTrailersCount, grpcStatus, unwrapResult(responseResult), responseTimeMs, durationMs(startTime),
-                combine(responseResult, requestResult));
+                logWithResponse(requestMetaData, unwrappedRequestResult, responseMetaData, throwable);
             } else {
-                logger.log("connection='{}' " +
-                "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailersCount={} requestResult={} " +
-                "responseResult={} responseTime={}ms totalTime={}ms",
-                connInfo == null ? "unknown" : connInfo,
-                requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
-                requestMetaData.headers().size(), requestSize, requestTrailersCount, unwrappedRequestResult,
-                unwrapResult(responseResult), responseTimeMs, durationMs(startTime),
-                combine(responseResult, requestResult));
+                logWithoutResponse(requestMetaData, unwrappedRequestResult, throwable);
+            }
+        }
+
+        private void logWithResponse(final HttpRequestMetaData requestMetaData, final Object unwrappedRequestResult,
+                                     final HttpResponseMetaData responseMetaData, @Nullable final Throwable throwable) {
+            final String logFormatString = "connection='{}' " +
+                    "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailersCount={} " +
+                    "requestResult={} responseCode={} responseHeadersCount={} responseSize={} " +
+                    "responseTrailersCount={} grpcStatus={} responseResult={} responseTime={}ms totalTime={}ms";
+            if (throwable == null) {
+                logger.log(logFormatString,
+                        connInfo == null ? "unknown" : connInfo,
+                        requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
+                        requestMetaData.headers().size(), requestSize, requestTrailersCount, unwrappedRequestResult,
+                        responseMetaData.status().code(), responseMetaData.headers().size(), responseSize,
+                        responseTrailersCount, grpcStatus, unwrapResult(responseResult), responseTimeMs,
+                        durationMs(startTime));
+            } else {
+                logger.log(logFormatString,
+                        connInfo == null ? "unknown" : connInfo,
+                        requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
+                        requestMetaData.headers().size(), requestSize, requestTrailersCount, unwrappedRequestResult,
+                        responseMetaData.status().code(), responseMetaData.headers().size(), responseSize,
+                        responseTrailersCount, grpcStatus, unwrapResult(responseResult), responseTimeMs,
+                        durationMs(startTime), throwable);
+            }
+        }
+
+        private void logWithoutResponse(final HttpRequestMetaData requestMetaData, final Object unwrappedRequestResult,
+                                        @Nullable final Throwable throwable) {
+            final String logFormatString = "connection='{}' " +
+                    "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailersCount={} " +
+                    "requestResult={} responseResult={} responseTime={}ms totalTime={}ms";
+            if (throwable == null) {
+                logger.log(logFormatString,
+                        connInfo == null ? "unknown" : connInfo,
+                        requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
+                        requestMetaData.headers().size(), requestSize, requestTrailersCount, unwrappedRequestResult,
+                        unwrapResult(responseResult), responseTimeMs, durationMs(startTime));
+            } else {
+                logger.log(logFormatString,
+                        connInfo == null ? "unknown" : connInfo,
+                        requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
+                        requestMetaData.headers().size(), requestSize, requestTrailersCount, unwrappedRequestResult,
+                        unwrapResult(responseResult), responseTimeMs, durationMs(startTime),
+                        throwable);
             }
         }
 
