@@ -858,7 +858,7 @@ public abstract class Single<T> {
      *      return zipper.apply(f1.get(), other.get());
      * }</pre>
      * @param other The other {@link Single} to zip with.
-     * @param zipper Used to combine the completed results for each item from {@code singles}.
+     * @param zipper Used to combine the completed results for each item from each {@link Single}.
      * @param <T2> The type of {@code other}.
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
@@ -884,7 +884,7 @@ public abstract class Single<T> {
      *      return zipper.apply(f1.get(), other.get());
      * }</pre>
      * @param other The other {@link Single} to zip with.
-     * @param zipper Used to combine the completed results for each item from {@code singles}.
+     * @param zipper Used to combine the completed results for each item from each {@link Single}.
      * @param <T2> The type of {@code other}.
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
