@@ -141,7 +141,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         this.address = requireNonNull(address);
         config = new HttpClientConfig();
         // Skip default options not supported by this address type
-        if (!(address instanceof DomainSocketAddress || address instanceof io.netty.channel.unix.DomainSocketAddress)) {
+        if (!(address instanceof DomainSocketAddress)) {
             socketOption(SO_KEEPALIVE, true);
         }
         executionContextBuilder = new HttpExecutionContextBuilder();
