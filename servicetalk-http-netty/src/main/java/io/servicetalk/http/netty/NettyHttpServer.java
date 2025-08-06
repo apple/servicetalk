@@ -302,8 +302,7 @@ final class NettyHttpServer {
             final Single<StreamingHttpRequest> requestSingle =
                     connection.read().firstAndTail((head, payload) -> {
                         HttpRequestMetaData meta = (HttpRequestMetaData) head;
-                        return newTransportRequest(meta.method(), meta.requestTarget(), meta.version(),
-                                meta.headers(), executionContext().bufferAllocator(), payload,
+                        return newTransportRequest(meta, executionContext().bufferAllocator(), payload,
                                 requireTrailerHeader, headersFactory);
                     });
             toSource(handleRequestAndWriteResponse(requestSingle, handleMultipleRequests))

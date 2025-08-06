@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.http.api.Http2Exception;
+import io.servicetalk.http.api.HttpContextKeys;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -95,8 +96,9 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                 writeMetaData(ctx, metaData, h2Headers, true, promise);
             } finally {
                 final Http2StreamChannel streamChannel = (Http2StreamChannel) ctx.channel();
-                final int streamId = streamChannel.stream().id();
+                final long streamId = streamChannel.stream().id();
                 if (streamId > 0) {
+                    metaData.context().put(HttpContextKeys.STREAM_ID, streamId);
                     observer.streamIdAssigned(streamId);
                 }
             }
@@ -164,7 +166,8 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
 
             if (headersFrame.isEndStream()) {
                 if (httpStatus != null) {
-                    fireFullResponse(ctx, h2Headers, httpStatus, streamId);
+                    ctx.fireChannelRead(newResponseMetaData(HTTP_2_0, httpStatus,
+                            h2HeadersToH1HeadersClient(ctx, h2Headers, httpStatus, true, streamId)));
                 } else {
                     ctx.fireChannelRead(h2HeadersToH1HeadersClient(ctx, h2Headers, null, false, streamId));
                 }
@@ -185,13 +188,6 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
     private static Http2Exception noStatus(final ChannelHandlerContext ctx, final int streamId) {
         return protocolError(ctx, streamId, false,
                 "Incoming response must have '" + STATUS.value() + "' header");
-    }
-
-    private void fireFullResponse(final ChannelHandlerContext ctx, final Http2Headers h2Headers,
-                                  final HttpResponseStatus httpStatus, final int streamId) throws Http2Exception {
-        assert method != null;
-        ctx.fireChannelRead(newResponseMetaData(HTTP_2_0, httpStatus,
-                h2HeadersToH1HeadersClient(ctx, h2Headers, httpStatus, true, streamId)));
     }
 
     private HttpHeaders h2HeadersToH1HeadersClient(final ChannelHandlerContext ctx,

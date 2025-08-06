@@ -103,12 +103,14 @@ abstract class AbstractDelegatingHttpRequest implements PayloadInfo, HttpRequest
         return original.context();
     }
 
+    @Nullable
     @Deprecated
     @Override
     public ContentCodec encoding() {
         return original.encoding();
     }
 
+    @Nullable
     @Override
     public BufferEncoder contentEncoding() {
         return original.contentEncoding();

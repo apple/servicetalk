@@ -54,6 +54,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpResponseMetaDataFactory.newResponseMetaData;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -131,7 +132,7 @@ final class AbstractHttpConnectionTest {
 
         HttpHeaders headers = headersFactory.newHeaders();
         headers.add(TRANSFER_ENCODING, CHUNKED);
-        StreamingHttpRequest req = newTransportRequest(GET, "/foo", HTTP_1_1, headers,
+        StreamingHttpRequest req = newTransportRequest(newRequestMetaData(HTTP_1_1, GET, "/foo", headers),
                 allocator, from(chunk1, chunk2, chunk3, trailers), false, headersFactory);
 
         HttpResponseMetaData respMeta = newResponseMetaData(HTTP_1_1, OK,
