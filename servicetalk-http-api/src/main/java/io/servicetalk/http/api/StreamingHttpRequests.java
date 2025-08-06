@@ -39,7 +39,10 @@ public final class StreamingHttpRequests {
      * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
      * request.
      * @param version the {@link HttpProtocolVersion} of the request.
-     * @param headers the {@link HttpHeaders} of the request.
+     * @param headers the {@link HttpHeaders} of the request. Note that newly created and returned
+     * {@link StreamingHttpRequest} will use this {@link HttpHeaders} directly, which means later mutation of
+     * {@link HttpHeaders} will have side effects on returned request and should be avoided as these operations are not
+     * thread safe.
      * @param allocator the allocator used for serialization purposes if necessary.
      * @param headersFactory {@link HttpHeadersFactory} to use.
      * @return a new {@link StreamingHttpRequest}.
@@ -60,7 +63,10 @@ public final class StreamingHttpRequests {
      * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
      * request.
      * @param version the {@link HttpProtocolVersion} of the request.
-     * @param headers the {@link HttpHeaders} of the request.
+     * @param headers the {@link HttpHeaders} of the request. Note that newly created and returned
+     * {@link StreamingHttpRequest} will use this {@link HttpHeaders} directly, which means later mutation of
+     * {@link HttpHeaders} will have side effects on returned request and should be avoided as these operations are not
+     * thread safe.
      * @param allocator the allocator used for serialization purposes if necessary.
      * @param payload a {@link Publisher} for payload that optionally emits {@link HttpHeaders} if the request contains
      * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
@@ -81,11 +87,15 @@ public final class StreamingHttpRequests {
     }
 
     /**
-     * Creates a new {@link StreamingHttpRequest} which is read from the transport. If the request contains
-     * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a> then the passed {@code payload}
-     * {@link Publisher} must also emit {@link HttpHeaders} before completion.
+     * Creates a new {@link StreamingHttpRequest} which is read from the transport.
+     * <p>
+     * If the request contains <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a> then the passed
+     * {@code payload} {@link Publisher} must also emit {@link HttpHeaders} before completion.
      *
-     * @param metaData the {@link HttpRequestMetaData} of the request parsed by the transport layer.
+     * @param metaData the {@link HttpRequestMetaData} of the request parsed by the transport layer. Note that newly
+     * created and returned {@link StreamingHttpRequest} will use this {@link HttpRequestMetaData} directly and share
+     * its parts, which means later mutation of {@link HttpRequestMetaData} will have side effects on returned request
+     * and should be avoided as these operations are not thread safe.
      * @param allocator the allocator to use for serialization purposes if necessary.
      * @param payload a {@link Publisher} for payload that optionally emits {@link HttpHeaders} if the request contains
      * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
