@@ -41,7 +41,7 @@ and can be used as below:
 ----
 // Processing of this request does not have any blocking code
 HttpRequest request = httpClient.newRequest(method, requestTarget);
-request.context().put(HTTP_EXECUTION_STRATEGY_KEY, HttpExecutionStrategies.noOffloadsStrategy());
+request.context().put(HTTP_EXECUTION_STRATEGY_KEY, HttpExecutionStrategies.offloadNone());
 HttpResponse  response = httpClient.request(request);
 ----
 
@@ -60,7 +60,7 @@ See
 link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpClientBuilder.java[HttpClientBuilder].
 [source,java]
 ----
-clientBuilder.executionStrategy(HttpExecutionStrategies.noOffloadsStrategy());
+clientBuilder.executionStrategy(HttpExecutionStrategies.offloadNone());
 ----
 
 This strategy will be used for all requests that do not explicitly specify a strategy.
@@ -90,7 +90,7 @@ See
 link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpServerBuilder.java[HttpServerBuilder].
 [source,java]
 ----
-serverBuilder.executionStrategy(HttpExecutionStrategies.noOffloadsStrategy());
+serverBuilder.executionStrategy(HttpExecutionStrategies.offloadNone());
 ----
 
 This strategy will be used for all requests processed by this server.
@@ -115,7 +115,7 @@ This auto-inference is only used if no strategy is explicitly specified for that
 A router may also provide a capability for a route to explicitly define an execution strategy that is used to invoke
 that route. In presence of such an explicit strategy, auto-inference of the route strategy is disabled. In order to
 disable offloads, one should use
-link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategies.java[`HttpExecutionStrategies.noOffloadsStrategy()`]
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategies.java[`HttpExecutionStrategies.offloadNone()`]
 
 ==== Recommended approach
 
