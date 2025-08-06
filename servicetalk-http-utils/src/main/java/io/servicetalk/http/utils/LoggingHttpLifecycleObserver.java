@@ -175,42 +175,52 @@ final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver {
                 unwrappedRequestResult = Result.cancelled;
             }
             assert responseResult != null;
-            final Throwable maybeException = ThrowableUtils.combine(responseResult, requestResult);
+            final Throwable throwable = ThrowableUtils.combine(responseResult, requestResult);
             if (responseMetaData != null) {
-                final String logMessage = "connection='{}' " +
-                        "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailersCount={} " +
-                        "requestResult={} responseCode={} responseHeadersCount={} responseSize={} " +
-                        "responseTrailersCount={} responseResult={} responseTime={}ms totalTime={}ms";
-                if (maybeException == null) {
-                    logger.log(logMessage, connInfo == null ? "unknown" : connInfo,
-                            requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
-                            requestMetaData.headers().size(), requestSize, requestTrailersCount, unwrappedRequestResult,
-                            responseMetaData.status().code(), responseMetaData.headers().size(), responseSize,
-                            responseTrailersCount, unwrapResult(responseResult), responseTimeMs, durationMs(startTime));
-                } else {
-                    logger.log(logMessage, connInfo == null ? "unknown" : connInfo,
-                            requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
-                            requestMetaData.headers().size(), requestSize, requestTrailersCount, unwrappedRequestResult,
-                            responseMetaData.status().code(), responseMetaData.headers().size(), responseSize,
-                            responseTrailersCount, unwrapResult(responseResult), responseTimeMs, durationMs(startTime),
-                            maybeException);
-                }
+                logWithResponse(requestMetaData, unwrappedRequestResult, responseMetaData, throwable);
             } else {
-                final String logMessage = "connection='{}' " +
-                        "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailersCount={} " +
-                        "requestResult={} responseResult={} responseTime={}ms totalTime={}ms";
-                if (maybeException == null) {
-                    logger.log(logMessage, connInfo == null ? "unknown" : connInfo,
-                            requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
-                            requestMetaData.headers().size(), requestSize, requestTrailersCount, unwrappedRequestResult,
-                            unwrapResult(responseResult), responseTimeMs, durationMs(startTime));
-                } else {
-                    logger.log(logMessage, connInfo == null ? "unknown" : connInfo,
-                            requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
-                            requestMetaData.headers().size(), requestSize, requestTrailersCount, unwrappedRequestResult,
-                            unwrapResult(responseResult), responseTimeMs, durationMs(startTime),
-                            maybeException);
-                }
+                logWithoutResponse(requestMetaData, unwrappedRequestResult, throwable);
+            }
+        }
+
+        private void logWithResponse(final HttpRequestMetaData requestMetaData, final Object unwrappedRequestResult,
+                                     final HttpResponseMetaData responseMetaData, @Nullable final Throwable throwable) {
+            final String logMessage = "connection='{}' " +
+                    "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailersCount={} " +
+                    "requestResult={} responseCode={} responseHeadersCount={} responseSize={} " +
+                    "responseTrailersCount={} responseResult={} responseTime={}ms totalTime={}ms";
+            if (throwable == null) {
+                logger.log(logMessage, connInfo == null ? "unknown" : connInfo,
+                        requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
+                        requestMetaData.headers().size(), requestSize, requestTrailersCount, unwrappedRequestResult,
+                        responseMetaData.status().code(), responseMetaData.headers().size(), responseSize,
+                        responseTrailersCount, unwrapResult(responseResult), responseTimeMs, durationMs(startTime));
+            } else {
+                logger.log(logMessage, connInfo == null ? "unknown" : connInfo,
+                        requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
+                        requestMetaData.headers().size(), requestSize, requestTrailersCount, unwrappedRequestResult,
+                        responseMetaData.status().code(), responseMetaData.headers().size(), responseSize,
+                        responseTrailersCount, unwrapResult(responseResult), responseTimeMs, durationMs(startTime),
+                        throwable);
+            }
+        }
+
+        private void logWithoutResponse(final HttpRequestMetaData requestMetaData, final Object unwrappedRequestResult,
+                                        @Nullable final Throwable maybeException) {
+            final String logMessage = "connection='{}' " +
+                    "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailersCount={} " +
+                    "requestResult={} responseResult={} responseTime={}ms totalTime={}ms";
+            if (maybeException == null) {
+                logger.log(logMessage, connInfo == null ? "unknown" : connInfo,
+                        requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
+                        requestMetaData.headers().size(), requestSize, requestTrailersCount, unwrappedRequestResult,
+                        unwrapResult(responseResult), responseTimeMs, durationMs(startTime));
+            } else {
+                logger.log(logMessage, connInfo == null ? "unknown" : connInfo,
+                        requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
+                        requestMetaData.headers().size(), requestSize, requestTrailersCount, unwrappedRequestResult,
+                        unwrapResult(responseResult), responseTimeMs, durationMs(startTime),
+                        maybeException);
             }
         }
 
