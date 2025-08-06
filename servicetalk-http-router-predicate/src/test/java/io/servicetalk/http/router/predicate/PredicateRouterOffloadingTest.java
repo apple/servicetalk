@@ -138,7 +138,7 @@ class PredicateRouterOffloadingTest {
         final BlockingHttpClient client = buildServerAndClient(routerBuilder.buildStreaming());
         client.request(client.get("/"));
         verifyAllOffloadPointsRecorded();
-        // Server is still offloaded, noOffloadsStrategy at route level isn't enough to disable offloading
+        // Server is still offloaded, offloadNone at route level isn't enough to disable offloading
         assertRouteAndPredicateOffloaded();
     }
 
