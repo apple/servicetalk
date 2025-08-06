@@ -30,6 +30,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.transport.netty.internal.BuilderUtils.fromNettyAddress;
 
 /**
  * {@link ServerContext} implementation using a netty {@link Channel}.
@@ -86,7 +87,7 @@ public final class NettyServerContext implements ServerContext {
 
     @Override
     public SocketAddress listenAddress() {
-        return listenChannel.localAddress();
+        return fromNettyAddress(listenChannel.localAddress());
     }
 
     @Override

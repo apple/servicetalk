@@ -133,7 +133,7 @@ public final class BuilderUtils {
     }
 
     /**
-     * If {@code address} if a ServiceTalk specific address it is unwrapped into a Netty address.
+     * If {@code address} of a ServiceTalk specific type it is converted into a corresponding Netty address type.
      *
      * @param address the address to convert.
      * @return an address that Netty understands.
@@ -152,6 +152,22 @@ public final class BuilderUtils {
             return toResolvedInetSocketAddress((HostAndPort) address);
         }
         throw new IllegalArgumentException("Unsupported address: " + address);
+    }
+
+    /**
+     * If {@code address} of a Netty specific type it is converted into a corresponding ServiceTalk address type.
+     *
+     * @param address the address to convert.
+     * @return an address that ServiceTalk public API expects.
+     */
+    public static SocketAddress fromNettyAddress(SocketAddress address) {
+        // The order of the instance of checks is important because `DomainSocketAddress` is also of type
+        // `SocketAddress`, and we want to identify the more specific types before returning the fallback
+        // `SocketAddress` type.
+        if (address instanceof DomainSocketAddress) {
+            return new io.servicetalk.transport.api.DomainSocketAddress(((DomainSocketAddress) address).path());
+        }
+        return address;
     }
 
     /**

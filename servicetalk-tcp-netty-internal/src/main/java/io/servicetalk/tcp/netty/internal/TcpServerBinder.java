@@ -56,6 +56,7 @@ import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
+import static io.servicetalk.transport.netty.internal.BuilderUtils.fromNettyAddress;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 import static io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer.POOLED_ALLOCATOR;
@@ -165,7 +166,8 @@ public final class TcpServerBinder {
             @Override
             protected void initChannel(final Channel channel) {
                 Single<CC> connectionSingle = connectionFunction.apply(channel,
-                        config.transportObserver().onNewConnection(channel.localAddress(), channel.remoteAddress()));
+                        config.transportObserver().onNewConnection(
+                                fromNettyAddress(channel.localAddress()), fromNettyAddress(channel.remoteAddress())));
 
                 connectionSingle = wrapConnectionAcceptors(connectionSingle, channel, executionContext, config,
                         earlyConnectionAcceptor, lateConnectionAcceptor, connectionAcceptor);

@@ -40,7 +40,7 @@ public final class TestUtils {
      * @param errors The queue of captured errors.
      */
     public static void assertNoAsyncErrors(final Queue<? extends Throwable> errors) {
-        assertNoAsyncErrors("Async errors occurred. See suppressed!", errors);
+        assertNoAsyncErrors("Async errors occurred.", errors);
     }
 
     /**
@@ -55,7 +55,7 @@ public final class TestUtils {
             return;
         }
 
-        final AssertionError error = null != message ? new AssertionError(message) : new AssertionError();
+        final AssertionError error = new AssertionError(message + " See " + errors.size() + " suppressed error(s):");
         Throwable t;
         while ((t = errors.poll()) != null) {
             addSuppressed(error, t);
