@@ -298,6 +298,88 @@ class OpenTelemetryHttpServiceFilterTest {
     }
 
     @Test
+    void customHttpServerSpanNameExtractor() throws Exception {
+        final String requestUrl = "/custom-name-test";
+        final String customPrefix = "CustomHttp-";
+
+        // Configure server with custom span name extractor
+        OpenTelemetryOptions options = new OpenTelemetryOptions.Builder()
+                .spanNameExtractor(req -> customPrefix + req.method() + " " + req.path())
+                .build();
+
+        try (ServerContext context = buildServer(otelTesting.getOpenTelemetry(), options)) {
+            try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
+                HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
+                TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
+
+                // Verify basic tracing still works
+                verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), requestUrl,
+                    serverSpanState.getTraceId(), serverSpanState.getSpanId(),
+                    TRACING_TEST_LOG_LINE_PREFIX);
+
+                assertThat(otelTesting.getSpans()).hasSize(1);
+
+                // Verify server span uses custom name
+                SpanData serverSpan = otelTesting.getSpans().get(0);
+                String expectedSpanName = customPrefix + "GET " + requestUrl;
+                assertThat(serverSpan.getName()).isEqualTo(expectedSpanName);
+            }
+        }
+    }
+
+    @Test
+    void customHttpClientAndServerSpanNameExtractor() throws Exception {
+        final String requestUrl = "/client-server-custom-name-test";
+        final String customPrefix = "CustomSpan-";
+
+        // Configure both client and server with the same custom span name extractor
+        OpenTelemetryOptions options = new OpenTelemetryOptions.Builder()
+                .spanNameExtractor(req -> customPrefix + req.method() + " " + req.path())
+                .build();
+
+        OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
+        try (ServerContext context = buildServer(openTelemetry, options)) {
+            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
+                .appendClientFilter(new OpenTelemetryHttpRequesterFilter(
+                        new OpenTelemetryOptions.Builder(options)
+                                .openTelemetry(openTelemetry)
+                                .componentName("testClient")
+                                .build()))
+                .build()) {
+                HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
+                TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
+
+                verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), requestUrl,
+                    serverSpanState.getTraceId(), serverSpanState.getSpanId(),
+                    TRACING_TEST_LOG_LINE_PREFIX);
+                assertThat(otelTesting.getSpans()).hasSize(2);
+                assertThat(otelTesting.getSpans()).extracting("traceId")
+                    .containsExactly(serverSpanState.getTraceId(), serverSpanState.getTraceId());
+
+                // Find client and server spans
+                SpanData clientSpan = otelTesting.getSpans().stream()
+                    .filter(span -> span.getKind() == SpanKind.CLIENT)
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("No client span found"));
+
+                SpanData serverSpan = otelTesting.getSpans().stream()
+                    .filter(span -> span.getKind() == SpanKind.SERVER)
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("No server span found"));
+
+                // Verify both spans use custom naming
+                String expectedSpanName = customPrefix + "GET " + requestUrl;
+                assertThat(clientSpan.getName()).isEqualTo(expectedSpanName);
+                assertThat(serverSpan.getName()).isEqualTo(expectedSpanName);
+
+                // Verify they're part of the same trace
+                assertThat(clientSpan.getTraceId()).isEqualTo(serverSpan.getTraceId());
+                assertThat(serverSpan.getParentSpanId()).isEqualTo(clientSpan.getSpanId());
+            }
+        }
+    }
+
+    @Test
     void verifyAsyncContextVisibility() throws Exception {
         verifyServerFilterAsyncContextVisibility(new OpenTelemetryHttpServiceFilter());
     }

@@ -491,12 +491,12 @@ class OpenTelemetryHttpRequesterFilterTest {
     }
 
     @Test
-    void customSpanNamePrefix() throws Exception {
+    void customSpanNameExtractor() throws Exception {
         final String requestUrl = "/";
-        final String prefix = "Span prefix- ";
+        final String customPrefix = "CustomHttp-";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         OpenTelemetryOptions openTelemetryOptions = new OpenTelemetryOptions.Builder()
-                .spanNameExtractor(req -> prefix)
+                .spanNameExtractor(req -> customPrefix + req.method() + " " + req.path())
                 .build();
         try (ServerContext context = buildServer(openTelemetry, openTelemetryOptions, true);
              HttpClient client = forSingleAddress(serverHostAndPort(context))
@@ -510,7 +510,7 @@ class OpenTelemetryHttpRequesterFilterTest {
             Thread.sleep(SLEEP_TIME);
             assertThat(otelTesting.getSpans()).hasSize(2);
             otelTesting.getSpans().forEach(spanData ->
-                assertThat(spanData.getName()).startsWith(prefix));
+                assertThat(spanData.getName()).isEqualTo("CustomHttp-GET /"));
         }
     }
 

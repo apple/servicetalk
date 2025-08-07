@@ -168,21 +168,52 @@ class OpenTelemetryGrpcFilterTest {
         assertThat(clientSpan.getStatus().getStatusCode()).isEqualTo(StatusCode.ERROR);
     }
 
+    @Test
+    void customGrpcSpanNameExtractor() throws Exception {
+        final String customPrefix = "CustomGrpc-";
+
+        // Configure OpenTelemetryOptions with custom spanNameExtractor
+        OpenTelemetryOptions options = new OpenTelemetryOptions.Builder()
+                .spanNameExtractor(req -> customPrefix + req.path())
+                .build();
+
+        setUp(false, options);
+
+        TestResponse response = client.asBlockingClient().test(newRequest());
+
+        // Verify response correctness
+        assertThat(response.getMessage()).isEqualTo(CONTENT);
+        assertTraceStructure();
+
+        // Verify both client and server spans use custom name
+        SpanData clientSpan = findSpanByKind(SpanKind.CLIENT);
+        SpanData serverSpan = findSpanByKind(SpanKind.SERVER);
+
+        // The expected complete span name should be the custom prefix + the gRPC path
+        String expectedSpanName = customPrefix + "/opentelemetry.grpc.Tester/test";
+        assertThat(clientSpan.getName()).isEqualTo(expectedSpanName);
+        assertThat(serverSpan.getName()).isEqualTo(expectedSpanName);
+    }
+
     private void setUp(boolean error) throws Exception {
+        setUp(error, new OpenTelemetryOptions.Builder().build());
+    }
+
+    private void setUp(boolean error, OpenTelemetryOptions options) throws Exception {
         // Create gRPC server with unified OpenTelemetry HTTP service filter
         // The filter will automatically detect gRPC requests and handle them appropriately
         serverContext = GrpcServers.forAddress(localAddress(0))
                 .initializeHttp(builder -> builder
                         .appendServiceFilter(new OpenTelemetryHttpServiceFilter(
                                 otelTesting.getOpenTelemetry(),
-                                new OpenTelemetryOptions.Builder().build())))
+                                options)))
                 .listenAndAwait(new Tester.ServiceFactory(new TestTesterService(error)));
 
         // Create gRPC client with unified OpenTelemetry HTTP requester filter
         // The filter will automatically detect gRPC requests and handle them appropriately
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
                 .initializeHttp(builder -> builder.appendClientFilter(new OpenTelemetryHttpRequesterFilter(
-                        new OpenTelemetryOptions.Builder()
+                        new OpenTelemetryOptions.Builder(options)
                                 .openTelemetry(otelTesting.getOpenTelemetry())
                                 .componentName("test-client")
                                 .build())))
