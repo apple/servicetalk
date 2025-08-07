@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.buffer.api.Buffer;
@@ -177,7 +176,11 @@ class OpenTelemetryHttpServiceFilterTest {
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         try (ServerContext context = buildServer(openTelemetry)) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
-                .appendClientFilter(new OpenTelemetryHttpRequesterFilter(openTelemetry, "testClient", DEFAULT_OPTIONS))
+                .appendClientFilter(new OpenTelemetryHttpRequesterFilter(
+                        new OpenTelemetryOptions.Builder(DEFAULT_OPTIONS)
+                                .openTelemetry(openTelemetry)
+                                .componentName("testClient")
+                                .build()))
                 .build()) {
                 HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
@@ -485,7 +488,8 @@ class OpenTelemetryHttpServiceFilterTest {
 
     private static ServerContext buildServer(OpenTelemetry givenOpentelemetry,
                                              OpenTelemetryOptions opentelemetryOptions) throws Exception {
-        return HttpServers.forAddress(localAddress(0))
+        HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
+        return serverBuilder
             .appendServiceFilter(new OpenTelemetryHttpServiceFilter(givenOpentelemetry, opentelemetryOptions))
             .appendServiceFilter(new TestTracingServerLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX))
             .listenAndAwait((ctx, request, responseFactory) -> {

@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.transport.api.ConnectionInfo;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributesBuilder;
@@ -49,13 +47,12 @@ import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.with
  * This helper handles the creation of HTTP instrumenters and provides methods to track
  * HTTP requests with proper span lifecycle management and HTTP semantic conventions.
  */
-final class HttpInstrumentationHelper {
+final class HttpInstrumentationHelper extends InstrumentationHelper {
 
     private final Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter;
     private final boolean isClient;
 
-    private HttpInstrumentationHelper(
-            Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter, boolean isClient) {
+    private HttpInstrumentationHelper(Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter, boolean isClient) {
         this.instrumenter = instrumenter;
         this.isClient = isClient;
     }
@@ -64,28 +61,21 @@ final class HttpInstrumentationHelper {
      * Tracks an HTTP request using HTTP-specific OpenTelemetry instrumentation.
      *
      * @param requestHandler function to execute the actual request
-     * @param request the HTTP request
-     * @param connectionInfo connection information (may be null for clients)
+     * @param requestInfo the HTTP request and connection info
+     * @param parentContext the currently active context
      * @return instrumented response single
      */
-    Single<StreamingHttpResponse> trackHttpRequest(
+    @Override
+    Single<StreamingHttpResponse> doTrackRequest(
             Function<StreamingHttpRequest, Single<StreamingHttpResponse>> requestHandler,
-            StreamingHttpRequest request,
-            @Nullable ConnectionInfo connectionInfo) {
-
-        final Context parentContext = Context.current();
-        final RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
-
-        if (!instrumenter.shouldStart(parentContext, requestInfo)) {
-            return requestHandler.apply(request);
-        }
-
+            RequestInfo requestInfo,
+            Context parentContext) {
         final Context context = instrumenter.start(parentContext, requestInfo);
         try (Scope unused = context.makeCurrent()) {
             final HttpScopeTracker tracker = isClient ? HttpScopeTracker.client(context, requestInfo, instrumenter) :
                     HttpScopeTracker.server(context, requestInfo, instrumenter);
             try {
-                Single<StreamingHttpResponse> response = requestHandler.apply(request);
+                Single<StreamingHttpResponse> response = requestHandler.apply(requestInfo.request());
                 return withContext(tracker.track(response), context);
             } catch (Throwable t) {
                 tracker.onError(t);
@@ -97,11 +87,11 @@ final class HttpInstrumentationHelper {
     /**
      * Creates an HTTP server instrumentation helper.
      *
-     * @param openTelemetry the OpenTelemetry instance
-     * @param options OpenTelemetry configuration options
+     * @param options OpenTelemetry configuration options containing the OpenTelemetry instance
      * @return server instrumentation helper
      */
-    static HttpInstrumentationHelper createServer(OpenTelemetry openTelemetry, OpenTelemetryOptions options) {
+    static HttpInstrumentationHelper createServer(OpenTelemetryOptions options) {
+        OpenTelemetry openTelemetry = options.openTelemetry();
         SpanNameExtractor<RequestInfo> serverSpanNameExtractor =
                 HttpSpanNameExtractor.create(HttpAttributesGetter.SERVER_INSTANCE);
         InstrumenterBuilder<RequestInfo, HttpResponseMetaData> serverInstrumenterBuilder =
@@ -127,13 +117,12 @@ final class HttpInstrumentationHelper {
     /**
      * Creates an HTTP client instrumentation helper.
      *
-     * @param openTelemetry the OpenTelemetry instance
-     * @param options OpenTelemetry configuration options
-     * @param componentName component name for peer service attribute
+     * @param options OpenTelemetry configuration options containing the OpenTelemetry instance
+     *                (componentName from options used for peer service attribute)
      * @return client instrumentation helper
      */
-    static HttpInstrumentationHelper createClient(OpenTelemetry openTelemetry, OpenTelemetryOptions options,
-                                                  String componentName) {
+    static HttpInstrumentationHelper createClient(OpenTelemetryOptions options) {
+        OpenTelemetry openTelemetry = options.openTelemetry();
         SpanNameExtractor<RequestInfo> clientSpanNameExtractor =
                 HttpSpanNameExtractor.create(HttpAttributesGetter.CLIENT_INSTANCE);
         InstrumenterBuilder<RequestInfo, HttpResponseMetaData> clientInstrumenterBuilder =
@@ -145,7 +134,7 @@ final class HttpInstrumentationHelper {
         if (options.enableMetrics()) {
             clientInstrumenterBuilder.addOperationMetrics(HttpClientMetrics.get());
         }
-        componentName = componentName.trim();
+        String componentName = options.componentName().trim();
         if (!componentName.isEmpty()) {
             clientInstrumenterBuilder.addAttributesExtractor(
                     AttributesExtractor.constant(PEER_SERVICE, componentName));

@@ -109,10 +109,13 @@ class OpenTelemetryHttpRequesterFilterTest {
     void testInjectWithNoParent() throws Exception {
         final String requestUrl = "/";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer(openTelemetry, false)) {
+        try (ServerContext context = buildServer(openTelemetry, DEFAULT_OPTIONS, false)) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
-                .appendClientFilter(new OpenTelemetryHttpRequesterFilter(openTelemetry, "testClient",
-                        DEFAULT_OPTIONS))
+                .appendClientFilter(new OpenTelemetryHttpRequesterFilter(
+                        new OpenTelemetryOptions.Builder(DEFAULT_OPTIONS)
+                                .openTelemetry(openTelemetry)
+                                .componentName("testClient")
+                                .build()))
                 .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX)).build()) {
                 HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
@@ -140,10 +143,13 @@ class OpenTelemetryHttpRequesterFilterTest {
     void testInjectWithAParent() throws Exception {
         final String requestUrl = "/path";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer(openTelemetry, true)) {
+        try (ServerContext context = buildServer(openTelemetry, DEFAULT_OPTIONS, true)) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
-                .appendClientFilter(new OpenTelemetryHttpRequesterFilter(openTelemetry, "testClient",
-                        DEFAULT_OPTIONS))
+                .appendClientFilter(new OpenTelemetryHttpRequesterFilter(
+                        new OpenTelemetryOptions.Builder(DEFAULT_OPTIONS)
+                                .openTelemetry(openTelemetry)
+                                .componentName("testClient")
+                                .build()))
                 .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX)).build()) {
                 HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
@@ -191,13 +197,16 @@ class OpenTelemetryHttpRequesterFilterTest {
     @CsvSource({"false, false", "false, true", "true, false", "true, true"})
     void testInjectWithAParentCreated(boolean absoluteForm, boolean withHostHeader) throws Exception {
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer(openTelemetry, true)) {
+        try (ServerContext context = buildServer(openTelemetry, DEFAULT_OPTIONS, true)) {
             HostAndPort serverHostAndPort = serverHostAndPort(context);
             final String requestPath = "/path/to/resource";
             final String requestUrl = absoluteForm ? fullUrl(serverHostAndPort, requestPath) : requestPath;
             try (HttpClient client = forSingleAddress(serverHostAndPort)
-                    .appendClientFilter(new OpenTelemetryHttpRequesterFilter(openTelemetry, "testClient",
-                            DEFAULT_OPTIONS))
+                    .appendClientFilter(new OpenTelemetryHttpRequesterFilter(
+                            new OpenTelemetryOptions.Builder(DEFAULT_OPTIONS)
+                                    .openTelemetry(openTelemetry)
+                                    .componentName("testClient")
+                                    .build()))
                     .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX)).build()) {
 
                 Span span = otelTesting.getOpenTelemetry().getTracer("io.serviceTalk").spanBuilder("/")
@@ -252,10 +261,12 @@ class OpenTelemetryHttpRequesterFilterTest {
     void testCaptureHeader() throws Exception {
         final String requestUrl = "/";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer(openTelemetry, false)) {
+        try (ServerContext context = buildServer(openTelemetry, DEFAULT_OPTIONS, false)) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
-                .appendClientFilter(new OpenTelemetryHttpRequesterFilter(openTelemetry, "testClient",
+                .appendClientFilter(new OpenTelemetryHttpRequesterFilter(
                     new OpenTelemetryOptions.Builder()
+                        .openTelemetry(openTelemetry)
+                        .componentName("testClient")
                         .capturedResponseHeaders(singletonList("my-header"))
                         .capturedRequestHeaders(singletonList("some-request-header"))
                         .build()))
@@ -385,9 +396,13 @@ class OpenTelemetryHttpRequesterFilterTest {
             }
         };
 
-        ServerContext context = buildServer(openTelemetry, false);
+        ServerContext context = buildServer(openTelemetry, DEFAULT_OPTIONS, false);
         try (HttpClient client = forSingleAddress(serverHostAndPort(context))
-                .appendClientFilter(new OpenTelemetryHttpRequestFilter(openTelemetry, "testClient"))
+                .appendClientFilter(new OpenTelemetryHttpRequesterFilter(
+                        new OpenTelemetryOptions.Builder()
+                                .openTelemetry(openTelemetry)
+                                .componentName("testClient")
+                                .build()))
                 .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX))
                 .appendClientFilter(new HttpLifecycleObserverRequesterFilter(
                         new TestHttpLifecycleObserver(errors)))
@@ -474,11 +489,14 @@ class OpenTelemetryHttpRequesterFilterTest {
         }
     }
 
-    private static ServerContext buildServer(OpenTelemetry givenOpentelemetry, boolean addFilter) throws Exception {
+    private static ServerContext buildServer(OpenTelemetry givenOpentelemetry,
+                                             OpenTelemetryOptions openTelemetryOptions,
+                                             boolean addFilter) throws Exception {
         HttpServerBuilder httpServerBuilder = HttpServers.forAddress(localAddress(0));
         if (addFilter) {
             httpServerBuilder =
-                httpServerBuilder.appendServiceFilter(new OpenTelemetryHttpServerFilter(givenOpentelemetry));
+                httpServerBuilder.appendServiceFilter(new OpenTelemetryHttpServiceFilter(
+                        givenOpentelemetry, openTelemetryOptions));
         }
         return httpServerBuilder
             .listenAndAwait((ctx, request, responseFactory) -> {

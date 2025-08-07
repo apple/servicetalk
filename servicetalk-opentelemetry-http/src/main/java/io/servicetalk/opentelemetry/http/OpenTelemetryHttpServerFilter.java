@@ -39,7 +39,7 @@ import io.opentelemetry.context.Context;
  *     {@link io.servicetalk.http.utils.HttpRequestAutoDrainingServiceFilter} immediately after.</li>
  *     <li>To ensure tracing sees the same result status codes as the calling client, add the
  *     {@link io.servicetalk.http.api.HttpExceptionMapperServiceFilter} after this filter.</li>
- *     <li>If you intend to use a {@link io.servicetalk.http.api.HttpLifecycleObserver}, add it using the the
+ *     <li>If you intend to use a {@link io.servicetalk.http.api.HttpLifecycleObserver}, add it using the
  *     HttpLifecycleObserverServiceFilter after the tracing filter to ensure the correct {@link Span} information is
  *     present.</li>
  * </ul>
@@ -64,7 +64,9 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryHt
     @Deprecated // FIXME: 0.43 - remove deprecated ctor
     @SuppressWarnings("DeprecatedIsStillUsed")
     public OpenTelemetryHttpServerFilter(final OpenTelemetry openTelemetry) {
-        super(openTelemetry, DEFAULT_OPTIONS);
+        super(new OpenTelemetryOptions.Builder(DEFAULT_OPTIONS)
+                .openTelemetry(openTelemetry)
+                .build());
     }
 
     /**
@@ -81,6 +83,7 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryHt
      * @param openTelemetryOptions extra options to create the opentelemetry filter
      */
     public OpenTelemetryHttpServerFilter(final OpenTelemetryOptions openTelemetryOptions) {
-        super(GlobalOpenTelemetry.get(), openTelemetryOptions);
+        super(new OpenTelemetryOptions.Builder(openTelemetryOptions)
+                .build());
     }
 }
