@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.concurrent.api.Single;
@@ -28,7 +27,7 @@ import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ConnectionInfo;
 
-import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.context.Context;
 
 import javax.annotation.Nullable;
 
@@ -41,15 +40,12 @@ abstract class AbstractOpenTelemetryHttpRequesterFilter extends AbstractOpenTele
     /**
      * Create a new instance.
      *
-     * @param openTelemetry        the {@link OpenTelemetry}.
-     * @param componentName        The component name used during building new spans.
-     * @param opentelemetryOptions extra options to create the opentelemetry filter.
+     * @param opentelemetryOptions extra options to create the opentelemetry filter, including OpenTelemetry
+     *                            instance and componentName
      */
-    AbstractOpenTelemetryHttpRequesterFilter(final OpenTelemetry openTelemetry, String componentName,
-                                             final OpenTelemetryOptions opentelemetryOptions) {
-        this.httpHelper = HttpInstrumentationHelper.createClient(openTelemetry, opentelemetryOptions, componentName);
-
-        this.grpcHelper = GrpcInstrumentationHelper.createClient(openTelemetry, opentelemetryOptions, componentName);
+    AbstractOpenTelemetryHttpRequesterFilter(final OpenTelemetryOptions opentelemetryOptions) {
+        this.httpHelper = HttpInstrumentationHelper.createClient(opentelemetryOptions);
+        this.grpcHelper = GrpcInstrumentationHelper.createClient(opentelemetryOptions);
     }
 
     @Override
@@ -75,26 +71,15 @@ abstract class AbstractOpenTelemetryHttpRequesterFilter extends AbstractOpenTele
         };
     }
 
-    private Single<StreamingHttpResponse> trackRequest(final StreamingHttpRequester delegate,
-                                                       final StreamingHttpRequest request,
-                                                       @Nullable ConnectionInfo connectionInfo) {
+    private Single<StreamingHttpResponse> trackRequest(
+            final StreamingHttpRequester delegate,
+            final StreamingHttpRequest request,
+            @Nullable ConnectionInfo connectionInfo) {
         // This should be (essentially) the first filter in the client filter chain, so here is where we initialize
         // all the little bits and pieces that will end up being part of the request context. This includes setting
         // up the retry counter context entry since retries will happen further down in the filter chain.
-
-        // Detect protocol and delegate to appropriate instrumentation helper
-        if (grpcHelper.isGrpcRequest(request)) {
-            // Handle as gRPC request
-            return grpcHelper.trackGrpcRequest(
-                    delegate::request,
-                    request,
-                    connectionInfo);
-        } else {
-            // Handle as HTTP request
-            return httpHelper.trackHttpRequest(
-                    delegate::request,
-                    request,
-                    connectionInfo);
-        }
+        InstrumentationHelper helper = grpcHelper.isGrpcRequest(request) ? grpcHelper : httpHelper;
+        return helper.trackRequest(delegate::request, new RequestInfo(request, connectionInfo),
+                Context.current());
     }
 }

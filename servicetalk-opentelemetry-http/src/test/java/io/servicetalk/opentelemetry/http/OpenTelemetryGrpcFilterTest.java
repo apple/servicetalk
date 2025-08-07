@@ -169,21 +169,27 @@ class OpenTelemetryGrpcFilterTest {
     }
 
     private void setUp(boolean error) throws Exception {
+        setUp(error, new OpenTelemetryOptions.Builder().build());
+    }
+
+    private void setUp(boolean error, OpenTelemetryOptions options) throws Exception {
         // Create gRPC server with unified OpenTelemetry HTTP service filter
         // The filter will automatically detect gRPC requests and handle them appropriately
         serverContext = GrpcServers.forAddress(localAddress(0))
                 .initializeHttp(builder -> builder
                         .appendServiceFilter(new OpenTelemetryHttpServiceFilter(
                                 otelTesting.getOpenTelemetry(),
-                                new OpenTelemetryOptions.Builder().build())))
+                                options)))
                 .listenAndAwait(new Tester.ServiceFactory(new TestTesterService(error)));
 
         // Create gRPC client with unified OpenTelemetry HTTP requester filter
         // The filter will automatically detect gRPC requests and handle them appropriately
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
                 .initializeHttp(builder -> builder.appendClientFilter(new OpenTelemetryHttpRequesterFilter(
-                        otelTesting.getOpenTelemetry(), "test-client",
-                        new OpenTelemetryOptions.Builder().build())))
+                        new OpenTelemetryOptions.Builder(options)
+                                .openTelemetry(otelTesting.getOpenTelemetry())
+                                .componentName("test-client")
+                                .build())))
                 .build(new Tester.ClientFactory());
     }
 

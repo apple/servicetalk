@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.concurrent.api.Single;
@@ -25,17 +24,16 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
-import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.context.Context;
 
 abstract class AbstractOpenTelemetryHttpServiceFilter extends AbstractOpenTelemetryFilter
         implements StreamingHttpServiceFilterFactory {
     private final HttpInstrumentationHelper httpHelper;
     private final GrpcInstrumentationHelper grpcHelper;
 
-    AbstractOpenTelemetryHttpServiceFilter(final OpenTelemetry openTelemetry,
-                                           final OpenTelemetryOptions openTelemetryOptions) {
-        this.httpHelper = HttpInstrumentationHelper.createServer(openTelemetry, openTelemetryOptions);
-        this.grpcHelper = GrpcInstrumentationHelper.createServer(openTelemetry, openTelemetryOptions);
+    AbstractOpenTelemetryHttpServiceFilter(final OpenTelemetryOptions openTelemetryOptions) {
+        this.httpHelper = HttpInstrumentationHelper.createServer(openTelemetryOptions);
+        this.grpcHelper = GrpcInstrumentationHelper.createServer(openTelemetryOptions);
     }
 
     @Override
@@ -54,19 +52,10 @@ abstract class AbstractOpenTelemetryHttpServiceFilter extends AbstractOpenTeleme
                                                        final HttpServiceContext ctx,
                                                        final StreamingHttpRequest request,
                                                        final StreamingHttpResponseFactory responseFactory) {
-        // Detect protocol and delegate to appropriate instrumentation helper
-        if (grpcHelper.isGrpcRequest(request)) {
-            // Handle as gRPC request
-            return grpcHelper.trackGrpcRequest(
-                    req -> delegate.handle(ctx, req, responseFactory),
-                    request,
-                    ctx);
-        } else {
-            // Handle as HTTP request
-            return httpHelper.trackHttpRequest(
-                    req -> delegate.handle(ctx, req, responseFactory),
-                    request,
-                    ctx);
-        }
+        InstrumentationHelper helper = grpcHelper.isGrpcRequest(request) ? grpcHelper : httpHelper;
+        return helper.trackRequest(
+                req -> delegate.handle(ctx, req, responseFactory),
+                new RequestInfo(request, ctx),
+                Context.current());
     }
 }
