@@ -496,7 +496,7 @@ class OpenTelemetryHttpRequesterFilterTest {
         final String prefix = "Span prefix- ";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         OpenTelemetryOptions openTelemetryOptions = new OpenTelemetryOptions.Builder()
-                .spanNamePrefix(req -> prefix)
+                .spanNameExtractor(req -> prefix)
                 .build();
         try (ServerContext context = buildServer(openTelemetry, openTelemetryOptions, true);
              HttpClient client = forSingleAddress(serverHostAndPort(context))

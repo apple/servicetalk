@@ -39,7 +39,7 @@ import static java.util.Objects.requireNonNull;
 public final class OpenTelemetryOptions {
 
     @Nullable
-    private final Function<HttpRequestMetaData, String> spanNamePrefix;
+    private final Function<HttpRequestMetaData, String> spanNameExtractor;
     private final List<String> capturedRequestHeaders;
     private final List<String> capturedResponseHeaders;
     private final boolean enableMetrics;
@@ -51,14 +51,14 @@ public final class OpenTelemetryOptions {
 
     OpenTelemetryOptions(
             @Nullable
-            final Function<HttpRequestMetaData, String> spanNamePrefix,
+            final Function<HttpRequestMetaData, String> spanNameExtractor,
             final List<String> capturedRequestHeaders,
             final List<String> capturedResponseHeaders,
             final boolean enableMetrics,
             final OpenTelemetry openTelemetry,
             final String componentName,
             final boolean ignoreSpanSuppression) {
-        this.spanNamePrefix = spanNamePrefix;
+        this.spanNameExtractor = spanNameExtractor;
         this.capturedRequestHeaders = capturedRequestHeaders;
         this.capturedResponseHeaders = capturedResponseHeaders;
         this.enableMetrics = enableMetrics;
@@ -73,8 +73,8 @@ public final class OpenTelemetryOptions {
      * @return a function that will extract a span name prefix from the {@link HttpRequestMetaData}.
      */
     @Nullable
-    Function<HttpRequestMetaData, String> spanNamePrefix() {
-        return spanNamePrefix;
+    Function<HttpRequestMetaData, String> spanNameExtractor() {
+        return spanNameExtractor;
     }
 
     /**
@@ -171,7 +171,7 @@ public final class OpenTelemetryOptions {
     @Override
     public String toString() {
         return "OpenTelemetryOptions{" +
-                "spanNamePrefix=" + spanNamePrefix +
+                "spanNameExtractor=" + spanNameExtractor +
                 ", capturedRequestHeaders=" + capturedRequestHeaders +
                 ", capturedResponseHeaders=" + capturedResponseHeaders +
                 ", enableMetrics=" + enableMetrics +
@@ -184,7 +184,7 @@ public final class OpenTelemetryOptions {
     /** A builder for {@link OpenTelemetryOptions}. */
     public static final class Builder {
         @Nullable
-        Function<HttpRequestMetaData, String> spanNamePrefix;
+        Function<HttpRequestMetaData, String> spanNameExtractor;
         private List<String> capturedRequestHeaders = emptyList();
         private List<String> capturedResponseHeaders = emptyList();
         private boolean enableMetrics;
@@ -195,7 +195,7 @@ public final class OpenTelemetryOptions {
         private String componentName = "";
 
         public Builder(OpenTelemetryOptions openTelemetryOptions) {
-            this.spanNamePrefix = openTelemetryOptions.spanNamePrefix;
+            this.spanNameExtractor = openTelemetryOptions.spanNameExtractor;
             this.capturedRequestHeaders = openTelemetryOptions.capturedRequestHeaders;
             this.capturedResponseHeaders = openTelemetryOptions.capturedResponseHeaders;
             this.enableMetrics = openTelemetryOptions.enableMetrics;
@@ -209,11 +209,11 @@ public final class OpenTelemetryOptions {
 
         /**
          * Function that maps the provided {@link HttpRequestMetaData} to a span name prefix.
-         * @param spanNamePrefix the span name prefix to append, or {@code null} if no prefix is desired.
+         * @param spanNameExtractor the span name prefix to append, or {@code null} if no prefix is desired.
          * @return {@code this}
          */
-        public Builder spanNamePrefix(@Nullable final Function<HttpRequestMetaData, String> spanNamePrefix) {
-            this.spanNamePrefix = spanNamePrefix;
+        public Builder spanNameExtractor(@Nullable final Function<HttpRequestMetaData, String> spanNameExtractor) {
+            this.spanNameExtractor = spanNameExtractor;
             return this;
         }
 
@@ -309,7 +309,7 @@ public final class OpenTelemetryOptions {
          */
         public OpenTelemetryOptions build() {
             return new OpenTelemetryOptions(
-                    spanNamePrefix, capturedRequestHeaders, capturedResponseHeaders, enableMetrics,
+                    spanNameExtractor, capturedRequestHeaders, capturedResponseHeaders, enableMetrics,
                     openTelemetry, componentName, ignoreSpanSuppression);
         }
     }

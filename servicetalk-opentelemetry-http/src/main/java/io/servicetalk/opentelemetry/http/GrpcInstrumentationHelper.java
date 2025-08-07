@@ -100,11 +100,6 @@ final class GrpcInstrumentationHelper extends InstrumentationHelper {
         OpenTelemetry openTelemetry = options.openTelemetry();
         SpanNameExtractor<RequestInfo> serverSpanNameExtractor = spanNameExtractor(options,
                 GrpcSpanNameExtractor.INSTANCE);
-        if (options.spanNamePrefix() != null) {
-            serverSpanNameExtractor = requestInfo ->
-                    options.spanNamePrefix().apply(requestInfo.request()) +
-                            GrpcSpanNameExtractor.INSTANCE.extract(requestInfo);
-        }
         InstrumenterBuilder<RequestInfo, GrpcTelemetryStatus> serverInstrumenterBuilder =
                 Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, serverSpanNameExtractor);
         serverInstrumenterBuilder

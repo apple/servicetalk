@@ -52,13 +52,11 @@ abstract class InstrumentationHelper {
     }
 
     static SpanNameExtractor<RequestInfo> spanNameExtractor(
-            OpenTelemetryOptions options, SpanNameExtractor<RequestInfo> parent) {
-        if (options.spanNamePrefix() != null) {
-            return requestInfo ->
-                    options.spanNamePrefix().apply(requestInfo.request()) +
-                            parent.extract(requestInfo);
+            OpenTelemetryOptions options, SpanNameExtractor<RequestInfo> defaultExtractor) {
+        if (options.spanNameExtractor() != null) {
+            return requestInfo -> options.spanNameExtractor().apply(requestInfo.request());
         } else {
-            return parent;
+            return defaultExtractor;
         }
     }
 }
