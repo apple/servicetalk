@@ -23,10 +23,12 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.DomainSocketAddress;
 
+import io.opentelemetry.instrumentation.api.semconv.network.NetworkAttributesGetter;
 import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
@@ -117,14 +119,13 @@ class HttpAttributesGetterTest {
         RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
 
         // Network attributes
-        assertThat(CLIENT_INSTANCE.getNetworkType(requestInfo, null), equalTo("ipv4"));
-        assertThat(SERVER_INSTANCE.getNetworkType(requestInfo, null), equalTo("ipv4"));
-        assertThat(CLIENT_INSTANCE.getNetworkTransport(requestInfo, null), equalTo("tcp"));
-        assertThat(SERVER_INSTANCE.getNetworkTransport(requestInfo, null), equalTo("tcp"));
-
-        // Network peer attributes (server-side only)
-        assertThat(SERVER_INSTANCE.getNetworkPeerAddress(requestInfo, null), equalTo("192.168.1.1"));
-        assertThat(SERVER_INSTANCE.getNetworkPeerPort(requestInfo, null), equalTo(8080));
+        for (NetworkAttributesGetter<RequestInfo, ?> getter : Arrays.asList(SERVER_INSTANCE, CLIENT_INSTANCE)) {
+            assertThat(getter.getNetworkType(requestInfo, null), equalTo("ipv4"));
+            assertThat(getter.getNetworkTransport(requestInfo, null), equalTo("tcp"));
+            assertThat(getter.getNetworkPeerInetSocketAddress(requestInfo, null), equalTo(inetAddress));
+            assertThat(getter.getNetworkPeerAddress(requestInfo, null), equalTo("192.168.1.1"));
+            assertThat(getter.getNetworkPeerPort(requestInfo, null), equalTo(8080));
+        }
 
         // Server attributes (client-side, fallback to connection)
         assertThat(CLIENT_INSTANCE.getServerAddress(requestInfo), equalTo("192.168.1.1"));
@@ -144,14 +145,13 @@ class HttpAttributesGetterTest {
         RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
 
         // Network attributes
-        assertThat(CLIENT_INSTANCE.getNetworkType(requestInfo, null), equalTo("ipv6"));
-        assertThat(SERVER_INSTANCE.getNetworkType(requestInfo, null), equalTo("ipv6"));
-        assertThat(CLIENT_INSTANCE.getNetworkTransport(requestInfo, null), equalTo("tcp"));
-        assertThat(SERVER_INSTANCE.getNetworkTransport(requestInfo, null), equalTo("tcp"));
-
-        // Network peer attributes (server-side only)
-        assertThat(SERVER_INSTANCE.getNetworkPeerAddress(requestInfo, null), equalTo("0:0:0:0:0:0:0:1"));
-        assertThat(SERVER_INSTANCE.getNetworkPeerPort(requestInfo, null), equalTo(8080));
+        for (NetworkAttributesGetter<RequestInfo, ?> getter : Arrays.asList(SERVER_INSTANCE, CLIENT_INSTANCE)) {
+            assertThat(getter.getNetworkType(requestInfo, null), equalTo("ipv6"));
+            assertThat(getter.getNetworkTransport(requestInfo, null), equalTo("tcp"));
+            assertThat(getter.getNetworkPeerInetSocketAddress(requestInfo, null), equalTo(inetAddress));
+            assertThat(getter.getNetworkPeerAddress(requestInfo, null), equalTo("0:0:0:0:0:0:0:1"));
+            assertThat(getter.getNetworkPeerPort(requestInfo, null), equalTo(8080));
+        }
 
         // Server attributes (client-side, fallback to connection)
         assertThat(CLIENT_INSTANCE.getServerAddress(requestInfo), equalTo("0:0:0:0:0:0:0:1"));
@@ -171,14 +171,13 @@ class HttpAttributesGetterTest {
         RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
 
         // Network attributes
-        assertThat(CLIENT_INSTANCE.getNetworkType(requestInfo, null), nullValue());
-        assertThat(SERVER_INSTANCE.getNetworkType(requestInfo, null), nullValue());
-        assertThat(CLIENT_INSTANCE.getNetworkTransport(requestInfo, null), equalTo("unix"));
-        assertThat(SERVER_INSTANCE.getNetworkTransport(requestInfo, null), equalTo("unix"));
-
-        // Network peer attributes (server-side only)
-        assertThat(SERVER_INSTANCE.getNetworkPeerAddress(requestInfo, null), equalTo("/tmp/socket"));
-        assertThat(SERVER_INSTANCE.getNetworkPeerPort(requestInfo, null), nullValue());
+        for (NetworkAttributesGetter<RequestInfo, ?> getter : Arrays.asList(SERVER_INSTANCE, CLIENT_INSTANCE)) {
+            assertThat(getter.getNetworkType(requestInfo, null), nullValue());
+            assertThat(getter.getNetworkTransport(requestInfo, null), equalTo("unix"));
+            assertThat(getter.getNetworkPeerInetSocketAddress(requestInfo, null), nullValue());
+            assertThat(getter.getNetworkPeerAddress(requestInfo, null), equalTo("/tmp/socket"));
+            assertThat(getter.getNetworkPeerPort(requestInfo, null), nullValue());
+        }
 
         // Server attributes (client-side, fallback to connection)
         assertThat(CLIENT_INSTANCE.getServerAddress(requestInfo), equalTo("/tmp/socket"));

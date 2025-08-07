@@ -58,18 +58,18 @@ abstract class HttpAttributesGetter
     private HttpAttributesGetter() {}
 
     @Override
-    public String getHttpRequestMethod(final RequestInfo requestInfo) {
+    public final String getHttpRequestMethod(final RequestInfo requestInfo) {
         return requestInfo.request().method().name();
     }
 
     @Override
-    public List<String> getHttpRequestHeader(
+    public final List<String> getHttpRequestHeader(
             final RequestInfo requestInfo, final String name) {
         return getHeaderValues(requestInfo.request().headers(), name);
     }
 
     @Override
-    public Integer getHttpResponseStatusCode(
+    public final Integer getHttpResponseStatusCode(
             final RequestInfo requestInfo,
             final HttpResponseMetaData httpResponseMetaData,
             @Nullable final Throwable error) {
@@ -77,7 +77,7 @@ abstract class HttpAttributesGetter
     }
 
     @Override
-    public List<String> getHttpResponseHeader(
+    public final List<String> getHttpResponseHeader(
             final RequestInfo requestInfo,
             final HttpResponseMetaData httpResponseMetaData,
             final String name) {
@@ -102,7 +102,7 @@ abstract class HttpAttributesGetter
 
     @Nullable
     @Override
-    public String getNetworkTransport(RequestInfo requestInfo, @Nullable HttpResponseMetaData responseMetaData) {
+    public final String getNetworkTransport(RequestInfo requestInfo, @Nullable HttpResponseMetaData responseMetaData) {
         ConnectionInfo connectionInfo = requestInfo.connectionInfo();
         if (connectionInfo == null) {
             return null;
@@ -119,7 +119,7 @@ abstract class HttpAttributesGetter
 
     @Nullable
     @Override
-    public String getNetworkType(RequestInfo requestInfo, @Nullable HttpResponseMetaData responseMetaData) {
+    public final String getNetworkType(RequestInfo requestInfo, @Nullable HttpResponseMetaData responseMetaData) {
         ConnectionInfo connectionInfo = requestInfo.connectionInfo();
         if (connectionInfo == null) {
             return null;
@@ -133,6 +133,30 @@ abstract class HttpAttributesGetter
             }
         }
         return null;
+    }
+
+    @Nullable
+    @Override
+    public final InetSocketAddress getNetworkPeerInetSocketAddress(RequestInfo requestInfo,
+                                                                   @Nullable HttpResponseMetaData responseMetaData) {
+        ConnectionInfo connectionInfo = requestInfo.connectionInfo();
+        if (connectionInfo != null && connectionInfo.remoteAddress() instanceof InetSocketAddress) {
+            return (InetSocketAddress) connectionInfo.remoteAddress();
+        }
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public final String getNetworkPeerAddress(RequestInfo requestInfo,
+                                              @Nullable HttpResponseMetaData responseMetaData) {
+        return getResolvedPeerAddress(requestInfo);
+    }
+
+    @Nullable
+    @Override
+    public final Integer getNetworkPeerPort(RequestInfo requestInfo, @Nullable HttpResponseMetaData responseMetaData) {
+        return getResolvedPort(requestInfo);
     }
 
     private static List<String> getHeaderValues(final HttpHeaders headers, final String name) {
@@ -257,18 +281,6 @@ abstract class HttpAttributesGetter
         @Override
         public String getUrlQuery(final RequestInfo requestInfo) {
             return requestInfo.request().query();
-        }
-
-        @Nullable
-        @Override
-        public String getNetworkPeerAddress(RequestInfo requestInfo, @Nullable HttpResponseMetaData responseMetaData) {
-            return getResolvedPeerAddress(requestInfo);
-        }
-
-        @Nullable
-        @Override
-        public Integer getNetworkPeerPort(RequestInfo requestInfo, @Nullable HttpResponseMetaData responseMetaData) {
-            return getResolvedPort(requestInfo);
         }
     }
 
