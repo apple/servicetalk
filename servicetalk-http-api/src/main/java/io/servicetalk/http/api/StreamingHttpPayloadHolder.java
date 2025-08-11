@@ -18,8 +18,8 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherOperator;
 import io.servicetalk.concurrent.api.ScanMapper;
@@ -34,14 +34,13 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
+import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
 import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpDataSourceTransformations.aggregatePayloadAndTrailers;
 import static java.util.Objects.requireNonNull;
-import static java.util.function.Function.identity;
 
 /**
  * A holder of HTTP payload and associated information.
@@ -88,8 +87,8 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         } else if (payloadInfo.mayHaveTrailers()) {
             final Publisher<?> oldMessageBody = messageBody;
             messageBody = defer(() -> {
-                Processor<HttpHeaders, HttpHeaders> trailersProcessor = newSingleProcessor();
-                return merge(payloadBody.liftSync(new BridgeFlowControlAndDiscardOperator(
+                final Processor<HttpHeaders, HttpHeaders> trailersProcessor = newPublisherProcessor();
+                return mergeTrailers(payloadBody.liftSync(new BridgeFlowControlAndDiscardOperator(
                                 oldMessageBody.liftSync(new PreserveTrailersBufferOperator(trailersProcessor)))),
                         fromSource(trailersProcessor)).shareContextOnSubscribe();
             });
@@ -126,11 +125,11 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
             payloadInfo.setEmpty(false);    // transformer may add payload content
             final Publisher<?> oldMessageBody = messageBody;
             messageBody = defer(() -> {
-                final Processor<HttpHeaders, HttpHeaders> trailersProcessor = newSingleProcessor();
+                final Processor<HttpHeaders, HttpHeaders> trailersProcessor = newPublisherProcessor();
                 final Publisher<Buffer> transformedPayloadBody = transformer.apply(oldMessageBody.liftSync(
                         new PreserveTrailersBufferOperator(trailersProcessor)));
                 payloadInfo.setEmpty(transformedPayloadBody == EMPTY);
-                return merge(transformedPayloadBody, fromSource(trailersProcessor)).shareContextOnSubscribe();
+                return mergeTrailers(transformedPayloadBody, fromSource(trailersProcessor)).shareContextOnSubscribe();
             });
         } else {
             final Publisher<Buffer> transformedPayloadBody = transformer.apply(payloadBody());
@@ -145,13 +144,13 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         messageBody = transformer.apply(messageBody());
     }
 
-    <T, S> void transform(final TrailersTransformer<T, S> trailersTransformer,
-                          final HttpStreamingDeserializer<S> serializer) {
+    <S, T> void transform(final TrailersTransformer<S, T> trailersTransformer,
+                          final HttpStreamingDeserializer<T> serializer) {
         transform(trailersTransformer, body -> defer(() -> {
-            final Processor<HttpHeaders, HttpHeaders> trailersProcessor = newSingleProcessor();
+            final Processor<HttpHeaders, HttpHeaders> trailersProcessor = newPublisherProcessor();
             final Publisher<Buffer> transformedPayloadBody = body.liftSync(
                     new PreserveTrailersBufferOperator(trailersProcessor));
-            return merge(serializer.deserialize(headers, transformedPayloadBody, allocator),
+            return mergeTrailers(serializer.deserialize(headers, transformedPayloadBody, allocator),
                     fromSource(trailersProcessor)).scanWithMapper(() ->
                             new TrailersMapper<>(trailersTransformer, headersFactory))
                     .shareContextOnSubscribe();
@@ -258,22 +257,8 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
                 trailers);
     }
 
-    /**
-     * Merge a {@link Publisher} and a {@link Single} into a single {@link Publisher}.
-     * <p>
-     * The HTTP client connection does {@code connection.write(requestStream).mergeDelayError(connection.read())}
-     * in order to propagate any errors that may occur on the write (see NonPipelinedStreamingHttpConnection and
-     * NettyPipelinedConnection). This means that the read and write stream must complete (successfully) before
-     * the {@link Publisher#concat(Single)} operator will execute and trailers can be processed. However in some cases
-     * (e.g. gRPC) trailer processing may result in pre-mature termination of the stream (e.g. trailers indicate error).
-     * So the {@link Publisher#concat(Single)} sequencing won't work on the client.
-     * @param p The {@link Publisher} to merge.
-     * @param s The {@link Single} to merge.
-     * @return The result of the merge operation.
-     */
-    private static Publisher<?> merge(Publisher<?> p, Single<HttpHeaders> s) {
-        // We filter null from the Single in case the publisher completes and we didn't find trailers.
-        return from(p, s.toPublisher().filter(Objects::nonNull)).flatMapMerge(identity(), 2);
+    private static Publisher<?> mergeTrailers(Publisher<?> p, Publisher<HttpHeaders> trailers) {
+        return p.cast(Object.class).concat(trailers);
     }
 
     private static final class TrailersMapper<T, S> implements ScanMapper<Object, Object> {
@@ -386,7 +371,8 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
                         throwDuplicateTrailersException(trailers, o);
                     }
                     trailers = (HttpHeaders) o;
-                    trailersProcessor.onSuccess(trailers);
+                    trailersProcessor.onNext(trailers);
+                    trailersProcessor.onComplete();
                     // Trailers must be the last element on the stream, no need to interact with the Subscription.
                 } else {
                     throw new UnsupportedHttpChunkException(o);
@@ -407,7 +393,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
                 try {
                     if (trailers == null) {
                         // We didn't find any trailers, terminate with null which will be filtered above in merge(..).
-                        trailersProcessor.onSuccess(null);
+                        trailersProcessor.onComplete();
                     }
                 } finally {
                     target.onComplete();

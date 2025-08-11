@@ -50,6 +50,7 @@ import io.servicetalk.transport.api.ServerContext;
 
 import com.google.rpc.Status;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -546,6 +547,52 @@ class ErrorHandlingTest {
                                                               GrpcExecutionStrategy clientStrategy) throws Exception {
         setUp(testMode, serverStrategy, clientStrategy);
         verifyException(client.testRequestStream(requestPublisher.concat(never())).toFuture());
+    }
+
+    @Test
+    void repro() throws Exception {
+        Throwable cause = new Exception("So sad");
+
+        cannedResponse = TestResponse.newBuilder().setMessage("foo").build();
+        ServiceFactory serviceFactory = setupForSuccess();
+        StreamingHttpServiceFilterFactory serviceFilterFactory = new StreamingHttpServiceFilterFactory() {
+            @Override
+            public StreamingHttpServiceFilter create(StreamingHttpService service) {
+                return new StreamingHttpServiceFilter(service) {
+                    @Override
+                    public Single<StreamingHttpResponse> handle(HttpServiceContext ctx,
+                                                                StreamingHttpRequest request,
+                                                                StreamingHttpResponseFactory responseFactory) {
+                        return delegate()
+                                .handle(ctx, request, responseFactory)
+                                .map(response ->
+                                        response.transformPayloadBody(payload ->
+                                                payload.ignoreElements().concat(Publisher.failed(cause))));
+                    }
+                };
+            }
+        };
+        StreamingHttpClientFilterFactory clientFilterFactory = IDENTITY_CLIENT_FILTER;
+        Publisher<TestRequest> requestPublisher = from(TestRequest.newBuilder().build());
+
+        this.requestPublisher = requestPublisher;
+        final StreamingHttpServiceFilterFactory filterFactory = serviceFilterFactory;
+        serverContext = GrpcServers.forAddress(localAddress(0))
+                .initializeHttp(builder -> builder
+                        .appendServiceFilter(filterFactory)
+                )
+                .listenAndAwait(serviceFactory);
+        final StreamingHttpClientFilterFactory pickedClientFilterFactory = clientFilterFactory;
+        GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
+                GrpcClients.forAddress(serverHostAndPort(serverContext))
+                        .initializeHttp(builder -> builder
+                                .appendClientFilter(pickedClientFilterFactory));
+
+        client = clientBuilder.build(new ClientFactory());
+        blockingClient = clientBuilder.buildBlocking(new ClientFactory());
+
+        assertThrows(ExecutionException.class, () ->
+                client.test(TestRequest.newBuilder().setName("name").build()).toFuture().get());
     }
 
     private TestRequest requestPublisherTakeFirstRequest() throws Exception {
