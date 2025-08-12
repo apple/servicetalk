@@ -264,7 +264,7 @@ class DefaultHostTest {
     }
 
     @Test
-    void minActiveConnections() {
+    void minActiveConnections() throws Exception {
         Deque<ListenableAsyncCloseable> createdConnections = new ArrayDeque<>();
         connectionFactory = new TestConnectionFactory(address -> {
             ListenableAsyncCloseable closable = AsyncCloseables.emptyAsyncCloseable();
@@ -275,21 +275,18 @@ class DefaultHostTest {
                 ConnectionSelectorPolicies.<TestLoadBalancedConnection>linearSearch()
                         .buildConnectionSelector("resource"),
                 connectionFactory, 2, mockHostObserver, healthCheckConfig, null);
-        assertEquals(2, createdConnections.size());
+        assertEquals(0, createdConnections.size());
 
-        List<ListenableAsyncCloseable> old = new ArrayList<>(createdConnections);
-        for (int i = 0; i < 2; i++) {
-            ListenableAsyncCloseable cxn = createdConnections.pop();
-            cxn.closeAsync().subscribe();
-        }
+        host.newConnection(unused -> true, false, null).toFuture().get();
+        ListenableAsyncCloseable cxn = createdConnections.pop();
+        cxn.closeAsync().subscribe();
 
-        // We should have two more pending requests
+        // Closing the connection should trigger warming, and now we should see 2 connections.
         assertEquals(2, createdConnections.size());
-        assertNotEquals(old, new ArrayList<>(createdConnections));
 
         assertFalse(host.markExpired());
         verify(mockHostObserver).onHostMarkedExpired(2);
-        ListenableAsyncCloseable cxn = createdConnections.pop();
+        cxn = createdConnections.pop();
         cxn.closeAsync().subscribe();
 
         assertEquals(1, createdConnections.size());
