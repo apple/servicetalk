@@ -57,10 +57,9 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryH
      */
     @Deprecated // FIXME: 0.43 - remove deprecated ctor
     public OpenTelemetryHttpRequestFilter(final OpenTelemetry openTelemetry, String componentName) {
-        super(new OpenTelemetryOptions.Builder()
+        super(new OpenTelemetryHttpRequesterFilter.Builder()
                 .openTelemetry(openTelemetry)
-                .componentName(componentName)
-                .build());
+                .componentName(componentName));
     }
 
     /**
@@ -69,7 +68,7 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryH
      * @param componentName The component name used during building new spans.
      */
     public OpenTelemetryHttpRequestFilter(final String componentName) {
-        this(componentName, DEFAULT_OPTIONS);
+        super(new OpenTelemetryHttpRequesterFilter.Builder().componentName(componentName));
     }
 
     /**
@@ -79,9 +78,9 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryH
      * @param opentelemetryOptions extra options to create the opentelemetry filter
      */
     public OpenTelemetryHttpRequestFilter(final String componentName, final OpenTelemetryOptions opentelemetryOptions) {
-        super(new OpenTelemetryOptions.Builder(opentelemetryOptions)
-                .componentName(componentName)
-                .build());
+        super(new OpenTelemetryHttpRequesterFilter.Builder()
+                .applyOptions(opentelemetryOptions)
+                .componentName(componentName));
     }
 
     /**
@@ -89,6 +88,6 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryH
      * using the hostname as the component name.
      */
     public OpenTelemetryHttpRequestFilter() {
-        this("");
+        super(new OpenTelemetryHttpRequesterFilter.Builder());
     }
 }

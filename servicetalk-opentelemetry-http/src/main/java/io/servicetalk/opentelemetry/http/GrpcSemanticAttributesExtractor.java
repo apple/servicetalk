@@ -28,6 +28,7 @@ import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.List;
 import javax.annotation.Nullable;
 
 /**
@@ -53,11 +54,9 @@ abstract class GrpcSemanticAttributesExtractor implements AttributesExtractor<Re
 
     private final AttributesExtractor<RequestInfo, GrpcTelemetryStatus> capturedHeadersExtractor;
 
-    GrpcSemanticAttributesExtractor(OpenTelemetryOptions openTelemetryOptions) {
+    GrpcSemanticAttributesExtractor(List<String> capturedRequestHeaders, List<String> capturedResponseHeaders) {
         this.capturedHeadersExtractor = new GrpcCapturedHeadersExtractor(
-                openTelemetryOptions.capturedRequestHeaders(),
-                openTelemetryOptions.capturedResponseHeaders()
-        );
+                capturedRequestHeaders, capturedResponseHeaders);
     }
 
     @Override

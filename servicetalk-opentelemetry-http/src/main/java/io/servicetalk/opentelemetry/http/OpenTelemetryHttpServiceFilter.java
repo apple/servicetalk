@@ -56,7 +56,7 @@ public final class OpenTelemetryHttpServiceFilter extends AbstractOpenTelemetryH
      */
     @Deprecated // FIXME: 0.43 - remove deprecated ctor
     public OpenTelemetryHttpServiceFilter() {
-        this(DEFAULT_OPTIONS);
+        this(new Builder());
     }
 
     /**
@@ -65,24 +65,45 @@ public final class OpenTelemetryHttpServiceFilter extends AbstractOpenTelemetryH
      * @param openTelemetryOptions extra options to create the opentelemetry filter.
      *                            Client-specific options (componentName, openTelemetry, ignoreSpanSuppression)
      *                            will be ignored for server filters.
+     * @deprecated use the {@link Builder} to construct filter instances.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated ctor
     public OpenTelemetryHttpServiceFilter(final OpenTelemetryOptions openTelemetryOptions) {
-        super(openTelemetryOptions);
+        super(new Builder(openTelemetryOptions));
+    }
+
+    private OpenTelemetryHttpServiceFilter(Builder builder) {
+        super(builder);
     }
 
     /**
-     * Create a new instance.
-     *
-     * @param openTelemetry the {@link OpenTelemetry}.
-     * @param openTelemetryOptions extra options to create the opentelemetry filter
-     * @deprecated Use {@link #OpenTelemetryHttpServiceFilter(OpenTelemetryOptions)} instead.
-     * The OpenTelemetry instance should be provided via {@link OpenTelemetryOptions}.
+     * Builder for constructing {@link OpenTelemetryHttpServiceFilter} filter instances.
      */
-    @Deprecated // FIXME: 0.43 - remove deprecated ctor
-    public OpenTelemetryHttpServiceFilter(final OpenTelemetry openTelemetry,
-                                          final OpenTelemetryOptions openTelemetryOptions) {
-        super(new OpenTelemetryOptions.Builder(openTelemetryOptions)
-                .openTelemetry(openTelemetry)
-                .build());
+    public static final class Builder extends OpenTelemetryFilterBuilder<Builder> {
+
+        Builder(OpenTelemetryOptions options) {
+            capturedRequestHeaders = options.capturedRequestHeaders();
+            capturedResponseHeaders = options.capturedResponseHeaders();
+            enableMetrics = options.enableMetrics();
+        }
+
+        /**
+         * Create a new builder.
+         */
+        public Builder() {
+        }
+
+        @Override
+        Builder thisInstance() {
+            return this;
+        }
+
+        /**
+         * Create a new {@link OpenTelemetryHttpServiceFilter} instance.
+         * @return a new {@link OpenTelemetryHttpServiceFilter} instance
+         */
+        public OpenTelemetryHttpServiceFilter build() {
+            return new OpenTelemetryHttpServiceFilter(this);
+        }
     }
 }

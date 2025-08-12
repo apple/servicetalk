@@ -64,9 +64,7 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryHt
     @Deprecated // FIXME: 0.43 - remove deprecated ctor
     @SuppressWarnings("DeprecatedIsStillUsed")
     public OpenTelemetryHttpServerFilter(final OpenTelemetry openTelemetry) {
-        super(new OpenTelemetryOptions.Builder(DEFAULT_OPTIONS)
-                .openTelemetry(openTelemetry)
-                .build());
+        super(new OpenTelemetryHttpServiceFilter.Builder().openTelemetry(openTelemetry));
     }
 
     /**
@@ -74,7 +72,7 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryHt
      * {@link OpenTelemetryOptions}.
      */
     public OpenTelemetryHttpServerFilter() {
-        this(DEFAULT_OPTIONS);
+        super(new OpenTelemetryHttpServiceFilter.Builder());
     }
 
     /**
@@ -83,7 +81,6 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryHt
      * @param openTelemetryOptions extra options to create the opentelemetry filter
      */
     public OpenTelemetryHttpServerFilter(final OpenTelemetryOptions openTelemetryOptions) {
-        super(new OpenTelemetryOptions.Builder(openTelemetryOptions)
-                .build());
+        super(new OpenTelemetryHttpServiceFilter.Builder().applyOptions(openTelemetryOptions));
     }
 }

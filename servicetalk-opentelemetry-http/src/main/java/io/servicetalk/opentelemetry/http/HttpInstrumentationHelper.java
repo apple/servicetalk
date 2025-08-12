@@ -87,11 +87,11 @@ final class HttpInstrumentationHelper extends InstrumentationHelper {
     /**
      * Creates an HTTP server instrumentation helper.
      *
-     * @param options OpenTelemetry configuration options containing the OpenTelemetry instance
+     * @param builder OpenTelemetryHttpServiceFilter configuration options
      * @return server instrumentation helper
      */
-    static HttpInstrumentationHelper createServer(OpenTelemetryOptions options) {
-        OpenTelemetry openTelemetry = options.openTelemetry();
+    static HttpInstrumentationHelper createServer(OpenTelemetryHttpServiceFilter.Builder builder) {
+        OpenTelemetry openTelemetry = builder.openTelemetry;
         SpanNameExtractor<RequestInfo> serverSpanNameExtractor =
                 HttpSpanNameExtractor.create(HttpAttributesGetter.SERVER_INSTANCE);
         InstrumenterBuilder<RequestInfo, HttpResponseMetaData> serverInstrumenterBuilder =
@@ -101,10 +101,10 @@ final class HttpInstrumentationHelper extends InstrumentationHelper {
         serverInstrumenterBuilder
                 .addAttributesExtractor(HttpServerAttributesExtractor
                         .builder(HttpAttributesGetter.SERVER_INSTANCE)
-                        .setCapturedRequestHeaders(options.capturedRequestHeaders())
-                        .setCapturedResponseHeaders(options.capturedResponseHeaders())
+                        .setCapturedRequestHeaders(builder.capturedRequestHeaders)
+                        .setCapturedResponseHeaders(builder.capturedResponseHeaders)
                         .build());
-        if (options.enableMetrics()) {
+        if (builder.enableMetrics) {
             serverInstrumenterBuilder.addOperationMetrics(HttpServerMetrics.get());
         }
 
@@ -117,24 +117,23 @@ final class HttpInstrumentationHelper extends InstrumentationHelper {
     /**
      * Creates an HTTP client instrumentation helper.
      *
-     * @param options OpenTelemetry configuration options containing the OpenTelemetry instance
-     *                (componentName from options used for peer service attribute)
+     * @param builder OpenTelemetry configuration options
      * @return client instrumentation helper
      */
-    static HttpInstrumentationHelper createClient(OpenTelemetryOptions options) {
-        OpenTelemetry openTelemetry = options.openTelemetry();
+    static HttpInstrumentationHelper createClient(final OpenTelemetryHttpRequesterFilter.Builder builder) {
+        OpenTelemetry openTelemetry = builder.openTelemetry;
         SpanNameExtractor<RequestInfo> clientSpanNameExtractor =
                 HttpSpanNameExtractor.create(HttpAttributesGetter.CLIENT_INSTANCE);
         InstrumenterBuilder<RequestInfo, HttpResponseMetaData> clientInstrumenterBuilder =
                 Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, clientSpanNameExtractor);
         clientInstrumenterBuilder
                 .setSpanStatusExtractor(HttpSpanStatusExtractor.CLIENT_INSTANCE)
-                .addAttributesExtractor(new DeferredHttpClientAttributesExtractor(options));
+                .addAttributesExtractor(new DeferredHttpClientAttributesExtractor(builder));
 
-        if (options.enableMetrics()) {
+        if (builder.enableMetrics) {
             clientInstrumenterBuilder.addOperationMetrics(HttpClientMetrics.get());
         }
-        String componentName = options.componentName().trim();
+        String componentName = builder.componentName.trim();
         if (!componentName.isEmpty()) {
             clientInstrumenterBuilder.addAttributesExtractor(
                     AttributesExtractor.constant(PEER_SERVICE, componentName));
@@ -151,11 +150,11 @@ final class HttpInstrumentationHelper extends InstrumentationHelper {
 
         private final AttributesExtractor<RequestInfo, HttpResponseMetaData> delegate;
 
-        DeferredHttpClientAttributesExtractor(OpenTelemetryOptions openTelemetryOptions) {
+        DeferredHttpClientAttributesExtractor(OpenTelemetryHttpRequesterFilter.Builder builder) {
             this.delegate = HttpClientAttributesExtractor
                     .builder(HttpAttributesGetter.CLIENT_INSTANCE)
-                    .setCapturedRequestHeaders(openTelemetryOptions.capturedRequestHeaders())
-                    .setCapturedResponseHeaders(openTelemetryOptions.capturedResponseHeaders())
+                    .setCapturedRequestHeaders(builder.capturedRequestHeaders)
+                    .setCapturedResponseHeaders(builder.capturedResponseHeaders)
                     .build();
         }
 

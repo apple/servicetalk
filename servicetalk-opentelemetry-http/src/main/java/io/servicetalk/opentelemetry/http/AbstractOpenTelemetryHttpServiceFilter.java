@@ -31,9 +31,9 @@ abstract class AbstractOpenTelemetryHttpServiceFilter extends AbstractOpenTeleme
     private final HttpInstrumentationHelper httpHelper;
     private final GrpcInstrumentationHelper grpcHelper;
 
-    AbstractOpenTelemetryHttpServiceFilter(final OpenTelemetryOptions openTelemetryOptions) {
-        this.httpHelper = HttpInstrumentationHelper.createServer(openTelemetryOptions);
-        this.grpcHelper = GrpcInstrumentationHelper.createServer(openTelemetryOptions);
+    AbstractOpenTelemetryHttpServiceFilter(final OpenTelemetryHttpServiceFilter.Builder builder) {
+        this.httpHelper = HttpInstrumentationHelper.createServer(builder);
+        this.grpcHelper = GrpcInstrumentationHelper.createServer(builder);
     }
 
     @Override

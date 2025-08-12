@@ -91,18 +91,18 @@ final class GrpcInstrumentationHelper extends InstrumentationHelper {
     /**
      * Creates a gRPC server instrumentation helper.
      *
-     * @param options OpenTelemetry configuration options containing the OpenTelemetry instance
+     * @param builder OpenTelemetryHttpServiceFilter configuration options
      * @return server instrumentation helper
      */
-    static GrpcInstrumentationHelper createServer(OpenTelemetryOptions options) {
-        OpenTelemetry openTelemetry = options.openTelemetry();
+    static GrpcInstrumentationHelper createServer(OpenTelemetryHttpServiceFilter.Builder builder) {
+        OpenTelemetry openTelemetry = builder.openTelemetry;
         SpanNameExtractor<RequestInfo> serverSpanNameExtractor = GrpcSpanNameExtractor.INSTANCE;
         InstrumenterBuilder<RequestInfo, GrpcTelemetryStatus> serverInstrumenterBuilder =
                 Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, serverSpanNameExtractor);
         serverInstrumenterBuilder
                 .setSpanStatusExtractor(GrpcSpanStatusExtractor.SERVER_INSTANCE)
-                .addAttributesExtractor(new GrpcServerAttributesExtractor(options));
-        if (options.enableMetrics()) {
+                .addAttributesExtractor(new GrpcServerAttributesExtractor(builder));
+        if (builder.enableMetrics) {
             serverInstrumenterBuilder.addOperationMetrics(HttpServerMetrics.get());
         }
 
@@ -116,24 +116,23 @@ final class GrpcInstrumentationHelper extends InstrumentationHelper {
     /**
      * Creates a gRPC client instrumentation helper.
      *
-     * @param options OpenTelemetry configuration options containing the OpenTelemetry instance
-     *                (componentName from options used for peer service attribute)
+     * @param builder OpenTelemetry configuration options
      * @return client instrumentation helper
      */
-    static GrpcInstrumentationHelper createClient(OpenTelemetryOptions options) {
-        OpenTelemetry openTelemetry = options.openTelemetry();
+    static GrpcInstrumentationHelper createClient(OpenTelemetryHttpRequesterFilter.Builder builder) {
+        OpenTelemetry openTelemetry = builder.openTelemetry;
         SpanNameExtractor<RequestInfo> clientSpanNameExtractor = GrpcSpanNameExtractor.INSTANCE;
         InstrumenterBuilder<RequestInfo, GrpcTelemetryStatus> clientInstrumenterBuilder =
                 Instrumenter.builder(
                         openTelemetry, INSTRUMENTATION_SCOPE_NAME, clientSpanNameExtractor);
         clientInstrumenterBuilder
                 .setSpanStatusExtractor(GrpcSpanStatusExtractor.CLIENT_INSTANCE)
-                .addAttributesExtractor(new DeferredGrpcClientAttributesExtractor(options));
+                .addAttributesExtractor(new DeferredGrpcClientAttributesExtractor(builder));
 
-        if (options.enableMetrics()) {
+        if (builder.enableMetrics) {
             clientInstrumenterBuilder.addOperationMetrics(HttpClientMetrics.get());
         }
-        String componentName = options.componentName().trim();
+        String componentName = builder.componentName.trim();
         if (!componentName.isEmpty()) {
             clientInstrumenterBuilder.addAttributesExtractor(
                     AttributesExtractor.constant(PEER_SERVICE, componentName));
@@ -182,8 +181,8 @@ final class GrpcInstrumentationHelper extends InstrumentationHelper {
 
         private final AttributesExtractor<RequestInfo, GrpcTelemetryStatus> delegate;
 
-        DeferredGrpcClientAttributesExtractor(OpenTelemetryOptions openTelemetryOptions) {
-            this.delegate = new GrpcClientAttributesExtractor(openTelemetryOptions);
+        DeferredGrpcClientAttributesExtractor(OpenTelemetryHttpRequesterFilter.Builder builder) {
+            this.delegate = new GrpcClientAttributesExtractor(builder);
         }
 
         @Override

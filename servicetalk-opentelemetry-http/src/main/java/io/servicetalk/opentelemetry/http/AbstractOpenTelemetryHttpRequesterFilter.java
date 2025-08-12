@@ -40,12 +40,11 @@ abstract class AbstractOpenTelemetryHttpRequesterFilter extends AbstractOpenTele
     /**
      * Create a new instance.
      *
-     * @param opentelemetryOptions extra options to create the opentelemetry filter, including OpenTelemetry
-     *                            instance and componentName
+     * @param builder options to create the opentelemetry filter, including OpenTelemetry instance and componentName
      */
-    AbstractOpenTelemetryHttpRequesterFilter(final OpenTelemetryOptions opentelemetryOptions) {
-        this.httpHelper = HttpInstrumentationHelper.createClient(opentelemetryOptions);
-        this.grpcHelper = GrpcInstrumentationHelper.createClient(opentelemetryOptions);
+    AbstractOpenTelemetryHttpRequesterFilter(final OpenTelemetryHttpRequesterFilter.Builder builder) {
+        this.httpHelper = HttpInstrumentationHelper.createClient(builder);
+        this.grpcHelper = GrpcInstrumentationHelper.createClient(builder);
     }
 
     @Override

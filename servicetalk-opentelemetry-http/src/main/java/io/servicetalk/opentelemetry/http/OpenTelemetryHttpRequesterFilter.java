@@ -26,6 +26,8 @@ import io.opentelemetry.context.Scope;
 
 import java.util.function.UnaryOperator;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * An HTTP filter that supports <a href="https://opentelemetry.io/docs/instrumentation/java/">open telemetry</a>.
  * <p>
@@ -34,33 +36,21 @@ import java.util.function.UnaryOperator;
  * Append this filter before others that are expected to see {@link Scope} for this request/response. Filters
  * appended after this filter that use operators with the <strong>after*</strong> prefix on
  * {@link io.servicetalk.http.api.StreamingHttpClient#request(StreamingHttpRequest) response meta data} or the
- * {@link StreamingHttpResponse#transformMessageBody(UnaryOperator)} response message body.
+ * {@link StreamingHttpResponse#transformMessageBody(UnaryOperator)} response message body}
  * (e.g. {@link Publisher#afterFinally(Runnable)}) will execute after this filter invokes {@link Scope#close()} and
  * therefore will not see the {@link Span} for the current request/response.
  */
 public final class OpenTelemetryHttpRequesterFilter extends AbstractOpenTelemetryHttpRequesterFilter {
 
     /**
-     * Create a new instance with the provided {@link OpenTelemetryOptions}.
-     * <p>
-     * The options should include client-specific configuration such as componentName.
-     *
-     * @param openTelemetryOptions options to configure the filter, including client-specific settings
-     */
-    public OpenTelemetryHttpRequesterFilter(final OpenTelemetryOptions openTelemetryOptions) {
-        super(openTelemetryOptions);
-    }
-
-    /**
      * Create a new instance, searching for any instance of an opentelemetry available.
      *
      * @param componentName The component name used during building new spans.
-     * @deprecated use {@link #OpenTelemetryHttpRequesterFilter(OpenTelemetryOptions)} with
-     *             {@link OpenTelemetryOptions.Builder#componentName(String)} to create new filter instances.
+     * @deprecated use the {@link Builder} to create new filter instances.
      */
     @Deprecated // FIXME: 0.43 - remove deprecated ctor
     public OpenTelemetryHttpRequesterFilter(final String componentName) {
-        this(componentName, DEFAULT_OPTIONS);
+        this(new Builder().componentName(componentName));
     }
 
     /**
@@ -68,25 +58,66 @@ public final class OpenTelemetryHttpRequesterFilter extends AbstractOpenTelemetr
      *
      * @param componentName        The component name used during building new spans.
      * @param opentelemetryOptions extra options to create the opentelemetry filter
-     * @deprecated use {@link #OpenTelemetryHttpRequesterFilter(OpenTelemetryOptions)} with
-     *             {@link OpenTelemetryOptions.Builder} to configure all options including componentName.
+     * @deprecated use the {@link Builder} to create new filter instances.
      */
     @Deprecated // FIXME: 0.43 - remove deprecated ctor
     public OpenTelemetryHttpRequesterFilter(final String componentName,
                                             final OpenTelemetryOptions opentelemetryOptions) {
-        super(new OpenTelemetryOptions.Builder(opentelemetryOptions)
-                .componentName(componentName)
-                .build());
+        this(new Builder().applyOptions(opentelemetryOptions).componentName(componentName));
     }
 
     /**
      * Create a new instance, searching for any instance of an opentelemetry available,
      * using the hostname as the component name.
-     * @deprecated use {@link #OpenTelemetryHttpRequesterFilter(OpenTelemetryOptions)} with
-     *             {@link OpenTelemetryOptions.Builder} to create new filter instances.
+     * @deprecated use the {@link Builder} to create new filter instances.
      */
     @Deprecated // FIXME: 0.43 - remove deprecated ctor
     public OpenTelemetryHttpRequesterFilter() {
         this("");
+    }
+
+    private OpenTelemetryHttpRequesterFilter(Builder builder) {
+        super(builder);
+    }
+
+    /**
+     * Builder for constructing {@link OpenTelemetryHttpRequesterFilter} instances.
+     */
+    public static final class Builder extends OpenTelemetryFilterBuilder<Builder> {
+
+        String componentName = "";
+
+        /**
+         * Create a new builder.
+         */
+        public Builder() {
+        }
+
+        @Override
+        Builder thisInstance() {
+            return this;
+        }
+
+        /**
+         * Set the component name used during building new spans.
+         * <p>
+         * This is a client-specific option that maps to the {@code peer.service} attribute
+         * and will be ignored when used with server filters.
+         *
+         * @param componentName the component name
+         * @return {@code this}
+         */
+        public Builder componentName(String componentName) {
+            this.componentName = requireNonNull(componentName, "componentName");
+            return this;
+        }
+
+        /**
+         * Create a new {@link OpenTelemetryHttpRequesterFilter} instance.
+         * @return a new {@link OpenTelemetryHttpRequesterFilter} instance
+         */
+        public OpenTelemetryHttpRequesterFilter build() {
+            return new OpenTelemetryHttpRequesterFilter(this);
+        }
     }
 }
