@@ -73,9 +73,9 @@ public final class TcpServerConfig extends AbstractTcpConfig {
     public TcpServerConfig(final TcpServerConfig from) {
         super(from);
         sslConfig = from.sslConfig;
-        listenOptions = from.listenOptions;
+        listenOptions = copyMap(from.listenOptions);
         transportObserver = from.transportObserver;
-        sniConfig = from.sniConfig;
+        sniConfig = copyMap(from.sniConfig);
         sniMaxClientHelloLength = from.sniMaxClientHelloLength;
         sniClientHelloTimeout = from.sniClientHelloTimeout;
         acceptInsecureConnections = from.acceptInsecureConnections;
