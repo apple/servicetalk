@@ -57,7 +57,7 @@ abstract class AbstractTcpConfig {
     }
 
     protected AbstractTcpConfig(final AbstractTcpConfig from) {
-        options = from.options;
+        options = copyMap(from.options);
         idleTimeoutMs = from.idleTimeoutMs;
         flushStrategy = from.flushStrategy;
         wireLoggerConfig = from.wireLoggerConfig;
@@ -141,5 +141,10 @@ abstract class AbstractTcpConfig {
      */
     public final void transportConfig(final TransportConfig transportConfig) {
         this.transportConfig = requireNonNull(transportConfig);
+    }
+
+    @Nullable
+    static <A, B> Map<A, B> copyMap(@Nullable Map<? extends A, ? extends B> other) {
+        return other == null ? null : new HashMap<>(other);
     }
 }
