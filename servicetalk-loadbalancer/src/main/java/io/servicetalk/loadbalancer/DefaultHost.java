@@ -114,9 +114,8 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         this.healthCheckConfig = healthCheckConfig;
         this.hostObserver = requireNonNull(hostObserver, "hostObserver");
         this.closeable = toAsyncCloseable(this::doClose);
-
-        // warm the connection pool.
-        maybeWarmConnectionPool();
+        // Note that we don't explicitly warm the pool initially to prevent the very common race where a client is
+        // created and immediately used, thus triggering a race between warmup and initial connection acquisition.
     }
 
     @Override

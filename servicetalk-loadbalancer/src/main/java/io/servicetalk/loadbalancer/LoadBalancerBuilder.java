@@ -111,6 +111,12 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
      * on the request path, thereby reducing tail latencies, particularly for links which are prone idle-connection
      * closure. The tradeoff is that it may require tuning and will create more connection overhead overall.
      *
+     * Note: this is a best-effort setting. There are inherent uncertainties, race conditions, and assumptions that
+     * will cause the number of connections to transiently fall below the specified minimum. Currently, these include:
+     * - At startup: implementations do not try to warm never-used pools to prevent unexpected resource usage.
+     * - When warming fails: implementations do not attempt to recover from connection establishment failures to
+     *   prevent infinite retry loops.
+     *
      * @param minConnectionsPerHost the minimum number of connections a host should maintain.
      * @return {@code this}
      */
