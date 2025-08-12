@@ -273,6 +273,10 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
      */
     private static Publisher<?> merge(Publisher<?> p, Single<HttpHeaders> s) {
         // We filter null from the Single in case the publisher completes and we didn't find trailers.
+        // Note that we are using `flatMapMerge` which does not guarantee ordering. However, the Single should only
+        // resolve after the initial publisher finishes and this order should persist because of the execution model of
+        // our RS implementation, eg the events happen in order and there shouldn't be offload points that cause
+        // reordering.
         return from(p, s.toPublisher().filter(Objects::nonNull)).flatMapMerge(identity(), 2);
     }
 
