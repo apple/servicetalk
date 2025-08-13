@@ -130,7 +130,7 @@ abstract class GrpcSemanticAttributesExtractor implements AttributesExtractor<Re
                 }
         } else if (peerResolvedAddress instanceof DomainSocketAddress) {
             DomainSocketAddress domainSocketAddress = (DomainSocketAddress) peerResolvedAddress;
-            attributesBuilder.put(NETWORK_PEER_ADDRESS, domainSocketAddress.getPath());
+            attributesBuilder.put(NETWORK_PEER_ADDRESS, domainSocketAddress.path());
             attributesBuilder.put(NETWORK_TRANSPORT, Constants.UNIX);
         } else {
             // This is unlikely since the resolved form is almost always an `InetSocketAddress`, and

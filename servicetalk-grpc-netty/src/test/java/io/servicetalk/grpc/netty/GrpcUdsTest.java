@@ -122,7 +122,7 @@ class GrpcUdsTest {
     private static void assertSameAddress(Object actual, DomainSocketAddress expected, Queue<Throwable> errors) {
         try {
             assertThat(actual, is(instanceOf(expected.getClass())));
-            assertThat(((DomainSocketAddress) actual).getPath(), is(equalTo(expected.getPath())));
+            assertThat(((DomainSocketAddress) actual).path(), is(equalTo(expected.path())));
         } catch (Throwable t) {
             errors.add(t);
         }
@@ -131,7 +131,7 @@ class GrpcUdsTest {
     private static void assertSameAddressType(Object actual, DomainSocketAddress expected, Queue<Throwable> errors) {
         try {
             assertThat(actual, is(instanceOf(expected.getClass())));
-            assertThat(((DomainSocketAddress) actual).getPath(), is(emptyString()));
+            assertThat(((DomainSocketAddress) actual).path(), is(emptyString()));
         } catch (Throwable t) {
             errors.add(t);
         }

@@ -32,7 +32,7 @@ public final class BlockingUdsServer {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             // After the server is done, clean up the file. This doesn't cover all cases (external forced shutdown,
             // JVM crash, etc.) but best-effort cleanup is sufficient for temp file to allow the example to re-run.
-            if (!new File(udsAddress.getPath()).delete()) {
+            if (!new File(udsAddress.path()).delete()) {
                 System.err.println("failed to delete UDS file: " + udsAddress);
             }
         }));
