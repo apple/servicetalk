@@ -90,7 +90,7 @@ final class HttpInstrumentationHelper extends InstrumentationHelper {
      * @param builder OpenTelemetryHttpServiceFilter configuration options
      * @return server instrumentation helper
      */
-    static HttpInstrumentationHelper createServer(OpenTelemetryHttpServiceFilter.Builder builder) {
+    static HttpInstrumentationHelper forServer(OpenTelemetryHttpServiceFilter.Builder builder) {
         OpenTelemetry openTelemetry = builder.openTelemetry;
         SpanNameExtractor<RequestInfo> serverSpanNameExtractor =
                 HttpSpanNameExtractor.create(HttpAttributesGetter.SERVER_INSTANCE);
@@ -120,7 +120,7 @@ final class HttpInstrumentationHelper extends InstrumentationHelper {
      * @param builder OpenTelemetry configuration options
      * @return client instrumentation helper
      */
-    static HttpInstrumentationHelper createClient(final OpenTelemetryHttpRequesterFilter.Builder builder) {
+    static HttpInstrumentationHelper forClient(final OpenTelemetryHttpRequesterFilter.Builder builder) {
         OpenTelemetry openTelemetry = builder.openTelemetry;
         SpanNameExtractor<RequestInfo> clientSpanNameExtractor =
                 HttpSpanNameExtractor.create(HttpAttributesGetter.CLIENT_INSTANCE);
@@ -133,7 +133,7 @@ final class HttpInstrumentationHelper extends InstrumentationHelper {
         if (builder.enableMetrics) {
             clientInstrumenterBuilder.addOperationMetrics(HttpClientMetrics.get());
         }
-        String componentName = builder.componentName.trim();
+        String componentName = builder.componentName;
         if (!componentName.isEmpty()) {
             clientInstrumenterBuilder.addAttributesExtractor(
                     AttributesExtractor.constant(PEER_SERVICE, componentName));

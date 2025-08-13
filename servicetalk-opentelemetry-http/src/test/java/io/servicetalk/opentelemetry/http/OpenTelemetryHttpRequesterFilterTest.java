@@ -387,7 +387,8 @@ class OpenTelemetryHttpRequesterFilterTest {
 
         ServerContext context = buildServer(openTelemetry, false);
         try (HttpClient client = forSingleAddress(serverHostAndPort(context))
-                .appendClientFilter(new OpenTelemetryHttpRequestFilter(openTelemetry, "testClient"))
+                .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
+                        .openTelemetry(openTelemetry).componentName("testClient").build())
                 .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX))
                 .appendClientFilter(new HttpLifecycleObserverRequesterFilter(
                         new TestHttpLifecycleObserver(errors)))
@@ -478,7 +479,8 @@ class OpenTelemetryHttpRequesterFilterTest {
         HttpServerBuilder httpServerBuilder = HttpServers.forAddress(localAddress(0));
         if (addFilter) {
             httpServerBuilder =
-                httpServerBuilder.appendServiceFilter(new OpenTelemetryHttpServerFilter(givenOpentelemetry));
+                httpServerBuilder.appendServiceFilter(new OpenTelemetryHttpServiceFilter.Builder()
+                        .openTelemetry(givenOpentelemetry).build());
         }
         return httpServerBuilder
             .listenAndAwait((ctx, request, responseFactory) -> {

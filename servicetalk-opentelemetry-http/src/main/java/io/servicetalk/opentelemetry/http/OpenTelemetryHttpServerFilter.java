@@ -46,7 +46,7 @@ import io.opentelemetry.context.Context;
  * Be sure to use the
  * {@link io.servicetalk.http.api.HttpServerBuilder#appendNonOffloadingServiceFilter(StreamingHttpServiceFilterFactory)}
  * method for adding these filters as non-offloading filters are always added before offloading filters.
- * @deprecated use {@link OpenTelemetryHttpServiceFilter} instead.
+ * @deprecated use {@link OpenTelemetryHttpServiceFilter.Builder} instead.
  */
 @Deprecated // FIXME: 0.43 - remove deprecated class
 public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryHttpServiceFilter {
@@ -58,8 +58,7 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryHt
      * @deprecated this method is internal, no user should be setting the {@link OpenTelemetry} as it is obtained by
      * using {@link GlobalOpenTelemetry#get()} and there should be no other implementations but the one available in
      * the classpath, this constructor will be removed in the future releases.
-     * Use {@link #OpenTelemetryHttpServerFilter(OpenTelemetryOptions)} or {@link #OpenTelemetryHttpServerFilter()}
-     * instead.
+     * Use {@link OpenTelemetryHttpServiceFilter.Builder} instead.
      */
     @Deprecated // FIXME: 0.43 - remove deprecated ctor
     @SuppressWarnings("DeprecatedIsStillUsed")
@@ -70,7 +69,9 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryHt
     /**
      * Create a new instance using the {@link OpenTelemetry} from {@link GlobalOpenTelemetry#get()} with default
      * {@link OpenTelemetryOptions}.
+     * @deprecated Use {@link OpenTelemetryHttpServiceFilter.Builder} instead.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated class
     public OpenTelemetryHttpServerFilter() {
         super(new OpenTelemetryHttpServiceFilter.Builder());
     }
@@ -79,7 +80,9 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryHt
      * Create a new instance.
      *
      * @param openTelemetryOptions extra options to create the opentelemetry filter
+     * @deprecated Use {@link OpenTelemetryHttpServiceFilter.Builder} instead.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated class
     public OpenTelemetryHttpServerFilter(final OpenTelemetryOptions openTelemetryOptions) {
         super(new OpenTelemetryHttpServiceFilter.Builder().applyOptions(openTelemetryOptions));
     }

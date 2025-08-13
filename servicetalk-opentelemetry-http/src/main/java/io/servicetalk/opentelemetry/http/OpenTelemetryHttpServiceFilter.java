@@ -69,7 +69,7 @@ public final class OpenTelemetryHttpServiceFilter extends AbstractOpenTelemetryH
      */
     @Deprecated // FIXME: 0.43 - remove deprecated ctor
     public OpenTelemetryHttpServiceFilter(final OpenTelemetryOptions openTelemetryOptions) {
-        super(new Builder(openTelemetryOptions));
+        super(new Builder().applyOptions(openTelemetryOptions));
     }
 
     private OpenTelemetryHttpServiceFilter(Builder builder) {
@@ -80,12 +80,6 @@ public final class OpenTelemetryHttpServiceFilter extends AbstractOpenTelemetryH
      * Builder for constructing {@link OpenTelemetryHttpServiceFilter} filter instances.
      */
     public static final class Builder extends OpenTelemetryFilterBuilder<Builder> {
-
-        Builder(OpenTelemetryOptions options) {
-            capturedRequestHeaders = options.capturedRequestHeaders();
-            capturedResponseHeaders = options.capturedResponseHeaders();
-            enableMetrics = options.enableMetrics();
-        }
 
         /**
          * Create a new builder.

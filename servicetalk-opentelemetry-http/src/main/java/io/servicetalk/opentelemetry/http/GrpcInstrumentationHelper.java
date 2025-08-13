@@ -94,7 +94,7 @@ final class GrpcInstrumentationHelper extends InstrumentationHelper {
      * @param builder OpenTelemetryHttpServiceFilter configuration options
      * @return server instrumentation helper
      */
-    static GrpcInstrumentationHelper createServer(OpenTelemetryHttpServiceFilter.Builder builder) {
+    static GrpcInstrumentationHelper forServer(OpenTelemetryHttpServiceFilter.Builder builder) {
         OpenTelemetry openTelemetry = builder.openTelemetry;
         SpanNameExtractor<RequestInfo> serverSpanNameExtractor = GrpcSpanNameExtractor.INSTANCE;
         InstrumenterBuilder<RequestInfo, GrpcTelemetryStatus> serverInstrumenterBuilder =
@@ -119,7 +119,7 @@ final class GrpcInstrumentationHelper extends InstrumentationHelper {
      * @param builder OpenTelemetry configuration options
      * @return client instrumentation helper
      */
-    static GrpcInstrumentationHelper createClient(OpenTelemetryHttpRequesterFilter.Builder builder) {
+    static GrpcInstrumentationHelper forClient(OpenTelemetryHttpRequesterFilter.Builder builder) {
         OpenTelemetry openTelemetry = builder.openTelemetry;
         SpanNameExtractor<RequestInfo> clientSpanNameExtractor = GrpcSpanNameExtractor.INSTANCE;
         InstrumenterBuilder<RequestInfo, GrpcTelemetryStatus> clientInstrumenterBuilder =
@@ -132,7 +132,7 @@ final class GrpcInstrumentationHelper extends InstrumentationHelper {
         if (builder.enableMetrics) {
             clientInstrumenterBuilder.addOperationMetrics(HttpClientMetrics.get());
         }
-        String componentName = builder.componentName.trim();
+        String componentName = builder.componentName;
         if (!componentName.isEmpty()) {
             clientInstrumenterBuilder.addAttributesExtractor(
                     AttributesExtractor.constant(PEER_SERVICE, componentName));

@@ -100,9 +100,6 @@ public final class OpenTelemetryHttpRequesterFilter extends AbstractOpenTelemetr
 
         /**
          * Set the component name used during building new spans.
-         * <p>
-         * This is a client-specific option that maps to the {@code peer.service} attribute
-         * and will be ignored when used with server filters.
          *
          * @param componentName the component name
          * @return {@code this}
