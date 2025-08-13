@@ -52,7 +52,7 @@ public final class OpenTelemetryHttpServiceFilter extends AbstractOpenTelemetryH
     /**
      * Create a new instance using the {@link OpenTelemetry} from {@link GlobalOpenTelemetry#get()} with default
      * {@link OpenTelemetryOptions}.
-     * @deprecated use the constructor
+     * @deprecated use the {@link Builder} to construct filter instances.
      */
     @Deprecated // FIXME: 0.43 - remove deprecated ctor
     public OpenTelemetryHttpServiceFilter() {

@@ -40,6 +40,7 @@ abstract class OpenTelemetryFilterBuilder<T extends OpenTelemetryFilterBuilder<T
     abstract T thisInstance();
 
     // TODO: remove once we can remove the OpenTelemetryOptions
+    @SuppressWarnings("deprecation")
     final T applyOptions(final OpenTelemetryOptions options) {
         enableMetrics = options.enableMetrics();
         capturedRequestHeaders = options.capturedRequestHeaders();
@@ -48,7 +49,7 @@ abstract class OpenTelemetryFilterBuilder<T extends OpenTelemetryFilterBuilder<T
     }
 
     /**
-     * Add the headers to be captured as extra span attributes.
+     * Add the request headers to be captured as extra span attributes.
      *
      * @param capturedRequestHeaders extra headers to be captured in client/server requests and
      *     added as extra span attributes
@@ -65,7 +66,7 @@ abstract class OpenTelemetryFilterBuilder<T extends OpenTelemetryFilterBuilder<T
     }
 
     /**
-     * Add the headers to be captured as extra span attributes.
+     * Add the response headers to be captured as extra span attributes.
      *
      * @param capturedResponseHeaders extra headers to be captured in client/server response and
      *     added as extra span attributes
