@@ -84,25 +84,29 @@ abstract class OpenTelemetryFilterBuilder<T extends OpenTelemetryFilterBuilder<T
 
     /**
      * Whether to enable operation metrics or not.
-     *
+     * <p>
+     * Note that this has been intentionally kept package private for backwards compatibility with the deprecated
+     * {@link OpenTelemetryOptions.Builder#enableMetrics(boolean)} method.
      * @param enableMetrics whether to enable operation metrics or not
      * @return {@code this}
      * @see InstrumenterBuilder#addOperationMetrics(OperationMetrics)
      * @see HttpClientMetrics
      * @see HttpServerMetrics
      */
-    public final T enableMetrics(final boolean enableMetrics) {
+    final T enableMetrics(final boolean enableMetrics) {
         this.enableMetrics = enableMetrics;
         return thisInstance();
     }
 
     /**
      * Set the {@link OpenTelemetry} instance to use for creating spans.
-     *
+     * <p>
+     * Note that this is deliberately left package private. Beyond testing, there are not any compelling use cases
+     * for an {@link OpenTelemetry} other than {@link GlobalOpenTelemetry#get()}.
      * @param openTelemetry the {@link OpenTelemetry} instance
      * @return {@code this}
      */
-    public final T openTelemetry(OpenTelemetry openTelemetry) {
+    final T openTelemetry(OpenTelemetry openTelemetry) {
         this.openTelemetry = requireNonNull(openTelemetry, "openTelemetry");
         return thisInstance();
     }
