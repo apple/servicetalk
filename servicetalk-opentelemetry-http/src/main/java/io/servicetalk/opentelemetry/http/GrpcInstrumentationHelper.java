@@ -54,7 +54,9 @@ final class GrpcInstrumentationHelper extends InstrumentationHelper {
     private final Instrumenter<RequestInfo, GrpcTelemetryStatus> instrumenter;
     private final boolean isClient;
 
-    private GrpcInstrumentationHelper(Instrumenter<RequestInfo, GrpcTelemetryStatus> instrumenter, boolean isClient) {
+    private GrpcInstrumentationHelper(Instrumenter<RequestInfo, GrpcTelemetryStatus> instrumenter,
+                                      boolean ignoreSpanSuppression, boolean isClient) {
+        super(instrumenter, ignoreSpanSuppression);
         this.instrumenter = instrumenter;
         this.isClient = isClient;
     }
@@ -110,7 +112,7 @@ final class GrpcInstrumentationHelper extends InstrumentationHelper {
                 serverInstrumenterBuilder.buildServerInstrumenter(
                         RequestHeadersPropagatorGetter.INSTANCE);
 
-        return new GrpcInstrumentationHelper(instrumenter, false);
+        return new GrpcInstrumentationHelper(instrumenter, builder.ignoreSpanSuppression, false);
     }
 
     /**
@@ -142,7 +144,7 @@ final class GrpcInstrumentationHelper extends InstrumentationHelper {
                 clientInstrumenterBuilder.buildClientInstrumenter(
                         RequestHeadersPropagatorSetter.INSTANCE);
 
-        return new GrpcInstrumentationHelper(instrumenter, true);
+        return new GrpcInstrumentationHelper(instrumenter, builder.ignoreSpanSuppression, true);
     }
 
     /**

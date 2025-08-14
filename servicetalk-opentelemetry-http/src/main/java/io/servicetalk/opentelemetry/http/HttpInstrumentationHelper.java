@@ -52,7 +52,9 @@ final class HttpInstrumentationHelper extends InstrumentationHelper {
     private final Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter;
     private final boolean isClient;
 
-    private HttpInstrumentationHelper(Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter, boolean isClient) {
+    private HttpInstrumentationHelper(boolean isClient, Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter,
+                                      boolean ignoreSpanSuppression) {
+        super(instrumenter, ignoreSpanSuppression);
         this.instrumenter = instrumenter;
         this.isClient = isClient;
     }
@@ -111,7 +113,7 @@ final class HttpInstrumentationHelper extends InstrumentationHelper {
         Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter =
                 serverInstrumenterBuilder.buildServerInstrumenter(RequestHeadersPropagatorGetter.INSTANCE);
 
-        return new HttpInstrumentationHelper(instrumenter, false);
+        return new HttpInstrumentationHelper(false, instrumenter, builder.ignoreSpanSuppression);
     }
 
     /**
@@ -142,7 +144,7 @@ final class HttpInstrumentationHelper extends InstrumentationHelper {
         Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter =
                 clientInstrumenterBuilder.buildClientInstrumenter(RequestHeadersPropagatorSetter.INSTANCE);
 
-        return new HttpInstrumentationHelper(instrumenter, true);
+        return new HttpInstrumentationHelper(true, instrumenter, builder.ignoreSpanSuppression);
     }
 
     private static final class DeferredHttpClientAttributesExtractor implements

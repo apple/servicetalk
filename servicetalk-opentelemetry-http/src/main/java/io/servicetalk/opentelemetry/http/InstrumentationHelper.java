@@ -20,10 +20,19 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import io.opentelemetry.context.Context;
+import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 
 import java.util.function.Function;
 
 abstract class InstrumentationHelper {
+
+    private final Instrumenter<RequestInfo, ?> instrumenter;
+    private final boolean ignoreSpanSuppression;
+
+    protected InstrumentationHelper(Instrumenter<RequestInfo, ?> instrumenter, boolean ignoreSpanSuppression) {
+        this.instrumenter = instrumenter;
+        this.ignoreSpanSuppression = ignoreSpanSuppression;
+    }
 
     abstract Single<StreamingHttpResponse> doTrackRequest(
             Function<StreamingHttpRequest, Single<StreamingHttpResponse>> requestHandler,
@@ -34,6 +43,11 @@ abstract class InstrumentationHelper {
             Function<StreamingHttpRequest, Single<StreamingHttpResponse>> requestHandler,
             RequestInfo requestInfo,
             Context parentContext) {
-        return doTrackRequest(requestHandler, requestInfo, parentContext);
+        // If ignoreSpanSuppression is true, always create spans regardless of suppression
+        if (ignoreSpanSuppression || instrumenter.shouldStart(parentContext, requestInfo)) {
+            return doTrackRequest(requestHandler, requestInfo, parentContext);
+        } else {
+            return requestHandler.apply(requestInfo.request());
+        }
     }
 }

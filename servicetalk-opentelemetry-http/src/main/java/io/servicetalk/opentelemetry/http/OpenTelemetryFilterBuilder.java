@@ -36,6 +36,7 @@ abstract class OpenTelemetryFilterBuilder<T extends OpenTelemetryFilterBuilder<T
     List<String> capturedResponseHeaders = emptyList();
     boolean enableMetrics;
     OpenTelemetry openTelemetry = GlobalOpenTelemetry.get();
+    boolean ignoreSpanSuppression;
 
     abstract T thisInstance();
 
@@ -79,6 +80,16 @@ abstract class OpenTelemetryFilterBuilder<T extends OpenTelemetryFilterBuilder<T
         this.capturedResponseHeaders =
                 capturedResponseHeaders.isEmpty() ? emptyList() :
                         unmodifiableList(new ArrayList<>(capturedResponseHeaders));
+        return thisInstance();
+    }
+
+    /**
+     * Set whether span suppression should be ignored.
+     *
+     * @return {@code this} instance.
+     */
+    public final T ignoreSpanSuppression(final boolean ignoreSpanSuppression) {
+        this.ignoreSpanSuppression = ignoreSpanSuppression;
         return thisInstance();
     }
 
