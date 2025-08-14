@@ -165,7 +165,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.eventStream = fromSource(eventStreamProcessor)
                 .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.
         this.connectionFactory = requireNonNull(connectionFactory);
-        this.minConnectionsPerHost = ensureNonNegative(minConnectionsPerHost, "minConnectionsPerHost");
+        this.minConnectionsPerHost = minConnectionsPerHost;
         this.loadBalancerObserver = CatchAllLoadBalancerObserver.wrap(
                 requireNonNull(loadBalancerObserverFactory, "loadBalancerObserverFactory")
                 .newObserver(lbDescription));

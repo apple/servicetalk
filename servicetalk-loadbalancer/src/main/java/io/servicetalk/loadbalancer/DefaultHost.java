@@ -54,7 +54,6 @@ import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflo
 import static io.servicetalk.loadbalancer.ConnectTracker.ErrorClass.CANCELLED;
 import static io.servicetalk.loadbalancer.ConnectTracker.ErrorClass.CONNECT_ERROR;
 import static io.servicetalk.loadbalancer.ConnectTracker.ErrorClass.CONNECT_TIMEOUT;
-import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
@@ -107,14 +106,14 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         this.healthIndicator = healthIndicator;
         this.connectionSelector = requireNonNull(connectionSelector, "connectionSelector");
         requireNonNull(connectionFactory, "connectionFactory");
-        this.minConnections = ensureNonNegative(minConnections, "minConnections");
+        this.minConnections = minConnections;
         this.connectionFactory = healthIndicator == null ? connectionFactory :
                 new InstrumentedConnectionFactory<>(connectionFactory, healthIndicator);
         assert healthCheckConfig == null || healthCheckConfig.failedThreshold > 0;
         this.healthCheckConfig = healthCheckConfig;
         this.hostObserver = requireNonNull(hostObserver, "hostObserver");
         this.closeable = toAsyncCloseable(this::doClose);
-        // Note that we don't explicitly warm the pool initially to prevent the very common race where a client is
+        // Note that we deliberately don't warm the pool initially to prevent the very common race where a client is
         // created and immediately used, thus triggering a race between warmup and initial connection acquisition.
     }
 
@@ -367,12 +366,12 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         connection.onClose()
                 .beforeFinally(() -> removeConnection(connection))
                 .onErrorComplete(t -> {
-            // Use onErrorComplete instead of whenOnError to avoid double logging of an error inside subscribe():
-            // SimpleCompletableSubscriber.
-            LOGGER.error("{}: unexpected error while processing connection.onClose() for {}.",
-                    lbDescription, connection, t);
-            return true;
-        }).subscribe();
+                    // Use onErrorComplete instead of whenOnError to avoid double logging of an error inside
+                    // subscribe(): SimpleCompletableSubscriber.
+                    LOGGER.error("{}: unexpected error while processing connection.onClose() for {}.",
+                            lbDescription, connection, t);
+                    return true;
+                }).subscribe();
         return true;
     }
 

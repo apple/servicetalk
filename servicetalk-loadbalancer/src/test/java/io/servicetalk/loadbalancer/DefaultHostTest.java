@@ -279,7 +279,7 @@ class DefaultHostTest {
 
         host.newConnection(unused -> true, false, null).toFuture().get();
         ListenableAsyncCloseable cxn = createdConnections.pop();
-        cxn.closeAsync().subscribe();
+        cxn.closeAsync().toFuture().get();
 
         // Closing the connection should trigger warming, and now we should see 2 connections.
         assertEquals(2, createdConnections.size());
@@ -287,7 +287,7 @@ class DefaultHostTest {
         assertFalse(host.markExpired());
         verify(mockHostObserver).onHostMarkedExpired(2);
         cxn = createdConnections.pop();
-        cxn.closeAsync().subscribe();
+        cxn.closeAsync().toFuture().get();
 
         assertEquals(1, createdConnections.size());
         assertTrue(host.markActiveIfNotClosed());
@@ -296,10 +296,10 @@ class DefaultHostTest {
         // We should add one more connection (for a total of two) after revival.
         assertEquals(2, createdConnections.size());
 
-        host.closeAsync().subscribe();
+        host.closeAsync().toFuture().get();
         verify(mockHostObserver).onActiveHostRemoved(2);
-        createdConnections.pop().closeAsync().subscribe();
-        createdConnections.pop().closeAsync().subscribe();
+        createdConnections.pop().closeAsync().toFuture().get();
+        createdConnections.pop().closeAsync().toFuture().get();
         assertTrue(createdConnections.isEmpty());
     }
 }

@@ -123,7 +123,7 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
      * @param minConnectionsPerHost the minimum number of connections a host should maintain.
      * @return {@code this}
      */
-     // FIXME: 0.43 - consider removing default impl from this method
+    // FIXME: 0.43 - consider removing default impl from this method
     default LoadBalancerBuilder<ResolvedAddress, C> minConnectionsPerHost(int minConnectionsPerHost) {
         throw new UnsupportedOperationException("minConnectionsPerHost is not implemented by " + getClass());
     }
@@ -137,9 +137,9 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
      * @param maxUsed the maximum number of healthy backends to use.
      * @return {@code this}
      */
+    // FIXME: 0.43 - consider removing default impl from this method
     default LoadBalancerBuilder<ResolvedAddress, C> maxRandomSubsetSize(int maxUsed) {
-        // FIXME: 0.43 - remove default impl
-        throw new UnsupportedOperationException("maxRandomSubsetSize is not implemented");
+        throw new UnsupportedOperationException("maxRandomSubsetSize is not implemented by " + getClass());
     }
 
     /**
