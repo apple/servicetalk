@@ -38,6 +38,7 @@ import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK
 import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL;
 import static io.servicetalk.loadbalancer.HealthCheckConfig.validateHealthCheckIntervals;
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -77,6 +78,9 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final String targetResource,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
+        requireNonNull(targetResource, "targetResource");
+        requireNonNull(eventPublisher, "eventPublisher");
+        requireNonNull(connectionFactory, "connectionFactory");
         // We have to indirect here instead of at the `Builder.build()` call because as it turns out
         // `Builder.build()` has a return type of RoundRobinLoadBalancerFactory and is public API.
         return useDefaultLoadBalancer() ?

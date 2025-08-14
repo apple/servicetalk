@@ -156,6 +156,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.hostSelector = requireNonNull(loadBalancingPolicy.buildSelector(emptyList(), lbDescription));
         this.priorityStrategy = requireNonNull(priorityStrategyFactory.apply(lbDescription));
         this.connectionSelector = requireNonNull(connectionSelectorPolicy.buildConnectionSelector(lbDescription));
+        this.outlierDetector = requireNonNull(outlierDetectorFactory.apply(lbDescription));
         this.eventPublisher = eventPublisher;
         this.eventStream = fromSource(eventStreamProcessor)
                 .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.
@@ -169,8 +170,6 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.asyncCloseable = toAsyncCloseable(this::doClose);
         // Maintain a Subscriber so signals are always delivered to replay and new Subscribers get the latest signal.
         eventStream.ignoreElements().subscribe();
-        this.outlierDetector = requireNonNull(outlierDetectorFactory.apply(lbDescription));
-
         // When we get a health-status event we should update the host set.
         this.outlierDetectorStatusChangeStream = this.outlierDetector.healthStatusChanged().forEach((ignored) ->
             sequentialExecutor.execute(() -> sequentialUpdateUsedHosts(usedHosts, true)));
