@@ -92,6 +92,12 @@ public class DelegatingLoadBalancerBuilder<ResolvedAddress, C extends LoadBalanc
     }
 
     @Override
+    public LoadBalancerBuilder<ResolvedAddress, C> minConnectionsPerHost(int minConnectionsPerHost) {
+        delegate = delegate.minConnectionsPerHost(minConnectionsPerHost);
+        return this;
+    }
+
+    @Override
     public LoadBalancerFactory<ResolvedAddress, C> build() {
         return delegate.build();
     }

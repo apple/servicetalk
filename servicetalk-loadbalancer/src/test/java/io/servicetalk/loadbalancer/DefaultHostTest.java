@@ -16,7 +16,9 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.ExecutorExtension;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.TestExecutor;
 
 import org.junit.jupiter.api.AfterEach;
@@ -25,7 +27,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.Duration;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
@@ -40,8 +44,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -87,7 +93,7 @@ class DefaultHostTest {
         host = new DefaultHost<>("lbDescription", DEFAULT_ADDRESS,
                 ConnectionSelectorPolicies.<TestLoadBalancedConnection>linearSearch()
                         .buildConnectionSelector("resource"),
-                connectionFactory, mockHostObserver, healthCheckConfig, healthIndicator);
+                connectionFactory, 0, mockHostObserver, healthCheckConfig, healthIndicator);
     }
 
     private void buildHost() {
@@ -255,5 +261,45 @@ class DefaultHostTest {
         List<TestLoadBalancedConnection> found = host.asEntry().getValue();
         // There is about a 1 in 32! chance the insertion order in the same as the addition order.
         assertNotEquals(cxns, found);
+    }
+
+    @Test
+    void minActiveConnections() throws Exception {
+        Deque<ListenableAsyncCloseable> createdConnections = new ArrayDeque<>();
+        connectionFactory = new TestConnectionFactory(address -> {
+            ListenableAsyncCloseable closable = AsyncCloseables.emptyAsyncCloseable();
+            createdConnections.add(closable);
+            return succeeded(TestLoadBalancedConnection.mockConnection(address, closable));
+        });
+        host = new DefaultHost<>("lbDescription", DEFAULT_ADDRESS,
+                ConnectionSelectorPolicies.<TestLoadBalancedConnection>linearSearch()
+                        .buildConnectionSelector("resource"),
+                connectionFactory, 2, mockHostObserver, healthCheckConfig, null);
+        assertEquals(0, createdConnections.size());
+
+        host.newConnection(unused -> true, false, null).toFuture().get();
+        ListenableAsyncCloseable cxn = createdConnections.pop();
+        cxn.closeAsync().toFuture().get();
+
+        // Closing the connection should trigger warming, and now we should see 2 connections.
+        assertEquals(2, createdConnections.size());
+
+        assertFalse(host.markExpired());
+        verify(mockHostObserver).onHostMarkedExpired(2);
+        cxn = createdConnections.pop();
+        cxn.closeAsync().toFuture().get();
+
+        assertEquals(1, createdConnections.size());
+        assertTrue(host.markActiveIfNotClosed());
+        verify(mockHostObserver).onExpiredHostRevived(1);
+
+        // We should add one more connection (for a total of two) after revival.
+        assertEquals(2, createdConnections.size());
+
+        host.closeAsync().toFuture().get();
+        verify(mockHostObserver).onActiveHostRemoved(2);
+        createdConnections.pop().closeAsync().toFuture().get();
+        createdConnections.pop().closeAsync().toFuture().get();
+        assertTrue(createdConnections.isEmpty());
     }
 }

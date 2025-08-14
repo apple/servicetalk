@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.util.Objects.requireNonNull;
 
@@ -44,6 +45,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     private ConnectionSelectorPolicy<C> connectionSelectorPolicy = defaultConnectionSelectorPolicy();
     private OutlierDetectorConfig outlierDetectorConfig = OutlierDetectorConfig.DEFAULT_CONFIG;
     private Subsetter.SubsetterFactory subsetterFactory = new RandomSubsetter.RandomSubsetterFactory(Integer.MAX_VALUE);
+    private int minConnectionsPerHost;
 
     // package private constructor so users must funnel through providers in `LoadBalancers`
     DefaultLoadBalancerBuilder(final String id) {
@@ -84,6 +86,12 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     }
 
     @Override
+    public LoadBalancerBuilder<ResolvedAddress, C> minConnectionsPerHost(int minConnectionsPerHost) {
+        this.minConnectionsPerHost = ensureNonNegative(minConnectionsPerHost, "minConnectionsPerHost");
+        return this;
+    }
+
+    @Override
     public LoadBalancerBuilder<ResolvedAddress, C> backgroundExecutor(Executor backgroundExecutor) {
         this.backgroundExecutor = new NormalizedTimeSourceExecutor(backgroundExecutor);
         return this;
@@ -100,6 +108,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         private final String id;
         private final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy;
         private final ConnectionSelectorPolicy<C> connectionSelectorPolicy;
+        private final int minConnectionsPerHost;
         private final OutlierDetectorConfig outlierDetectorConfig;
         private final Subsetter.SubsetterFactory subsetterFactory;
         @Nullable
@@ -113,6 +122,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
             this.outlierDetectorConfig = requireNonNull(
                     loadBalancerBuilder.outlierDetectorConfig, "outlierDetectorConfig");
             this.subsetterFactory = requireNonNull(loadBalancerBuilder.subsetterFactory, "subsetterFactory");
+            this.minConnectionsPerHost = loadBalancerBuilder.minConnectionsPerHost;
             this.connectionSelectorPolicy = requireNonNull(
                     loadBalancerBuilder.connectionSelectorPolicy, "connectionSelectorPolicy");
             this.executor = requireNonNull(loadBalancerBuilder.getExecutor(), "executor");
@@ -161,7 +171,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
             }
             return new DefaultLoadBalancer<>(id, targetResource, eventPublisher,
                     DefaultHostPriorityStrategy::new, loadBalancingPolicy, subsetterFactory,
-                    connectionSelectorPolicy, connectionFactory,
+                    connectionSelectorPolicy, connectionFactory, minConnectionsPerHost,
                     loadBalancerObserverFactory, healthCheckConfig, outlierDetectorFactory);
         }
 
