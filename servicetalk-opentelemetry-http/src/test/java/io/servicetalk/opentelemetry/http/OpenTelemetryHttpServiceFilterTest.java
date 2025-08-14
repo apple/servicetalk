@@ -91,7 +91,6 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
-import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.DEFAULT_OPTIONS;
 import static io.servicetalk.opentelemetry.http.OpenTelemetryHttpRequesterFilterTest.verifyTraceIdPresentInLogs;
 import static io.servicetalk.opentelemetry.http.TestUtils.SPAN_STATE_SERIALIZER;
 import static io.servicetalk.opentelemetry.http.TestUtils.TRACING_TEST_LOG_LINE_PREFIX;
@@ -177,7 +176,8 @@ class OpenTelemetryHttpServiceFilterTest {
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         try (ServerContext context = buildServer(openTelemetry)) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
-                .appendClientFilter(new OpenTelemetryHttpRequesterFilter(openTelemetry, "testClient", DEFAULT_OPTIONS))
+                .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
+                        .openTelemetry(openTelemetry).componentName("testClient").build())
                 .build()) {
                 HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
@@ -254,11 +254,11 @@ class OpenTelemetryHttpServiceFilterTest {
     @Test
     void testCaptureHeaders() throws Exception {
         final String requestUrl = "/path";
-        try (ServerContext context = buildServer(otelTesting.getOpenTelemetry(),
-            new OpenTelemetryOptions.Builder()
+        try (ServerContext context = buildServer(otelTesting.getOpenTelemetry().getPropagators(),
+            new OpenTelemetryHttpServiceFilter.Builder()
+                    .openTelemetry(otelTesting.getOpenTelemetry())
                 .capturedResponseHeaders(singletonList("my-header"))
-                .capturedRequestHeaders(singletonList("some-request-header"))
-                .build())) {
+                .capturedRequestHeaders(singletonList("some-request-header")))) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
                 HttpResponse response = client.request(client.get(requestUrl)
                         .addHeader("some-request-header", "request-header-value"))
@@ -465,8 +465,9 @@ class OpenTelemetryHttpServiceFilterTest {
             throws Exception {
         HttpProtocolConfig config = http2 ? HttpProtocolConfigs.h2Default() : HttpProtocolConfigs.h1Default();
         Queue<Error> errorQueue = new ConcurrentLinkedQueue<>();
-        try (ServerContext context = buildStreamingServer(http2, otelTesting.getOpenTelemetry(),
-                new OpenTelemetryOptions.Builder().build(), useOffloading, errorQueue);
+        try (ServerContext context = buildStreamingServer(http2,
+                new OpenTelemetryHttpServiceFilter.Builder().openTelemetry(otelTesting.getOpenTelemetry()),
+                useOffloading, errorQueue);
              HttpClient client = forSingleAddress(serverHostAndPort(context)).protocols(config).build()) {
                 runWithClient.run(client);
         }
@@ -483,13 +484,12 @@ class OpenTelemetryHttpServiceFilterTest {
         void run(HttpClient client) throws Exception;
     }
 
-    private static ServerContext buildServer(OpenTelemetry givenOpentelemetry,
-                                             OpenTelemetryOptions opentelemetryOptions) throws Exception {
+    private static ServerContext buildServer(ContextPropagators propagators,
+                                             OpenTelemetryHttpServiceFilter.Builder builder) throws Exception {
         return HttpServers.forAddress(localAddress(0))
-            .appendServiceFilter(new OpenTelemetryHttpServiceFilter(givenOpentelemetry, opentelemetryOptions))
+            .appendServiceFilter(builder.build())
             .appendServiceFilter(new TestTracingServerLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX))
             .listenAndAwait((ctx, request, responseFactory) -> {
-                final ContextPropagators propagators = givenOpentelemetry.getPropagators();
                 final Context context = Context.root();
                 Context tracingContext = propagators.getTextMapPropagator()
                     .extract(context, request.headers(), HeadersPropagatorGetter.INSTANCE);
@@ -505,24 +505,25 @@ class OpenTelemetryHttpServiceFilterTest {
     }
 
     private static ServerContext buildServer(OpenTelemetry givenOpentelemetry) throws Exception {
-        return buildServer(givenOpentelemetry, new OpenTelemetryOptions.Builder().build());
+        return buildServer(givenOpentelemetry.getPropagators(),
+                new OpenTelemetryHttpServiceFilter.Builder().openTelemetry(givenOpentelemetry));
     }
 
-    private static ServerContext buildStreamingServer(boolean http2, OpenTelemetry givenOpentelemetry,
-                                                      OpenTelemetryOptions opentelemetryOptions, boolean useOffloading,
+    private static ServerContext buildStreamingServer(boolean http2,
+                                                      OpenTelemetryHttpServiceFilter.Builder filterBuilder,
+                                                      boolean useOffloading,
                                                       Queue<Error> errorQueue) throws Exception {
         HttpProtocolConfig config = http2 ? HttpProtocolConfigs.h2Default() : HttpProtocolConfigs.h1Default();
         HttpServerBuilder builder = HttpServers.forAddress(localAddress(0))
                 .protocols(config)
                 .drainRequestPayloadBody(false);
         if (useOffloading) {
-            builder.appendServiceFilter(new OpenTelemetryHttpServiceFilter(givenOpentelemetry, opentelemetryOptions))
+            builder.appendServiceFilter(filterBuilder.build())
                     .appendServiceFilter(HttpRequestAutoDrainingServiceFilter.INSTANCE)
                     .appendServiceFilter(new HttpLifecycleObserverServiceFilter(
                             new TestHttpLifecycleObserver(errorQueue)));
         } else {
-            builder.appendNonOffloadingServiceFilter(new OpenTelemetryHttpServiceFilter(
-                    givenOpentelemetry, opentelemetryOptions))
+            builder.appendNonOffloadingServiceFilter(filterBuilder.build())
                     .appendNonOffloadingServiceFilter(HttpRequestAutoDrainingServiceFilter.INSTANCE)
                     .appendNonOffloadingServiceFilter(new HttpLifecycleObserverServiceFilter(
                             new TestHttpLifecycleObserver(errorQueue)));

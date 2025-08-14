@@ -39,7 +39,7 @@ import io.opentelemetry.context.Context;
  *     {@link io.servicetalk.http.utils.HttpRequestAutoDrainingServiceFilter} immediately after.</li>
  *     <li>To ensure tracing sees the same result status codes as the calling client, add the
  *     {@link io.servicetalk.http.api.HttpExceptionMapperServiceFilter} after this filter.</li>
- *     <li>If you intend to use a {@link io.servicetalk.http.api.HttpLifecycleObserver}, add it using the the
+ *     <li>If you intend to use a {@link io.servicetalk.http.api.HttpLifecycleObserver}, add it using the
  *     HttpLifecycleObserverServiceFilter after the tracing filter to ensure the correct {@link Span} information is
  *     present.</li>
  * </ul>
@@ -52,21 +52,52 @@ public final class OpenTelemetryHttpServiceFilter extends AbstractOpenTelemetryH
     /**
      * Create a new instance using the {@link OpenTelemetry} from {@link GlobalOpenTelemetry#get()} with default
      * {@link OpenTelemetryOptions}.
+     * @deprecated use the {@link Builder} to construct filter instances.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated ctor
     public OpenTelemetryHttpServiceFilter() {
-        this(DEFAULT_OPTIONS);
+        this(new Builder());
     }
 
     /**
      * Create a new instance.
      *
-     * @param openTelemetryOptions extra options to create the opentelemetry filter
+     * @param openTelemetryOptions extra options to create the opentelemetry filter.
+     *                            Client-specific options (componentName, openTelemetry, ignoreSpanSuppression)
+     *                            will be ignored for server filters.
+     * @deprecated use the {@link Builder} to construct filter instances.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated ctor
     public OpenTelemetryHttpServiceFilter(final OpenTelemetryOptions openTelemetryOptions) {
-        this(GlobalOpenTelemetry.get(), openTelemetryOptions);
+        super(new Builder().applyOptions(openTelemetryOptions));
     }
 
-    OpenTelemetryHttpServiceFilter(final OpenTelemetry openTelemetry, final OpenTelemetryOptions openTelemetryOptions) {
-        super(openTelemetry, openTelemetryOptions);
+    private OpenTelemetryHttpServiceFilter(Builder builder) {
+        super(builder);
+    }
+
+    /**
+     * Builder for constructing {@link OpenTelemetryHttpServiceFilter} filter instances.
+     */
+    public static final class Builder extends OpenTelemetryFilterBuilder<Builder> {
+
+        /**
+         * Create a new builder.
+         */
+        public Builder() {
+        }
+
+        @Override
+        Builder thisInstance() {
+            return this;
+        }
+
+        /**
+         * Create a new {@link OpenTelemetryHttpServiceFilter} instance.
+         * @return a new {@link OpenTelemetryHttpServiceFilter} instance
+         */
+        public OpenTelemetryHttpServiceFilter build() {
+            return new OpenTelemetryHttpServiceFilter(this);
+        }
     }
 }

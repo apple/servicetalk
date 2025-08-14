@@ -39,8 +39,8 @@ final class GrpcServerAttributesExtractor extends GrpcSemanticAttributesExtracto
     private static final AttributeKey<String> CLIENT_ADDRESS = AttributeKey.stringKey("client.address");
     private static final AttributeKey<Long> CLIENT_PORT = AttributeKey.longKey("client.port");
 
-    GrpcServerAttributesExtractor(OpenTelemetryOptions openTelemetryOptions) {
-        super(openTelemetryOptions);
+    GrpcServerAttributesExtractor(OpenTelemetryHttpServiceFilter.Builder builder) {
+        super(builder.capturedRequestHeaders, builder.capturedResponseHeaders);
     }
 
     @Override

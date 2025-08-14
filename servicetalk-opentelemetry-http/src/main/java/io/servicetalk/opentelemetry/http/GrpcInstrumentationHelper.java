@@ -13,15 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.transport.api.ConnectionInfo;
 
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
@@ -45,10 +44,10 @@ import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.with
 /**
  * Helper class that encapsulates gRPC-specific OpenTelemetry instrumentation logic.
  * <p>
- * This helper handles the creation of gRPC instrumenters and provides methods to track
- * gRPC requests with proper span lifecycle management and gRPC semantic conventions.
+ * This helper handles the creation of gRPC instrumenters and provides methods to track gRPC
+ * requests with proper span lifecycle management and gRPC semantic conventions.
  */
-final class GrpcInstrumentationHelper {
+final class GrpcInstrumentationHelper extends InstrumentationHelper {
 
     private static final CharSequence GRPC_CONTENT_TYPE = newAsciiString("application/grpc");
 
@@ -64,29 +63,23 @@ final class GrpcInstrumentationHelper {
      * Tracks a gRPC request using gRPC-specific OpenTelemetry instrumentation.
      *
      * @param requestHandler function to execute the actual request
-     * @param request the gRPC request
-     * @param connectionInfo connection information (may be null for clients)
+     * @param requestInfo the gRPC request and connection info
+     * @param parentContext the currently active context
      * @return instrumented response single
      */
-    Single<StreamingHttpResponse> trackGrpcRequest(
+    @Override
+    Single<StreamingHttpResponse> doTrackRequest(
             Function<StreamingHttpRequest, Single<StreamingHttpResponse>> requestHandler,
-            StreamingHttpRequest request,
-            @Nullable ConnectionInfo connectionInfo) {
-
-        final Context parentContext = Context.current();
-        final RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
-
-        if (!instrumenter.shouldStart(parentContext, requestInfo)) {
-            return requestHandler.apply(request);
-        }
-
+            RequestInfo requestInfo,
+            Context parentContext) {
         final Context context = instrumenter.start(parentContext, requestInfo);
         try (Scope unused = context.makeCurrent()) {
             final GrpcScopeTracker tracker = isClient ?
                     GrpcScopeTracker.client(context, requestInfo, instrumenter) :
                     GrpcScopeTracker.server(context, requestInfo, instrumenter);
             try {
-                Single<StreamingHttpResponse> response = requestHandler.apply(request);
+                Single<StreamingHttpResponse> response =
+                        requestHandler.apply(requestInfo.request());
                 return withContext(tracker.track(response), context);
             } catch (Throwable t) {
                 tracker.onError(t);
@@ -98,24 +91,24 @@ final class GrpcInstrumentationHelper {
     /**
      * Creates a gRPC server instrumentation helper.
      *
-     * @param openTelemetry the OpenTelemetry instance
-     * @param options OpenTelemetry configuration options
+     * @param builder OpenTelemetryHttpServiceFilter configuration options
      * @return server instrumentation helper
      */
-    static GrpcInstrumentationHelper createServer(OpenTelemetry openTelemetry, OpenTelemetryOptions options) {
+    static GrpcInstrumentationHelper forServer(OpenTelemetryHttpServiceFilter.Builder builder) {
+        OpenTelemetry openTelemetry = builder.openTelemetry;
         SpanNameExtractor<RequestInfo> serverSpanNameExtractor = GrpcSpanNameExtractor.INSTANCE;
         InstrumenterBuilder<RequestInfo, GrpcTelemetryStatus> serverInstrumenterBuilder =
                 Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, serverSpanNameExtractor);
-        serverInstrumenterBuilder.setSpanStatusExtractor(GrpcSpanStatusExtractor.SERVER_INSTANCE);
-
         serverInstrumenterBuilder
-                .addAttributesExtractor(new GrpcServerAttributesExtractor(options));
-        if (options.enableMetrics()) {
+                .setSpanStatusExtractor(GrpcSpanStatusExtractor.SERVER_INSTANCE)
+                .addAttributesExtractor(new GrpcServerAttributesExtractor(builder));
+        if (builder.enableMetrics) {
             serverInstrumenterBuilder.addOperationMetrics(HttpServerMetrics.get());
         }
 
         Instrumenter<RequestInfo, GrpcTelemetryStatus> instrumenter =
-                serverInstrumenterBuilder.buildServerInstrumenter(RequestHeadersPropagatorGetter.INSTANCE);
+                serverInstrumenterBuilder.buildServerInstrumenter(
+                        RequestHeadersPropagatorGetter.INSTANCE);
 
         return new GrpcInstrumentationHelper(instrumenter, false);
     }
@@ -123,31 +116,31 @@ final class GrpcInstrumentationHelper {
     /**
      * Creates a gRPC client instrumentation helper.
      *
-     * @param openTelemetry the OpenTelemetry instance
-     * @param options OpenTelemetry configuration options
-     * @param componentName component name for peer service attribute
+     * @param builder OpenTelemetry configuration options
      * @return client instrumentation helper
      */
-    static GrpcInstrumentationHelper createClient(OpenTelemetry openTelemetry, OpenTelemetryOptions options,
-                                                  String componentName) {
+    static GrpcInstrumentationHelper forClient(OpenTelemetryHttpRequesterFilter.Builder builder) {
+        OpenTelemetry openTelemetry = builder.openTelemetry;
         SpanNameExtractor<RequestInfo> clientSpanNameExtractor = GrpcSpanNameExtractor.INSTANCE;
         InstrumenterBuilder<RequestInfo, GrpcTelemetryStatus> clientInstrumenterBuilder =
-                Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, clientSpanNameExtractor);
+                Instrumenter.builder(
+                        openTelemetry, INSTRUMENTATION_SCOPE_NAME, clientSpanNameExtractor);
         clientInstrumenterBuilder
                 .setSpanStatusExtractor(GrpcSpanStatusExtractor.CLIENT_INSTANCE)
-                .addAttributesExtractor(new DeferredGrpcClientAttributesExtractor(options));
+                .addAttributesExtractor(new DeferredGrpcClientAttributesExtractor(builder));
 
-        if (options.enableMetrics()) {
+        if (builder.enableMetrics) {
             clientInstrumenterBuilder.addOperationMetrics(HttpClientMetrics.get());
         }
-        componentName = componentName.trim();
+        String componentName = builder.componentName;
         if (!componentName.isEmpty()) {
             clientInstrumenterBuilder.addAttributesExtractor(
                     AttributesExtractor.constant(PEER_SERVICE, componentName));
         }
 
         Instrumenter<RequestInfo, GrpcTelemetryStatus> instrumenter =
-                clientInstrumenterBuilder.buildClientInstrumenter(RequestHeadersPropagatorSetter.INSTANCE);
+                clientInstrumenterBuilder.buildClientInstrumenter(
+                        RequestHeadersPropagatorSetter.INSTANCE);
 
         return new GrpcInstrumentationHelper(instrumenter, true);
     }
@@ -183,24 +176,27 @@ final class GrpcInstrumentationHelper {
         return true;
     }
 
-    private static final class DeferredGrpcClientAttributesExtractor implements
-            AttributesExtractor<RequestInfo, GrpcTelemetryStatus> {
+    private static final class DeferredGrpcClientAttributesExtractor
+            implements AttributesExtractor<RequestInfo, GrpcTelemetryStatus> {
 
         private final AttributesExtractor<RequestInfo, GrpcTelemetryStatus> delegate;
 
-        DeferredGrpcClientAttributesExtractor(OpenTelemetryOptions openTelemetryOptions) {
-            this.delegate = new GrpcClientAttributesExtractor(openTelemetryOptions);
+        DeferredGrpcClientAttributesExtractor(OpenTelemetryHttpRequesterFilter.Builder builder) {
+            this.delegate = new GrpcClientAttributesExtractor(builder);
         }
 
         @Override
-        public void onStart(io.opentelemetry.api.common.AttributesBuilder attributes, Context parentContext,
+        public void onStart(AttributesBuilder attributes,
+                            Context parentContext,
                             RequestInfo requestInfo) {
             // noop: we will defer this until the `onEnd` call.
         }
 
         @Override
-        public void onEnd(io.opentelemetry.api.common.AttributesBuilder attributes, Context context,
-                          RequestInfo requestInfo, @Nullable GrpcTelemetryStatus telemetryStatus,
+        public void onEnd(AttributesBuilder attributes,
+                          Context context,
+                          RequestInfo requestInfo,
+                          @Nullable GrpcTelemetryStatus telemetryStatus,
                           @Nullable Throwable error) {
             delegate.onStart(attributes, context, requestInfo);
             delegate.onEnd(attributes, context, requestInfo, telemetryStatus, error);

@@ -31,7 +31,10 @@ import static java.util.Collections.unmodifiableList;
 
 /**
  * A set of options for configuring OpenTelemetry filters.
+ * @deprecated use the filter specific builders {@link OpenTelemetryHttpRequesterFilter.Builder} and
+ * {@link OpenTelemetryHttpServiceFilter.Builder} instead.
  */
+@Deprecated // FIXME: 0.43 - remove deprecated class
 public final class OpenTelemetryOptions {
 
     private final List<String> capturedRequestHeaders;

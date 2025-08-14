@@ -39,14 +39,14 @@ import io.opentelemetry.context.Context;
  *     {@link io.servicetalk.http.utils.HttpRequestAutoDrainingServiceFilter} immediately after.</li>
  *     <li>To ensure tracing sees the same result status codes as the calling client, add the
  *     {@link io.servicetalk.http.api.HttpExceptionMapperServiceFilter} after this filter.</li>
- *     <li>If you intend to use a {@link io.servicetalk.http.api.HttpLifecycleObserver}, add it using the the
+ *     <li>If you intend to use a {@link io.servicetalk.http.api.HttpLifecycleObserver}, add it using the
  *     HttpLifecycleObserverServiceFilter after the tracing filter to ensure the correct {@link Span} information is
  *     present.</li>
  * </ul>
  * Be sure to use the
  * {@link io.servicetalk.http.api.HttpServerBuilder#appendNonOffloadingServiceFilter(StreamingHttpServiceFilterFactory)}
  * method for adding these filters as non-offloading filters are always added before offloading filters.
- * @deprecated use {@link OpenTelemetryHttpServiceFilter} instead.
+ * @deprecated use {@link OpenTelemetryHttpServiceFilter.Builder} instead.
  */
 @Deprecated // FIXME: 0.43 - remove deprecated class
 public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryHttpServiceFilter {
@@ -58,29 +58,32 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryHt
      * @deprecated this method is internal, no user should be setting the {@link OpenTelemetry} as it is obtained by
      * using {@link GlobalOpenTelemetry#get()} and there should be no other implementations but the one available in
      * the classpath, this constructor will be removed in the future releases.
-     * Use {@link #OpenTelemetryHttpServerFilter(OpenTelemetryOptions)} or {@link #OpenTelemetryHttpServerFilter()}
-     * instead.
+     * Use {@link OpenTelemetryHttpServiceFilter.Builder} instead.
      */
     @Deprecated // FIXME: 0.43 - remove deprecated ctor
     @SuppressWarnings("DeprecatedIsStillUsed")
     public OpenTelemetryHttpServerFilter(final OpenTelemetry openTelemetry) {
-        super(openTelemetry, DEFAULT_OPTIONS);
+        super(new OpenTelemetryHttpServiceFilter.Builder().openTelemetry(openTelemetry));
     }
 
     /**
      * Create a new instance using the {@link OpenTelemetry} from {@link GlobalOpenTelemetry#get()} with default
      * {@link OpenTelemetryOptions}.
+     * @deprecated Use {@link OpenTelemetryHttpServiceFilter.Builder} instead.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated class
     public OpenTelemetryHttpServerFilter() {
-        this(DEFAULT_OPTIONS);
+        super(new OpenTelemetryHttpServiceFilter.Builder());
     }
 
     /**
      * Create a new instance.
      *
      * @param openTelemetryOptions extra options to create the opentelemetry filter
+     * @deprecated Use {@link OpenTelemetryHttpServiceFilter.Builder} instead.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated class
     public OpenTelemetryHttpServerFilter(final OpenTelemetryOptions openTelemetryOptions) {
-        super(GlobalOpenTelemetry.get(), openTelemetryOptions);
+        super(new OpenTelemetryHttpServiceFilter.Builder().applyOptions(openTelemetryOptions));
     }
 }

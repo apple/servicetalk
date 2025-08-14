@@ -173,17 +173,16 @@ class OpenTelemetryGrpcFilterTest {
         // The filter will automatically detect gRPC requests and handle them appropriately
         serverContext = GrpcServers.forAddress(localAddress(0))
                 .initializeHttp(builder -> builder
-                        .appendServiceFilter(new OpenTelemetryHttpServiceFilter(
-                                otelTesting.getOpenTelemetry(),
-                                new OpenTelemetryOptions.Builder().build())))
+                        .appendServiceFilter(new OpenTelemetryHttpServiceFilter.Builder()
+                                        .openTelemetry(otelTesting.getOpenTelemetry()).build()))
                 .listenAndAwait(new Tester.ServiceFactory(new TestTesterService(error)));
 
         // Create gRPC client with unified OpenTelemetry HTTP requester filter
         // The filter will automatically detect gRPC requests and handle them appropriately
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
-                .initializeHttp(builder -> builder.appendClientFilter(new OpenTelemetryHttpRequesterFilter(
-                        otelTesting.getOpenTelemetry(), "test-client",
-                        new OpenTelemetryOptions.Builder().build())))
+                .initializeHttp(builder -> builder.appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
+                                .openTelemetry(otelTesting.getOpenTelemetry())
+                                .componentName("test-client").build()))
                 .build(new Tester.ClientFactory());
     }
 
