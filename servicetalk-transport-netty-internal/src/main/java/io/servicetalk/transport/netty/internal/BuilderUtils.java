@@ -143,7 +143,7 @@ public final class BuilderUtils {
         // `SocketAddress`, and we want to identify the more specific types before returning the fallback
         // `SocketAddress` type.
         if (address instanceof io.servicetalk.transport.api.DomainSocketAddress) {
-            return new DomainSocketAddress(((io.servicetalk.transport.api.DomainSocketAddress) address).getPath());
+            return new DomainSocketAddress(((io.servicetalk.transport.api.DomainSocketAddress) address).path());
         }
         if (address instanceof SocketAddress) {
             return (SocketAddress) address;
