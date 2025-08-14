@@ -110,18 +110,22 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
      * Setting a minimum number of connections can help reduce the occurrences where connection establishment happens
      * on the request path, thereby reducing tail latencies, particularly for links which are prone idle-connection
      * closure. The tradeoff is that it may require tuning and will create more connection overhead overall.
-     *
+     * <p>
      * Note: this is a best-effort setting. There are inherent uncertainties, race conditions, and assumptions that
      * will cause the number of connections to transiently fall below the specified minimum. Currently, these include:
-     * - At startup: implementations do not try to warm never-used pools to prevent unexpected resource usage.
-     * - When warming fails: implementations do not attempt to recover from connection establishment failures to
-     *   prevent infinite retry loops.
+     * <ul>
+     *     <li>At startup: implementations do not try to warm never-used pools to prevent unexpected resource usage.
+     *     </li>
+     *     <li>When warming fails: implementations do not attempt to recover from connection establishment failures to
+     *     prevent infinite retry loops.</li>
+     * </ul>
      *
      * @param minConnectionsPerHost the minimum number of connections a host should maintain.
      * @return {@code this}
      */
+     // FIXME: 0.43 - consider removing default impl from this method
     default LoadBalancerBuilder<ResolvedAddress, C> minConnectionsPerHost(int minConnectionsPerHost) {
-        throw new UnsupportedOperationException("minConnectionsPerHost is not implemented");
+        throw new UnsupportedOperationException("minConnectionsPerHost is not implemented by " + getClass());
     }
 
     /**
