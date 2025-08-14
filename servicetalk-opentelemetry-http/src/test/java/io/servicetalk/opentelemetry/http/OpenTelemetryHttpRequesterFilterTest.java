@@ -558,7 +558,7 @@ class OpenTelemetryHttpRequesterFilterTest {
     void testManualClientSpanWithSameInstrumentationScope() throws Exception {
         final String requestUrl = "/same-scope-test";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer( true)) {
+        try (ServerContext context = buildServer(true)) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
                 .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
                         .openTelemetry(openTelemetry)

@@ -485,7 +485,8 @@ class OpenTelemetryHttpServiceFilterTest {
         void run(HttpClient client) throws Exception;
     }
 
-    private static ServerContext buildServerWithSuppression(OpenTelemetryHttpServiceFilter.Builder builder) throws Exception {
+    private static ServerContext buildServerWithSuppression(
+            OpenTelemetryHttpServiceFilter.Builder builder) throws Exception {
         return doBuildServer(builder, true);
     }
 
@@ -493,7 +494,8 @@ class OpenTelemetryHttpServiceFilterTest {
         return doBuildServer(builder, false);
     }
 
-    private static ServerContext doBuildServer(OpenTelemetryHttpServiceFilter.Builder builder, boolean addSuppressionFilter) throws Exception {
+    private static ServerContext doBuildServer(OpenTelemetryHttpServiceFilter.Builder builder,
+                                               boolean addSuppressionFilter) throws Exception {
         OpenTelemetry givenOpentelemetry = otelTesting.getOpenTelemetry();
         builder = builder.openTelemetry(givenOpentelemetry);
         HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
