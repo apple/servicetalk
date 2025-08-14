@@ -33,7 +33,6 @@ import static io.servicetalk.loadbalancer.OutlierDetectorConfig.enforcing;
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static io.servicetalk.utils.internal.RandomUtils.nextLongInclusive;
 import static java.lang.Math.max;
-import static java.util.Objects.requireNonNull;
 
 abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnection> extends DefaultRequestTracker
         implements HealthIndicator<ResolvedAddress, C> {

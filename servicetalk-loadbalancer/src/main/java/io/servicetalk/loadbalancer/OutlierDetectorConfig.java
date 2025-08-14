@@ -30,7 +30,6 @@ import static io.servicetalk.loadbalancer.HealthCheckConfig.validateHealthCheckI
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.time.Duration.ofSeconds;
-import static java.util.Objects.requireNonNull;
 
 /**
  * XDS outlier detector configuration.
