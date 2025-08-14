@@ -116,16 +116,16 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         private final Executor executor;
 
         DefaultLoadBalancerFactory(DefaultLoadBalancerBuilder<ResolvedAddress, C> loadBalancerBuilder) {
-            this.id = requireNonNull(loadBalancerBuilder.id, "id");
-            this.loadBalancingPolicy = requireNonNull(loadBalancerBuilder.loadBalancingPolicy, "loadBalancingPolicy");
+            this.id = loadBalancerBuilder.id;
+            this.loadBalancingPolicy = loadBalancerBuilder.loadBalancingPolicy;
             this.loadBalancerObserverFactory = loadBalancerBuilder.loadBalancerObserverFactory;
-            this.outlierDetectorConfig = requireNonNull(
-                    loadBalancerBuilder.outlierDetectorConfig, "outlierDetectorConfig");
-            this.subsetterFactory = requireNonNull(loadBalancerBuilder.subsetterFactory, "subsetterFactory");
+            this.outlierDetectorConfig = loadBalancerBuilder.outlierDetectorConfig;
+            this.subsetterFactory = loadBalancerBuilder.subsetterFactory;
             this.minConnectionsPerHost = loadBalancerBuilder.minConnectionsPerHost;
-            this.connectionSelectorPolicy = requireNonNull(
-                    loadBalancerBuilder.connectionSelectorPolicy, "connectionSelectorPolicy");
-            this.executor = requireNonNull(loadBalancerBuilder.getExecutor(), "executor");
+            this.connectionSelectorPolicy = loadBalancerBuilder.connectionSelectorPolicy;
+            Executor builderExecutor = loadBalancerBuilder.backgroundExecutor;
+            this.executor = builderExecutor ==
+                    null ? RoundRobinLoadBalancerFactory.SharedExecutor.getInstance() : builderExecutor;
         }
 
         @Override
@@ -148,6 +148,9 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         public LoadBalancer<C> newLoadBalancer(
                 Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
                 ConnectionFactory<ResolvedAddress, C> connectionFactory, String targetResource) {
+            requireNonNull(eventPublisher, "eventPublisher");
+            requireNonNull(connectionFactory, "connectionFactory");
+            requireNonNull(targetResource, "targetResource");
             final HealthCheckConfig healthCheckConfig;
             if (OutlierDetectorConfig.allDisabled(outlierDetectorConfig)) {
                 healthCheckConfig = null;
@@ -193,11 +196,6 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
                     ", executor=" + executor +
                     '}';
         }
-    }
-
-    private Executor getExecutor() {
-        return backgroundExecutor ==
-                null ? RoundRobinLoadBalancerFactory.SharedExecutor.getInstance() : backgroundExecutor;
     }
 
     private static <ResolvedAddress, C extends LoadBalancedConnection>

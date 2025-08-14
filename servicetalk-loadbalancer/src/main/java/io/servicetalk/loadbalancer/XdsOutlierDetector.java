@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessorDropHeadOnOverflow;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static java.lang.Math.max;
-import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link OutlierDetector} implementation that supports xDS outlier detector configuration.
@@ -84,9 +83,9 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
     XdsOutlierDetector(final Executor executor, final OutlierDetectorConfig outlierDetectorConfig,
                        final String lbDescription, SequentialExecutor.ExceptionHandler exceptionHandler) {
         this.sequentialExecutor = new SequentialExecutor(exceptionHandler);
-        this.outlierDetectorConfig = requireNonNull(outlierDetectorConfig, "outlierDetectorConfig");
-        this.executor = requireNonNull(executor, "executor");
-        this.lbDescription = requireNonNull(lbDescription, "lbDescription");
+        this.outlierDetectorConfig = outlierDetectorConfig;
+        this.executor = executor;
+        this.lbDescription = lbDescription;
         this.kernel = new Kernel(outlierDetectorConfig);
     }
 
@@ -190,7 +189,7 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
         private final OutlierDetectorConfig config;
 
         Kernel(final OutlierDetectorConfig config) {
-            this.config = requireNonNull(config, "config");
+            this.config = config;
             this.algorithms = getAlgorithms(config);
             this.cancellable = new SequentialCancellable(scheduleNextOutliersCheck(config));
         }

@@ -82,23 +82,20 @@ public final class OutlierDetectorConfig {
                           final int failurePercentageThreshold, final int enforcingFailurePercentage,
                           final int failurePercentageMinimumHosts, final int failurePercentageRequestVolume,
                           final Duration maxEjectionTime, final Duration ejectionTimeJitter) {
-        this.ewmaHalfLife = requireNonNull(ewmaHalfLife, "ewmaHalfLife");
+        this.ewmaHalfLife = ewmaHalfLife;
         this.ewmaCancellationPenalty = ensureNonNegative(ewmaCancellationPenalty, "ewmaCancellationPenalty");
         this.ewmaErrorPenalty = ensureNonNegative(ewmaErrorPenalty, "ewmaErrorPenalty");
         this.concurrentRequestPenalty = ensureNonNegative(concurrentRequestPenalty, "concurrentRequestPenalty");
         this.cancellationIsError = cancellationIsError;
         this.failedConnectionsThreshold = failedConnectionsThreshold;
-        this.failureDetectorIntervalJitter = requireNonNull(
-                failureDetectorIntervalJitter, "failureDetectorIntervalJitter");
-        this.serviceDiscoveryResubscribeInterval = requireNonNull(
-                serviceDiscoveryResubscribeInterval, "serviceDiscoveryResubscribeInterval");
-        this.serviceDiscoveryResubscribeJitter = requireNonNull(
-                serviceDiscoveryResubscribeJitter, "serviceDiscoveryResubscribeJitter");
+        this.failureDetectorIntervalJitter = failureDetectorIntervalJitter;
+        this.serviceDiscoveryResubscribeInterval = serviceDiscoveryResubscribeInterval;
+        this.serviceDiscoveryResubscribeJitter = serviceDiscoveryResubscribeJitter;
         // xDS settings.
         this.consecutive5xx = consecutive5xx;
-        this.failureDetectorInterval = requireNonNull(failureDetectorInterval, "failureDetectorInterval");
-        this.baseEjectionTime = requireNonNull(baseEjectionTime, "baseEjectionTime");
-        this.ejectionTimeJitter = requireNonNull(ejectionTimeJitter, "ejectionTimeJitter");
+        this.failureDetectorInterval = failureDetectorInterval;
+        this.baseEjectionTime = baseEjectionTime;
+        this.ejectionTimeJitter = ejectionTimeJitter;
         this.maxEjectionPercentage = maxEjectionPercentage;
         this.enforcingConsecutive5xx = enforcingConsecutive5xx;
         this.enforcingSuccessRate = enforcingSuccessRate;
@@ -109,7 +106,7 @@ public final class OutlierDetectorConfig {
         this.enforcingFailurePercentage = enforcingFailurePercentage;
         this.failurePercentageMinimumHosts = failurePercentageMinimumHosts;
         this.failurePercentageRequestVolume = failurePercentageRequestVolume;
-        this.maxEjectionTime = requireNonNull(maxEjectionTime, "maxEjectionTime");
+        this.maxEjectionTime = maxEjectionTime;
     }
 
     /**

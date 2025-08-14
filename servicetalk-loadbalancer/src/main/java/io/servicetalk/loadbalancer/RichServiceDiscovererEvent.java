@@ -20,7 +20,6 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import java.util.Objects;
 
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
-import static java.util.Objects.requireNonNull;
 
 /**
  * A richer {@link ServiceDiscovererEvent} that can carry weight and priority information.
@@ -37,8 +36,8 @@ final class RichServiceDiscovererEvent<ResolvedAddress> implements ServiceDiscov
         if (weight < 0d) {
             throw new IllegalArgumentException("Illegal weight: " + weight);
         }
-        this.address = requireNonNull(address, "address");
-        this.status = requireNonNull(status, "status");
+        this.address = address;
+        this.status = status;
         this.weight = weight;
         this.priority = ensureNonNegative(priority, "priority");
     }
