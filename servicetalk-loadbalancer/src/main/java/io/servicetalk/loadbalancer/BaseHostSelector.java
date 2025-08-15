@@ -25,7 +25,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static java.util.Objects.requireNonNull;
 
 abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnection>
         implements HostSelector<ResolvedAddress, C> {
@@ -36,7 +35,7 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
     private final List<? extends Host<ResolvedAddress, C>> hosts;
     BaseHostSelector(final List<? extends Host<ResolvedAddress, C>> hosts, final String lbDescription) {
         this.hosts = hosts;
-        this.lbDescription = requireNonNull(lbDescription, "lbDescription");
+        this.lbDescription = lbDescription;
     }
 
     abstract Single<C> selectConnection0(Predicate<C> selector, @Nullable ContextMap context,

@@ -65,7 +65,6 @@ import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.lang.Integer.toHexString;
 import static java.lang.System.identityHashCode;
 import static java.util.Collections.emptyList;
@@ -152,31 +151,25 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final LoadBalancerObserverFactory loadBalancerObserverFactory,
             @Nullable final HealthCheckConfig healthCheckConfig,
             final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory) {
-        this.lbDescription = makeDescription(
-                requireNonNull(id, "id"), requireNonNull(targetResource, "targetResource"));
-        this.subsetter = subsetterFactory.newSubsetter(lbDescription);
-        this.hostSelector = requireNonNull(loadBalancingPolicy, "loadBalancingPolicy")
-                .buildSelector(Collections.emptyList(), lbDescription);
-        this.priorityStrategy = requireNonNull(
-                priorityStrategyFactory, "priorityStrategyFactory").apply(lbDescription);
-        this.connectionSelector = requireNonNull(connectionSelectorPolicy,
-                "connectionSelectorPolicy").buildConnectionSelector(lbDescription);
-        this.eventPublisher = requireNonNull(eventPublisher);
+        this.lbDescription = makeDescription(id, targetResource);
+        this.subsetter = requireNonNull(subsetterFactory.newSubsetter(lbDescription));
+        this.hostSelector = requireNonNull(loadBalancingPolicy.buildSelector(emptyList(), lbDescription));
+        this.priorityStrategy = requireNonNull(priorityStrategyFactory.apply(lbDescription));
+        this.connectionSelector = requireNonNull(connectionSelectorPolicy.buildConnectionSelector(lbDescription));
+        this.outlierDetector = requireNonNull(outlierDetectorFactory.apply(lbDescription));
+        this.eventPublisher = eventPublisher;
         this.eventStream = fromSource(eventStreamProcessor)
                 .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.
-        this.connectionFactory = requireNonNull(connectionFactory);
+        this.connectionFactory = connectionFactory;
         this.minConnectionsPerHost = minConnectionsPerHost;
         this.loadBalancerObserver = CatchAllLoadBalancerObserver.wrap(
-                requireNonNull(loadBalancerObserverFactory, "loadBalancerObserverFactory")
-                .newObserver(lbDescription));
+                loadBalancerObserverFactory.newObserver(lbDescription));
         this.healthCheckConfig = healthCheckConfig;
         this.sequentialExecutor = new SequentialExecutor((uncaughtException) ->
                 LOGGER.error("{}: Uncaught exception in {}", this, this.getClass().getSimpleName(), uncaughtException));
         this.asyncCloseable = toAsyncCloseable(this::doClose);
         // Maintain a Subscriber so signals are always delivered to replay and new Subscribers get the latest signal.
         eventStream.ignoreElements().subscribe();
-        this.outlierDetector = requireNonNull(outlierDetectorFactory, "outlierDetectorFactory").apply(lbDescription);
-
         // When we get a health-status event we should update the host set.
         this.outlierDetectorStatusChangeStream = this.outlierDetector.healthStatusChanged().forEach((ignored) ->
             sequentialExecutor.execute(() -> sequentialUpdateUsedHosts(usedHosts, true)));
@@ -642,20 +635,30 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         }
     }
 
-    private static double eventWeight(ServiceDiscovererEvent<?> event) {
+    private double eventWeight(ServiceDiscovererEvent<?> event) {
+        double weight = 1;
         if (event instanceof RichServiceDiscovererEvent<?>) {
-            return ((RichServiceDiscovererEvent<?>) event).loadBalancingWeight();
-        } else {
-            return 1.0;
+            weight = ((RichServiceDiscovererEvent<?>) event).loadBalancingWeight();
+            if (weight < 0) {
+                LOGGER.debug("{} Unexpected negative weight {} for host {} being set to 1.0",
+                        lbDescription, weight, event.address());
+                weight = 1;
+            }
         }
+        return weight;
     }
 
-    private static int eventPriority(ServiceDiscovererEvent<?> event) {
+    private int eventPriority(ServiceDiscovererEvent<?> event) {
+        int priority = 0;
         if (event instanceof RichServiceDiscovererEvent<?>) {
-            return ((RichServiceDiscovererEvent<?>) event).priority();
-        } else {
-            return 0;
+            priority = ((RichServiceDiscovererEvent<?>) event).priority();
+            if (priority < 0) {
+                LOGGER.debug("{} Unexpected negative priority {} for host {} being set to 0",
+                        lbDescription, priority, event.address());
+                priority = 0;
+            }
         }
+        return priority;
     }
 
     // Exposed for testing
@@ -674,8 +677,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
         PrioritizedHostImpl(final Host<ResolvedAddress, C> delegate, final double serviceDiscoveryWeight,
                             final int priority) {
-            this.delegate = requireNonNull(delegate, "delegate");
-            this.priority = ensureNonNegative(priority, "priority");
+            this.delegate = delegate;
+            this.priority = priority;
             this.serviceDiscoveryWeight = serviceDiscoveryWeight;
             this.loadBalancingWeight = serviceDiscoveryWeight;
         }

@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.TreeMap;
 
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
-import static java.util.Objects.requireNonNull;
 
 final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
 
@@ -40,7 +39,7 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
 
     // exposed for testing
     DefaultHostPriorityStrategy(final String lbDescription, final int overProvisionPercentage) {
-        this.lbDescription = requireNonNull(lbDescription, "lbDescription");
+        this.lbDescription = lbDescription;
         this.overProvisionPercentage = ensurePositive(overProvisionPercentage, "overProvisionPercentage");
     }
 

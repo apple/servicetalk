@@ -28,7 +28,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Math.min;
-import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link ConnectionSelector} that attempts to discern between the health of individual connections.
@@ -53,7 +52,7 @@ final class P2CConnectionSelector<C extends LoadBalancedConnection> implements C
 
     private P2CConnectionSelector(final String lbDescription, final int maxEffort, final int corePoolSize,
                                   final boolean forceCorePool) {
-        this.lbDescription = requireNonNull(lbDescription, "lbDescription");
+        this.lbDescription = lbDescription;
         this.maxEffort = ensureNonNegative(maxEffort, "maxEffort");
         this.corePoolSize = ensureNonNegative(corePoolSize, "corePoolSize");
         this.forceCorePool = forceCorePool;

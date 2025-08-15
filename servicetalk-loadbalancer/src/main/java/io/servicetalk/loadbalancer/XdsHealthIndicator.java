@@ -33,7 +33,6 @@ import static io.servicetalk.loadbalancer.OutlierDetectorConfig.enforcing;
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static io.servicetalk.utils.internal.RandomUtils.nextLongInclusive;
 import static java.lang.Math.max;
-import static java.util.Objects.requireNonNull;
 
 abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnection> extends DefaultRequestTracker
         implements HealthIndicator<ResolvedAddress, C> {
@@ -70,17 +69,17 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
                        final int pendingRequestPenalty,
                        final boolean cancellationIsError, final ResolvedAddress address, String lbDescription,
                        final HostObserver hostObserver) {
-        super(requireNonNull(ewmaHalfLife, "ewmaHalfLife").toNanos(),
+        super(ewmaHalfLife.toNanos(),
                 ensureNonNegative(cancellationPenalty, "cancellationPenalty"),
                 ensureNonNegative(errorPenalty, "errorPenalty"),
                 ensureNonNegative(pendingRequestPenalty, "pendingRequestPenalty"));
         this.cancellationIsError = cancellationIsError;
-        this.sequentialExecutor = requireNonNull(sequentialExecutor, "sequentialExecutor");
-        this.executor = requireNonNull(executor, "executor");
+        this.sequentialExecutor = sequentialExecutor;
+        this.executor = executor;
         assert executor instanceof NormalizedTimeSourceExecutor;
-        this.address = requireNonNull(address, "address");
-        this.lbDescription = requireNonNull(lbDescription, "lbDescription");
-        this.hostObserver = requireNonNull(hostObserver, "hostObserver");
+        this.address = address;
+        this.lbDescription = lbDescription;
+        this.hostObserver = hostObserver;
     }
 
     /**
@@ -112,7 +111,7 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
 
     @Override
     public final void setHost(Host<ResolvedAddress, C> host) {
-        this.host = requireNonNull(host, "host");
+        this.host = host;
     }
 
     @Override

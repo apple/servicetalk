@@ -55,7 +55,6 @@ import static io.servicetalk.loadbalancer.ConnectTracker.ErrorClass.CANCELLED;
 import static io.servicetalk.loadbalancer.ConnectTracker.ErrorClass.CONNECT_ERROR;
 import static io.servicetalk.loadbalancer.ConnectTracker.ErrorClass.CONNECT_TIMEOUT;
 import static java.util.Collections.emptyList;
-import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<Addr, C> {
@@ -101,17 +100,16 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                 final int minConnections,
                 final HostObserver hostObserver, @Nullable final HealthCheckConfig healthCheckConfig,
                 @Nullable final HealthIndicator<Addr, C> healthIndicator) {
-        this.lbDescription = requireNonNull(lbDescription, "lbDescription");
-        this.address = requireNonNull(address, "address");
+        this.lbDescription = lbDescription;
+        this.address = address;
         this.healthIndicator = healthIndicator;
-        this.connectionSelector = requireNonNull(connectionSelector, "connectionSelector");
-        requireNonNull(connectionFactory, "connectionFactory");
+        this.connectionSelector = connectionSelector;
         this.minConnections = minConnections;
         this.connectionFactory = healthIndicator == null ? connectionFactory :
                 new InstrumentedConnectionFactory<>(connectionFactory, healthIndicator);
         assert healthCheckConfig == null || healthCheckConfig.failedThreshold > 0;
         this.healthCheckConfig = healthCheckConfig;
-        this.hostObserver = requireNonNull(hostObserver, "hostObserver");
+        this.hostObserver = hostObserver;
         this.closeable = toAsyncCloseable(this::doClose);
         // Note that we deliberately don't warm the pool initially to prevent the very common race where a client is
         // created and immediately used, thus triggering a race between warmup and initial connection acquisition.
