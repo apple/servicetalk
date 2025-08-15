@@ -40,9 +40,11 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
 
+import static io.opentelemetry.api.internal.InstrumentationUtil.suppressInstrumentation;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.INSTRUMENTATION_SCOPE_NAME;
+import static io.servicetalk.opentelemetry.http.TestUtils.sleep;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -75,7 +77,7 @@ class OpenTelemetryGrpcFilterTest {
 
     @Test
     void testGrpcServiceFilterSuccess() throws Exception {
-        setUp(false);
+        setUp();
 
         TestResponse response = client.asBlockingClient().test(newRequest());
 
@@ -92,7 +94,7 @@ class OpenTelemetryGrpcFilterTest {
 
     @Test
     void testGrpcServiceFilterError() throws Exception {
-        setUp(true);
+        setUpWithError();
 
         GrpcStatusException exception = assertThrows(GrpcStatusException.class,
                 () -> client.asBlockingClient().test(newRequest()));
@@ -109,7 +111,7 @@ class OpenTelemetryGrpcFilterTest {
 
     @Test
     void testGrpcStreamingSuccess() throws Exception {
-        setUp(false);
+        setUp();
 
         Publisher<TestResponse> responses = client.testResponseStream(newRequest());
         TestResponse response = responses.firstOrError().toFuture().get();
@@ -124,7 +126,7 @@ class OpenTelemetryGrpcFilterTest {
 
     @Test
     void testGrpcBidirectionalStreaming() throws Exception {
-        setUp(false);
+        setUp();
 
         Publisher<TestRequest> requestStream = Publisher.from(newRequest(), newRequest());
         // Collect all responses
@@ -148,7 +150,7 @@ class OpenTelemetryGrpcFilterTest {
 
     @Test
     void testGrpcBidirectionalStreamingError() throws Exception {
-        setUp(true);
+        setUpWithError();
 
         Publisher<TestRequest> requestStream = Publisher.from(newRequest(), newRequest());
         ExecutionException exception = assertThrows(ExecutionException.class,
@@ -168,13 +170,69 @@ class OpenTelemetryGrpcFilterTest {
         assertThat(clientSpan.getStatus().getStatusCode()).isEqualTo(StatusCode.ERROR);
     }
 
-    private void setUp(boolean error) throws Exception {
+    @Test
+    void grpcSuppressionIsHonored() throws Exception {
+        setUp();
+
+        // Execute gRPC call within suppression context
+        suppressInstrumentation(() -> {
+            try {
+                client.asBlockingClient().test(newRequest());
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+        });
+
+        sleep();
+
+        // Should have 0 spans because suppression context was active
+        // and ignoreSpanSuppression defaults to false
+        assertThat(otelTesting.getSpans()).hasSize(1);
+        assertThat(otelTesting.getSpans().get(0).getKind()).isEqualTo(SpanKind.SERVER);
+    }
+
+    @Test
+    void grpcSuppressionCanBeIgnored() throws Exception {
+        setUpIgnoreSuppression();
+
+        // Execute gRPC call within suppression context
+        suppressInstrumentation(() -> {
+            try {
+                client.asBlockingClient().test(newRequest());
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+        });
+
+        sleep();
+
+        // Should have 2 spans (client + server) even though suppression context was active
+        // because ignoreSpanSuppression = true
+        assertThat(otelTesting.getSpans()).hasSize(2);
+        assertTraceStructure();
+    }
+
+    private void setUpIgnoreSuppression() throws Exception {
+        doSetUp(false, true);
+    }
+
+    private void setUpWithError() throws Exception {
+        doSetUp(true, false);
+    }
+
+    private void setUp() throws Exception {
+        doSetUp(false, false);
+    }
+
+    private void doSetUp(boolean error, boolean ignoreSuppression) throws Exception {
         // Create gRPC server with unified OpenTelemetry HTTP service filter
         // The filter will automatically detect gRPC requests and handle them appropriately
         serverContext = GrpcServers.forAddress(localAddress(0))
                 .initializeHttp(builder -> builder
                         .appendServiceFilter(new OpenTelemetryHttpServiceFilter.Builder()
-                                        .openTelemetry(otelTesting.getOpenTelemetry()).build()))
+                                .openTelemetry(otelTesting.getOpenTelemetry())
+                                .ignoreSpanSuppression(ignoreSuppression)
+                                .build()))
                 .listenAndAwait(new Tester.ServiceFactory(new TestTesterService(error)));
 
         // Create gRPC client with unified OpenTelemetry HTTP requester filter
@@ -182,12 +240,13 @@ class OpenTelemetryGrpcFilterTest {
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
                 .initializeHttp(builder -> builder.appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
                                 .openTelemetry(otelTesting.getOpenTelemetry())
+                                .ignoreSpanSuppression(ignoreSuppression)
                                 .componentName("test-client").build()))
                 .build(new Tester.ClientFactory());
     }
 
     private void assertTraceStructure() throws InterruptedException {
-        Thread.sleep(500);
+        sleep();
         assertThat(otelTesting.getSpans()).hasSize(2); // client + server spans
         // Verify they're part of the same trace
         assertThat(findSpanByKind(SpanKind.CLIENT).getTraceId())
