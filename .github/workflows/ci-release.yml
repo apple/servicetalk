@@ -66,8 +66,8 @@ jobs:
           SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
           SONATYPE_TOKEN: ${{ secrets.SONATYPE_TOKEN }}
         run: |
-          BEARER_TOKEN=printf "$SONATYPE_USER:$SONATYPE_TOKEN" | base64
-          curl --retry 5 -H "Authorization: Bearer $BEARER_TOKEN" -X POST https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/io.servicetalk
+          BEARER_TOKEN=$(printf "$SONATYPE_USER:$SONATYPE_TOKEN" | base64)
+          curl -i --retry 5 -H "Authorization: Bearer $BEARER_TOKEN" -X POST https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/io.servicetalk
           echo "Go to https://central.sonatype.com/publishing/deployments to finish publishing artifacts"
       - name: Publish Test Results
         if: always()
