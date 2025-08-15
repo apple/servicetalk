@@ -85,7 +85,7 @@ loadScripts(document, 'script');</script>
 <div class="block">An observer interface that provides visibility into proxy connect events for establishing a tunnel.
  <p>
  Either <a href="#proxyConnectComplete(java.lang.Object)"><code>proxyConnectComplete(Object)</code></a> or <a href="#proxyConnectFailed(java.lang.Throwable)"><code>proxyConnectFailed(Throwable)</code></a> will be invoked to signal
- successful or failed connection via proxy tunnel.</div>
+ successful or failed connection via a proxy tunnel.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -103,12 +103,12 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#proxyConnectComplete(java.lang.Object)" class="member-name-link">proxyConnectComplete</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;responseMsg)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Callback when the proxy connect attempt is complete successfully.</div>
+<div class="block">Callback when the proxy connect attempt completes successfully.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#proxyConnectFailed(java.lang.Throwable)" class="member-name-link">proxyConnectFailed</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Callback when the proxy connect attempt is failed.</div>
+<div class="block">Callback when the proxy connect attempt fails.</div>
 </div>
 </div>
 </div>
@@ -128,10 +128,10 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="proxyConnectFailed(java.lang.Throwable)">
 <h3>proxyConnectFailed</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">proxyConnectFailed</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause)</span></div>
-<div class="block">Callback when the proxy connect attempt is failed.</div>
+<div class="block">Callback when the proxy connect attempt fails.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>cause</code> - the cause of proxy connect failure</dd>
+<dd><code>cause</code> - the cause of the proxy connect failure</dd>
 </dl>
 </section>
 </li>
@@ -139,11 +139,11 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="proxyConnectComplete(java.lang.Object)">
 <h3>proxyConnectComplete</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">proxyConnectComplete</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;responseMsg)</span></div>
-<div class="block">Callback when the proxy connect attempt is complete successfully.</div>
+<div class="block">Callback when the proxy connect attempt completes successfully.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>responseMsg</code> - an object that represents a response message. The actual message type depends upon proxy
- protocol implementation (e.g. <a href="https://en.wikipedia.org/wiki/HTTP_tunnel">HTTP Tunnel</a>,
+<dd><code>responseMsg</code> - an object that represents a response message. The actual message type depends upon the
+ proxy protocol implementation (e.g. <a href="https://en.wikipedia.org/wiki/HTTP_tunnel">HTTP Tunnel</a>,
  <a href="https://en.wikipedia.org/wiki/SOCKS">SOCKS</a>, etc.)</dd>
 </dl>
 </section>

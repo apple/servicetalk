@@ -108,32 +108,37 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Format an address into a canonical numeric format.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;? extends io.netty.channel.ServerChannel&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#serverChannel(io.netty.channel.EventLoopGroup,java.lang.Class)" class="member-name-link">serverChannel</a><wbr>(io.netty.channel.EventLoopGroup&nbsp;group,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;? extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link">SocketAddress</a>&gt;&nbsp;addressClass)</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link">SocketAddress</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#fromNettyAddress(java.net.SocketAddress)" class="member-name-link">fromNettyAddress</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link">SocketAddress</a>&nbsp;address)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">If <code>address</code> of a Netty specific type it is converted into a corresponding ServiceTalk address type.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;? extends io.netty.channel.ServerChannel&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#serverChannel(io.netty.channel.EventLoopGroup,java.lang.Class)" class="member-name-link">serverChannel</a><wbr>(io.netty.channel.EventLoopGroup&nbsp;group,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;? extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link">SocketAddress</a>&gt;&nbsp;addressClass)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Returns the correct <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link"><code>Class</code></a> to use with the given <code>EventLoopGroup</code>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static io.netty.channel.Channel</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#socketChannel(io.netty.channel.EventLoopGroup,io.servicetalk.transport.api.FileDescriptorSocketAddress)" class="member-name-link">socketChannel</a><wbr>(io.netty.channel.EventLoopGroup&nbsp;group,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static io.netty.channel.Channel</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#socketChannel(io.netty.channel.EventLoopGroup,io.servicetalk.transport.api.FileDescriptorSocketAddress)" class="member-name-link">socketChannel</a><wbr>(io.netty.channel.EventLoopGroup&nbsp;group,
  <a href="../../api/FileDescriptorSocketAddress.html" title="class in io.servicetalk.transport.api">FileDescriptorSocketAddress</a>&nbsp;address)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Returns the correct Channel that wraps the given filedescriptor or <code>null</code> if not supported.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;? extends io.netty.channel.Channel&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#socketChannel(io.netty.channel.EventLoopGroup,java.lang.Class)" class="member-name-link">socketChannel</a><wbr>(io.netty.channel.EventLoopGroup&nbsp;group,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;? extends io.netty.channel.Channel&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#socketChannel(io.netty.channel.EventLoopGroup,java.lang.Class)" class="member-name-link">socketChannel</a><wbr>(io.netty.channel.EventLoopGroup&nbsp;group,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;? extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link">SocketAddress</a>&gt;&nbsp;addressClass)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Returns the correct <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link"><code>Class</code></a> to use with the given <code>EventLoopGroup</code>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link">SocketAddress</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#toNettyAddress(java.lang.Object)" class="member-name-link">toNettyAddress</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;address)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
-<div class="block">If <code>address</code> if a ServiceTalk specific address it is unwrapped into a Netty address.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#toResolvedInetSocketAddress(io.servicetalk.transport.api.HostAndPort)" class="member-name-link">toResolvedInetSocketAddress</a><wbr>(<a href="../../api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;resolvedAddress)</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link">SocketAddress</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#toNettyAddress(java.lang.Object)" class="member-name-link">toNettyAddress</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;address)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">If <code>address</code> of a ServiceTalk specific type it is converted into a corresponding Netty address type.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#toResolvedInetSocketAddress(io.servicetalk.transport.api.HostAndPort)" class="member-name-link">toResolvedInetSocketAddress</a><wbr>(<a href="../../api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;resolvedAddress)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Converts <a href="../../api/HostAndPort.html" title="interface in io.servicetalk.transport.api"><code>HostAndPort</code></a> that contains a resolved address into <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link"><code>InetSocketAddress</code></a>.</div>
 </div>
 </div>
@@ -203,12 +208,25 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="toNettyAddress(java.lang.Object)">
 <h3>toNettyAddress</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link">SocketAddress</a></span>&nbsp;<span class="element-name">toNettyAddress</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;address)</span></div>
-<div class="block">If <code>address</code> if a ServiceTalk specific address it is unwrapped into a Netty address.</div>
+<div class="block">If <code>address</code> of a ServiceTalk specific type it is converted into a corresponding Netty address type.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>address</code> - the address to convert.</dd>
 <dt>Returns:</dt>
 <dd>an address that Netty understands.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="fromNettyAddress(java.net.SocketAddress)">
+<h3>fromNettyAddress</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link">SocketAddress</a></span>&nbsp;<span class="element-name">fromNettyAddress</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link">SocketAddress</a>&nbsp;address)</span></div>
+<div class="block">If <code>address</code> of a Netty specific type it is converted into a corresponding ServiceTalk address type.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>address</code> - the address to convert.</dd>
+<dt>Returns:</dt>
+<dd>an address that ServiceTalk public API expects.</dd>
 </dl>
 </section>
 </li>

@@ -85,8 +85,8 @@ loadScripts(document, 'script');</script>
 extends <a href="../../http/api/HttpLifecycleObserver.HttpRequestObserver.html" title="interface in io.servicetalk.http.api">HttpLifecycleObserver.HttpRequestObserver</a></span></div>
 <div class="block">An observer interface that provides visibility into events associated with a single gRPC request.
  <p>
- The request is considered complete when one of the terminal events is invoked. It's guaranteed only one terminal
- event will be invoked per request.</div>
+ The request is considered complete when one of the terminal events is invoked. It is guaranteed that only one
+ terminal event will be invoked per request.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -129,9 +129,12 @@ extends <a href="../../http/api/HttpLifecycleObserver.HttpRequestObserver.html" 
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onRequestTrailers</span><wbr><span class="parameters">(<a href="../../http/api/HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;trailers)</span></div>
 <div class="block">Callback when request trailers were observed.
  <p>
+ May be invoked zero times (if no trailers are present in the request) or once after all
+ <a href="../../http/api/HttpLifecycleObserver.HttpRequestObserver.html#onRequestData(io.servicetalk.buffer.api.Buffer)"><code>request data chunks</code></a> are observed.
+ <p>
  <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC over HTTP2</a> protocol does
  not define trailers in the request. This method is not expected to be invoked. However, it might be useful if
- the server listens both gRPC and HTTP traffic or receives non-gRPC requests from untrusted peers.</div>
+ the server listens to both gRPC and HTTP traffic or receives non-gRPC requests from untrusted peers.</div>
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="../../http/api/HttpLifecycleObserver.HttpRequestObserver.html#onRequestTrailers(io.servicetalk.http.api.HttpHeaders)">onRequestTrailers</a></code>&nbsp;in interface&nbsp;<code><a href="../../http/api/HttpLifecycleObserver.HttpRequestObserver.html" title="interface in io.servicetalk.http.api">HttpLifecycleObserver.HttpRequestObserver</a></code></dd>

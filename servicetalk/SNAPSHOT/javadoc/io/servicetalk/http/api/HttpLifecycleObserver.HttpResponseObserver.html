@@ -84,8 +84,8 @@ loadScripts(document, 'script');</script>
 <div class="type-signature"><span class="modifiers">public static interface </span><span class="element-name type-name-label">HttpLifecycleObserver.HttpResponseObserver</span></div>
 <div class="block">An observer interface that provides visibility into events associated with a single HTTP response.
  <p>
- The response is considered complete when one of the terminal events is invoked. It's guaranteed only one terminal
- event will be invoked per response.</div>
+ The response is considered complete when one of the terminal events is invoked. It is guaranteed that only one
+ terminal event will be invoked per response.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -113,12 +113,12 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#onResponseData(io.servicetalk.buffer.api.Buffer)" class="member-name-link">onResponseData</a><wbr>(<a href="../../buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a>&nbsp;data)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Callback when the response payload body data chunk was observed.</div>
+<div class="block">Callback when a response payload body data chunk was observed.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#onResponseDataRequested(long)" class="member-name-link">onResponseDataRequested</a><wbr>(long&nbsp;n)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Callback when subscriber requests <code>n</code> items of the response payload body.</div>
+<div class="block">Callback when the subscriber requests <code>n</code> items of the response payload body.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#onResponseError(java.lang.Throwable)" class="member-name-link">onResponseError</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause)</code></div>
@@ -148,10 +148,11 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="onResponseDataRequested(long)">
 <h3>onResponseDataRequested</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onResponseDataRequested</span><wbr><span class="parameters">(long&nbsp;n)</span></div>
-<div class="block">Callback when subscriber requests <code>n</code> items of the response payload body.
+<div class="block">Callback when the subscriber requests <code>n</code> items of the response payload body.
  <p>
- May be invoked multiple times. Helps to track when items are requested and when they are
- <a href="#onResponseData(io.servicetalk.buffer.api.Buffer)"><code>delivered</code></a>.</div>
+ May be invoked multiple times and concurrently with other callbacks on this observer. Therefore, it should
+ have its own isolated state or should be synchronized if the state is shared with other callbacks.
+ It can help to track when items are requested and when they are <a href="#onResponseData(io.servicetalk.buffer.api.Buffer)"><code>delivered</code></a>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>n</code> - number of requested items</dd>
@@ -162,9 +163,10 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="onResponseData(io.servicetalk.buffer.api.Buffer)">
 <h3>onResponseData</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onResponseData</span><wbr><span class="parameters">(<a href="../../buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a>&nbsp;data)</span></div>
-<div class="block">Callback when the response payload body data chunk was observed.
+<div class="block">Callback when a response payload body data chunk was observed.
  <p>
- May be invoked multiple times if the payload body is split into multiple chunks.</div>
+ May be invoked multiple times if the payload body is split into multiple chunks. All invocations are
+ sequential between this and other callbacks except <a href="#onResponseDataRequested(long)"><code>onResponseDataRequested(long)</code></a>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>data</code> - the response payload body data chunk</dd>
@@ -175,7 +177,10 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="onResponseTrailers(io.servicetalk.http.api.HttpHeaders)">
 <h3>onResponseTrailers</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onResponseTrailers</span><wbr><span class="parameters">(<a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;trailers)</span></div>
-<div class="block">Callback when response trailers were observed.</div>
+<div class="block">Callback when response trailers were observed.
+ <p>
+ May be invoked zero times (if no trailers are present in the response) or once after all
+ <a href="#onResponseData(io.servicetalk.buffer.api.Buffer)"><code>response data chunks</code></a> are observed.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>trailers</code> - trailers of the response</dd>

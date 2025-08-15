@@ -44,7 +44,7 @@ loadScripts(document, 'script');</script>
 <div>
 <ul class="sub-nav-list">
 <li>Summary:&nbsp;</li>
-<li>Nested&nbsp;|&nbsp;</li>
+<li><a href="#nested-class-summary">Nested</a>&nbsp;|&nbsp;</li>
 <li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor-summary">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method-summary">Method</a></li>
@@ -95,6 +95,23 @@ loadScripts(document, 'script');</script>
 </section>
 <section class="summary">
 <ul class="summary-list">
+<!-- ======== NESTED CLASS SUMMARY ======== -->
+<li>
+<section class="nested-class-summary" id="nested-class-summary">
+<h2>Nested Class Summary</h2>
+<div class="caption"><span>Nested Classes</span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Class</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>static final class&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="OpenTelemetryHttpRequesterFilter.Builder.html" class="type-name-link" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryHttpRequesterFilter.Builder</a></code></div>
+<div class="col-last even-row-color">
+<div class="block">Builder for constructing <a href="OpenTelemetryHttpRequesterFilter.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryHttpRequesterFilter</code></a> instances.</div>
+</div>
+</div>
+</section>
+</li>
 <!-- ======== CONSTRUCTOR SUMMARY ======== -->
 <li>
 <section class="constructor-summary" id="constructor-summary">
@@ -105,17 +122,22 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-last">Description</div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E()" class="member-name-link">OpenTelemetryHttpRequesterFilter</a>()</code></div>
 <div class="col-last even-row-color">
-<div class="block">Create a new instance, searching for any instance of an opentelemetry available,
- using the hostname as the component name.</div>
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use the <a href="OpenTelemetryHttpRequesterFilter.Builder.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryHttpRequesterFilter.Builder</code></a> to create new filter instances.</div>
+</div>
 </div>
 <div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String)" class="member-name-link">OpenTelemetryHttpRequesterFilter</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;componentName)</code></div>
 <div class="col-last odd-row-color">
-<div class="block">Create a new instance, searching for any instance of an opentelemetry available.</div>
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use the <a href="OpenTelemetryHttpRequesterFilter.Builder.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryHttpRequesterFilter.Builder</code></a> to create new filter instances.</div>
+</div>
 </div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,io.servicetalk.opentelemetry.http.OpenTelemetryOptions)" class="member-name-link">OpenTelemetryHttpRequesterFilter</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;componentName,
  <a href="OpenTelemetryOptions.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryOptions</a>&nbsp;opentelemetryOptions)</code></div>
 <div class="col-last even-row-color">
-<div class="block">Create a new instance, searching for any instance of an opentelemetry available.</div>
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use the <a href="OpenTelemetryHttpRequesterFilter.Builder.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryHttpRequesterFilter.Builder</code></a> to create new filter instances.</div>
+</div>
 </div>
 </div>
 </section>
@@ -169,7 +191,11 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="&lt;init&gt;(java.lang.String)">
 <h3>OpenTelemetryHttpRequesterFilter</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">OpenTelemetryHttpRequesterFilter</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;componentName)</span></div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public</span>&nbsp;<span class="element-name">OpenTelemetryHttpRequesterFilter</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;componentName)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use the <a href="OpenTelemetryHttpRequesterFilter.Builder.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryHttpRequesterFilter.Builder</code></a> to create new filter instances.</div>
+</div>
 <div class="block">Create a new instance, searching for any instance of an opentelemetry available.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -180,8 +206,12 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="&lt;init&gt;(java.lang.String,io.servicetalk.opentelemetry.http.OpenTelemetryOptions)">
 <h3>OpenTelemetryHttpRequesterFilter</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">OpenTelemetryHttpRequesterFilter</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;componentName,
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public</span>&nbsp;<span class="element-name">OpenTelemetryHttpRequesterFilter</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;componentName,
  <a href="OpenTelemetryOptions.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryOptions</a>&nbsp;opentelemetryOptions)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use the <a href="OpenTelemetryHttpRequesterFilter.Builder.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryHttpRequesterFilter.Builder</code></a> to create new filter instances.</div>
+</div>
 <div class="block">Create a new instance, searching for any instance of an opentelemetry available.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -193,7 +223,11 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="&lt;init&gt;()">
 <h3>OpenTelemetryHttpRequesterFilter</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">OpenTelemetryHttpRequesterFilter</span>()</div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public</span>&nbsp;<span class="element-name">OpenTelemetryHttpRequesterFilter</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use the <a href="OpenTelemetryHttpRequesterFilter.Builder.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryHttpRequesterFilter.Builder</code></a> to create new filter instances.</div>
+</div>
 <div class="block">Create a new instance, searching for any instance of an opentelemetry available,
  using the hostname as the component name.</div>
 </section>

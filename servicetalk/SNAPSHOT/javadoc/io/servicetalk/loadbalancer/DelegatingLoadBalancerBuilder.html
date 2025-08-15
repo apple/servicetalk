@@ -155,13 +155,18 @@ implements <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk
 <div class="block">Set the maximum number of healthy backends to load balance against using a random-subsetting strategy.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">C</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#outlierDetectorConfig(io.servicetalk.loadbalancer.OutlierDetectorConfig)" class="member-name-link">outlierDetectorConfig</a><wbr>(<a href="OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig</a>&nbsp;outlierDetectorConfig)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#minConnectionsPerHost(int)" class="member-name-link">minConnectionsPerHost</a><wbr>(int&nbsp;minConnectionsPerHost)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Set the minimum number of connections an active host should maintain in its pool.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">C</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#outlierDetectorConfig(io.servicetalk.loadbalancer.OutlierDetectorConfig)" class="member-name-link">outlierDetectorConfig</a><wbr>(<a href="OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig</a>&nbsp;outlierDetectorConfig)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the <a href="OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer"><code>OutlierDetectorConfig</code></a> to use with this load balancer.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
@@ -317,6 +322,35 @@ implements <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk
 <dd><code><a href="LoadBalancerBuilder.html#connectionSelectorPolicy(io.servicetalk.loadbalancer.ConnectionSelectorPolicy)">connectionSelectorPolicy</a></code>&nbsp;in interface&nbsp;<code><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">C</a> extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</code></dd>
 <dt>Parameters:</dt>
 <dd><code>connectionSelectorPolicy</code> - the factory of connection selection strategies to use.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="minConnectionsPerHost(int)">
+<h3>minConnectionsPerHost</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">minConnectionsPerHost</span><wbr><span class="parameters">(int&nbsp;minConnectionsPerHost)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="LoadBalancerBuilder.html#minConnectionsPerHost(int)">LoadBalancerBuilder</a></code></span></div>
+<div class="block">Set the minimum number of connections an active host should maintain in its pool.
+ <p>
+ Setting a minimum number of connections can help reduce the occurrences where connection establishment happens
+ on the request path, thereby reducing tail latencies, particularly for links which are prone idle-connection
+ closure. The tradeoff is that it may require tuning and will create more connection overhead overall.
+ <p>
+ Note: this is a best-effort setting. There are inherent uncertainties, race conditions, and assumptions that
+ will cause the number of connections to transiently fall below the specified minimum. Currently, these include:
+ <ul>
+     <li>At startup: implementations do not try to warm never-used pools to prevent unexpected resource usage.
+     </li>
+     <li>When warming fails: implementations do not attempt to recover from connection establishment failures to
+     prevent infinite retry loops.</li>
+ </ul></div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="LoadBalancerBuilder.html#minConnectionsPerHost(int)">minConnectionsPerHost</a></code>&nbsp;in interface&nbsp;<code><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">C</a> extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</code></dd>
+<dt>Parameters:</dt>
+<dd><code>minConnectionsPerHost</code> - the minimum number of connections a host should maintain.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code></dd>
 </dl>

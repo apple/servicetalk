@@ -140,10 +140,10 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">streamIdAssigned</span><wbr><span class="parameters">(long&nbsp;streamId)</span></div>
 <div class="block">Callback when a <code>streamId</code> is assigned.
  <p>
- Stream identifier may be deferred until after the first write is made on a newly established stream.</div>
+ The stream identifier may be deferred until after the first write is made on a newly established stream.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>streamId</code> - assigned stream identifier</dd>
+<dd><code>streamId</code> - the assigned stream identifier</dd>
 </dl>
 </section>
 </li>
@@ -151,8 +151,9 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="streamEstablished()">
 <h3>streamEstablished</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="ConnectionObserver.DataObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.DataObserver</a></span>&nbsp;<span class="element-name">streamEstablished</span>()</div>
-<div class="block">Callback when the stream is established and ready to be used. It may or may not have an already assigned
- <code>streamId</code> at the time.</div>
+<div class="block">Callback when the stream is established and ready to be used.
+ <p>
+ It may or may not have an already assigned <code>streamId</code> at this time.</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>a new <a href="ConnectionObserver.DataObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.DataObserver</code></a> that provides visibility into read and write events</dd>
@@ -172,7 +173,7 @@ loadScripts(document, 'script');</script>
 <div class="block">Callback when the stream is closed due to an <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>error</code></a>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>error</code> - an occurred error</dd>
+<dd><code>error</code> - the error that occurred</dd>
 </dl>
 </section>
 </li>

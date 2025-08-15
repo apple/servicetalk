@@ -111,7 +111,7 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#itemRead(java.lang.Object)" class="member-name-link">itemRead</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;item)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Invokes when a new item is read.</div>
+<div class="block">Callback when a new item is read.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#readCancelled()" class="member-name-link">readCancelled</a>()</code></div>
@@ -131,7 +131,7 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#requestedToRead(long)" class="member-name-link">requestedToRead</a><wbr>(long&nbsp;n)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Callback when new items are requested to read.</div>
+<div class="block">Callback when new items are requested to be read.</div>
 </div>
 </div>
 </div>
@@ -151,7 +151,7 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="requestedToRead(long)">
 <h3>requestedToRead</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">requestedToRead</span><wbr><span class="parameters">(long&nbsp;n)</span></div>
-<div class="block">Callback when new items are requested to read.</div>
+<div class="block">Callback when new items are requested to be read.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>n</code> - number of requested items to read</dd>
@@ -166,7 +166,7 @@ loadScripts(document, 'script');</script>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#itemRead(java.lang.Object)"><code>itemRead(Object)</code></a></div>
 </div>
-<div class="block">Invokes when a new item is read.
+<div class="block">Callback when a new item is read.
  <p>
  Content of the read items should be inspected at the higher level API when these items are consumed.</div>
 </section>
@@ -176,10 +176,10 @@ loadScripts(document, 'script');</script>
 <h3>itemRead</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">itemRead</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;item)</span></div>
-<div class="block">Invokes when a new item is read.</div>
+<div class="block">Callback when a new item is read.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>item</code> - an item that was read</dd>
+<dd><code>item</code> - the item that was read</dd>
 </dl>
 </section>
 </li>

@@ -85,9 +85,10 @@ loadScripts(document, 'script');</script>
 <div class="block">An observer interface that provides visibility into events associated with a single HTTP exchange.
  <p>
  An exchange is represented by a <a href="HttpLifecycleObserver.HttpRequestObserver.html" title="interface in io.servicetalk.http.api"><code>request</code></a> and a <a href="HttpLifecycleObserver.HttpResponseObserver.html" title="interface in io.servicetalk.http.api"><code>response</code></a>.
- Both can be observed independently and may publish their events concurrently because connections are full-duplex.
- The <a href="#onExchangeFinally()"><code>terminal event</code></a> for the exchange is signaled only when nested observers signal
- terminal events. Cancellation is the best effort, more events may be signaled after cancel.</div>
+ Both can be observed independently via their corresponding observers and may publish their events concurrently
+ with each other because connections are full-duplex. The <a href="#onExchangeFinally()"><code>final event</code></a> for the
+ exchange is signaled only after both nested observers terminate. It guarantees visibility of both observers
+ internal states inside the final callback.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -150,9 +151,7 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="onConnectionSelected(io.servicetalk.transport.api.ConnectionInfo)">
 <h3>onConnectionSelected</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onConnectionSelected</span><wbr><span class="parameters">(<a href="../../transport/api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a>&nbsp;info)</span></div>
-<div class="block">Callback when a connection is selected for this exchange execution.
- <p>
- This callback may be invoked for every retry attempt.</div>
+<div class="block">Callback when a connection is selected for this exchange execution.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>info</code> - <a href="../../transport/api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a> of the selected connection</dd>
@@ -176,7 +175,9 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="onResponse(io.servicetalk.http.api.HttpResponseMetaData)">
 <h3>onResponse</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="HttpLifecycleObserver.HttpResponseObserver.html" title="interface in io.servicetalk.http.api">HttpLifecycleObserver.HttpResponseObserver</a></span>&nbsp;<span class="element-name">onResponse</span><wbr><span class="parameters">(<a href="HttpResponseMetaData.html" title="interface in io.servicetalk.http.api">HttpResponseMetaData</a>&nbsp;responseMetaData)</span></div>
-<div class="block">Callback when a response meta-data was observed.</div>
+<div class="block">Callback when a response meta-data was observed.
+ <p>
+ Either this or <a href="#onResponseError(java.lang.Throwable)"><code>onResponseError(Throwable)</code></a> callback can be invoked, but not both.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>responseMetaData</code> - the corresponding <a href="HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpResponseMetaData</code></a></dd>
@@ -189,7 +190,9 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="onResponseError(java.lang.Throwable)">
 <h3>onResponseError</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onResponseError</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause)</span></div>
-<div class="block">Callback if the response meta-data was not received due to an error.</div>
+<div class="block">Callback if the response meta-data was not received due to an error.
+ <p>
+ Either this or <a href="#onResponse(io.servicetalk.http.api.HttpResponseMetaData)"><code>onResponse(HttpResponseMetaData)</code></a> callback can be invoked, but not both.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>cause</code> - the cause of a response meta-data failure</dd>
@@ -211,9 +214,10 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onExchangeFinally</span>()</div>
 <div class="block">Callback when the exchange completes.
  <p>
- This is the final callback that is invoked after <a href="HttpLifecycleObserver.HttpRequestObserver.html" title="interface in io.servicetalk.http.api"><code>HttpLifecycleObserver.HttpRequestObserver</code></a> terminate and either
- <a href="HttpLifecycleObserver.HttpResponseObserver.html" title="interface in io.servicetalk.http.api"><code>HttpLifecycleObserver.HttpResponseObserver</code></a> terminate or <a href="#onResponseError(java.lang.Throwable)"><code>onResponseError(Throwable)</code></a>/<a href="#onResponseCancel()"><code>onResponseCancel()</code></a>
- method is invoked.</div>
+ This is the final callback that is invoked after <a href="HttpLifecycleObserver.HttpRequestObserver.html" title="interface in io.servicetalk.http.api"><code>HttpLifecycleObserver.HttpRequestObserver</code></a> terminates and either
+ <a href="HttpLifecycleObserver.HttpResponseObserver.html" title="interface in io.servicetalk.http.api"><code>HttpLifecycleObserver.HttpResponseObserver</code></a> terminates or <a href="#onResponseError(java.lang.Throwable)"><code>onResponseError(Throwable)</code></a>/<a href="#onResponseCancel()"><code>onResponseCancel()</code></a>
+ method is invoked. Inside this callback, users can safely consume the internal state of all other callbacks
+ without the need for additional synchronization.</div>
 </section>
 </li>
 </ul>

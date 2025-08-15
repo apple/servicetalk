@@ -86,16 +86,20 @@ loadScripts(document, 'script');</script>
 extends <a href="../../http/api/HttpLifecycleObserver.html" title="interface in io.servicetalk.http.api">HttpLifecycleObserver</a></span></div>
 <div class="block">An observer interface that provides visibility into gRPC lifecycle events.
  <p>
- In order to deliver events at accurate time, callbacks on this interface can be invoked from the <a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a>.
+ To deliver events at accurate time, callbacks on this interface can be invoked from the <a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a>.
  Implementation of this observer <b>must</b> be non-blocking. If the
  consumer of events may block (uses a blocking library or
- <a href="https://logging.apache.org/log4j/2.x/manual/async.html">logger configuration is not async</a>), it has to
+ <a href="https://logging.apache.org/log4j/2.x/manual/async.html">logger configuration is not async</a>), it must
  offload publications to another <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> <b>after</b> capturing timing of events. If blocking code is
  executed inside callbacks without offloading, it will negatively impact <a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a>.
  <p>
- To install this observer for the server use <a href="GrpcServerBuilder.html#lifecycleObserver(io.servicetalk.grpc.api.GrpcLifecycleObserver)"><code>GrpcServerBuilder.lifecycleObserver(GrpcLifecycleObserver)</code></a>.
- For the client use <code>io.servicetalk.grpc.netty.GrpcLifecycleObserverRequesterFilter</code> as argument to
- <a href="../../http/api/SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(StreamingHttpClientFilterFactory)</code></a>
+ To install this observer for the server use
+ <a href="GrpcServerBuilder.html#lifecycleObserver(io.servicetalk.grpc.api.GrpcLifecycleObserver)"><code>lifecycleObserver</code></a> method or
+ <a href="../../http/api/HttpServerBuilder.html#appendNonOffloadingServiceFilter(io.servicetalk.http.api.StreamingHttpServiceFilterFactory)"><code>appendNonOffloadingServiceFilter</code></a> with
+ <code>io.servicetalk.grpc.netty.GrpcLifecycleObserverServiceFilter</code> which can be configured using
+ <a href="GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(GrpcServerBuilder.HttpInitializer)</code></a>. For the client use either
+ <a href="../../http/api/SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>appendClientFilter</code></a> or
+ <a href="../../http/api/SingleAddressHttpClientBuilder.html#appendConnectionFilter(io.servicetalk.http.api.StreamingHttpConnectionFilterFactory)"><code>appendConnectionFilter</code></a> with <code>io.servicetalk.grpc.netty.GrpcLifecycleObserverRequesterFilter</code>
  which can be configured using <a href="GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(GrpcClientBuilder.HttpInitializer)</code></a>.</div>
 </section>
 <section class="summary">

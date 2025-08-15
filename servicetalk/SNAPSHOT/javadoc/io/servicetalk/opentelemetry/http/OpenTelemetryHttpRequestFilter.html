@@ -84,7 +84,7 @@ loadScripts(document, 'script');</script>
 </span><span class="modifiers">public final class </span><span class="element-name type-name-label">OpenTelemetryHttpRequestFilter</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">use <a href="OpenTelemetryHttpRequesterFilter.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryHttpRequesterFilter</code></a> instead.</div>
+<div class="deprecation-comment">use <a href="OpenTelemetryHttpRequesterFilter.Builder.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryHttpRequesterFilter.Builder</code></a> instead.</div>
 </div>
 <div class="block">An HTTP filter that supports <a href="https://opentelemetry.io/docs/instrumentation/java/">open telemetry</a>.
  <p>
@@ -93,7 +93,7 @@ loadScripts(document, 'script');</script>
  Append this filter before others that are expected to see <code>Scope</code> for this request/response. Filters
  appended after this filter that use operators with the <strong>after*</strong> prefix on
  <a href="../../http/api/StreamingHttpRequester.html#request(io.servicetalk.http.api.StreamingHttpRequest)"><code>response meta data</code></a> or the
- <a href="../../http/api/StreamingHttpResponse.html#transformMessageBody(java.util.function.UnaryOperator)"><code>StreamingHttpResponse.transformMessageBody(UnaryOperator)</code></a> response message body}
+ <a href="../../http/api/StreamingHttpResponse.html#transformMessageBody(java.util.function.UnaryOperator)"><code>StreamingHttpResponse.transformMessageBody(UnaryOperator)</code></a> response message body.
  (e.g. <a href="../../concurrent/api/Publisher.html#afterFinally(java.lang.Runnable)"><code>Publisher.afterFinally(Runnable)</code></a>) will execute after this filter invokes <code>Scope.close()</code> and
  therefore will not see the <code>Span</code> for the current request/response.</div>
 </section>
@@ -109,9 +109,9 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-last">Description</div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E()" class="member-name-link">OpenTelemetryHttpRequestFilter</a>()</code></div>
 <div class="col-last even-row-color">
-<div class="block"><span class="deprecated-label">Deprecated.</span></div>
-<div class="block">Create a new instance, searching for any instance of an opentelemetry available,
- using the hostname as the component name.</div>
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="OpenTelemetryHttpRequesterFilter.Builder.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryHttpRequesterFilter.Builder</code></a> instead.</div>
+</div>
 </div>
 <div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(io.opentelemetry.api.OpenTelemetry,java.lang.String)" class="member-name-link">OpenTelemetryHttpRequestFilter</a><wbr>(io.opentelemetry.api.OpenTelemetry&nbsp;openTelemetry,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;componentName)</code></div>
@@ -124,14 +124,16 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String)" class="member-name-link">OpenTelemetryHttpRequestFilter</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;componentName)</code></div>
 <div class="col-last even-row-color">
-<div class="block"><span class="deprecated-label">Deprecated.</span></div>
-<div class="block">Create a new instance, searching for any instance of an opentelemetry available.</div>
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="OpenTelemetryHttpRequesterFilter.Builder.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryHttpRequesterFilter.Builder</code></a> instead.</div>
+</div>
 </div>
 <div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String,io.servicetalk.opentelemetry.http.OpenTelemetryOptions)" class="member-name-link">OpenTelemetryHttpRequestFilter</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;componentName,
  <a href="OpenTelemetryOptions.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryOptions</a>&nbsp;opentelemetryOptions)</code></div>
 <div class="col-last odd-row-color">
-<div class="block"><span class="deprecated-label">Deprecated.</span></div>
-<div class="block">Create a new instance, searching for any instance of an opentelemetry available.</div>
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="OpenTelemetryHttpRequesterFilter.Builder.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryHttpRequesterFilter.Builder</code></a> instead.</div>
+</div>
 </div>
 </div>
 </section>
@@ -192,8 +194,7 @@ loadScripts(document, 'script');</script>
 <div class="deprecation-comment">this method is internal, no user should be setting the <code>OpenTelemetry</code> as it is obtained by
  using <code>GlobalOpenTelemetry.get()</code> and there should be no other implementations but the one available in
  the classpath, this constructor will be removed in the future releases.
- Use <a href="#%3Cinit%3E(java.lang.String,io.servicetalk.opentelemetry.http.OpenTelemetryOptions)"><code>OpenTelemetryHttpRequestFilter(String, OpenTelemetryOptions)</code></a> or
- <a href="#%3Cinit%3E()"><code>OpenTelemetryHttpRequestFilter()</code></a> instead.</div>
+ Use <a href="OpenTelemetryHttpRequesterFilter.Builder.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryHttpRequesterFilter.Builder</code></a> instead.</div>
 </div>
 <div class="block">Create a new instance.</div>
 <dl class="notes">
@@ -206,8 +207,11 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="&lt;init&gt;(java.lang.String)">
 <h3>OpenTelemetryHttpRequestFilter</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">OpenTelemetryHttpRequestFilter</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;componentName)</span></div>
-<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public</span>&nbsp;<span class="element-name">OpenTelemetryHttpRequestFilter</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;componentName)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="OpenTelemetryHttpRequesterFilter.Builder.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryHttpRequesterFilter.Builder</code></a> instead.</div>
+</div>
 <div class="block">Create a new instance, searching for any instance of an opentelemetry available.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -218,9 +222,12 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="&lt;init&gt;(java.lang.String,io.servicetalk.opentelemetry.http.OpenTelemetryOptions)">
 <h3>OpenTelemetryHttpRequestFilter</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">OpenTelemetryHttpRequestFilter</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;componentName,
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public</span>&nbsp;<span class="element-name">OpenTelemetryHttpRequestFilter</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;componentName,
  <a href="OpenTelemetryOptions.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryOptions</a>&nbsp;opentelemetryOptions)</span></div>
-<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="OpenTelemetryHttpRequesterFilter.Builder.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryHttpRequesterFilter.Builder</code></a> instead.</div>
+</div>
 <div class="block">Create a new instance, searching for any instance of an opentelemetry available.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -232,8 +239,11 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="&lt;init&gt;()">
 <h3>OpenTelemetryHttpRequestFilter</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">OpenTelemetryHttpRequestFilter</span>()</div>
-<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public</span>&nbsp;<span class="element-name">OpenTelemetryHttpRequestFilter</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="OpenTelemetryHttpRequesterFilter.Builder.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryHttpRequesterFilter.Builder</code></a> instead.</div>
+</div>
 <div class="block">Create a new instance, searching for any instance of an opentelemetry available,
  using the hostname as the component name.</div>
 </section>

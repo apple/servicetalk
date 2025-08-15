@@ -1257,7 +1257,7 @@ session acquisition flow is roughly like this:</p>
 <p>Not all hosts are created equal! Due to different underlying hardware platforms, other tenants on the same host, or even
 just a bad cache day, we often find that not all instances of a service have the same capacity. The P2C selection
 algorithm can bias toward better performing hosts, but if the capacity of a backend is known it can be accounted for
-explicitly. With <a href="https://github.com/apple/servicetalk/blob/0.42.57/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java">ServiceDiscoverer</a>
+explicitly. With <a href="https://github.com/apple/servicetalk/blob/0.42.58/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java">ServiceDiscoverer</a>
 or control-plane support we can explicitly propagate weight information to ServiceTalk&#8217;s default load balancer. Adding
 weight support to the host selection process will let users leverage this data.</p>
 </div>

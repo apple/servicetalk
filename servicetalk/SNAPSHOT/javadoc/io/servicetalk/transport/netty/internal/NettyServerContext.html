@@ -92,7 +92,7 @@ implements <a href="../../api/ServerContext.html" title="interface in io.service
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
 <div class="summary-table three-column-summary">
 <div class="table-header col-first">Modifier and Type</div>
@@ -142,11 +142,13 @@ implements <a href="../../api/ServerContext.html" title="interface in io.service
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Wrap the passed <a href="NettyServerContext.html" title="class in io.servicetalk.transport.netty.internal"><code>NettyServerContext</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="../../api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#wrap(io.servicetalk.transport.netty.internal.NettyServerContext,io.servicetalk.concurrent.api.AsyncCloseable)" class="member-name-link">wrap</a><wbr>(<a href="NettyServerContext.html" title="class in io.servicetalk.transport.netty.internal">NettyServerContext</a>&nbsp;toWrap,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static <a href="../../api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#wrap(io.servicetalk.transport.netty.internal.NettyServerContext,io.servicetalk.concurrent.api.AsyncCloseable)" class="member-name-link">wrap</a><wbr>(<a href="NettyServerContext.html" title="class in io.servicetalk.transport.netty.internal">NettyServerContext</a>&nbsp;toWrap,
  <a href="../../../concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a>&nbsp;closeBefore)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
-<div class="block">Wrap the passed <a href="NettyServerContext.html" title="class in io.servicetalk.transport.netty.internal"><code>NettyServerContext</code></a>.</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">This method is not used by ServiceTalk internals anymore and will be removed in the future releases.</div>
+</div>
 </div>
 </div>
 </div>
@@ -171,8 +173,13 @@ implements <a href="../../api/ServerContext.html" title="interface in io.service
 <li>
 <section class="detail" id="wrap(io.servicetalk.transport.netty.internal.NettyServerContext,io.servicetalk.concurrent.api.AsyncCloseable)">
 <h3>wrap</h3>
-<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="../../api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a></span>&nbsp;<span class="element-name">wrap</span><wbr><span class="parameters">(<a href="NettyServerContext.html" title="class in io.servicetalk.transport.netty.internal">NettyServerContext</a>&nbsp;toWrap,
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="../../api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a></span>&nbsp;<span class="element-name">wrap</span><wbr><span class="parameters">(<a href="NettyServerContext.html" title="class in io.servicetalk.transport.netty.internal">NettyServerContext</a>&nbsp;toWrap,
  <a href="../../../concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a>&nbsp;closeBefore)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">This method is not used by ServiceTalk internals anymore and will be removed in the future releases.
+ Replacement API is <a href="#wrap(io.netty.channel.Channel,io.servicetalk.concurrent.api.ListenableAsyncCloseable,io.servicetalk.concurrent.api.AsyncCloseable,io.servicetalk.transport.api.ExecutionContext)"><code>wrap(Channel, ListenableAsyncCloseable, AsyncCloseable, ExecutionContext)</code></a>.</div>
+</div>
 <div class="block">Wrap the passed <a href="NettyServerContext.html" title="class in io.servicetalk.transport.netty.internal"><code>NettyServerContext</code></a>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>

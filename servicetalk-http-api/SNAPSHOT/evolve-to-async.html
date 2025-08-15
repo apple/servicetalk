@@ -1163,7 +1163,7 @@ and can be used as below:</p>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">// Processing of this request does not have any blocking code
 HttpRequest request = httpClient.newRequest(method, requestTarget);
-request.context().put(HTTP_EXECUTION_STRATEGY_KEY, HttpExecutionStrategies.noOffloadsStrategy());
+request.context().put(HTTP_EXECUTION_STRATEGY_KEY, HttpExecutionStrategies.offloadNone());
 HttpResponse  response = httpClient.request(request);</code></pre>
 </div>
 </div>
@@ -1197,7 +1197,7 @@ then one can disable offloading for the entire client using the following option
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">clientBuilder.executionStrategy(HttpExecutionStrategies.noOffloadsStrategy());</code></pre>
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">clientBuilder.executionStrategy(HttpExecutionStrategies.offloadNone());</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -1252,7 +1252,7 @@ offloading for the entire server, the following option can be used:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">serverBuilder.executionStrategy(HttpExecutionStrategies.noOffloadsStrategy());</code></pre>
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">serverBuilder.executionStrategy(HttpExecutionStrategies.offloadNone());</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -1293,7 +1293,7 @@ This auto-inference is only used if no strategy is explicitly specified for that
 <p>A router may also provide a capability for a route to explicitly define an execution strategy that is used to invoke
 that route. In presence of such an explicit strategy, auto-inference of the route strategy is disabled. In order to
 disable offloads, one should use
-<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategies.java"><code>HttpExecutionStrategies.noOffloadsStrategy()</code></a></p>
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategies.java"><code>HttpExecutionStrategies.offloadNone()</code></a></p>
 </div>
 </div>
 <div class="sect3">

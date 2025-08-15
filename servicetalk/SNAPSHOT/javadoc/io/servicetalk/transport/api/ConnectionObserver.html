@@ -78,11 +78,7 @@ loadScripts(document, 'script');</script>
 </dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public interface </span><span class="element-name type-name-label">ConnectionObserver</span></div>
-<div class="block">An observer interface that provides visibility into events associated with a network connection.
- <p>
- Either <a href="#connectionClosed()"><code>connectionClosed()</code></a> or <a href="#connectionClosed(java.lang.Throwable)"><code>connectionClosed(Throwable)</code></a> will be invoked to signal when connection
- is closed. The "closed" event is considered terminal and other callbacks after that can be safely discarded because
- nothing happens on the network interface after closure.</div>
+<div class="block">An observer interface that provides visibility into events associated with a network connection.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -157,17 +153,18 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="ConnectionObserver.DataObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.DataObserver</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#connectionEstablished(io.servicetalk.transport.api.ConnectionInfo)" class="member-name-link">connectionEstablished</a><wbr>(<a href="ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a>&nbsp;info)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Callback when a non-multiplexed connection is established and ready.</div>
+<div class="block">Callback when a non-multiplexed connection is established and ready to start reading/writing protocol messages.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#connectionWritabilityChanged(boolean)" class="member-name-link">connectionWritabilityChanged</a><wbr>(boolean&nbsp;isWritable)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Callback when a writable state of the connection changes.</div>
+<div class="block">Callback when the writable state of the connection changes.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="ConnectionObserver.MultiplexedObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.MultiplexedObserver</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#multiplexedConnectionEstablished(io.servicetalk.transport.api.ConnectionInfo)" class="member-name-link">multiplexedConnectionEstablished</a><wbr>(<a href="ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a>&nbsp;info)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Callback when a multiplexed connection is established and ready.</div>
+<div class="block">Callback when a multiplexed connection is established and ready to start creating streams that will read/write
+ protocol messages.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#onDataRead(int)" class="member-name-link">onDataRead</a><wbr>(int&nbsp;size)</code></div>
@@ -257,6 +254,19 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="connectionWritabilityChanged(boolean)">
+<h3>connectionWritabilityChanged</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">connectionWritabilityChanged</span><wbr><span class="parameters">(boolean&nbsp;isWritable)</span></div>
+<div class="block">Callback when the writable state of the connection changes.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>isWritable</code> - describes the current state of the connection: <code>true</code> when the I/O thread will perform
+ the requested write operation immediately. If <code>false</code>, write requests will be queued until the I/O thread
+ is ready to process the queued items and the transport will start applying backpressure.</dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="onTransportHandshakeComplete()">
 <h3>onTransportHandshakeComplete</h3>
 <div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
@@ -266,8 +276,12 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="block">Callback when a transport handshake completes.
  <p>
- Transport protocols that require a handshake in order to connect. Example:
- <a href="https://datatracker.ietf.org/doc/html/rfc793.html#section-3.4">TCP "three-way handshake"</a>.</div>
+ Transport protocols that require a handshake to connect. Example:
+ <a href="https://datatracker.ietf.org/doc/html/rfc793.html#section-3.4">TCP "three-way handshake"</a>.
+ Note that in the case of TCP on the server-side, this callback is invoked immediately because it can only be
+ notified about a new connection after the OS completes the handshake.
+ <p>
+ Transport implementations that do not have a concept of a "handshake" are not required to invoke this callback.</div>
 </section>
 </li>
 <li>
@@ -276,14 +290,18 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onTransportHandshakeComplete</span><wbr><span class="parameters">(<a href="ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a>&nbsp;info)</span></div>
 <div class="block">Callback when a transport handshake completes.
  <p>
- Transport protocols that require a handshake in order to connect. Example:
- <a href="https://datatracker.ietf.org/doc/html/rfc793.html#section-3.4">TCP "three-way handshake"</a>.</div>
+ Transport protocols that require a handshake to connect. Example:
+ <a href="https://datatracker.ietf.org/doc/html/rfc793.html#section-3.4">TCP "three-way handshake"</a>.
+ Note that in the case of TCP on the server-side, this callback is invoked immediately because it can only be
+ notified about a new connection after the OS completes the handshake.
+ <p>
+ Transport implementations that do not have a concept of a "handshake" are not required to invoke this callback.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>info</code> - <a href="ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a> for the connection after transport handshake completes. Note that the
+<dd><code>info</code> - <a href="ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a> for the connection after the transport handshake completes. Note that the
  <a href="ConnectionInfo.html#sslSession()"><code>ConnectionInfo.sslSession()</code></a> will always return <code>null</code> since it is called before the
- <a href="#onSecurityHandshake(io.servicetalk.transport.api.SslConfig)"><code>onSecurityHandshake(SslConfig)</code></a>  security handshake} is performed (and as a result
- no SSL session has been established). Also, <a href="ConnectionInfo.html#protocol()"><code>ConnectionInfo.protocol()</code></a> will return L4 (transport)
+ <a href="#onSecurityHandshake(io.servicetalk.transport.api.SslConfig)"><code>security handshake</code></a> is performed (and as a result
+ no SSL session has been established). Also, <a href="ConnectionInfo.html#protocol()"><code>ConnectionInfo.protocol()</code></a> will return the L4 (transport)
  protocol. Finalized <a href="ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a> will be available via <a href="#connectionEstablished(io.servicetalk.transport.api.ConnectionInfo)"><code>connectionEstablished(ConnectionInfo)</code></a>
  or <a href="#multiplexedConnectionEstablished(io.servicetalk.transport.api.ConnectionInfo)"><code>multiplexedConnectionEstablished(ConnectionInfo)</code></a> callbacks.</dd>
 </dl>
@@ -300,7 +318,7 @@ loadScripts(document, 'script');</script>
 <dt>Parameters:</dt>
 <dd><code>connectMsg</code> - a message sent to a proxy in request to establish a connection to the target server</dd>
 <dt>Returns:</dt>
-<dd>a new <a href="ConnectionObserver.ProxyConnectObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.ProxyConnectObserver</code></a> that provides visibility into proxy connect events.</dd>
+<dd>a new <a href="ConnectionObserver.ProxyConnectObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.ProxyConnectObserver</code></a> that provides visibility into proxy connect events</dd>
 </dl>
 </section>
 </li>
@@ -322,7 +340,7 @@ loadScripts(document, 'script');</script>
      Open is available and configured, it may not actually happen if the
      <a href="https://datatracker.ietf.org/doc/html/rfc7413#section-4.1">Fast Open Cookie</a> is <code>null</code> or
      rejected by the server.</li>
-     <li>For a proxy connections, the handshake may happen after an observer returned by
+     <li>For proxy connections, the handshake may happen after an observer returned by
      <a href="#onProxyConnect(java.lang.Object)"><code>onProxyConnect(Object)</code></a> completes successfully.</li>
  </ol></div>
 <dl class="notes">
@@ -351,12 +369,12 @@ loadScripts(document, 'script');</script>
      Open is available and configured, it may not actually happen if the
      <a href="https://datatracker.ietf.org/doc/html/rfc7413#section-4.1">Fast Open Cookie</a> is <code>null</code> or
      rejected by the server.</li>
-     <li>For a proxy connections, the handshake may happen after an observer returned by
+     <li>For proxy connections, the handshake may happen after an observer returned by
      <a href="#onProxyConnect(java.lang.Object)"><code>onProxyConnect(Object)</code></a> completes successfully.</li>
  </ol></div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>sslConfig</code> - the <a href="SslConfig.html" title="interface in io.servicetalk.transport.api"><code>SslConfig</code></a> used when performing the security handshake.</dd>
+<dd><code>sslConfig</code> - the <a href="SslConfig.html" title="interface in io.servicetalk.transport.api"><code>SslConfig</code></a> used when performing the security handshake</dd>
 <dt>Returns:</dt>
 <dd>a new <a href="ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.SecurityHandshakeObserver</code></a> that provides visibility into security handshake events</dd>
 <dt>See Also:</dt>
@@ -372,12 +390,23 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="connectionEstablished(io.servicetalk.transport.api.ConnectionInfo)">
 <h3>connectionEstablished</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="ConnectionObserver.DataObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.DataObserver</a></span>&nbsp;<span class="element-name">connectionEstablished</span><wbr><span class="parameters">(<a href="ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a>&nbsp;info)</span></div>
-<div class="block">Callback when a non-multiplexed connection is established and ready.</div>
+<div class="block">Callback when a non-multiplexed connection is established and ready to start reading/writing protocol messages.
+ <p>
+ If this callback was invoked, then <a href="#multiplexedConnectionEstablished(io.servicetalk.transport.api.ConnectionInfo)"><code>multiplexedConnectionEstablished(ConnectionInfo)</code></a> can not be invoked
+ because a connection can only be of a one type (multiplexed or non-multiplexed).
+ <p>
+ Lifetime of an established connection ends when it's closed.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>info</code> - <a href="ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a> for the established connection</dd>
 <dt>Returns:</dt>
 <dd>a new <a href="ConnectionObserver.DataObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.DataObserver</code></a> that provides visibility into read and write events</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="#multiplexedConnectionEstablished(io.servicetalk.transport.api.ConnectionInfo)"><code>multiplexedConnectionEstablished(ConnectionInfo)</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
@@ -385,36 +414,24 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="multiplexedConnectionEstablished(io.servicetalk.transport.api.ConnectionInfo)">
 <h3>multiplexedConnectionEstablished</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="ConnectionObserver.MultiplexedObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.MultiplexedObserver</a></span>&nbsp;<span class="element-name">multiplexedConnectionEstablished</span><wbr><span class="parameters">(<a href="ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a>&nbsp;info)</span></div>
-<div class="block">Callback when a multiplexed connection is established and ready.</div>
+<div class="block">Callback when a multiplexed connection is established and ready to start creating streams that will read/write
+ protocol messages.
+ <p>
+ If this callback was invoked, then <a href="#connectionEstablished(io.servicetalk.transport.api.ConnectionInfo)"><code>connectionEstablished(ConnectionInfo)</code></a> can not be invoked
+ because a connection can only be of a one type (multiplexed or non-multiplexed).
+ <p>
+ Lifetime of an established connection ends when it's closed.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>info</code> - <a href="ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a> for the established connection</dd>
 <dt>Returns:</dt>
 <dd>a new <a href="ConnectionObserver.MultiplexedObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.MultiplexedObserver</code></a> that provides visibility into new streams</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="connectionWritabilityChanged(boolean)">
-<h3>connectionWritabilityChanged</h3>
-<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">connectionWritabilityChanged</span><wbr><span class="parameters">(boolean&nbsp;isWritable)</span></div>
-<div class="block">Callback when a writable state of the connection changes.</div>
-<dl class="notes">
-<dt>Parameters:</dt>
-<dd><code>isWritable</code> - describes the current state of the connection: <code>true</code> when the I/O thread will perform
- the requested write operation immediately. If <code>false</code>, write requests will be queued until the I/O thread
- is ready to process the queued items and the transport will start applying backpressure.</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="connectionClosed(java.lang.Throwable)">
-<h3>connectionClosed</h3>
-<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">connectionClosed</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;error)</span></div>
-<div class="block">Callback when the connection is closed due to an <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>error</code></a>.</div>
-<dl class="notes">
-<dt>Parameters:</dt>
-<dd><code>error</code> - an occurred error</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="#connectionEstablished(io.servicetalk.transport.api.ConnectionInfo)"><code>connectionEstablished(ConnectionInfo)</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
@@ -422,7 +439,38 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="connectionClosed()">
 <h3>connectionClosed</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">connectionClosed</span>()</div>
-<div class="block">Callback when the connection is closed.</div>
+<div class="block">Callback when the connection is closed.
+ <p>
+ Connections can be closed at any time, even before they are fully established. This is a terminal event and other
+ callbacks after this one can be safely discarded because nothing happens on the network interface after closure.</div>
+<dl class="notes">
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="#connectionClosed(java.lang.Throwable)"><code>connectionClosed(Throwable)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="connectionClosed(java.lang.Throwable)">
+<h3>connectionClosed</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">connectionClosed</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;error)</span></div>
+<div class="block">Callback when the connection is closed due to an <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>error</code></a>.
+ <p>
+ Connections can be closed at any time, even before they are fully established. This is a terminal event and other
+ callbacks after this one can be safely discarded because nothing happens on the network interface after closure.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>error</code> - the error that occurred</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="#connectionClosed()"><code>connectionClosed()</code></a></li>
+</ul>
+</dd>
+</dl>
 </section>
 </li>
 </ul>

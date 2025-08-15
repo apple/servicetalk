@@ -133,12 +133,12 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#onFlushRequest()" class="member-name-link">onFlushRequest</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Callback when flush operation is requested.</div>
+<div class="block">Callback when a flush operation is requested.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#requestedToWrite(long)" class="member-name-link">requestedToWrite</a><wbr>(long&nbsp;n)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Callback when new items are requested to write.</div>
+<div class="block">Callback when new items are requested to be written.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#writeCancelled()" class="member-name-link">writeCancelled</a>()</code></div>
@@ -173,7 +173,7 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="requestedToWrite(long)">
 <h3>requestedToWrite</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">requestedToWrite</span><wbr><span class="parameters">(long&nbsp;n)</span></div>
-<div class="block">Callback when new items are requested to write.</div>
+<div class="block">Callback when new items are requested to be written.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>n</code> - number of requested items to write</dd>
@@ -201,7 +201,7 @@ loadScripts(document, 'script');</script>
 <div class="block">Callback when an item is received and ready to be written.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>item</code> - received item</dd>
+<dd><code>item</code> - the received item</dd>
 </dl>
 </section>
 </li>
@@ -209,7 +209,7 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="onFlushRequest()">
 <h3>onFlushRequest</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onFlushRequest</span>()</div>
-<div class="block">Callback when flush operation is requested.</div>
+<div class="block">Callback when a flush operation is requested.</div>
 </section>
 </li>
 <li>
@@ -233,7 +233,7 @@ loadScripts(document, 'script');</script>
 <div class="block">Callback when an item is serialized and written to the socket.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>item</code> - written item</dd>
+<dd><code>item</code> - the written item</dd>
 </dl>
 </section>
 </li>
@@ -241,7 +241,7 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="itemFlushed()">
 <h3>itemFlushed</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">itemFlushed</span>()</div>
-<div class="block">Callback when an item is flushed to the network. Items are flushed in order they have been written.</div>
+<div class="block">Callback when an item is flushed to the network. Items are flushed in the order they have been written.</div>
 </section>
 </li>
 <li>

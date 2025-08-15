@@ -44,7 +44,7 @@ loadScripts(document, 'script');</script>
 <div>
 <ul class="sub-nav-list">
 <li>Summary:&nbsp;</li>
-<li>Nested&nbsp;|&nbsp;</li>
+<li><a href="#nested-class-summary">Nested</a>&nbsp;|&nbsp;</li>
 <li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor-summary">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method-summary">Method</a></li>
@@ -95,7 +95,7 @@ loadScripts(document, 'script');</script>
      <a href="../../http/utils/HttpRequestAutoDrainingServiceFilter.html" title="class in io.servicetalk.http.utils"><code>HttpRequestAutoDrainingServiceFilter</code></a> immediately after.</li>
      <li>To ensure tracing sees the same result status codes as the calling client, add the
      <a href="../../http/api/HttpExceptionMapperServiceFilter.html" title="class in io.servicetalk.http.api"><code>HttpExceptionMapperServiceFilter</code></a> after this filter.</li>
-     <li>If you intend to use a <a href="../../http/api/HttpLifecycleObserver.html" title="interface in io.servicetalk.http.api"><code>HttpLifecycleObserver</code></a>, add it using the the
+     <li>If you intend to use a <a href="../../http/api/HttpLifecycleObserver.html" title="interface in io.servicetalk.http.api"><code>HttpLifecycleObserver</code></a>, add it using the
      HttpLifecycleObserverServiceFilter after the tracing filter to ensure the correct <code>Span</code> information is
      present.</li>
  </ul>
@@ -105,6 +105,23 @@ loadScripts(document, 'script');</script>
 </section>
 <section class="summary">
 <ul class="summary-list">
+<!-- ======== NESTED CLASS SUMMARY ======== -->
+<li>
+<section class="nested-class-summary" id="nested-class-summary">
+<h2>Nested Class Summary</h2>
+<div class="caption"><span>Nested Classes</span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Class</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>static final class&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="OpenTelemetryHttpServiceFilter.Builder.html" class="type-name-link" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryHttpServiceFilter.Builder</a></code></div>
+<div class="col-last even-row-color">
+<div class="block">Builder for constructing <a href="OpenTelemetryHttpServiceFilter.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryHttpServiceFilter</code></a> filter instances.</div>
+</div>
+</div>
+</section>
+</li>
 <!-- ======== CONSTRUCTOR SUMMARY ======== -->
 <li>
 <section class="constructor-summary" id="constructor-summary">
@@ -115,12 +132,15 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-last">Description</div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E()" class="member-name-link">OpenTelemetryHttpServiceFilter</a>()</code></div>
 <div class="col-last even-row-color">
-<div class="block">Create a new instance using the <code>OpenTelemetry</code> from <code>GlobalOpenTelemetry.get()</code> with default
- <a href="OpenTelemetryOptions.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryOptions</code></a>.</div>
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use the <a href="OpenTelemetryHttpServiceFilter.Builder.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryHttpServiceFilter.Builder</code></a> to construct filter instances.</div>
+</div>
 </div>
 <div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.opentelemetry.http.OpenTelemetryOptions)" class="member-name-link">OpenTelemetryHttpServiceFilter</a><wbr>(<a href="OpenTelemetryOptions.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryOptions</a>&nbsp;openTelemetryOptions)</code></div>
 <div class="col-last odd-row-color">
-<div class="block">Create a new instance.</div>
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use the <a href="OpenTelemetryHttpServiceFilter.Builder.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryHttpServiceFilter.Builder</code></a> to construct filter instances.</div>
+</div>
 </div>
 </div>
 </section>
@@ -169,7 +189,11 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="&lt;init&gt;()">
 <h3>OpenTelemetryHttpServiceFilter</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">OpenTelemetryHttpServiceFilter</span>()</div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public</span>&nbsp;<span class="element-name">OpenTelemetryHttpServiceFilter</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use the <a href="OpenTelemetryHttpServiceFilter.Builder.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryHttpServiceFilter.Builder</code></a> to construct filter instances.</div>
+</div>
 <div class="block">Create a new instance using the <code>OpenTelemetry</code> from <code>GlobalOpenTelemetry.get()</code> with default
  <a href="OpenTelemetryOptions.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryOptions</code></a>.</div>
 </section>
@@ -177,11 +201,17 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="&lt;init&gt;(io.servicetalk.opentelemetry.http.OpenTelemetryOptions)">
 <h3>OpenTelemetryHttpServiceFilter</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">OpenTelemetryHttpServiceFilter</span><wbr><span class="parameters">(<a href="OpenTelemetryOptions.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryOptions</a>&nbsp;openTelemetryOptions)</span></div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public</span>&nbsp;<span class="element-name">OpenTelemetryHttpServiceFilter</span><wbr><span class="parameters">(<a href="OpenTelemetryOptions.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryOptions</a>&nbsp;openTelemetryOptions)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use the <a href="OpenTelemetryHttpServiceFilter.Builder.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryHttpServiceFilter.Builder</code></a> to construct filter instances.</div>
+</div>
 <div class="block">Create a new instance.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>openTelemetryOptions</code> - extra options to create the opentelemetry filter</dd>
+<dd><code>openTelemetryOptions</code> - extra options to create the opentelemetry filter.
+                            Client-specific options (componentName, openTelemetry, ignoreSpanSuppression)
+                            will be ignored for server filters.</dd>
 </dl>
 </section>
 </li>

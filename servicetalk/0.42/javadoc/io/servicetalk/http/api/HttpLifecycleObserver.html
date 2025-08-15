@@ -85,16 +85,19 @@ loadScripts(document, 'script');</script>
 </span><span class="modifiers">public interface </span><span class="element-name type-name-label">HttpLifecycleObserver</span></div>
 <div class="block">An observer interface that provides visibility into HTTP lifecycle events.
  <p>
- In order to deliver events at accurate time, callbacks on this interface can be invoked from the <a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a>.
+ To deliver events at accurate time, callbacks on this interface can be invoked from the <a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a>.
  Implementation of this observer <b>must</b> be non-blocking. If the consumer of events may block (uses a blocking
  library or <a href="https://logging.apache.org/log4j/2.x/manual/async.html">logger configuration is not async</a>),
- it has to offload publications to another <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> <b>after</b> capturing timing of events. If blocking code
+ it must offload publications to another <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> <b>after</b> capturing timing of events. If blocking code
  is executed inside callbacks without offloading, it will negatively impact <a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> and overall performance
  of the application.
  <p>
- To install this observer for the server use <a href="HttpServerBuilder.html#lifecycleObserver(io.servicetalk.http.api.HttpLifecycleObserver)"><code>HttpServerBuilder.lifecycleObserver(HttpLifecycleObserver)</code></a>, for
- the client use <a href="SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(StreamingHttpClientFilterFactory)</code></a> with
- <code>io.servicetalk.http.netty.HttpLifecycleObserverRequesterFilter</code>.</div>
+ To install this observer for the server use
+ <a href="HttpServerBuilder.html#lifecycleObserver(io.servicetalk.http.api.HttpLifecycleObserver)"><code>lifecycleObserver</code></a> method or
+ <a href="HttpServerBuilder.html#appendNonOffloadingServiceFilter(io.servicetalk.http.api.StreamingHttpServiceFilterFactory)"><code>appendNonOffloadingServiceFilter</code></a> with
+ <code>io.servicetalk.http.netty.HttpLifecycleObserverServiceFilter</code>. For the client use either
+ <a href="SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>appendClientFilter</code></a> or
+ <a href="SingleAddressHttpClientBuilder.html#appendConnectionFilter(io.servicetalk.http.api.StreamingHttpConnectionFilterFactory)"><code>appendConnectionFilter</code></a> with <code>io.servicetalk.http.netty.HttpLifecycleObserverRequesterFilter</code>.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -162,7 +165,7 @@ loadScripts(document, 'script');</script>
 <div class="block">Callback when a new HTTP exchange starts.
  <p>
  Depending on the order in which the observer is applied, this callback can be invoked either for every retry
- attempt (if an observer is added after retrying filter) or only once per exchange.</div>
+ attempt (if an observer is added after the retrying filter) or only once per exchange.</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>an <a href="HttpLifecycleObserver.HttpExchangeObserver.html" title="interface in io.servicetalk.http.api"><code>HttpLifecycleObserver.HttpExchangeObserver</code></a> that provides visibility into exchange events</dd>
