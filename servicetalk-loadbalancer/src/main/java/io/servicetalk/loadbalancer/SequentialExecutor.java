@@ -54,7 +54,7 @@ final class SequentialExecutor implements Executor {
     private Thread currentDrainingThread;
 
     SequentialExecutor(final ExceptionHandler exceptionHandler) {
-        this.exceptionHandler = requireNonNull(exceptionHandler, "exceptionHandler");
+        this.exceptionHandler = exceptionHandler;
     }
 
     boolean isCurrentThreadDraining() {

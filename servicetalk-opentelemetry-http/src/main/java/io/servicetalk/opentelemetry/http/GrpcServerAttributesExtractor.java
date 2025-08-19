@@ -62,7 +62,7 @@ final class GrpcServerAttributesExtractor extends GrpcSemanticAttributesExtracto
             attributesBuilder.put(CLIENT_ADDRESS, inetSocketAddress.getHostString());
             attributesBuilder.put(CLIENT_PORT, inetSocketAddress.getPort());
         } else if (address instanceof DomainSocketAddress) {
-            attributesBuilder.put(CLIENT_ADDRESS, ((DomainSocketAddress) address).getPath());
+            attributesBuilder.put(CLIENT_ADDRESS, ((DomainSocketAddress) address).path());
         } else {
             // Try to turn it into something meaningful.
             attributesBuilder.put(CLIENT_ADDRESS, address.toString());

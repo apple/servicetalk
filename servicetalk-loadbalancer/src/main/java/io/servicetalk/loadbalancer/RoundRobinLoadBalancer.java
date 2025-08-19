@@ -172,11 +172,11 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
             final int linearSearchSpace,
             @Nullable final HealthCheckConfig healthCheckConfig) {
         this.id = id + '@' + toHexString(identityHashCode(this));
-        this.targetResource = requireNonNull(targetResourceName);
-        this.eventPublisher = requireNonNull(eventPublisher);
+        this.targetResource = targetResourceName;
+        this.eventPublisher = eventPublisher;
         this.eventStream = fromSource(eventStreamProcessor)
                 .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.
-        this.connectionFactory = requireNonNull(connectionFactory);
+        this.connectionFactory = connectionFactory;
         this.linearSearchSpace = linearSearchSpace;
         this.healthCheckConfig = healthCheckConfig;
         this.asyncCloseable = toAsyncCloseable(graceful -> {
@@ -1072,7 +1072,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
         private final List<T> delegate;
 
         private ClosedList(final List<T> delegate) {
-            this.delegate = requireNonNull(delegate);
+            this.delegate = delegate;
         }
 
         @Override

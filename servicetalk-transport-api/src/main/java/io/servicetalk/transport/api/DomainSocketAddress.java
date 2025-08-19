@@ -50,13 +50,24 @@ public final class DomainSocketAddress extends SocketAddress {
      * See <a href="https://man7.org/linux/man-pages/man7/unix.7.html">AF_UNIX socket family docs</a>.
      * @return The file system path used to bind/connect for a UNIX domain socket.
      */
-    public String getPath() {
+    public String path() {
         return socketPath;
+    }
+
+    /**
+     * The file system path used to bind/connect for a UNIX domain socket.
+     * See <a href="https://man7.org/linux/man-pages/man7/unix.7.html">AF_UNIX socket family docs</a>.
+     * @return The file system path used to bind/connect for a UNIX domain socket.
+     * @deprecated Use {@link #path() instead}
+     */
+    @Deprecated
+    public String getPath() {   // FIXME: 0.43 - remove deprecated method
+        return path();
     }
 
     @Override
     public String toString() {
-        return getPath();
+        return path();
     }
 
     @Override

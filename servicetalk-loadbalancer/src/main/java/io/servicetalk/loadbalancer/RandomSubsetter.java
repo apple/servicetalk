@@ -23,7 +23,6 @@ import java.util.Comparator;
 import java.util.List;
 
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
-import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link Subsetter} that takes a random subset of the provided hosts.
@@ -37,7 +36,7 @@ final class RandomSubsetter implements Subsetter {
 
     private RandomSubsetter(final int randomSubsetSize, final String lbDescription) {
         this.randomSubsetSize = ensurePositive(randomSubsetSize, "randomSubsetSize");
-        this.lbDescription = requireNonNull(lbDescription, "lbDescription");
+        this.lbDescription = lbDescription;
     }
 
     @Override

@@ -22,8 +22,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
-import static java.util.Objects.requireNonNull;
-
 // A simple outlier detector implementation that only provides the basic `RequestTracker` implementation
 // so the P2C LoadBalancingPolicy can still be effective.
 final class NoopOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection>
@@ -33,8 +31,8 @@ final class NoopOutlierDetector<ResolvedAddress, C extends LoadBalancedConnectio
     private final Executor executor;
 
     NoopOutlierDetector(OutlierDetectorConfig outlierDetectorConfig, Executor executor) {
-        this.outlierDetectorConfig = requireNonNull(outlierDetectorConfig, "outlierDetectorConfig");
-        this.executor = requireNonNull(executor, "executor");
+        this.outlierDetectorConfig = outlierDetectorConfig;
+        this.executor = executor;
     }
 
     @Override

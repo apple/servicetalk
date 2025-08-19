@@ -319,6 +319,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
                 subsetterFactory,
                 ConnectionSelectorPolicies.linearSearch(),
                 connectionFactory,
+                0,
                 NoopLoadBalancerObserver.factory(),
                 null,
                 factory);

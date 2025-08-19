@@ -304,7 +304,7 @@ abstract class HttpAttributesGetter
         if (address instanceof InetSocketAddress) {
             return ((InetSocketAddress) address).getAddress().getHostAddress();
         } else if (address instanceof DomainSocketAddress) {
-            return ((DomainSocketAddress) address).getPath();
+            return ((DomainSocketAddress) address).path();
         } else {
             // Try to turn it into something meaningful.
             return address.toString();
@@ -322,7 +322,7 @@ abstract class HttpAttributesGetter
         if (address instanceof InetSocketAddress) {
             return ((InetSocketAddress) address).getHostString();
         } else if (address instanceof DomainSocketAddress) {
-            return ((DomainSocketAddress) address).getPath();
+            return ((DomainSocketAddress) address).path();
         } else {
             // Try to turn it into something meaningful.
             return address.toString();
