@@ -27,27 +27,17 @@ import java.util.function.Function;
 abstract class InstrumentationHelper {
 
     private final Instrumenter<RequestInfo, ?> instrumenter;
-    private final boolean ignoreSpanSuppression;
 
-    protected InstrumentationHelper(Instrumenter<RequestInfo, ?> instrumenter, boolean ignoreSpanSuppression) {
+    InstrumentationHelper(Instrumenter<RequestInfo, ?> instrumenter) {
         this.instrumenter = instrumenter;
-        this.ignoreSpanSuppression = ignoreSpanSuppression;
     }
 
-    abstract Single<StreamingHttpResponse> doTrackRequest(
+    final boolean shouldStart(Context parentContext, RequestInfo requestInfo) {
+        return instrumenter.shouldStart(parentContext, requestInfo);
+    }
+
+    abstract Single<StreamingHttpResponse> trackRequest(
             Function<StreamingHttpRequest, Single<StreamingHttpResponse>> requestHandler,
             RequestInfo requestInfo,
             Context parentContext);
-
-    final Single<StreamingHttpResponse> trackRequest(
-            Function<StreamingHttpRequest, Single<StreamingHttpResponse>> requestHandler,
-            RequestInfo requestInfo,
-            Context parentContext) {
-        // If ignoreSpanSuppression is true, always create spans regardless of suppression
-        if (ignoreSpanSuppression || instrumenter.shouldStart(parentContext, requestInfo)) {
-            return doTrackRequest(requestHandler, requestInfo, parentContext);
-        } else {
-            return requestHandler.apply(requestInfo.request());
-        }
-    }
 }

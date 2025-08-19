@@ -52,9 +52,8 @@ final class HttpInstrumentationHelper extends InstrumentationHelper {
     private final Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter;
     private final boolean isClient;
 
-    private HttpInstrumentationHelper(boolean isClient, Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter,
-                                      boolean ignoreSpanSuppression) {
-        super(instrumenter, ignoreSpanSuppression);
+    private HttpInstrumentationHelper(boolean isClient, Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter) {
+        super(instrumenter);
         this.instrumenter = instrumenter;
         this.isClient = isClient;
     }
@@ -68,7 +67,7 @@ final class HttpInstrumentationHelper extends InstrumentationHelper {
      * @return instrumented response single
      */
     @Override
-    Single<StreamingHttpResponse> doTrackRequest(
+    Single<StreamingHttpResponse> trackRequest(
             Function<StreamingHttpRequest, Single<StreamingHttpResponse>> requestHandler,
             RequestInfo requestInfo,
             Context parentContext) {
@@ -113,7 +112,7 @@ final class HttpInstrumentationHelper extends InstrumentationHelper {
         Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter =
                 serverInstrumenterBuilder.buildServerInstrumenter(RequestHeadersPropagatorGetter.INSTANCE);
 
-        return new HttpInstrumentationHelper(false, instrumenter, builder.ignoreSpanSuppression);
+        return new HttpInstrumentationHelper(false, instrumenter);
     }
 
     /**
@@ -144,7 +143,7 @@ final class HttpInstrumentationHelper extends InstrumentationHelper {
         Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter =
                 clientInstrumenterBuilder.buildClientInstrumenter(RequestHeadersPropagatorSetter.INSTANCE);
 
-        return new HttpInstrumentationHelper(true, instrumenter, builder.ignoreSpanSuppression);
+        return new HttpInstrumentationHelper(true, instrumenter);
     }
 
     private static final class DeferredHttpClientAttributesExtractor implements

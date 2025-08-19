@@ -37,8 +37,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.api.StreamingHttpServiceFilter;
-import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.http.netty.HttpLifecycleObserverServiceFilter;
 import io.servicetalk.http.netty.HttpProtocolConfigs;
 import io.servicetalk.http.netty.HttpServers;
@@ -77,9 +75,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicReference;
 
-import static io.opentelemetry.api.internal.InstrumentationUtil.suppressInstrumentation;
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_RESPONSE_STATUS_CODE;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PEER_ADDRESS;
@@ -485,23 +481,10 @@ class OpenTelemetryHttpServiceFilterTest {
         void run(HttpClient client) throws Exception;
     }
 
-    private static ServerContext buildServerWithSuppression(
-            OpenTelemetryHttpServiceFilter.Builder builder) throws Exception {
-        return doBuildServer(builder, true);
-    }
-
     private static ServerContext buildServer(OpenTelemetryHttpServiceFilter.Builder builder) throws Exception {
-        return doBuildServer(builder, false);
-    }
-
-    private static ServerContext doBuildServer(OpenTelemetryHttpServiceFilter.Builder builder,
-                                               boolean addSuppressionFilter) throws Exception {
         OpenTelemetry givenOpentelemetry = otelTesting.getOpenTelemetry();
         builder = builder.openTelemetry(givenOpentelemetry);
         HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
-        if (addSuppressionFilter) {
-            serverBuilder.appendServiceFilter(SuppressionTestServiceFilter.INSTANCE);
-        }
         return serverBuilder
             .appendServiceFilter(builder.build())
             .appendServiceFilter(new TestTracingServerLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX))
@@ -587,62 +570,5 @@ class OpenTelemetryHttpServiceFilterTest {
                                 HttpExecutionStrategies.offloadAll() : HttpExecutionStrategies.offloadNone();
                     }
                 });
-    }
-
-    @Test
-    void serverSuppressionCanBeSuppressed() throws Exception {
-        final String requestUrl = "/server-suppression-test";
-        try (ServerContext context = buildServerWithSuppression(
-                new OpenTelemetryHttpServiceFilter.Builder()
-                    .ignoreSpanSuppression(true))) {
-            try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
-                HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
-                TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
-
-                sleep();
-
-                // Should have 1 server span even though suppression context was active
-                // because ignoreSpanSuppression = true
-                assertThat(otelTesting.getSpans()).hasSize(1);
-                assertThat(otelTesting.getSpans()).extracting("traceId")
-                        .containsExactly(serverSpanState.getTraceId());
-            }
-        }
-    }
-
-    @Test
-    void serverSuppressionCanBeHonored() throws Exception {
-        final String requestUrl = "/server-suppression-test";
-        try (ServerContext context = buildServerWithSuppression(
-                new OpenTelemetryHttpServiceFilter.Builder().ignoreSpanSuppression(false))) {
-            try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
-                client.request(client.get(requestUrl)).toFuture().get();
-                sleep();
-
-                // Should have 0 spans because suppression context was active
-                // and ignoreSpanSuppression = false
-                assertThat(otelTesting.getSpans()).hasSize(0);
-            }
-        }
-    }
-
-    private static class SuppressionTestServiceFilter implements StreamingHttpServiceFilterFactory {
-
-        static final StreamingHttpServiceFilterFactory INSTANCE = new SuppressionTestServiceFilter();
-
-        @Override
-        public StreamingHttpServiceFilter create(StreamingHttpService service) {
-            return new StreamingHttpServiceFilter(service) {
-                @Override
-                public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
-                                                          StreamingHttpResponseFactory responseFactory) {
-                    // Create suppression context and execute the rest of the filter chain within it
-                    AtomicReference<Single<StreamingHttpResponse>> result = new AtomicReference<>();
-                    suppressInstrumentation(() -> result.set(delegate().handle(ctx, request, responseFactory)));
-                    assert result.get() != null;
-                    return result.get();
-                }
-            };
-        }
     }
 }

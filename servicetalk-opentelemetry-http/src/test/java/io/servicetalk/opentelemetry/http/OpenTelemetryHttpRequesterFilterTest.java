@@ -22,6 +22,10 @@ import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequester;
+import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.netty.HttpLifecycleObserverRequesterFilter;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.log4j2.mdc.utils.LoggerStringWriter;
@@ -73,6 +77,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.assertContainsMdcPair;
 import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.PEER_SERVICE;
+import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryHttpRequesterFilter.SHOULD_INSTRUMENT_KEY;
 import static io.servicetalk.opentelemetry.http.TestUtils.SPAN_STATE_SERIALIZER;
 import static io.servicetalk.opentelemetry.http.TestUtils.TRACING_TEST_LOG_LINE_PREFIX;
 import static io.servicetalk.opentelemetry.http.TestUtils.TestTracingClientLoggerFilter;
@@ -478,151 +483,106 @@ class OpenTelemetryHttpRequesterFilterTest {
     }
 
     @Test
-    void suppressionIsHonored() throws Exception {
+    void physicalSpansArePossible() throws Exception {
         final String requestUrl = "/client-span-test";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         try (ServerContext context = buildServer(true)) {
+            OpenTelemetryHttpRequesterFilter filter = new OpenTelemetryHttpRequesterFilter.Builder()
+                    .openTelemetry(openTelemetry)
+                    .componentName("testClient")
+                    .build();
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
-                    .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
-                                    .openTelemetry(openTelemetry)
-                                    .componentName("testClient")
-                                    .build()
-                    ).build()) {
-
-                // Manually create a CLIENT span as specified in the task
-                Span clientSpan = openTelemetry.getTracer("scope")
-                        .spanBuilder("span name")
-                        .setSpanKind(SpanKind.CLIENT)
-                        .startSpan();
-                try (Scope scope = clientSpan.makeCurrent()) {
-                    suppressInstrumentation(() -> {
-                        try {
-                            client.request(client.get(requestUrl)).toFuture().get();
-                        } catch (Exception ex) {
-                            throw new RuntimeException(ex);
-                        }
-                    });
-                } finally {
-                    clientSpan.end();
-                }
+                    .appendClientFilter(filter)
+                    .appendConnectionFilter(filter)
+                    .build()) {
+                    client.request(client.get(requestUrl)).toFuture().get();
                 sleep();
 
                 // Should have 2 spans: manual client span, HTTP client span is suppressed, and server span
-                assertThat(otelTesting.getSpans()).hasSize(2);
-                assertThat(otelTesting.getSpans()).extracting("traceId")
-                        .contains(clientSpan.getSpanContext().getTraceId());
-            }
-        }
-    }
-
-    @Test
-    void suppressionCanBeIgnored() throws Exception {
-        final String requestUrl = "/client-span-test";
-        OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServerWithoutSuppression()) {
-            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
-                    .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
-                                    .openTelemetry(openTelemetry)
-                                    .componentName("testClient")
-                                    .ignoreSpanSuppression(true) // Ignore suppression
-                                    .build()
-                    ).build()) {
-
-                // Manually create a CLIENT span as specified in the task
-                Span clientSpan = openTelemetry.getTracer("scope")
-                        .spanBuilder("span name")
-                        .setSpanKind(SpanKind.CLIENT)
-                        .startSpan();
-                try (Scope scope = clientSpan.makeCurrent()) {
-                    suppressInstrumentation(() -> {
-                        try {
-                            client.request(client.get(requestUrl)).toFuture().get();
-                        } catch (Exception ex) {
-                            throw new RuntimeException(ex);
-                        }
-                    });
-                } finally {
-                    clientSpan.end();
-                }
-                sleep();
-
-                // Should have 3 spans: manual client span, HTTP client span (not suppressed), and server span
                 assertThat(otelTesting.getSpans()).hasSize(3);
                 assertThat(otelTesting.getSpans()).extracting("traceId")
-                        .contains(clientSpan.getSpanContext().getTraceId());
+                        .contains(otelTesting.getSpans().get(0).getSpanContext().getTraceId());
             }
         }
     }
 
     @Test
-    void testManualClientSpanWithSameInstrumentationScope() throws Exception {
-        final String requestUrl = "/same-scope-test";
+    void suppressionIsHonoredByFilterInAllPositions() throws Exception {
+        final String requestUrl = "/client-span-test";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         try (ServerContext context = buildServer(true)) {
+            OpenTelemetryHttpRequesterFilter filter = new OpenTelemetryHttpRequesterFilter.Builder()
+                    .openTelemetry(openTelemetry)
+                    .componentName("testClient")
+                    .build();
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
-                .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
-                        .openTelemetry(openTelemetry)
-                        .componentName("testClient")
-                        .ignoreSpanSuppression(false) // span suppression enabled
-                        .build())
-                .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX)).build()) {
-
-                // Create a CLIENT span using the SAME instrumentation scope as the HTTP filter
-                Span clientSpan = openTelemetry.getTracer("io.servicetalk") // Same scope as INSTRUMENTATION_SCOPE_NAME
-                        .spanBuilder("manual-client-span")
-                        .setSpanKind(SpanKind.CLIENT)
-                        .startSpan();
-                TestSpanState serverSpanState;
-                try (Scope scope = clientSpan.makeCurrent()) {
-                    LOGGER.info("making CLIENT span={} current (same scope as filter)", clientSpan);
-                    HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
-                    serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
-                } finally {
-                    clientSpan.end();
-                }
-
-                verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), requestUrl,
-                        serverSpanState.getTraceId(), serverSpanState.getSpanId(),
-                        TRACING_TEST_LOG_LINE_PREFIX);
-
-                // OpenTelemetry's span suppression is more sophisticated than just scope-based.
-                // Even with the same instrumentation scope, both CLIENT spans are created because:
-                // 1. They have different span names ("manual-client-span" vs "GET")
-                // 2. They represent different logical operations
-                // This demonstrates that span suppression is semantic, not just scope-based.
-                assertThat(otelTesting.getSpans()).hasSize(3); // manual client, HTTP client, server
-
-                assertThat(otelTesting.getSpans()).anySatisfy(span -> {
-                    assertThat(span.getName()).isEqualTo("manual-client-span");
-                    assertThat(span.getKind()).isEqualTo(SpanKind.CLIENT);
-                    assertThat(span.getInstrumentationScopeInfo().getName()).isEqualTo("io.servicetalk");
-                });
-
-                assertThat(otelTesting.getSpans()).anySatisfy(span -> {
-                    assertThat(span.getName()).isEqualTo("GET");
-                    assertThat(span.getKind()).isEqualTo(SpanKind.CLIENT);
-                    assertThat(span.getInstrumentationScopeInfo().getName()).isEqualTo("io.servicetalk");
+                    // Add the filter in both positions.
+                    .appendClientFilter(filter)
+                    .appendConnectionFilter(filter)
+                    .build()) {
+                suppressInstrumentation(() -> {
+                    try {
+                        client.request(client.get(requestUrl)).toFuture().get();
+                    } catch (Exception ex) {
+                        throw new RuntimeException(ex);
+                    }
                 });
             }
+            sleep();
+
+            // Should have 1 span: server span
+            assertThat(otelTesting.getSpans()).hasSize(1);
+            assertThat(otelTesting.getSpans().get(0).getKind()).isEqualTo(SpanKind.SERVER);
+        }
+    }
+
+    @Test
+    void suppressionContextKeyIsntLeaked() throws Exception {
+        final String requestUrl = "/client-span-test";
+        OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
+        AtomicReference<Boolean> contextValueInPipeline = new AtomicReference<>();
+        AtomicReference<Boolean> contextValueAtResponse = new AtomicReference<>();
+        try (ServerContext context = buildServer(true)) {
+            OpenTelemetryHttpRequesterFilter filter = new OpenTelemetryHttpRequesterFilter.Builder()
+                    .openTelemetry(openTelemetry)
+                    .componentName("testClient")
+                    .build();
+            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
+                    // Add the filter in both positions.
+                    .appendClientFilter(filter)
+                    .appendClientFilter(c -> new StreamingHttpClientFilter(c) {
+                        @Override
+                        protected Single<StreamingHttpResponse> request(StreamingHttpRequester delegate,
+                                                                        StreamingHttpRequest request) {
+                            contextValueInPipeline.set(Context.current().get(SHOULD_INSTRUMENT_KEY));
+                            return delegate().request(request);
+                        }
+                    })
+                    .appendConnectionFilter(filter)
+                    .build()) {
+                client.request(client.get(requestUrl)).map(resp -> {
+                    contextValueAtResponse.set(Context.current().get(SHOULD_INSTRUMENT_KEY));
+                    return resp;
+                }).toFuture().get();
+            }
+            sleep();
+
+            // Should have 3 spans: server span, logical client span, and physical client span.
+            assertThat(otelTesting.getSpans()).hasSize(3);
+            // Our context value should be present in the filter pipeline but shouldn't leak past the request call
+            // or else it would affect sequenced client calls.
+            assertThat(contextValueInPipeline).hasValue(true);
+            assertThat(contextValueAtResponse).hasNullValue();
         }
     }
 
     private static ServerContext buildServer(boolean addFilter) throws Exception {
-        return doBuildServer(addFilter, false);
-    }
-
-    private static ServerContext buildServerWithoutSuppression() throws Exception {
-        return doBuildServer(true, true);
-    }
-
-    private static ServerContext doBuildServer(boolean addFilter, boolean ignoreSpanSuppression) throws Exception {
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         HttpServerBuilder httpServerBuilder = HttpServers.forAddress(localAddress(0));
         if (addFilter) {
             httpServerBuilder =
                 httpServerBuilder.appendServiceFilter(new OpenTelemetryHttpServiceFilter.Builder()
                         .openTelemetry(openTelemetry)
-                        .ignoreSpanSuppression(ignoreSpanSuppression)
                         .build());
         }
         return httpServerBuilder

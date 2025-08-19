@@ -28,11 +28,16 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ConnectionInfo;
 
 import io.opentelemetry.context.Context;
+import io.opentelemetry.context.ContextKey;
+import io.opentelemetry.context.Scope;
 
 import javax.annotation.Nullable;
 
 abstract class AbstractOpenTelemetryHttpRequesterFilter extends AbstractOpenTelemetryFilter
         implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
+
+    // package private for testing
+    static final ContextKey<Boolean> SHOULD_INSTRUMENT_KEY = ContextKey.named("should-instrument-carrier");
 
     private final HttpInstrumentationHelper httpHelper;
     private final GrpcInstrumentationHelper grpcHelper;
@@ -53,7 +58,7 @@ abstract class AbstractOpenTelemetryHttpRequesterFilter extends AbstractOpenTele
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final StreamingHttpRequest request) {
-                return Single.defer(() -> trackRequest(delegate, request, null).shareContextOnSubscribe());
+                return Single.defer(() -> trackRequest(delegate, request, null, false).shareContextOnSubscribe());
             }
         };
     }
@@ -65,7 +70,7 @@ abstract class AbstractOpenTelemetryHttpRequesterFilter extends AbstractOpenTele
             @Override
             public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
                 return Single.defer(() -> trackRequest(delegate(), request,
-                        connectionContext()).shareContextOnSubscribe());
+                        connectionContext(), true).shareContextOnSubscribe());
             }
         };
     }
@@ -73,12 +78,26 @@ abstract class AbstractOpenTelemetryHttpRequesterFilter extends AbstractOpenTele
     private Single<StreamingHttpResponse> trackRequest(
             final StreamingHttpRequester delegate,
             final StreamingHttpRequest request,
-            @Nullable ConnectionInfo connectionInfo) {
-        // This should be (essentially) the first filter in the client filter chain, so here is where we initialize
-        // all the little bits and pieces that will end up being part of the request context. This includes setting
-        // up the retry counter context entry since retries will happen further down in the filter chain.
+            @Nullable ConnectionInfo connectionInfo,
+            boolean connectionLevel) {
         InstrumentationHelper helper = grpcHelper.isGrpcRequest(request) ? grpcHelper : httpHelper;
-        return helper.trackRequest(delegate::request, new RequestInfo(request, connectionInfo),
-                Context.current());
+        RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
+        Context current = Context.current();
+        if (connectionLevel) {
+            Boolean shouldStartKey = current.get(SHOULD_INSTRUMENT_KEY);
+            // If we're a connection level filter we want to first see if a higher level filter has already
+            // decided whether to start or not and go with that. If there is no context key, we are the only
+            // filter, and we should make the decision ourselves.
+            boolean shouldStart = shouldStartKey != null ? shouldStartKey : helper.shouldStart(current, requestInfo);
+            return shouldStart ? helper.trackRequest(delegate::request, requestInfo, current) :
+                    delegate.request(requestInfo.request());
+        } else {
+            boolean shouldStart = helper.shouldStart(current, requestInfo);
+            current = current.with(SHOULD_INSTRUMENT_KEY, shouldStart);
+            try (Scope ignored = current.makeCurrent()) {
+                return shouldStart ? helper.trackRequest(delegate::request, requestInfo, current) :
+                        delegate.request(requestInfo.request());
+            }
+        }
     }
 }

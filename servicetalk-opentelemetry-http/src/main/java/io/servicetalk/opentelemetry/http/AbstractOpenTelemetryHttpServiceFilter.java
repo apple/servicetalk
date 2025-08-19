@@ -53,9 +53,15 @@ abstract class AbstractOpenTelemetryHttpServiceFilter extends AbstractOpenTeleme
                                                        final StreamingHttpRequest request,
                                                        final StreamingHttpResponseFactory responseFactory) {
         InstrumentationHelper helper = grpcHelper.isGrpcRequest(request) ? grpcHelper : httpHelper;
-        return helper.trackRequest(
+        Context current = Context.current();
+        RequestInfo requestInfo = new RequestInfo(request, ctx);
+        if (!helper.shouldStart(current, requestInfo)) {
+            return delegate.handle(ctx, request, responseFactory);
+        } else {
+            return helper.trackRequest(
                 req -> delegate.handle(ctx, req, responseFactory),
                 new RequestInfo(request, ctx),
-                Context.current());
+                current);
+        }
     }
 }
