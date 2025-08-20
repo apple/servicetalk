@@ -22,6 +22,10 @@ import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequester;
+import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.netty.HttpLifecycleObserverRequesterFilter;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.log4j2.mdc.utils.LoggerStringWriter;
@@ -61,6 +65,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
+import static io.opentelemetry.api.internal.InstrumentationUtil.suppressInstrumentation;
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PROTOCOL_NAME;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PROTOCOL_VERSION;
@@ -68,14 +73,15 @@ import static io.opentelemetry.semconv.ServerAttributes.SERVER_ADDRESS;
 import static io.opentelemetry.semconv.ServerAttributes.SERVER_PORT;
 import static io.opentelemetry.semconv.UrlAttributes.URL_FULL;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.assertContainsMdcPair;
 import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.PEER_SERVICE;
+import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryHttpRequesterFilter.SHOULD_INSTRUMENT_KEY;
 import static io.servicetalk.opentelemetry.http.TestUtils.SPAN_STATE_SERIALIZER;
 import static io.servicetalk.opentelemetry.http.TestUtils.TRACING_TEST_LOG_LINE_PREFIX;
 import static io.servicetalk.opentelemetry.http.TestUtils.TestTracingClientLoggerFilter;
+import static io.servicetalk.opentelemetry.http.TestUtils.sleep;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Collections.singletonList;
@@ -87,7 +93,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class OpenTelemetryHttpRequesterFilterTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-    private static final int SLEEP_TIME = CI ? 500 : 100;
 
     private final LoggerStringWriter loggerStringWriter = new LoggerStringWriter();
 
@@ -108,7 +113,7 @@ class OpenTelemetryHttpRequesterFilterTest {
     void testInjectWithNoParent() throws Exception {
         final String requestUrl = "/";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer(openTelemetry, false)) {
+        try (ServerContext context = buildServer(false)) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
                 .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder().openTelemetry(openTelemetry)
                         .componentName("testClient").build())
@@ -139,7 +144,7 @@ class OpenTelemetryHttpRequesterFilterTest {
     void testInjectWithAParent() throws Exception {
         final String requestUrl = "/path";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer(openTelemetry, true)) {
+        try (ServerContext context = buildServer(true)) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
                 .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder().openTelemetry(openTelemetry)
                         .componentName("testClient").build())
@@ -190,7 +195,7 @@ class OpenTelemetryHttpRequesterFilterTest {
     @CsvSource({"false, false", "false, true", "true, false", "true, true"})
     void testInjectWithAParentCreated(boolean absoluteForm, boolean withHostHeader) throws Exception {
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer(openTelemetry, true)) {
+        try (ServerContext context = buildServer(true)) {
             HostAndPort serverHostAndPort = serverHostAndPort(context);
             final String requestPath = "/path/to/resource";
             final String requestUrl = absoluteForm ? fullUrl(serverHostAndPort, requestPath) : requestPath;
@@ -251,7 +256,7 @@ class OpenTelemetryHttpRequesterFilterTest {
     void testCaptureHeader() throws Exception {
         final String requestUrl = "/";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer(openTelemetry, false)) {
+        try (ServerContext context = buildServer(false)) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
                 .appendClientFilter(
                         new OpenTelemetryHttpRequesterFilter.Builder().openTelemetry(openTelemetry)
@@ -385,17 +390,19 @@ class OpenTelemetryHttpRequesterFilterTest {
             }
         };
 
-        ServerContext context = buildServer(openTelemetry, false);
+        ServerContext context = buildServer(false);
         try (HttpClient client = forSingleAddress(serverHostAndPort(context))
                 .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
-                        .openTelemetry(openTelemetry).componentName("testClient").build())
+                        .openTelemetry(openTelemetry)
+                        .componentName("testClient")
+                        .build())
                 .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX))
                 .appendClientFilter(new HttpLifecycleObserverRequesterFilter(
                         new TestHttpLifecycleObserver(errors)))
                 .appendConnectionFactoryFilter(
                         new TransportObserverConnectionFactoryFilter<>(transportObserver)).build()) {
-            // This is necessary to let the load balancer become ready
-            Thread.sleep(SLEEP_TIME);
+           // This is necessary to let the load balancer become ready
+           sleep();
 
             final HttpResponse response;
             final TestSpanState serverSpanState;
@@ -407,7 +414,7 @@ class OpenTelemetryHttpRequesterFilterTest {
                     verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), "/",
                             serverSpanState.getTraceId(), serverSpanState.getSpanId(),
                             TRACING_TEST_LOG_LINE_PREFIX);
-                    Thread.sleep(SLEEP_TIME);
+                    sleep();
                     assertThat(otelTesting.getSpans()).hasSize(1);
                     assertThat(otelTesting.getSpans()).extracting("traceId")
                             .containsExactly(serverSpanState.getTraceId());
@@ -431,9 +438,9 @@ class OpenTelemetryHttpRequesterFilterTest {
                     break;
                 case CANCEL:
                     Future<HttpResponse> result = client.request(client.get("/slow")).toFuture();
-                    Thread.sleep(20);
+                    TestUtils.sleep(20);
                     result.cancel(true);
-                    Thread.sleep(SLEEP_TIME);
+                    sleep();
                     otelTesting.assertTraces().hasTracesSatisfyingExactly(ta ->
                             ta.hasSpansSatisfyingExactly(span -> {
                                 span.hasAttribute(TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY, "set");
@@ -446,7 +453,7 @@ class OpenTelemetryHttpRequesterFilterTest {
                     context.close();
                     context = null;
                     assertThrows(Exception.class, () -> client.request(client.get("/")).toFuture().get());
-                    Thread.sleep(SLEEP_TIME);
+                    sleep();
                     otelTesting.assertTraces().hasTracesSatisfyingExactly(ta ->
                             ta.hasSpansSatisfyingExactly(span -> {
                                 span.hasEventsSatisfying(eventData -> {
@@ -475,19 +482,115 @@ class OpenTelemetryHttpRequesterFilterTest {
         }
     }
 
-    private static ServerContext buildServer(OpenTelemetry givenOpentelemetry, boolean addFilter) throws Exception {
+    @Test
+    void physicalSpansArePossible() throws Exception {
+        final String requestUrl = "/client-span-test";
+        OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
+        try (ServerContext context = buildServer(true)) {
+            OpenTelemetryHttpRequesterFilter filter = new OpenTelemetryHttpRequesterFilter.Builder()
+                    .openTelemetry(openTelemetry)
+                    .componentName("testClient")
+                    .build();
+            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
+                    .appendClientFilter(filter)
+                    .appendConnectionFilter(filter)
+                    .build()) {
+                    client.request(client.get(requestUrl)).toFuture().get();
+                sleep();
+
+                // Should have 2 spans: manual client span, HTTP client span is suppressed, and server span
+                assertThat(otelTesting.getSpans()).hasSize(3);
+                assertThat(otelTesting.getSpans()).extracting("traceId")
+                        .contains(otelTesting.getSpans().get(0).getSpanContext().getTraceId());
+            }
+        }
+    }
+
+    @Test
+    void suppressionIsHonoredByFilterInAllPositions() throws Exception {
+        final String requestUrl = "/client-span-test";
+        OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
+        try (ServerContext context = buildServer(true)) {
+            OpenTelemetryHttpRequesterFilter filter = new OpenTelemetryHttpRequesterFilter.Builder()
+                    .openTelemetry(openTelemetry)
+                    .componentName("testClient")
+                    .build();
+            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
+                    // Add the filter in both positions.
+                    .appendClientFilter(filter)
+                    .appendConnectionFilter(filter)
+                    .build()) {
+                suppressInstrumentation(() -> {
+                    try {
+                        client.request(client.get(requestUrl)).toFuture().get();
+                    } catch (Exception ex) {
+                        throw new RuntimeException(ex);
+                    }
+                });
+            }
+            sleep();
+
+            // Should have 1 span: server span
+            assertThat(otelTesting.getSpans()).hasSize(1);
+            assertThat(otelTesting.getSpans().get(0).getKind()).isEqualTo(SpanKind.SERVER);
+        }
+    }
+
+    @Test
+    void suppressionContextKeyIsntLeaked() throws Exception {
+        final String requestUrl = "/client-span-test";
+        OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
+        AtomicReference<Boolean> contextValueInPipeline = new AtomicReference<>();
+        AtomicReference<Boolean> contextValueAtResponse = new AtomicReference<>();
+        try (ServerContext context = buildServer(true)) {
+            OpenTelemetryHttpRequesterFilter filter = new OpenTelemetryHttpRequesterFilter.Builder()
+                    .openTelemetry(openTelemetry)
+                    .componentName("testClient")
+                    .build();
+            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
+                    // Add the filter in both positions.
+                    .appendClientFilter(filter)
+                    .appendClientFilter(c -> new StreamingHttpClientFilter(c) {
+                        @Override
+                        protected Single<StreamingHttpResponse> request(StreamingHttpRequester delegate,
+                                                                        StreamingHttpRequest request) {
+                            contextValueInPipeline.set(Context.current().get(SHOULD_INSTRUMENT_KEY));
+                            return delegate().request(request);
+                        }
+                    })
+                    .appendConnectionFilter(filter)
+                    .build()) {
+                client.request(client.get(requestUrl)).map(resp -> {
+                    contextValueAtResponse.set(Context.current().get(SHOULD_INSTRUMENT_KEY));
+                    return resp;
+                }).toFuture().get();
+            }
+            sleep();
+
+            // Should have 3 spans: server span, logical client span, and physical client span.
+            assertThat(otelTesting.getSpans()).hasSize(3);
+            // Our context value should be present in the filter pipeline but shouldn't leak past the request call
+            // or else it would affect sequenced client calls.
+            assertThat(contextValueInPipeline).hasValue(true);
+            assertThat(contextValueAtResponse).hasNullValue();
+        }
+    }
+
+    private static ServerContext buildServer(boolean addFilter) throws Exception {
+        OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         HttpServerBuilder httpServerBuilder = HttpServers.forAddress(localAddress(0));
         if (addFilter) {
             httpServerBuilder =
                 httpServerBuilder.appendServiceFilter(new OpenTelemetryHttpServiceFilter.Builder()
-                        .openTelemetry(givenOpentelemetry).build());
+                        .openTelemetry(openTelemetry)
+                        .build());
         }
         return httpServerBuilder
             .listenAndAwait((ctx, request, responseFactory) -> {
                 if ("/slow".equals(request.path())) {
                     return Single.never();
                 }
-                final ContextPropagators propagators = givenOpentelemetry.getPropagators();
+                final ContextPropagators propagators = openTelemetry.getPropagators();
                 final Context context = Context.root();
                 Context tracingContext = propagators.getTextMapPropagator()
                     .extract(context, request.headers(), HeadersPropagatorGetter.INSTANCE);

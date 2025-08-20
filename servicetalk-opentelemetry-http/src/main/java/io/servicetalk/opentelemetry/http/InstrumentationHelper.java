@@ -20,20 +20,24 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import io.opentelemetry.context.Context;
+import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 
 import java.util.function.Function;
 
 abstract class InstrumentationHelper {
 
-    abstract Single<StreamingHttpResponse> doTrackRequest(
+    private final Instrumenter<RequestInfo, ?> instrumenter;
+
+    InstrumentationHelper(Instrumenter<RequestInfo, ?> instrumenter) {
+        this.instrumenter = instrumenter;
+    }
+
+    final boolean shouldStart(Context parentContext, RequestInfo requestInfo) {
+        return instrumenter.shouldStart(parentContext, requestInfo);
+    }
+
+    abstract Single<StreamingHttpResponse> trackRequest(
             Function<StreamingHttpRequest, Single<StreamingHttpResponse>> requestHandler,
             RequestInfo requestInfo,
             Context parentContext);
-
-    final Single<StreamingHttpResponse> trackRequest(
-            Function<StreamingHttpRequest, Single<StreamingHttpResponse>> requestHandler,
-            RequestInfo requestInfo,
-            Context parentContext) {
-        return doTrackRequest(requestHandler, requestInfo, parentContext);
-    }
 }
