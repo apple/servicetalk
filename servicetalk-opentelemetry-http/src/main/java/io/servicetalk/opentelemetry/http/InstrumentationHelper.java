@@ -16,15 +16,22 @@
 package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import io.opentelemetry.context.Context;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
+import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 abstract class InstrumentationHelper {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(InstrumentationHelper.class);
 
     private final Instrumenter<RequestInfo, ?> instrumenter;
 
@@ -40,4 +47,25 @@ abstract class InstrumentationHelper {
             Function<StreamingHttpRequest, Single<StreamingHttpResponse>> requestHandler,
             RequestInfo requestInfo,
             Context parentContext);
+
+    static SpanNameExtractor<RequestInfo> spanNameExtractor(OpenTelemetryFilterBuilder<?> builder,
+                                                                      SpanNameExtractor<RequestInfo> defaultExtractor) {
+        @Nullable Function<HttpRequestMetaData, String> customExtractor = builder.spanNameExtractor;
+        if (customExtractor == null) {
+            return defaultExtractor;
+        }
+        return requestInfo -> {
+            String result;
+            try {
+                result = customExtractor.apply(requestInfo.request());
+            } catch (Exception ex) {
+                LOGGER.warn("Failed to extract custom span name", ex);
+                result = "<error extracting name>";
+            }
+            if (result == null) {
+                result = defaultExtractor.extract(requestInfo);
+            }
+            return result;
+        };
+    }
 }

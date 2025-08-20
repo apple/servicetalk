@@ -217,8 +217,14 @@ class OpenTelemetryGrpcFilterTest {
         // Should have 2 client spans and 1 server span
         assertThat(otelTesting.getSpans()).hasSize(3);
         assertThat(otelTesting.getSpans().get(0).getKind()).isEqualTo(SpanKind.SERVER);
-        assertThat(otelTesting.getSpans().get(1).getKind()).isEqualTo(SpanKind.CLIENT);
-        assertThat(otelTesting.getSpans().get(2).getKind()).isEqualTo(SpanKind.CLIENT);
+        SpanData logicalSpan = otelTesting.getSpans().get(1);
+        assertThat(logicalSpan.getKind()).isEqualTo(SpanKind.CLIENT);
+        assertThat(logicalSpan.getName()).isEqualTo("logical");
+
+        SpanData physicalSpan = otelTesting.getSpans().get(2);
+        assertThat(physicalSpan.getKind()).isEqualTo(SpanKind.CLIENT);
+        assertThat(physicalSpan.getName()).isEqualTo("physical");
+        assertThat(physicalSpan.getParentSpanId()).isEqualTo(logicalSpan.getSpanId());
     }
 
     private void setUp(boolean error, ClientFilterPosition clientFilterPosition) throws Exception {
@@ -233,17 +239,23 @@ class OpenTelemetryGrpcFilterTest {
 
         // Create gRPC client with unified OpenTelemetry HTTP requester filter
         // The filter will automatically detect gRPC requests and handle them appropriately
-        OpenTelemetryHttpRequesterFilter clientFilter = new OpenTelemetryHttpRequesterFilter.Builder()
+        OpenTelemetryHttpRequesterFilter.Builder clientFilterBuilder = new OpenTelemetryHttpRequesterFilter.Builder()
                 .openTelemetry(otelTesting.getOpenTelemetry())
-                .componentName("test-client")
-                .build();
+                .componentName("test-client");
+
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
                 .initializeHttp(builder -> {
                     if (clientFilterPosition != ClientFilterPosition.CONNECTION) {
-                        builder.appendClientFilter(clientFilter);
+                        if (clientFilterPosition == ClientFilterPosition.BOTH) {
+                            clientFilterBuilder.spanNameExtractor(req -> "logical");
+                        }
+                        builder.appendClientFilter(clientFilterBuilder.build());
                     }
                     if (clientFilterPosition != ClientFilterPosition.LOGICAL) {
-                        builder.appendConnectionFilter(clientFilter);
+                        if (clientFilterPosition == ClientFilterPosition.BOTH) {
+                            clientFilterBuilder.spanNameExtractor(req -> "physical");
+                        }
+                        builder.appendConnectionFilter(clientFilterBuilder.build());
                     }
                 })
                 .build(new Tester.ClientFactory());

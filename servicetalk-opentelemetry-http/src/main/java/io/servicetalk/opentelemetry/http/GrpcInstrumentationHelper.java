@@ -97,7 +97,8 @@ final class GrpcInstrumentationHelper extends InstrumentationHelper {
      */
     static GrpcInstrumentationHelper forServer(OpenTelemetryHttpServiceFilter.Builder builder) {
         OpenTelemetry openTelemetry = builder.openTelemetry;
-        SpanNameExtractor<RequestInfo> serverSpanNameExtractor = GrpcSpanNameExtractor.INSTANCE;
+        SpanNameExtractor<RequestInfo> serverSpanNameExtractor =
+                spanNameExtractor(builder, GrpcSpanNameExtractor.INSTANCE);
         InstrumenterBuilder<RequestInfo, GrpcTelemetryStatus> serverInstrumenterBuilder =
                 Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, serverSpanNameExtractor);
         serverInstrumenterBuilder
@@ -122,7 +123,8 @@ final class GrpcInstrumentationHelper extends InstrumentationHelper {
      */
     static GrpcInstrumentationHelper forClient(OpenTelemetryHttpRequesterFilter.Builder builder) {
         OpenTelemetry openTelemetry = builder.openTelemetry;
-        SpanNameExtractor<RequestInfo> clientSpanNameExtractor = GrpcSpanNameExtractor.INSTANCE;
+        SpanNameExtractor<RequestInfo> clientSpanNameExtractor =
+                spanNameExtractor(builder, GrpcSpanNameExtractor.INSTANCE);
         InstrumenterBuilder<RequestInfo, GrpcTelemetryStatus> clientInstrumenterBuilder =
                 Instrumenter.builder(
                         openTelemetry, INSTRUMENTATION_SCOPE_NAME, clientSpanNameExtractor);

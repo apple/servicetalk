@@ -15,6 +15,8 @@
  */
 package io.servicetalk.opentelemetry.http;
 
+import io.servicetalk.http.api.HttpRequestMetaData;
+
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
@@ -26,6 +28,8 @@ import io.opentelemetry.instrumentation.api.semconv.http.HttpServerMetrics;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
@@ -36,6 +40,8 @@ abstract class OpenTelemetryFilterBuilder<T extends OpenTelemetryFilterBuilder<T
     List<String> capturedResponseHeaders = emptyList();
     boolean enableMetrics;
     OpenTelemetry openTelemetry = GlobalOpenTelemetry.get();
+    @Nullable
+    Function<HttpRequestMetaData, String> spanNameExtractor;
 
     abstract T thisInstance();
 
@@ -79,6 +85,17 @@ abstract class OpenTelemetryFilterBuilder<T extends OpenTelemetryFilterBuilder<T
         this.capturedResponseHeaders =
                 capturedResponseHeaders.isEmpty() ? emptyList() :
                         unmodifiableList(new ArrayList<>(capturedResponseHeaders));
+        return thisInstance();
+    }
+
+    /**
+     * Set a custom span name extractor.
+     *
+     * @param spanNameExtractor the custom span name extractor, or null to use default extractor
+     * @return {@code this} builder
+     */
+    public T spanNameExtractor(@Nullable Function<HttpRequestMetaData, String> spanNameExtractor) {
+        this.spanNameExtractor = spanNameExtractor;
         return thisInstance();
     }
 

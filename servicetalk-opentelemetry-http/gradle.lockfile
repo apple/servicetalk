@@ -10,5 +10,5 @@ io.opentelemetry:opentelemetry-api:1.48.0=compileClasspath,runtimeClasspath
 io.opentelemetry:opentelemetry-bom:1.48.0=compileClasspath,runtimeClasspath
 io.opentelemetry:opentelemetry-context:1.48.0=compileClasspath,runtimeClasspath
 org.jctools:jctools-core:4.0.3=runtimeClasspath
-org.slf4j:slf4j-api:1.7.36=runtimeClasspath
+org.slf4j:slf4j-api:1.7.36=compileClasspath,runtimeClasspath
 empty=annotationProcessor,jmhCompileClasspath,jmhRuntimeClasspath,spotbugsPlugins,testAnnotationProcessor

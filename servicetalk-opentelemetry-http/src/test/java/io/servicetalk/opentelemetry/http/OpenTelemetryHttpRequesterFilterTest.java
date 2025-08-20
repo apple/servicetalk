@@ -483,6 +483,31 @@ class OpenTelemetryHttpRequesterFilterTest {
     }
 
     @Test
+    void customSpanNames() throws Exception {
+        String customSpanName = "custom name";
+        final String requestUrl = "/client-span-test";
+        OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
+        try (ServerContext context = buildServer(true)) {
+            OpenTelemetryHttpRequesterFilter filter = new OpenTelemetryHttpRequesterFilter.Builder()
+                    .openTelemetry(openTelemetry)
+                    .componentName("testClient")
+                    .spanNameExtractor(req -> customSpanName)
+                    .build();
+            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
+                    .appendClientFilter(filter)
+                    .build()) {
+                client.request(client.get(requestUrl)).toFuture().get();
+                sleep();
+
+                assertThat(otelTesting.getSpans()).hasSize(2);
+                assertThat(otelTesting.getSpans()).extracting("traceId")
+                        .contains(otelTesting.getSpans().get(0).getSpanContext().getTraceId());
+                assertThat(otelTesting.getSpans().get(1).getName()).isEqualTo(customSpanName);
+            }
+        }
+    }
+
+    @Test
     void physicalSpansArePossible() throws Exception {
         final String requestUrl = "/client-span-test";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
@@ -498,7 +523,7 @@ class OpenTelemetryHttpRequesterFilterTest {
                     client.request(client.get(requestUrl)).toFuture().get();
                 sleep();
 
-                // Should have 2 spans: manual client span, HTTP client span is suppressed, and server span
+                // Should have 3 spans: two client spans for physical and logical positions, and the server span
                 assertThat(otelTesting.getSpans()).hasSize(3);
                 assertThat(otelTesting.getSpans()).extracting("traceId")
                         .contains(otelTesting.getSpans().get(0).getSpanContext().getTraceId());

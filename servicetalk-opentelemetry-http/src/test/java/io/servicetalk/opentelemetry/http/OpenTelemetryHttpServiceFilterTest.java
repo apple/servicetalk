@@ -27,6 +27,7 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
@@ -75,6 +76,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_RESPONSE_STATUS_CODE;
@@ -109,15 +112,39 @@ class OpenTelemetryHttpServiceFilterTest {
     static final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
 
     private final LoggerStringWriter loggerStringWriter = new LoggerStringWriter();
+    private final Queue<Error> errorQueue = new ConcurrentLinkedQueue<>();
+
+    private boolean useHttp2;
+    private boolean useOffloading;
+    @Nullable
+    private Function<HttpRequestMetaData, String> customNameExtractor;
+    @Nullable
+    private ServerContext serverContext;
+    @Nullable
+    private HttpClient client;
 
     @BeforeEach
     void setup() {
         loggerStringWriter.reset();
+        errorQueue.clear();
     }
 
     @AfterEach
-    void tearDown() {
+    void tearDown() throws Exception {
         loggerStringWriter.remove();
+        if (client != null) {
+            client.close();
+        }
+        if (serverContext != null) {
+            serverContext.close();
+        }
+        if (!errorQueue.isEmpty()) {
+            AssertionError ex = new AssertionError("Async errors, see suppressed");
+            for (Throwable t : errorQueue) {
+                ThrowableUtils.addSuppressed(ex, t);
+            }
+            throw ex;
+        }
     }
 
     @Test
@@ -292,6 +319,22 @@ class OpenTelemetryHttpServiceFilterTest {
         verifyServerFilterAsyncContextVisibility(new OpenTelemetryHttpServiceFilter());
     }
 
+    @Test
+    void customSpanNames() throws Exception {
+        String customSpanName = "custom span name";
+        customNameExtractor = req -> customSpanName;
+        setupClient();
+        HttpRequest request = client.get("/foo");
+        client.request(request).toFuture().get();
+        sleep();
+        otelTesting.assertTraces()
+                .hasTracesSatisfyingExactly(ta ->
+                        ta.hasSpansSatisfyingExactly(span -> {
+                            span.hasKind(SpanKind.SERVER);
+                            span.hasName(customSpanName);
+                        }));
+    }
+
     @ParameterizedTest(name = "{displayName} [{index}]: http2={0}, useOffloading={1}")
     @CsvSource({"true, true", "true, false", "false, true", "false,false"})
     void autoRequestDisposalOk(boolean http2, boolean useOffloading) throws Exception {
@@ -306,16 +349,17 @@ class OpenTelemetryHttpServiceFilterTest {
                         TestHttpLifecycleObserver.ON_RESPONSE_TRAILERS_KEY,
                         TestHttpLifecycleObserver.ON_RESPONSE_COMPLETE_KEY
         ));
-        runWithClient(http2, useOffloading, client -> {
-            HttpRequest request = client.get("/foo");
-            request.trailers().set("x-request-trailer", "request-trailer");
-            request.payloadBody().writeAscii("bar");
-            client.request(request).toFuture().get();
-            sleep();
-            otelTesting.assertTraces()
-                    .hasTracesSatisfyingExactly(ta ->
-                            ta.hasSpansSatisfyingExactly(span -> checkAttributes(useOffloading, expected, span)));
-        });
+        this.useHttp2 = http2;
+        this.useOffloading = useOffloading;
+        setupClient();
+        HttpRequest request = client.get("/foo");
+        request.trailers().set("x-request-trailer", "request-trailer");
+        request.payloadBody().writeAscii("bar");
+        client.request(request).toFuture().get();
+        sleep();
+        otelTesting.assertTraces()
+                .hasTracesSatisfyingExactly(ta ->
+                        ta.hasSpansSatisfyingExactly(span -> checkAttributes(useOffloading, expected, span)));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}]: http2={0}, useOffloading={1}")
@@ -329,18 +373,19 @@ class OpenTelemetryHttpServiceFilterTest {
                 TestHttpLifecycleObserver.ON_RESPONSE_DATA_KEY,
                 TestHttpLifecycleObserver.ON_RESPONSE_BODY_ERROR_KEY
         ));
-        runWithClient(http2, useOffloading, client -> {
-            HttpRequest request = client.get("/responsebodyerror");
-            request.payloadBody().writeAscii("bar");
-            ExecutionException ex = assertThrows(ExecutionException.class,
-                    () -> client.request(request).toFuture().get());
-            assertThat(ex.getCause()).isInstanceOf(http2 ? Http2Exception.class : ClosedChannelException.class);
+        this.useHttp2 = http2;
+        this.useOffloading = useOffloading;
+        setupClient();
+        HttpRequest request = client.get("/responsebodyerror");
+        request.payloadBody().writeAscii("bar");
+        ExecutionException ex = assertThrows(ExecutionException.class,
+                () -> client.request(request).toFuture().get());
+        assertThat(ex.getCause()).isInstanceOf(http2 ? Http2Exception.class : ClosedChannelException.class);
 
-            sleep();
-            otelTesting.assertTraces()
-                    .hasTracesSatisfyingExactly(ta ->
-                            ta.hasSpansSatisfyingExactly(span -> checkAttributes(useOffloading, expected, span)));
-        });
+        sleep();
+        otelTesting.assertTraces()
+                .hasTracesSatisfyingExactly(ta ->
+                        ta.hasSpansSatisfyingExactly(span -> checkAttributes(useOffloading, expected, span)));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}]: http2={0}, useOffloading={1}")
@@ -353,17 +398,18 @@ class OpenTelemetryHttpServiceFilterTest {
                 TestHttpLifecycleObserver.ON_REQUEST_CANCEL_KEY,
                 TestHttpLifecycleObserver.ON_RESPONSE_ERROR_KEY
         ));
-        runWithClient(http2, useOffloading, client -> {
-            HttpRequest request = client.get("/responseerror");
-            request.payloadBody().writeAscii("bar");
-            HttpResponse resp = client.request(request).toFuture().get();
-            assertThat(resp.status()).isEqualTo(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+        this.useHttp2 = http2;
+        this.useOffloading = useOffloading;
+        setupClient();
+        HttpRequest request = client.get("/responseerror");
+        request.payloadBody().writeAscii("bar");
+        HttpResponse resp = client.request(request).toFuture().get();
+        assertThat(resp.status()).isEqualTo(HttpResponseStatus.INTERNAL_SERVER_ERROR);
 
-            sleep();
-            otelTesting.assertTraces()
-                    .hasTracesSatisfyingExactly(ta ->
-                            ta.hasSpansSatisfyingExactly(span -> checkAttributes(useOffloading, expected, span)));
-        });
+        sleep();
+        otelTesting.assertTraces()
+                .hasTracesSatisfyingExactly(ta ->
+                        ta.hasSpansSatisfyingExactly(span -> checkAttributes(useOffloading, expected, span)));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}]: http2={0}, useOffloading={1}")
@@ -374,28 +420,29 @@ class OpenTelemetryHttpServiceFilterTest {
                 TestHttpLifecycleObserver.ON_REQUEST_KEY,
                 TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY
         ));
-        runWithClient(http2, useOffloading, client -> {
-            StreamingHttpClient streamingClient = client.asStreamingClient();
-            // Most endpoints will do, but this one is less likely to be racy.
-            StreamingHttpRequest request = streamingClient.post("/consumebodyinhandler");
-            request.payloadBody(Publisher.from(client.executionContext().bufferAllocator().fromAscii("bar"))
-                    .concat(Publisher.failed(DELIBERATE_EXCEPTION)));
-            ExecutionException ex = assertThrows(ExecutionException.class, () -> streamingClient.request(request)
-                    .flatMap(response -> response.toResponse()).toFuture().get());
-            assertThat(ex.getCause()).isSameAs(DELIBERATE_EXCEPTION);
-            sleep();
-            otelTesting.assertTraces()
-                    .hasTracesSatisfyingExactly(ta ->
-                            ta.hasSpansSatisfyingExactly(span -> {
-                                checkAttributes(useOffloading, expected, span);
-                                Attributes attributes = span.actual().getAttributes();
-                                if (useOffloading &&
-                                        attributes.get(TestHttpLifecycleObserver.ON_REQUEST_ERROR_KEY) == null &&
-                                        attributes.get(TestHttpLifecycleObserver.ON_REQUEST_CANCEL_KEY) == null) {
-                                    fail("Failed to find request completion attribute");
-                                }
-                            }));
-        });
+        this.useHttp2 = http2;
+        this.useOffloading = useOffloading;
+        setupClient();
+        StreamingHttpClient streamingClient = client.asStreamingClient();
+        // Most endpoints will do, but this one is less likely to be racy.
+        StreamingHttpRequest request = streamingClient.post("/consumebodyinhandler");
+        request.payloadBody(Publisher.from(client.executionContext().bufferAllocator().fromAscii("bar"))
+                .concat(Publisher.failed(DELIBERATE_EXCEPTION)));
+        ExecutionException ex = assertThrows(ExecutionException.class, () -> streamingClient.request(request)
+                .flatMap(response -> response.toResponse()).toFuture().get());
+        assertThat(ex.getCause()).isSameAs(DELIBERATE_EXCEPTION);
+        sleep();
+        otelTesting.assertTraces()
+                .hasTracesSatisfyingExactly(ta ->
+                        ta.hasSpansSatisfyingExactly(span -> {
+                            checkAttributes(useOffloading, expected, span);
+                            Attributes attributes = span.actual().getAttributes();
+                            if (useOffloading &&
+                                    attributes.get(TestHttpLifecycleObserver.ON_REQUEST_ERROR_KEY) == null &&
+                                    attributes.get(TestHttpLifecycleObserver.ON_REQUEST_CANCEL_KEY) == null) {
+                                fail("Failed to find request completion attribute");
+                            }
+                        }));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}]: http2={0}, useOffloading={1}")
@@ -409,14 +456,19 @@ class OpenTelemetryHttpServiceFilterTest {
                 TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY,
                 TestHttpLifecycleObserver.ON_RESPONSE_BODY_CANCEL_KEY
         ));
-        runWithClient(http2, useOffloading, client -> {
-            StreamingHttpClient streamingClient = client.asStreamingClient();
-            // Most endpoints will do, but this one is less likely to be racy.
-            StreamingHttpRequest request = streamingClient.post("/slowbody");
-            StreamingHttpResponse response = streamingClient.request(request).toFuture().get();
-            response.payloadBody().ignoreElements().subscribe().cancel();
-        });
+        this.useHttp2 = http2;
+        this.useOffloading = useOffloading;
+        setupClient();
+        StreamingHttpClient streamingClient = client.asStreamingClient();
+        // Most endpoints will do, but this one is less likely to be racy.
+        StreamingHttpRequest request = streamingClient.post("/slowbody");
+        StreamingHttpResponse response = streamingClient.request(request).toFuture().get();
+        response.payloadBody().ignoreElements().subscribe().cancel();
         // For the HTTP/1.x server, we don't necessarily see the cancellation until we shutdown the server.
+        if (!http2) {
+            serverContext.close();
+            serverContext = null;
+        }
         sleep();
         otelTesting.assertTraces()
                 .hasTracesSatisfyingExactly(ta ->
@@ -433,15 +485,20 @@ class OpenTelemetryHttpServiceFilterTest {
                 TestHttpLifecycleObserver.ON_RESPONSE_CANCEL_KEY,
                 TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY
         ));
-        runWithClient(http2, useOffloading, client -> {
-            StreamingHttpClient streamingClient = client.asStreamingClient();
-            // Most endpoints will do, but this one is less likely to be racy.
-            StreamingHttpRequest request = streamingClient.post("/slowhead");
-            Future<StreamingHttpResponse> response = streamingClient.request(request).toFuture();
-            sleep();
-            response.cancel(true);
-        });
-        // For the HTTP/1.x server, we don't necessarily see the cancellation until we shutdown the server.
+        this.useHttp2 = http2;
+        this.useOffloading = useOffloading;
+        setupClient();
+        StreamingHttpClient streamingClient = client.asStreamingClient();
+        // Most endpoints will do, but this one is less likely to be racy.
+        StreamingHttpRequest request = streamingClient.post("/slowhead");
+        Future<StreamingHttpResponse> response = streamingClient.request(request).toFuture();
+        sleep();
+        response.cancel(true);
+        // For the HTTP/1.x server, we don't necessarily see the cancellation until we shut down the server.
+        if (!http2) {
+            serverContext.close();
+            serverContext = null;
+        }
         sleep();
         otelTesting.assertTraces()
                 .hasTracesSatisfyingExactly(ta ->
@@ -458,27 +515,15 @@ class OpenTelemetryHttpServiceFilterTest {
         }
     }
 
-    private static void runWithClient(boolean http2, boolean useOffloading, RunWithClient runWithClient)
+    private void setupClient()
             throws Exception {
-        HttpProtocolConfig config = http2 ? HttpProtocolConfigs.h2Default() : HttpProtocolConfigs.h1Default();
-        Queue<Error> errorQueue = new ConcurrentLinkedQueue<>();
-        try (ServerContext context = buildStreamingServer(http2,
-                new OpenTelemetryHttpServiceFilter.Builder().openTelemetry(otelTesting.getOpenTelemetry()),
+        HttpProtocolConfig config = useHttp2 ? HttpProtocolConfigs.h2Default() : HttpProtocolConfigs.h1Default();
+        serverContext = buildStreamingServer(useHttp2,
+                new OpenTelemetryHttpServiceFilter.Builder()
+                        .openTelemetry(otelTesting.getOpenTelemetry())
+                        .spanNameExtractor(customNameExtractor),
                 useOffloading, errorQueue);
-             HttpClient client = forSingleAddress(serverHostAndPort(context)).protocols(config).build()) {
-                runWithClient.run(client);
-        }
-        if (!errorQueue.isEmpty()) {
-            AssertionError ex = new AssertionError("Async errors, see suppressed");
-            for (Throwable t : errorQueue) {
-                ThrowableUtils.addSuppressed(ex, t);
-            }
-            throw ex;
-        }
-    }
-
-    private interface RunWithClient {
-        void run(HttpClient client) throws Exception;
+        client = forSingleAddress(serverHostAndPort(serverContext)).protocols(config).build();
     }
 
     private static ServerContext buildServer(OpenTelemetryHttpServiceFilter.Builder builder) throws Exception {
@@ -558,7 +603,7 @@ class OpenTelemetryHttpServiceFilterTest {
                         } else if ("/slowhead".equals(request.path())) {
                             return Single.never();
                         } else {
-                            return Single.succeeded(response);
+                            return succeeded(response);
                         }
                     }
 

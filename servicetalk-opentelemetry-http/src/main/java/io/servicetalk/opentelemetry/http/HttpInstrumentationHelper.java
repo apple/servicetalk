@@ -93,8 +93,8 @@ final class HttpInstrumentationHelper extends InstrumentationHelper {
      */
     static HttpInstrumentationHelper forServer(OpenTelemetryHttpServiceFilter.Builder builder) {
         OpenTelemetry openTelemetry = builder.openTelemetry;
-        SpanNameExtractor<RequestInfo> serverSpanNameExtractor =
-                HttpSpanNameExtractor.create(HttpAttributesGetter.SERVER_INSTANCE);
+        SpanNameExtractor<RequestInfo> serverSpanNameExtractor = spanNameExtractor(builder,
+                HttpSpanNameExtractor.create(HttpAttributesGetter.SERVER_INSTANCE));
         InstrumenterBuilder<RequestInfo, HttpResponseMetaData> serverInstrumenterBuilder =
                 Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, serverSpanNameExtractor);
         serverInstrumenterBuilder.setSpanStatusExtractor(HttpSpanStatusExtractor.SERVER_INSTANCE);
@@ -123,8 +123,8 @@ final class HttpInstrumentationHelper extends InstrumentationHelper {
      */
     static HttpInstrumentationHelper forClient(final OpenTelemetryHttpRequesterFilter.Builder builder) {
         OpenTelemetry openTelemetry = builder.openTelemetry;
-        SpanNameExtractor<RequestInfo> clientSpanNameExtractor =
-                HttpSpanNameExtractor.create(HttpAttributesGetter.CLIENT_INSTANCE);
+        SpanNameExtractor<RequestInfo> clientSpanNameExtractor = spanNameExtractor(builder,
+                HttpSpanNameExtractor.create(HttpAttributesGetter.CLIENT_INSTANCE));
         InstrumenterBuilder<RequestInfo, HttpResponseMetaData> clientInstrumenterBuilder =
                 Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, clientSpanNameExtractor);
         clientInstrumenterBuilder

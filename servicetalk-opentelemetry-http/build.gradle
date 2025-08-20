@@ -39,6 +39,7 @@ dependencies {
   implementation project(":servicetalk-transport-api")
   implementation "io.opentelemetry.instrumentation:opentelemetry-instrumentation-api"
   implementation "io.opentelemetry:opentelemetry-context"
+  implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation enforcedPlatform("com.fasterxml.jackson:jackson-bom:$jacksonVersion")
   testImplementation enforcedPlatform("com.google.protobuf:protobuf-bom:$protobufVersion")
