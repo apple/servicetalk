@@ -81,17 +81,18 @@ abstract class AbstractOpenTelemetryHttpRequesterFilter extends AbstractOpenTele
             @Nullable ConnectionInfo connectionInfo,
             boolean connectionLevel) {
         InstrumentationHelper helper = grpcHelper.isGrpcRequest(request) ? grpcHelper : httpHelper;
-        RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
         Context current = Context.current();
         if (connectionLevel) {
             Boolean shouldStartKey = current.get(SHOULD_INSTRUMENT_KEY);
             // If we're a connection level filter we want to first see if a higher level filter has already
             // decided whether to start or not and go with that. If there is no context key, we are the only
             // filter, and we should make the decision ourselves.
+            RequestInfo requestInfo = new RequestInfo(request, connectionInfo, shouldStartKey != null);
             boolean shouldStart = shouldStartKey != null ? shouldStartKey : helper.shouldStart(current, requestInfo);
             return shouldStart ? helper.trackRequest(delegate::request, requestInfo, current) :
                     delegate.request(requestInfo.request());
         } else {
+            RequestInfo requestInfo = new RequestInfo(request, connectionInfo, false);
             boolean shouldStart = helper.shouldStart(current, requestInfo);
             current = current.with(SHOULD_INSTRUMENT_KEY, shouldStart);
             try (Scope ignored = current.makeCurrent()) {
