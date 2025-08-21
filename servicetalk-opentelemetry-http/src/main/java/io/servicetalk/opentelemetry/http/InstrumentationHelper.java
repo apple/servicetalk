@@ -49,7 +49,7 @@ abstract class InstrumentationHelper {
             Context parentContext);
 
     static SpanNameExtractor<RequestInfo> spanNameExtractor(OpenTelemetryFilterBuilder<?> builder,
-                                                                      SpanNameExtractor<RequestInfo> defaultExtractor) {
+                                                            SpanNameExtractor<RequestInfo> defaultExtractor) {
         @Nullable Function<HttpRequestMetaData, String> customExtractor = builder.spanNameExtractor;
         if (customExtractor == null) {
             return defaultExtractor;
@@ -60,7 +60,7 @@ abstract class InstrumentationHelper {
                 result = customExtractor.apply(requestInfo.request());
             } catch (Exception ex) {
                 LOGGER.warn("Failed to extract custom span name", ex);
-                result = "<error extracting name>";
+                result = "<error extracting span name>";
             }
             if (result == null) {
                 result = defaultExtractor.extract(requestInfo);

@@ -91,7 +91,8 @@ abstract class OpenTelemetryFilterBuilder<T extends OpenTelemetryFilterBuilder<T
     /**
      * Set a custom span name extractor.
      *
-     * @param spanNameExtractor the custom span name extractor, or null to use default extractor
+     * @param spanNameExtractor the custom span name extractor, or {@code null} to use default extractor. If the
+     *                          specified extractor returns {@code null}, the default extractor is then used.
      * @return {@code this} builder
      */
     public T spanNameExtractor(@Nullable Function<HttpRequestMetaData, String> spanNameExtractor) {
