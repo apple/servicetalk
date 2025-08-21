@@ -49,6 +49,10 @@ import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.with
  */
 final class HttpInstrumentationHelper extends InstrumentationHelper {
 
+    private static final SpanNameExtractor<RequestInfo> CLIENT_SPAN_NAME_EXTRACTOR = clientSpanNameExtractor();
+    private static final SpanNameExtractor<RequestInfo> SERVER_SPAN_NAME_EXTRACTOR =
+            HttpSpanNameExtractor.create(HttpAttributesGetter.SERVER_INSTANCE);
+
     private final Instrumenter<RequestInfo, HttpResponseMetaData> instrumenter;
     private final boolean isClient;
 
@@ -93,10 +97,8 @@ final class HttpInstrumentationHelper extends InstrumentationHelper {
      */
     static HttpInstrumentationHelper forServer(OpenTelemetryHttpServiceFilter.Builder builder) {
         OpenTelemetry openTelemetry = builder.openTelemetry;
-        SpanNameExtractor<RequestInfo> serverSpanNameExtractor =
-                HttpSpanNameExtractor.create(HttpAttributesGetter.SERVER_INSTANCE);
         InstrumenterBuilder<RequestInfo, HttpResponseMetaData> serverInstrumenterBuilder =
-                Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, serverSpanNameExtractor);
+                Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, SERVER_SPAN_NAME_EXTRACTOR);
         serverInstrumenterBuilder.setSpanStatusExtractor(HttpSpanStatusExtractor.SERVER_INSTANCE);
 
         serverInstrumenterBuilder
@@ -123,10 +125,9 @@ final class HttpInstrumentationHelper extends InstrumentationHelper {
      */
     static HttpInstrumentationHelper forClient(final OpenTelemetryHttpRequesterFilter.Builder builder) {
         OpenTelemetry openTelemetry = builder.openTelemetry;
-        SpanNameExtractor<RequestInfo> clientSpanNameExtractor =
-                HttpSpanNameExtractor.create(HttpAttributesGetter.CLIENT_INSTANCE);
+
         InstrumenterBuilder<RequestInfo, HttpResponseMetaData> clientInstrumenterBuilder =
-                Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, clientSpanNameExtractor);
+                Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, CLIENT_SPAN_NAME_EXTRACTOR);
         clientInstrumenterBuilder
                 .setSpanStatusExtractor(HttpSpanStatusExtractor.CLIENT_INSTANCE)
                 .addAttributesExtractor(new DeferredHttpClientAttributesExtractor(builder));
@@ -172,5 +173,11 @@ final class HttpInstrumentationHelper extends InstrumentationHelper {
             delegate.onStart(attributes, context, requestInfo);
             delegate.onEnd(attributes, context, requestInfo, responseMetaData, error);
         }
+    }
+
+    private static SpanNameExtractor<RequestInfo> clientSpanNameExtractor() {
+        SpanNameExtractor<RequestInfo> base = HttpSpanNameExtractor.create(HttpAttributesGetter.CLIENT_INSTANCE);
+        return requestInfo -> requestInfo.usePhysicalSpanName() ?
+                "Physical " + base.extract(requestInfo) : base.extract(requestInfo);
     }
 }

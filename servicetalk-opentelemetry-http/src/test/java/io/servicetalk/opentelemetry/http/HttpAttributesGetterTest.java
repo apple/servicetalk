@@ -52,7 +52,7 @@ class HttpAttributesGetterTest {
     void clientUrlExtractionNoHostAndPort() {
         String pathQueryFrag = "/foo?bar=baz#frag";
         StreamingHttpRequest request = newRequest(pathQueryFrag);
-        RequestInfo requestInfo = new RequestInfo(request, null);
+        RequestInfo requestInfo = new RequestInfo(request, null, false);
         assertThat(CLIENT_INSTANCE.getUrlFull(requestInfo), nullValue());
     }
 
@@ -61,7 +61,7 @@ class HttpAttributesGetterTest {
         String pathQueryFrag = "/foo?bar=baz#frag";
         StreamingHttpRequest request = newRequest(pathQueryFrag);
         request.addHeader(HOST, "myservice");
-        RequestInfo requestInfo = new RequestInfo(request, null);
+        RequestInfo requestInfo = new RequestInfo(request, null, false);
         assertThat(CLIENT_INSTANCE.getUrlFull(requestInfo), equalTo("http://myservice" + pathQueryFrag));
     }
 
@@ -70,7 +70,7 @@ class HttpAttributesGetterTest {
         String pathQueryFrag = "foo";
         StreamingHttpRequest request = newRequest(pathQueryFrag);
         request.addHeader(HOST, "myservice:8080");
-        RequestInfo requestInfo = new RequestInfo(request, null);
+        RequestInfo requestInfo = new RequestInfo(request, null, false);
         assertThat(CLIENT_INSTANCE.getUrlFull(requestInfo), equalTo("http://myservice:8080/" + pathQueryFrag));
     }
 
@@ -79,7 +79,7 @@ class HttpAttributesGetterTest {
         String pathQueryFrag = "/foo?bar=baz#frag";
         StreamingHttpRequest request = newRequest(pathQueryFrag);
         request.addHeader(HOST, "myservice:8080");
-        RequestInfo requestInfo = new RequestInfo(request, null);
+        RequestInfo requestInfo = new RequestInfo(request, null, false);
         assertThat(CLIENT_INSTANCE.getUrlFull(requestInfo), equalTo("http://myservice:8080" + pathQueryFrag));
     }
 
@@ -88,7 +88,7 @@ class HttpAttributesGetterTest {
         String pathQueryFrag = "/foo?bar=baz#frag";
         StreamingHttpRequest request = newRequest(pathQueryFrag);
         request.addHeader(HOST, "myservice:80");
-        RequestInfo requestInfo = new RequestInfo(request, null);
+        RequestInfo requestInfo = new RequestInfo(request, null, false);
         assertThat(CLIENT_INSTANCE.getUrlFull(requestInfo), equalTo("http://myservice" + pathQueryFrag));
     }
 
@@ -97,7 +97,7 @@ class HttpAttributesGetterTest {
         String pathQueryFrag = "/foo?bar=baz#frag";
         StreamingHttpRequest request = newRequest(pathQueryFrag);
         request.addHeader(HOST, "myservice:443");
-        RequestInfo requestInfo = new RequestInfo(request, null);
+        RequestInfo requestInfo = new RequestInfo(request, null, false);
         assertThat(CLIENT_INSTANCE.getUrlFull(requestInfo), equalTo("https://myservice" + pathQueryFrag));
     }
 
@@ -106,7 +106,7 @@ class HttpAttributesGetterTest {
         String requestTarget = "https://myservice/foo?bar=baz#frag";
         StreamingHttpRequest request = newRequest(requestTarget);
         request.addHeader(HOST, "badservice"); // should be unused
-        RequestInfo requestInfo = new RequestInfo(request, null);
+        RequestInfo requestInfo = new RequestInfo(request, null, false);
         assertThat(CLIENT_INSTANCE.getUrlFull(requestInfo), equalTo(requestTarget));
     }
 
@@ -116,7 +116,7 @@ class HttpAttributesGetterTest {
         ConnectionInfo connectionInfo = mock(ConnectionInfo.class);
         InetSocketAddress inetAddress = new InetSocketAddress("192.168.1.1", 8080);
         when(connectionInfo.remoteAddress()).thenReturn(inetAddress);
-        RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
+        RequestInfo requestInfo = new RequestInfo(request, connectionInfo, false);
 
         // Network attributes
         for (NetworkAttributesGetter<RequestInfo, ?> getter : Arrays.asList(SERVER_INSTANCE, CLIENT_INSTANCE)) {
@@ -142,7 +142,7 @@ class HttpAttributesGetterTest {
         ConnectionInfo connectionInfo = mock(ConnectionInfo.class);
         InetSocketAddress inetAddress = new InetSocketAddress("::1", 8080);
         when(connectionInfo.remoteAddress()).thenReturn(inetAddress);
-        RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
+        RequestInfo requestInfo = new RequestInfo(request, connectionInfo, false);
 
         // Network attributes
         for (NetworkAttributesGetter<RequestInfo, ?> getter : Arrays.asList(SERVER_INSTANCE, CLIENT_INSTANCE)) {
@@ -168,7 +168,7 @@ class HttpAttributesGetterTest {
         ConnectionInfo connectionInfo = mock(ConnectionInfo.class);
         DomainSocketAddress unixAddress = new DomainSocketAddress("/tmp/socket");
         when(connectionInfo.remoteAddress()).thenReturn(unixAddress);
-        RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
+        RequestInfo requestInfo = new RequestInfo(request, connectionInfo, false);
 
         // Network attributes
         for (NetworkAttributesGetter<RequestInfo, ?> getter : Arrays.asList(SERVER_INSTANCE, CLIENT_INSTANCE)) {
@@ -192,7 +192,7 @@ class HttpAttributesGetterTest {
     void attributesWithHostHeaderOnly() {
         StreamingHttpRequest request = newRequest("/path");
         request.addHeader(HOST, "example.com:8080");
-        RequestInfo requestInfo = new RequestInfo(request, null);
+        RequestInfo requestInfo = new RequestInfo(request, null, false);
 
         // Network attributes (null without connection info)
         assertThat(CLIENT_INSTANCE.getNetworkType(requestInfo, null), nullValue());
@@ -220,7 +220,7 @@ class HttpAttributesGetterTest {
         ConnectionInfo connectionInfo = mock(ConnectionInfo.class);
         InetSocketAddress inetAddress = new InetSocketAddress("192.168.1.1", 8080);
         when(connectionInfo.remoteAddress()).thenReturn(inetAddress);
-        RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
+        RequestInfo requestInfo = new RequestInfo(request, connectionInfo, false);
 
         // Network attributes (from connection)
         assertThat(CLIENT_INSTANCE.getNetworkType(requestInfo, null), equalTo("ipv4"));
@@ -248,7 +248,7 @@ class HttpAttributesGetterTest {
         ConnectionInfo connectionInfo = mock(ConnectionInfo.class);
         DomainSocketAddress unixAddress = new DomainSocketAddress("/tmp/socket");
         when(connectionInfo.remoteAddress()).thenReturn(unixAddress);
-        RequestInfo requestInfo = new RequestInfo(request, connectionInfo);
+        RequestInfo requestInfo = new RequestInfo(request, connectionInfo, false);
 
         // Network attributes (from connection)
         assertThat(CLIENT_INSTANCE.getNetworkType(requestInfo, null), nullValue());
@@ -272,7 +272,7 @@ class HttpAttributesGetterTest {
     @Test
     void attributesWithNoConnectionInfo() {
         StreamingHttpRequest request = newRequest("/path");
-        RequestInfo requestInfo = new RequestInfo(request, null);
+        RequestInfo requestInfo = new RequestInfo(request, null, false);
 
         // Network attributes (all null without connection)
         assertThat(CLIENT_INSTANCE.getNetworkType(requestInfo, null), nullValue());

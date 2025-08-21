@@ -483,7 +483,7 @@ class OpenTelemetryHttpRequesterFilterTest {
     }
 
     @Test
-    void physicalSpansArePossible() throws Exception {
+    void stackingClientAndConnectionFilters() throws Exception {
         final String requestUrl = "/client-span-test";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         try (ServerContext context = buildServer(true)) {
@@ -498,10 +498,82 @@ class OpenTelemetryHttpRequesterFilterTest {
                     client.request(client.get(requestUrl)).toFuture().get();
                 sleep();
 
-                // Should have 2 spans: manual client span, HTTP client span is suppressed, and server span
+                // Should have 3 spans: logical client span, physical client span, and server span
                 assertThat(otelTesting.getSpans()).hasSize(3);
-                assertThat(otelTesting.getSpans()).extracting("traceId")
-                        .contains(otelTesting.getSpans().get(0).getSpanContext().getTraceId());
+                otelTesting.assertTraces().hasTracesSatisfyingExactly(ta -> ta.hasSpansSatisfyingExactly(
+                        span -> {
+                            span.hasKind(SpanKind.CLIENT);
+                            span.hasName("GET");
+                        },
+                        span -> {
+                            span.hasKind(SpanKind.CLIENT);
+                            span.hasName("Physical GET"); // we should detect that this is a second filter.
+                        },
+                        span -> {
+                            span.hasKind(SpanKind.SERVER);
+                            span.hasName("GET");
+                        }
+                ));
+            }
+        }
+    }
+
+    @Test
+    void clientFilterOnly() throws Exception {
+        final String requestUrl = "/client-span-test";
+        OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
+        try (ServerContext context = buildServer(true)) {
+            OpenTelemetryHttpRequesterFilter filter = new OpenTelemetryHttpRequesterFilter.Builder()
+                    .openTelemetry(openTelemetry)
+                    .componentName("testClient")
+                    .build();
+            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
+                    .appendClientFilter(filter)
+                    .build()) {
+                client.request(client.get(requestUrl)).toFuture().get();
+                sleep();
+
+                // Should have 2 spans: logical client span and server span
+                otelTesting.assertTraces().hasTracesSatisfyingExactly(ta -> ta.hasSpansSatisfyingExactly(
+                        span -> {
+                            span.hasKind(SpanKind.CLIENT);
+                            span.hasName("GET");
+                        },
+                        span -> {
+                            span.hasKind(SpanKind.SERVER);
+                            span.hasName("GET");
+                        }
+                ));
+            }
+        }
+    }
+
+    @Test
+    void connectionFilterOnly() throws Exception {
+        final String requestUrl = "/client-span-test";
+        OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
+        try (ServerContext context = buildServer(true)) {
+            OpenTelemetryHttpRequesterFilter filter = new OpenTelemetryHttpRequesterFilter.Builder()
+                    .openTelemetry(openTelemetry)
+                    .componentName("testClient")
+                    .build();
+            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
+                    .appendConnectionFilter(filter)
+                    .build()) {
+                client.request(client.get(requestUrl)).toFuture().get();
+                sleep();
+
+                // Should have 2 spans: physical client span and server span
+                otelTesting.assertTraces().hasTracesSatisfyingExactly(ta -> ta.hasSpansSatisfyingExactly(
+                        span -> {
+                            span.hasKind(SpanKind.CLIENT);
+                            span.hasName("GET");
+                        },
+                        span -> {
+                            span.hasKind(SpanKind.SERVER);
+                            span.hasName("GET");
+                        }
+                ));
             }
         }
     }

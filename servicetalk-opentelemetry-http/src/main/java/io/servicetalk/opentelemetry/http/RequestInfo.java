@@ -31,10 +31,12 @@ final class RequestInfo {
     private final StreamingHttpRequest request;
     @Nullable
     private final ConnectionInfo connectionInfo;
+    private final boolean usePhysicalSpanName;
 
-    RequestInfo(StreamingHttpRequest request, @Nullable ConnectionInfo connectionInfo) {
+    RequestInfo(StreamingHttpRequest request, @Nullable ConnectionInfo connectionInfo, boolean usePhysicalSpanName) {
         this.request = request;
         this.connectionInfo = connectionInfo;
+        this.usePhysicalSpanName = usePhysicalSpanName;
     }
 
     StreamingHttpRequest request() {
@@ -44,5 +46,9 @@ final class RequestInfo {
     @Nullable
     ConnectionInfo connectionInfo() {
         return connectionInfo;
+    }
+
+    boolean usePhysicalSpanName() {
+        return usePhysicalSpanName;
     }
 }

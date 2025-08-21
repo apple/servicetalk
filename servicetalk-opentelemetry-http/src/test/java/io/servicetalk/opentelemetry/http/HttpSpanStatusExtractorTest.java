@@ -48,7 +48,7 @@ class HttpSpanStatusExtractorTest {
     @ParameterizedTest(name = "{displayName} [{index}]: isServer={0}")
     @ValueSource(booleans = {true, false})
     void testStatus200To399(boolean isServer) {
-        RequestInfo requestInfo = new RequestInfo(requestMetaData, null);
+        RequestInfo requestInfo = new RequestInfo(requestMetaData, null, false);
         for (int code = 100; code < 400; code++) {
             when(responseMetaData.status()).thenReturn(HttpResponseStatus.of(code, "any"));
             getExtractor(isServer).extract(spanStatusBuilder, requestInfo, responseMetaData, null);
@@ -60,7 +60,7 @@ class HttpSpanStatusExtractorTest {
     @ParameterizedTest(name = "{displayName} [{index}]: isServer={0}")
     @ValueSource(booleans = {true, false})
     void testStatus400to499(boolean isServer) {
-        RequestInfo requestInfo = new RequestInfo(requestMetaData, null);
+        RequestInfo requestInfo = new RequestInfo(requestMetaData, null, false);
         int executions = 0;
         for (int code = 400; code < 500; code++) {
             executions++;
@@ -78,7 +78,7 @@ class HttpSpanStatusExtractorTest {
     @ParameterizedTest(name = "{displayName} [{index}]: isServer={0}")
     @ValueSource(booleans = {true, false})
     void testStatus500to599(boolean isServer) {
-        RequestInfo requestInfo = new RequestInfo(requestMetaData, null);
+        RequestInfo requestInfo = new RequestInfo(requestMetaData, null, false);
         int executions = 0;
         for (int code = 500; code < 600; code++) {
             executions++;
@@ -91,7 +91,7 @@ class HttpSpanStatusExtractorTest {
     @ParameterizedTest(name = "{displayName} [{index}]: isServer={0}")
     @ValueSource(booleans = {true, false})
     void testStatusUnknown(boolean isServer) {
-        RequestInfo requestInfo = new RequestInfo(requestMetaData, null);
+        RequestInfo requestInfo = new RequestInfo(requestMetaData, null, false);
         when(responseMetaData.status()).thenReturn(HttpResponseStatus.of(600, "any"));
         getExtractor(isServer).extract(spanStatusBuilder, requestInfo, responseMetaData, null);
         verify(spanStatusBuilder, times(0)).setStatus(any());
@@ -100,7 +100,7 @@ class HttpSpanStatusExtractorTest {
     @ParameterizedTest(name = "{displayName} [{index}]: isServer={0}")
     @ValueSource(booleans = {true, false})
     void testExceptionError(boolean isServer) {
-        RequestInfo requestInfo = new RequestInfo(requestMetaData, null);
+        RequestInfo requestInfo = new RequestInfo(requestMetaData, null, false);
         getExtractor(isServer).extract(spanStatusBuilder, requestInfo, responseMetaData,
             new RuntimeException());
         verify(spanStatusBuilder).setStatus(StatusCode.ERROR);
