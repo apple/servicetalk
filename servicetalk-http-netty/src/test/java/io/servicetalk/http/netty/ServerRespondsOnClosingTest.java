@@ -62,7 +62,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 class ServerRespondsOnClosingTest {
-
     private static final HttpResponseFactory RESPONSE_FACTORY = new DefaultHttpResponseFactory(
             DefaultHttpHeadersFactory.INSTANCE, DEFAULT_ALLOCATOR, HTTP_1_1);
     private static final String RESPONSE_PAYLOAD_BODY = "Hello World";
@@ -252,6 +251,8 @@ class ServerRespondsOnClosingTest {
         assertThat("Unexpected response meta-data", metaData.toString(US_ASCII), containsString(requestPath));
         ByteBuf payloadBody = channel.readOutbound();
         assertThat("Unexpected response payload body", payloadBody.toString(US_ASCII), equalTo(RESPONSE_PAYLOAD_BODY));
+        metaData.release();
+        payloadBody.release();
     }
 
     private void respondWithFIN() throws Exception {
