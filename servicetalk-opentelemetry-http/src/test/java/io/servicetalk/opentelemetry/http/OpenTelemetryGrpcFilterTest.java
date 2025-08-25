@@ -31,7 +31,7 @@ import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -206,7 +206,7 @@ class OpenTelemetryGrpcFilterTest {
         assertThat(otelTesting.getSpans().get(0).getKind()).isEqualTo(SpanKind.SERVER);
     }
 
-    @Test
+    @RepeatedTest(100)
     void connectionAndRequestFiltersCanCoexist() throws Exception {
         setUp(false, ClientFilterPosition.BOTH);
 
@@ -216,9 +216,13 @@ class OpenTelemetryGrpcFilterTest {
 
         // Should have 2 client spans and 1 server span
         assertThat(otelTesting.getSpans()).hasSize(3);
-        assertThat(otelTesting.getSpans().get(0).getKind()).isEqualTo(SpanKind.SERVER);
-        assertThat(otelTesting.getSpans().get(1).getKind()).isEqualTo(SpanKind.CLIENT);
-        assertThat(otelTesting.getSpans().get(2).getKind()).isEqualTo(SpanKind.CLIENT);
+
+        otelTesting.assertTraces().hasTracesSatisfyingExactly(ta ->
+            ta.hasSpansSatisfyingExactlyInAnyOrder(
+                    span -> span.hasKind(SpanKind.SERVER).hasName("opentelemetry.grpc.Tester/test"),
+                    span -> span.hasKind(SpanKind.CLIENT).hasName("opentelemetry.grpc.Tester/test"),
+                    span -> span.hasKind(SpanKind.CLIENT).hasName("Physical opentelemetry.grpc.Tester/test")
+                ));
     }
 
     private void setUp(boolean error, ClientFilterPosition clientFilterPosition) throws Exception {
@@ -261,6 +265,7 @@ class OpenTelemetryGrpcFilterTest {
         SpanData spanData = findSpanByKind(spanKind);
         assertThat(spanData.getName()).isEqualTo("opentelemetry.grpc.Tester/" + methodName);
         assertThat(spanData.getInstrumentationScopeInfo().getName()).isEqualTo(INSTRUMENTATION_SCOPE_NAME);
+        assertThat(spanData.getName()).startsWith("opentelemetry.grpc.Tester/test");
         InetSocketAddress serverAddress = (InetSocketAddress) serverContext.listenAddress();
         if (spanKind == SpanKind.SERVER) {
             assertThat(spanData.getAttributes().get(AttributeKey.stringKey("client.address")))
