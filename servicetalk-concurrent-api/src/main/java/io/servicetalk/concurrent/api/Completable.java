@@ -2257,9 +2257,10 @@ public abstract class Completable {
 
     /**
      * Delegate subscribe calls in an operator chain while also ensuring the provided {@link CapturedContext} is active.
+     * <p>
      * This method is used by operators to subscribe to the upstream outside a delegating
      * {@link Completable#handleSubscribe(CompletableSource.Subscriber, CapturedContext, AsyncContextProvider)} method.
-     * source.
+     *
      * @param subscriber the subscriber.
      * @param capturedContext the {@link ContextMap} to use for this {@link PublisherSource.Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.
@@ -2293,6 +2294,7 @@ public abstract class Completable {
      * Override for {@link #handleSubscribe(CompletableSource.Subscriber)}.
      * <p>
      * Operators that do not wish to wrap the passed {@link Subscriber} can override this method and omit the wrapping.
+     *
      * @param subscriber the subscriber.
      * @param capturedContext the {@link ContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.
