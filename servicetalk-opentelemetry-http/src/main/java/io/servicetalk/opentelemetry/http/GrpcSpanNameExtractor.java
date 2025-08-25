@@ -16,6 +16,8 @@
 
 package io.servicetalk.opentelemetry.http;
 
+import io.servicetalk.http.api.HttpRequestMetaData;
+
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 
 /**
@@ -33,8 +35,16 @@ final class GrpcSpanNameExtractor implements SpanNameExtractor<RequestInfo> {
 
     @Override
     public String extract(RequestInfo requestInfo) {
+        String result = baseExtract(requestInfo.request());
+        if (requestInfo.usePhysicalSpanName()) {
+            result = "Physical " + result;
+        }
+        return result;
+    }
+
+    private String baseExtract(HttpRequestMetaData request) {
         // Note that for grpc, the request target is always origin form.
-        String path = requestInfo.request().requestTarget();
+        String path = request.requestTarget();
         if (path.isEmpty()) {
             return "grpc.request";
         }
