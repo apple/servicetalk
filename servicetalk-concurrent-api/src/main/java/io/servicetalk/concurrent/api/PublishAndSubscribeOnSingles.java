@@ -116,7 +116,7 @@ final class PublishAndSubscribeOnSingles {
 
                 if (shouldOffload.getAsBoolean()) {
                     // offload the remainder of subscribe()
-                    executor().execute(() -> super.handleSubscribe(
+                    executor().execute(() -> offloadedHandleSubscribe(
                             upstreamSubscriber, capturedContext, contextProvider));
                     return;
                 }
@@ -129,6 +129,28 @@ final class PublishAndSubscribeOnSingles {
 
             // continue non-offloaded subscribe()
             super.handleSubscribe(upstreamSubscriber, capturedContext, contextProvider);
+        }
+
+        private void offloadedHandleSubscribe(final Subscriber<? super T> upstreamSubscriber,
+                                              final CapturedContext capturedContext,
+                                              final AsyncContextProvider contextProvider) {
+            // Because we run on a different thread, we must ensure any unexpected exception is caught.
+            try {
+                super.handleSubscribe(upstreamSubscriber, capturedContext, contextProvider);
+            } catch (Throwable t) {
+                LOGGER.warn("Unexpected exception from subscribe(), assuming no interaction with the Subscriber.", t);
+                // At this point we are unsure if any signal was sent to the Subscriber and if it is safe to invoke the
+                // Subscriber without violating specifications. However, not propagating the error to the Subscriber
+                // will result in hard to debug scenarios where no further signals may be sent to the Subscriber and
+                // hence it will be hard to distinguish between a "hung" source and a wrongly implemented source that
+                // violates the specifications and throw from subscribe() (Rule 1.9).
+                //
+                // By doing the following we may violate the rules:
+                // 1) Rule 2.12: onSubscribe() MUST be called at most once.
+                // 2) Rule 1.7: Once a terminal state has been signaled (onError, onComplete) it is REQUIRED that no
+                // further signals occur.
+                deliverErrorFromSource(upstreamSubscriber, t);
+            }
         }
     }
 }

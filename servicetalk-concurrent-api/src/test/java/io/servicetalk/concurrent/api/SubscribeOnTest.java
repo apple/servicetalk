@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.internal.DeliberateException;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,6 +30,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
@@ -57,16 +60,21 @@ class SubscribeOnTest {
     @ParameterizedTest(name = "{displayName} [{index}] shouldOffload={0}")
     @ValueSource(booleans = {false, true})
     void throwOnSubscribeSingleSubscribeOn(boolean shouldOffload) {
-        ExecutionException ee = assertThrows(ExecutionException.class, () -> new ThrowOnSubscribeSingle()
+        Exception e = assertThrows(Exception.class, () -> new ThrowOnSubscribeSingle()
                 .subscribeOn(EXECUTOR.executor(), () -> shouldOffload).toFuture().get());
-        assertThat(ee.getCause(), is(DELIBERATE_EXCEPTION));
+        if (shouldOffload) {
+            assertThat(e, is(instanceOf(ExecutionException.class)));
+            assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
+        } else {
+            assertThat(e, is(DELIBERATE_EXCEPTION));
+        }
     }
 
     @Test
     void throwOnSubscribeSinglePublishOn() {
-        ExecutionException ee = assertThrows(ExecutionException.class, () -> new ThrowOnSubscribeSingle()
+        Exception e = assertThrows(DeliberateException.class, () -> new ThrowOnSubscribeSingle()
                 .publishOn(EXECUTOR.executor()).toFuture().get());
-        assertThat(ee.getCause(), is(DELIBERATE_EXCEPTION));
+        assertThat(e, is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -82,16 +90,21 @@ class SubscribeOnTest {
     @ParameterizedTest(name = "{displayName} [{index}] shouldOffload={0}")
     @ValueSource(booleans = {false, true})
     void throwOnSubscribeCompletableSubscribeOn(boolean shouldOffload) {
-        ExecutionException ee = assertThrows(ExecutionException.class, () -> new ThrowOnSubscribeCompletable()
+        Exception e = assertThrows(Exception.class, () -> new ThrowOnSubscribeCompletable()
                 .subscribeOn(EXECUTOR.executor(), () -> shouldOffload).toFuture().get());
-        assertThat(ee.getCause(), is(DELIBERATE_EXCEPTION));
+        if (shouldOffload) {
+            assertThat(e, is(instanceOf(ExecutionException.class)));
+            assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
+        } else {
+            assertThat(e, is(DELIBERATE_EXCEPTION));
+        }
     }
 
     @Test
     void throwOnSubscribeCompletablePublishOn() {
-        ExecutionException ee = assertThrows(ExecutionException.class, () -> new ThrowOnSubscribeCompletable()
+        Exception e = assertThrows(DeliberateException.class, () -> new ThrowOnSubscribeCompletable()
                 .publishOn(EXECUTOR.executor()).toFuture().get());
-        assertThat(ee.getCause(), is(DELIBERATE_EXCEPTION));
+        assertThat(e, is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -110,16 +123,21 @@ class SubscribeOnTest {
     @ParameterizedTest(name = "{displayName} [{index}] shouldOffload={0}")
     @ValueSource(booleans = {false, true})
     void throwOnSubscribePublisherSubscribeOn(boolean shouldOffload) {
-        ExecutionException ee = assertThrows(ExecutionException.class, () -> new ThrowOnSubscribePublisher()
+        Exception e = assertThrows(Exception.class, () -> new ThrowOnSubscribePublisher()
                 .subscribeOn(EXECUTOR.executor(), () -> shouldOffload).toFuture().get());
-        assertThat(ee.getCause(), is(DELIBERATE_EXCEPTION));
+        if (shouldOffload) {
+            assertThat(e, is(instanceOf(ExecutionException.class)));
+            assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
+        } else {
+            assertThat(e, is(DELIBERATE_EXCEPTION));
+        }
     }
 
     @Test
     void throwOnSubscribePublisherPublishOn() {
-        ExecutionException ee = assertThrows(ExecutionException.class, () -> new ThrowOnSubscribePublisher()
+        Exception e = assertThrows(DeliberateException.class, () -> new ThrowOnSubscribePublisher()
                 .publishOn(EXECUTOR.executor()).toFuture().get());
-        assertThat(ee.getCause(), is(DELIBERATE_EXCEPTION));
+        assertThat(e, is(DELIBERATE_EXCEPTION));
     }
 
     private static final class ThrowOnSubscribeSingle extends AbstractSynchronousSingle<Integer> {

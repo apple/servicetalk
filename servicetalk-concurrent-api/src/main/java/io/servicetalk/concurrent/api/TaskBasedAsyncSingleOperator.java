@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeCancel;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnSuccess;
@@ -46,7 +45,8 @@ import static java.util.Objects.requireNonNull;
  */
 abstract class TaskBasedAsyncSingleOperator<T> extends AbstractNoHandleSubscribeSingle<T> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TaskBasedAsyncSingleOperator.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(TaskBasedAsyncSingleOperator.class);
+
     private static final Object NULL_WRAPPER = new Object() {
         @Override
         public String toString() {
@@ -77,22 +77,7 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractNoHandleSubscribe
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber,
                          final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
-        try {
-            original.delegateSubscribe(subscriber, capturedContext, contextProvider);
-        } catch (Throwable t) {
-            LOGGER.warn("Unexpected exception from subscribe(), assuming no interaction with the Subscriber.", t);
-            // At this point we are unsure if any signal was sent to the Subscriber and if it is safe to invoke the
-            // Subscriber without violating specifications. However, not propagating the error to the Subscriber will
-            // result in hard to debug scenarios where no further signals may be sent to the Subscriber and hence it
-            // will be hard to distinguish between a "hung" source and a wrongly implemented source that violates the
-            // specifications and throw from subscribe() (Rule 1.9).
-            //
-            // By doing the following we may violate the rules:
-            // 1) Rule 2.12: onSubscribe() MUST be called at most once.
-            // 2) Rule 1.7: Once a terminal state has been signaled (onError, onComplete) it is REQUIRED that no
-            // further signals occur.
-            deliverErrorFromSource(subscriber, t);
-        }
+        original.delegateSubscribe(subscriber, capturedContext, contextProvider);
     }
 
     static final class SingleSubscriberOffloadedTerminals<T> extends AbstractOffloadedSingleValueSubscriber
