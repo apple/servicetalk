@@ -2697,8 +2697,10 @@ public abstract class Single<T> {
 
     /**
      * Delegate subscribe calls in an operator chain while also ensuring the provided {@link CapturedContext} is active.
-     *      * This method is used by operators to subscribe to the upstream outside a delegating
-     *      * {@link Single#handleSubscribe(Subscriber, CapturedContext, AsyncContextProvider)} method.
+     * <p>
+     * This method is used by operators to subscribe to the upstream outside a delegating
+     * {@link Single#handleSubscribe(Subscriber, CapturedContext, AsyncContextProvider)} method.
+     *
      * @param subscriber the subscriber.
      * @param capturedContext the {@link ContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.
@@ -2717,6 +2719,7 @@ public abstract class Single<T> {
     /**
      * Delegate subscribe calls in an operator chain. This method is used by operators to subscribe to the upstream
      * source.
+     *
      * @param subscriber the subscriber.
      * @param capturedContext the {@link ContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.
@@ -2732,6 +2735,7 @@ public abstract class Single<T> {
      * <p>
      * This method wraps the passed {@link Subscriber}. Operators that do not wish to wrap the passed {@link Subscriber}
      * can override this method and omit the wrapping.
+     *
      * @param subscriber the subscriber.
      * @param capturedContext the {@link ContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.
