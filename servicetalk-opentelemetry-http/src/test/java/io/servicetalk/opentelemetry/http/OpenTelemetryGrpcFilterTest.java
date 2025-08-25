@@ -31,7 +31,7 @@ import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -206,7 +206,7 @@ class OpenTelemetryGrpcFilterTest {
         assertThat(otelTesting.getSpans().get(0).getKind()).isEqualTo(SpanKind.SERVER);
     }
 
-    @RepeatedTest(500)
+    @Test
     void connectionAndRequestFiltersCanCoexist() throws Exception {
         setUp(false, ClientFilterPosition.BOTH);
 
