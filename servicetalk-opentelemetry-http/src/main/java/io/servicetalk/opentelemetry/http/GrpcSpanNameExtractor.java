@@ -17,6 +17,7 @@
 package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.http.api.HttpRequestMetaData;
+
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 
 /**

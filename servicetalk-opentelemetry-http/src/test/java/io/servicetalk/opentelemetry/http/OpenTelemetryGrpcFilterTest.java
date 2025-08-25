@@ -206,7 +206,7 @@ class OpenTelemetryGrpcFilterTest {
         assertThat(otelTesting.getSpans().get(0).getKind()).isEqualTo(SpanKind.SERVER);
     }
 
-    @RepeatedTest(100)
+    @RepeatedTest(500)
     void connectionAndRequestFiltersCanCoexist() throws Exception {
         setUp(false, ClientFilterPosition.BOTH);
 
