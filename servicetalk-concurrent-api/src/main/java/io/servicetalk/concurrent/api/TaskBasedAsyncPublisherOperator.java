@@ -50,7 +50,8 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  */
 abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscribePublisher<T> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TaskBasedAsyncPublisherOperator.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(TaskBasedAsyncPublisherOperator.class);
+
     private static final Object NULL_WRAPPER = new Object() {
         @Override
         public String toString() {

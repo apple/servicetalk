@@ -45,7 +45,8 @@ import static java.util.Objects.requireNonNull;
  */
 abstract class TaskBasedAsyncSingleOperator<T> extends AbstractNoHandleSubscribeSingle<T> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TaskBasedAsyncSingleOperator.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(TaskBasedAsyncSingleOperator.class);
+
     private static final Object NULL_WRAPPER = new Object() {
         @Override
         public String toString() {

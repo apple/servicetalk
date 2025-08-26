@@ -2257,9 +2257,10 @@ public abstract class Completable {
 
     /**
      * Delegate subscribe calls in an operator chain while also ensuring the provided {@link CapturedContext} is active.
+     * <p>
      * This method is used by operators to subscribe to the upstream outside a delegating
      * {@link Completable#handleSubscribe(CompletableSource.Subscriber, CapturedContext, AsyncContextProvider)} method.
-     * source.
+     *
      * @param subscriber the subscriber.
      * @param capturedContext the {@link ContextMap} to use for this {@link PublisherSource.Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.
@@ -2293,6 +2294,7 @@ public abstract class Completable {
      * Override for {@link #handleSubscribe(CompletableSource.Subscriber)}.
      * <p>
      * Operators that do not wish to wrap the passed {@link Subscriber} can override this method and omit the wrapping.
+     *
      * @param subscriber the subscriber.
      * @param capturedContext the {@link ContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.
@@ -2304,10 +2306,10 @@ public abstract class Completable {
         } catch (Throwable t) {
             LOGGER.warn("Unexpected exception from subscribe(), assuming no interaction with the Subscriber.", t);
             // At this point we are unsure if any signal was sent to the Subscriber and if it is safe to invoke the
-            // Subscriber without violating specifications. However, not propagating the error to the Subscriber will
-            // result in hard to debug scenarios where no further signals may be sent to the Subscriber and hence it
-            // will be hard to distinguish between a "hung" source and a wrongly implemented source that violates the
-            // specifications and throw from subscribe() (Rule 1.9).
+            // Subscriber without violating specifications. However, not propagating the error to the Subscriber
+            // will result in hard to debug scenarios where no further signals may be sent to the Subscriber and
+            // hence it will be hard to distinguish between a "hung" source and a wrongly implemented source that
+            // violates the specifications and throw from subscribe() (Rule 1.9).
             //
             // By doing the following we may violate the rules:
             // 1) Rule 2.12: onSubscribe() MUST be called at most once.

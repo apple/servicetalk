@@ -40,7 +40,7 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  */
 abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscribeCompletable {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TaskBasedAsyncCompletableOperator.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(TaskBasedAsyncCompletableOperator.class);
 
     private final Completable original;
     private final BooleanSupplier shouldOffload;
