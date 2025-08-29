@@ -23,7 +23,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
 /**
- * {@link Executor} that handles IO.
+ * {@link Executor} that handles network transport I/O operations.
+ * <p> This executor is specifically designed for network-related I/O operations such as socket connections.
+ * It is not intended for general I/O operations or general offloading work.
  */
 public interface IoExecutor extends Executor {
 
@@ -52,8 +54,8 @@ public interface IoExecutor extends Executor {
 
     /**
      * Returns a boolean supplier, if this IoExecutor supports {@link IoThreadFactory.IoThread} markers, that
-     * conditionally recommends offloading if the current thread is an IO thread. If this IoExecutor does not support
-     * IoThread marker interface then the boolean supplier will always return {@code true}.
+     * conditionally recommends offloading if the current thread is a network I/O thread. If this IoExecutor does not
+     * support IoThread marker interface then the boolean supplier will always return {@code true}.
      *
      * @return a Boolean supplier to recommend offloading appropriately based upon IoExecutor configuration.
      */

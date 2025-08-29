@@ -32,8 +32,8 @@ public interface ExecutionContext<ES extends ExecutionStrategy> {
     BufferAllocator bufferAllocator();
 
     /**
-     * Get the {@link IoExecutor} that is used to handle the I/O.
-     * @return The {@link IoExecutor} that is used to handle the I/O.
+     * Get the {@link IoExecutor} that is used to handle network transport I/O operations.
+     * @return The {@link IoExecutor} that is used to handle network transport I/O operations.
      */
     IoExecutor ioExecutor();
 
