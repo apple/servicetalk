@@ -16,6 +16,7 @@
 
 package io.servicetalk.opentelemetry.http;
 
+import io.servicetalk.http.api.HttpHeaders;
 import io.opentelemetry.context.propagation.TextMapSetter;
 
 import java.util.Locale;
@@ -31,7 +32,12 @@ final class RequestHeadersPropagatorSetter implements TextMapSetter<RequestInfo>
     @Override
     public void set(@Nullable final RequestInfo requestInfo, final String key, final String value) {
         if (requestInfo != null) {
-            requestInfo.request().headers().set(key.toLowerCase(Locale.ENGLISH), value);
+            set(requestInfo.request().headers(), key, value);
         }
+    }
+
+    // exposed for testing.
+    static void set(HttpHeaders headers, final String key, final CharSequence value) {
+        headers.set(key.toLowerCase(Locale.ENGLISH), value);
     }
 }
