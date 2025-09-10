@@ -17,23 +17,45 @@ package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpProtocolVersion;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.netty.H2HeadersFactory;
+import io.servicetalk.transport.api.ConnectionInfo;
 
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class RequestHeadersPropagatorSetterTest {
 
-    @ParameterizedTest(name = "{displayName} [{index}]: useH2Headers={0}")
-    @ValueSource(booleans = {true, false})
-    void setHeadersCaseInsensitive(boolean useH2Headers) {
-        HttpHeaders carrier = useH2Headers ? H2HeadersFactory.INSTANCE.newHeaders() :
+    RequestInfo newRequestInfo(boolean http2, boolean withConnectionInfo) {
+        HttpHeaders carrier = http2 ? H2HeadersFactory.INSTANCE.newHeaders() :
                 DefaultHttpHeadersFactory.INSTANCE.newHeaders();
-        RequestHeadersPropagatorSetter.set(carrier, "Foo", "bar");
-        assertEquals("bar", carrier.get("foo"));
-        RequestHeadersPropagatorSetter.set(carrier, "foo", "biz");
-        assertEquals("biz", carrier.get("foo"));
+        StreamingHttpRequest request = mock(StreamingHttpRequest.class);
+
+        HttpProtocolVersion protocolVersion = http2 ?
+                HttpProtocolVersion.HTTP_2_0 : HttpProtocolVersion.HTTP_1_1;
+        when(request.headers()).thenReturn(carrier);
+        when(request.version()).thenReturn(protocolVersion);
+
+        ConnectionInfo connectionInfo = null;
+        if (withConnectionInfo) {
+            connectionInfo = mock(ConnectionInfo.class);
+            when(connectionInfo.protocol()).thenReturn(protocolVersion);
+        }
+        return new RequestInfo(request, connectionInfo, false);
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: http2={0}, withConnectionInfo={1}")
+    @CsvSource({"false, false", "false, true", "true, false", "true, true"})
+    void normalizedSetHeadersCaseInsensitive(boolean http2, boolean withConnectionInfo) {
+        RequestInfo carrier = newRequestInfo(http2, withConnectionInfo);
+        RequestHeadersPropagatorSetter.INSTANCE.set(carrier, "Foo", "bar");
+        assertEquals("bar", carrier.request().headers().get("foo"));
+        RequestHeadersPropagatorSetter.INSTANCE.set(carrier, "foo", "biz");
+        assertEquals("biz", carrier.request().headers().get("foo"));
     }
 }
