@@ -25,7 +25,6 @@ import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatus;
@@ -38,8 +37,6 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.HttpLifecycleObserverServiceFilter;
-import io.servicetalk.http.netty.HttpProtocolConfigs;
-import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.http.utils.HttpRequestAutoDrainingServiceFilter;
 import io.servicetalk.log4j2.mdc.utils.LoggerStringWriter;
 import io.servicetalk.opentelemetry.http.TestUtils.TestTracingServerLoggerFilter;
@@ -63,6 +60,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -87,13 +85,12 @@ import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
-import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.opentelemetry.http.OpenTelemetryHttpRequesterFilterTest.verifyTraceIdPresentInLogs;
 import static io.servicetalk.opentelemetry.http.TestUtils.SPAN_STATE_SERIALIZER;
 import static io.servicetalk.opentelemetry.http.TestUtils.TRACING_TEST_LOG_LINE_PREFIX;
+import static io.servicetalk.opentelemetry.http.TestUtils.clientBuilder;
+import static io.servicetalk.opentelemetry.http.TestUtils.httpServerBuilder;
 import static io.servicetalk.opentelemetry.http.TestUtils.sleep;
-import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
-import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -120,11 +117,12 @@ class OpenTelemetryHttpServiceFilterTest {
         loggerStringWriter.remove();
     }
 
-    @Test
-    void testInjectWithNoParent() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] useHttp2={0}")
+    @ValueSource(booleans = {true, false})
+    void testInjectWithNoParent(boolean useHttp2) throws Exception {
         final String requestUrl = "/path";
-        try (ServerContext context = buildServer()) {
-            try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
+        try (ServerContext context = buildServer(useHttp2)) {
+            try (HttpClient client = clientBuilder(useHttp2, context).build()) {
                 HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
 
@@ -149,7 +147,7 @@ class OpenTelemetryHttpServiceFilterTest {
                         assertThat(span.getAttributes().get(NETWORK_PROTOCOL_NAME))
                             .isNull(); // only required for != http
                         assertThat(span.getAttributes().get(NETWORK_PROTOCOL_VERSION))
-                            .isEqualTo("1.1");
+                            .isEqualTo(useHttp2 ? "2.0" : "1.1");
                         assertThat(span.getAttributes().get(NETWORK_PEER_ADDRESS))
                                 .isEqualTo("127.0.0.1");
                         assertThat(span.getAttributes().get(NETWORK_PEER_PORT))
@@ -168,12 +166,13 @@ class OpenTelemetryHttpServiceFilterTest {
         }
     }
 
-    @Test
-    void testInjectWithAParent() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] useHttp2={0}")
+    @ValueSource(booleans = {true, false})
+    void testInjectWithAParent(boolean useHttp2) throws Exception {
         final String requestUrl = "/path";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer()) {
-            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
+        try (ServerContext context = buildServer(useHttp2)) {
+            try (HttpClient client = clientBuilder(useHttp2, context)
                 .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
                         .openTelemetry(openTelemetry).componentName("testClient").build())
                 .build()) {
@@ -196,7 +195,7 @@ class OpenTelemetryHttpServiceFilterTest {
                         assertThat(ta.getSpan(0).getAttributes().get(NETWORK_PROTOCOL_NAME))
                             .isNull(); // only required for != http
                         assertThat(ta.getSpan(0).getAttributes().get(NETWORK_PROTOCOL_VERSION))
-                            .isEqualTo("1.1");
+                            .isEqualTo(useHttp2 ? "2.0" : "1.1");
                     });
             }
         }
@@ -205,7 +204,7 @@ class OpenTelemetryHttpServiceFilterTest {
     @Test
     void testInjectWithNewTrace() throws Exception {
         TextMapSetter<HttpURLConnection> setter = HttpURLConnection::setRequestProperty;
-        try (ServerContext context = buildServer()) {
+        try (ServerContext context = buildServer(false)) {
             URL url = new URL("http:/" + context.listenAddress() + "/path?query=this&foo=bar");
             Span span = otelTesting.getOpenTelemetry().getTracer("io.serviceTalk").spanBuilder("/")
                 .setSpanKind(SpanKind.CLIENT)
@@ -249,14 +248,15 @@ class OpenTelemetryHttpServiceFilterTest {
         }
     }
 
-    @Test
-    void testCaptureHeaders() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] useHttp2={0}")
+    @ValueSource(booleans = {true, false})
+    void testCaptureHeaders(boolean useHttp2) throws Exception {
         final String requestUrl = "/path";
-        try (ServerContext context = buildServer(
+        try (ServerContext context = buildServer(useHttp2,
             new OpenTelemetryHttpServiceFilter.Builder()
                 .capturedResponseHeaders(singletonList("my-header"))
                 .capturedRequestHeaders(singletonList("some-request-header")))) {
-            try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
+            try (HttpClient client = clientBuilder(useHttp2, context).build()) {
                 HttpResponse response = client.request(client.get(requestUrl)
                         .addHeader("some-request-header", "request-header-value"))
                     .toFuture().get();
@@ -458,14 +458,13 @@ class OpenTelemetryHttpServiceFilterTest {
         }
     }
 
-    private static void runWithClient(boolean http2, boolean useOffloading, RunWithClient runWithClient)
+    private static void runWithClient(boolean useHttp2, boolean useOffloading, RunWithClient runWithClient)
             throws Exception {
-        HttpProtocolConfig config = http2 ? HttpProtocolConfigs.h2Default() : HttpProtocolConfigs.h1Default();
         Queue<Error> errorQueue = new ConcurrentLinkedQueue<>();
-        try (ServerContext context = buildStreamingServer(http2,
+        try (ServerContext context = buildStreamingServer(useHttp2,
                 new OpenTelemetryHttpServiceFilter.Builder().openTelemetry(otelTesting.getOpenTelemetry()),
                 useOffloading, errorQueue);
-             HttpClient client = forSingleAddress(serverHostAndPort(context)).protocols(config).build()) {
+             HttpClient client = clientBuilder(useHttp2, context).build()) {
                 runWithClient.run(client);
         }
         if (!errorQueue.isEmpty()) {
@@ -481,10 +480,11 @@ class OpenTelemetryHttpServiceFilterTest {
         void run(HttpClient client) throws Exception;
     }
 
-    private static ServerContext buildServer(OpenTelemetryHttpServiceFilter.Builder builder) throws Exception {
+    private static ServerContext buildServer(
+            boolean useHttp2, OpenTelemetryHttpServiceFilter.Builder builder) throws Exception {
         OpenTelemetry givenOpentelemetry = otelTesting.getOpenTelemetry();
         builder = builder.openTelemetry(givenOpentelemetry);
-        HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
+        HttpServerBuilder serverBuilder = httpServerBuilder(useHttp2);
         return serverBuilder
             .appendServiceFilter(builder.build())
             .appendServiceFilter(new TestTracingServerLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX))
@@ -503,17 +503,15 @@ class OpenTelemetryHttpServiceFilterTest {
             });
     }
 
-    private static ServerContext buildServer() throws Exception {
-        return buildServer(new OpenTelemetryHttpServiceFilter.Builder());
+    private static ServerContext buildServer(boolean useHttp2) throws Exception {
+        return buildServer(useHttp2, new OpenTelemetryHttpServiceFilter.Builder());
     }
 
     private static ServerContext buildStreamingServer(boolean http2,
                                                       OpenTelemetryHttpServiceFilter.Builder filterBuilder,
                                                       boolean useOffloading,
                                                       Queue<Error> errorQueue) throws Exception {
-        HttpProtocolConfig config = http2 ? HttpProtocolConfigs.h2Default() : HttpProtocolConfigs.h1Default();
-        HttpServerBuilder builder = HttpServers.forAddress(localAddress(0))
-                .protocols(config)
+        HttpServerBuilder builder = httpServerBuilder(http2)
                 .drainRequestPayloadBody(false);
         if (useOffloading) {
             builder.appendServiceFilter(filterBuilder.build())

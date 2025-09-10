@@ -27,7 +27,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.netty.HttpLifecycleObserverRequesterFilter;
-import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.log4j2.mdc.utils.LoggerStringWriter;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
@@ -48,12 +47,12 @@ import io.opentelemetry.sdk.trace.data.ExceptionEventData;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,6 +62,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.opentelemetry.api.internal.InstrumentationUtil.suppressInstrumentation;
@@ -74,15 +74,14 @@ import static io.opentelemetry.semconv.ServerAttributes.SERVER_PORT;
 import static io.opentelemetry.semconv.UrlAttributes.URL_FULL;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
-import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.assertContainsMdcPair;
 import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.PEER_SERVICE;
 import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryHttpRequesterFilter.SHOULD_INSTRUMENT_KEY;
 import static io.servicetalk.opentelemetry.http.TestUtils.SPAN_STATE_SERIALIZER;
 import static io.servicetalk.opentelemetry.http.TestUtils.TRACING_TEST_LOG_LINE_PREFIX;
 import static io.servicetalk.opentelemetry.http.TestUtils.TestTracingClientLoggerFilter;
+import static io.servicetalk.opentelemetry.http.TestUtils.clientBuilder;
 import static io.servicetalk.opentelemetry.http.TestUtils.sleep;
-import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -109,12 +108,13 @@ class OpenTelemetryHttpRequesterFilterTest {
         loggerStringWriter.remove();
     }
 
-    @Test
-    void testInjectWithNoParent() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] useHttp2={0}")
+    @ValueSource(booleans = {true, false})
+    void testInjectWithNoParent(boolean useHttp2) throws Exception {
         final String requestUrl = "/";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer(false)) {
-            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
+        try (ServerContext context = buildServer(useHttp2, false)) {
+            try (HttpClient client = clientBuilder(useHttp2, context)
                 .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder().openTelemetry(openTelemetry)
                         .componentName("testClient").build())
                 .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX)).build()) {
@@ -140,12 +140,13 @@ class OpenTelemetryHttpRequesterFilterTest {
         }
     }
 
-    @Test
-    void testInjectWithAParent() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] useHttp2={0}")
+    @ValueSource(booleans = {true, false})
+    void testInjectWithAParent(boolean useHttp2) throws Exception {
         final String requestUrl = "/path";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer(true)) {
-            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
+        try (ServerContext context = buildServer(useHttp2, true)) {
+            try (HttpClient client = clientBuilder(useHttp2, context)
                 .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder().openTelemetry(openTelemetry)
                         .componentName("testClient").build())
                 .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX)).build()) {
@@ -175,7 +176,7 @@ class OpenTelemetryHttpRequesterFilterTest {
                         //  assertThat(span.getAttributes().get(SemanticAttributes.HTTP_RESPONSE_CONTENT_LENGTH))
                         //     .isGreaterThan(0);
                         assertThat(span.getAttributes().get(NETWORK_PROTOCOL_VERSION))
-                            .isEqualTo("1.1");
+                            .isEqualTo(useHttp2 ? "2.0" : "1.1");
                         assertThat(span.getAttributes().get(NETWORK_PROTOCOL_NAME))
                             .isNull(); // this attribute is optional unless it's something other than 'http'
                         assertThat(span.getAttributes().get(PEER_SERVICE))
@@ -191,15 +192,22 @@ class OpenTelemetryHttpRequesterFilterTest {
         }
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}]: absoluteForm={0}, withHostHeader={1}")
-    @CsvSource({"false, false", "false, true", "true, false", "true, true"})
-    void testInjectWithAParentCreated(boolean absoluteForm, boolean withHostHeader) throws Exception {
+    static Stream<Arguments> testInjectWithAParentCreatedArguments() {
+        return Stream.of(true, false).flatMap(absoluteForm ->
+                Stream.of(true, false).flatMap(withHostHeader ->
+                        Stream.of(Arguments.of(absoluteForm, withHostHeader, true),
+                                Arguments.of(absoluteForm, withHostHeader, false))));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: absoluteForm={0}, withHostHeader={1}, useHttp2={2}")
+    @MethodSource("testInjectWithAParentCreatedArguments")
+    void testInjectWithAParentCreated(boolean absoluteForm, boolean withHostHeader, boolean useHttp2) throws Exception {
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer(true)) {
+        try (ServerContext context = buildServer(useHttp2, true)) {
             HostAndPort serverHostAndPort = serverHostAndPort(context);
             final String requestPath = "/path/to/resource";
             final String requestUrl = absoluteForm ? fullUrl(serverHostAndPort, requestPath) : requestPath;
-            try (HttpClient client = forSingleAddress(serverHostAndPort)
+            try (HttpClient client = clientBuilder(useHttp2, context)
                     .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder().openTelemetry(openTelemetry)
                             .componentName("testClient").build())
                     .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX)).build()) {
@@ -252,12 +260,13 @@ class OpenTelemetryHttpRequesterFilterTest {
         }
     }
 
-    @Test
-    void testCaptureHeader() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] useHttp2={0}")
+    @ValueSource(booleans = {true, false})
+    void testCaptureHeader(boolean useHttp2) throws Exception {
         final String requestUrl = "/";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer(false)) {
-            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
+        try (ServerContext context = buildServer(useHttp2, false)) {
+            try (HttpClient client = clientBuilder(useHttp2, context)
                 .appendClientFilter(
                         new OpenTelemetryHttpRequesterFilter.Builder().openTelemetry(openTelemetry)
                                 .componentName("testClient")
@@ -300,9 +309,16 @@ class OpenTelemetryHttpRequesterFilterTest {
         CANCEL
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}]: resultType={0}")
-    @EnumSource(ResultType.class)
-    void transportObserver(final ResultType resultType) throws Exception {
+    static Stream<Arguments> transportObserverArguments() {
+        return Stream.of(ResultType.values())
+                .flatMap(resultType -> Stream.of(
+                        Arguments.of(resultType, true),
+                        Arguments.of(resultType, false)));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: resultType={0}, useHttp2={1}")
+    @MethodSource("transportObserverArguments")
+    void transportObserver(final ResultType resultType, boolean useHttp2) throws Exception {
         final boolean transportFailure = resultType == ResultType.TRANSPORT_ERROR;
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         BlockingQueue<Error> errors = new LinkedBlockingQueue<>();
@@ -390,8 +406,8 @@ class OpenTelemetryHttpRequesterFilterTest {
             }
         };
 
-        ServerContext context = buildServer(false);
-        try (HttpClient client = forSingleAddress(serverHostAndPort(context))
+        ServerContext context = buildServer(useHttp2, false);
+        try (HttpClient client = clientBuilder(useHttp2, context)
                 .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
                         .openTelemetry(openTelemetry)
                         .componentName("testClient")
@@ -426,7 +442,8 @@ class OpenTelemetryHttpRequesterFilterTest {
                                 ta.hasSpansSatisfyingExactly(span -> {
                                     span.hasEventsSatisfying(eventData -> {
                                         assertThat(eventData).hasSize(1);
-                                        assertThat(eventData.get(0).getName()).isEqualTo("connectionEstablished");
+                                        assertThat(eventData.get(0).getName()).isEqualTo(useHttp2 ?
+                                                "multiplexedConnectionEstablished" : "connectionEstablished");
                                     });
                                     span.hasAttribute(TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY, "set");
                                     span.hasAttribute(TestHttpLifecycleObserver.ON_REQUEST_KEY, "set");
@@ -482,16 +499,17 @@ class OpenTelemetryHttpRequesterFilterTest {
         }
     }
 
-    @Test
-    void stackingClientAndConnectionFilters() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] useHttp2={0}")
+    @ValueSource(booleans = {true, false})
+    void stackingClientAndConnectionFilters(boolean useHttp2) throws Exception {
         final String requestUrl = "/client-span-test";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer(true)) {
+        try (ServerContext context = buildServer(useHttp2, true)) {
             OpenTelemetryHttpRequesterFilter filter = new OpenTelemetryHttpRequesterFilter.Builder()
                     .openTelemetry(openTelemetry)
                     .componentName("testClient")
                     .build();
-            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
+            try (HttpClient client = clientBuilder(useHttp2, context)
                     .appendClientFilter(filter)
                     .appendConnectionFilter(filter)
                     .build()) {
@@ -518,16 +536,17 @@ class OpenTelemetryHttpRequesterFilterTest {
         }
     }
 
-    @Test
-    void clientFilterOnly() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] useHttp2={0}")
+    @ValueSource(booleans = {true, false})
+    void clientFilterOnly(boolean useHttp2) throws Exception {
         final String requestUrl = "/client-span-test";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer(true)) {
+        try (ServerContext context = buildServer(useHttp2, true)) {
             OpenTelemetryHttpRequesterFilter filter = new OpenTelemetryHttpRequesterFilter.Builder()
                     .openTelemetry(openTelemetry)
                     .componentName("testClient")
                     .build();
-            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
+            try (HttpClient client = clientBuilder(useHttp2, context)
                     .appendClientFilter(filter)
                     .build()) {
                 client.request(client.get(requestUrl)).toFuture().get();
@@ -548,16 +567,17 @@ class OpenTelemetryHttpRequesterFilterTest {
         }
     }
 
-    @Test
-    void connectionFilterOnly() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] useHttp2={0}")
+    @ValueSource(booleans = {true, false})
+    void connectionFilterOnly(boolean useHttp2) throws Exception {
         final String requestUrl = "/client-span-test";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer(true)) {
+        try (ServerContext context = buildServer(useHttp2, true)) {
             OpenTelemetryHttpRequesterFilter filter = new OpenTelemetryHttpRequesterFilter.Builder()
                     .openTelemetry(openTelemetry)
                     .componentName("testClient")
                     .build();
-            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
+            try (HttpClient client = clientBuilder(useHttp2, context)
                     .appendConnectionFilter(filter)
                     .build()) {
                 client.request(client.get(requestUrl)).toFuture().get();
@@ -578,16 +598,17 @@ class OpenTelemetryHttpRequesterFilterTest {
         }
     }
 
-    @Test
-    void suppressionIsHonoredByFilterInAllPositions() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] useHttp2={0}")
+    @ValueSource(booleans = {true, false})
+    void suppressionIsHonoredByFilterInAllPositions(boolean useHttp2) throws Exception {
         final String requestUrl = "/client-span-test";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer(true)) {
+        try (ServerContext context = buildServer(useHttp2, true)) {
             OpenTelemetryHttpRequesterFilter filter = new OpenTelemetryHttpRequesterFilter.Builder()
                     .openTelemetry(openTelemetry)
                     .componentName("testClient")
                     .build();
-            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
+            try (HttpClient client = clientBuilder(useHttp2, context)
                     // Add the filter in both positions.
                     .appendClientFilter(filter)
                     .appendConnectionFilter(filter)
@@ -608,18 +629,19 @@ class OpenTelemetryHttpRequesterFilterTest {
         }
     }
 
-    @Test
-    void suppressionContextKeyIsntLeaked() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] useHttp2={0}")
+    @ValueSource(booleans = {true, false})
+    void suppressionContextKeyIsntLeaked(boolean useHttp2) throws Exception {
         final String requestUrl = "/client-span-test";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         AtomicReference<Boolean> contextValueInPipeline = new AtomicReference<>();
         AtomicReference<Boolean> contextValueAtResponse = new AtomicReference<>();
-        try (ServerContext context = buildServer(true)) {
+        try (ServerContext context = buildServer(useHttp2, true)) {
             OpenTelemetryHttpRequesterFilter filter = new OpenTelemetryHttpRequesterFilter.Builder()
                     .openTelemetry(openTelemetry)
                     .componentName("testClient")
                     .build();
-            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
+            try (HttpClient client = clientBuilder(useHttp2, context)
                     // Add the filter in both positions.
                     .appendClientFilter(filter)
                     .appendClientFilter(c -> new StreamingHttpClientFilter(c) {
@@ -648,9 +670,9 @@ class OpenTelemetryHttpRequesterFilterTest {
         }
     }
 
-    private static ServerContext buildServer(boolean addFilter) throws Exception {
+    private static ServerContext buildServer(boolean useHttp2, boolean addFilter) throws Exception {
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        HttpServerBuilder httpServerBuilder = HttpServers.forAddress(localAddress(0));
+        HttpServerBuilder httpServerBuilder = TestUtils.httpServerBuilder(useHttp2);
         if (addFilter) {
             httpServerBuilder =
                 httpServerBuilder.appendServiceFilter(new OpenTelemetryHttpServiceFilter.Builder()

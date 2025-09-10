@@ -16,6 +16,7 @@
 
 package io.servicetalk.opentelemetry.http;
 
+import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
@@ -46,6 +47,7 @@ abstract class HttpAttributesGetter
         implements NetworkAttributesGetter<RequestInfo, HttpResponseMetaData>,
         HttpCommonAttributesGetter<RequestInfo, HttpResponseMetaData> {
 
+    private static final CharSequence AUTHORITY = CharSequences.newAsciiString(":authority");
     private static final Integer PORT_80 = 80;
     private static final Integer PORT_443 = 443;
 
@@ -191,7 +193,7 @@ abstract class HttpAttributesGetter
             }
 
             // in this case the request target is most likely origin-form so we need to convert it to absolute-form.
-            HostAndPort effectiveHostAndPort = request.effectiveHostAndPort();
+            HostAndPort effectiveHostAndPort = effectiveHostAndPort(requestInfo);
             if (effectiveHostAndPort == null) {
                 // we cant create the authority so we must just return.
                 return null;
@@ -214,7 +216,7 @@ abstract class HttpAttributesGetter
         public String getServerAddress(final RequestInfo requestInfo) {
             // For the server address we prefer the unresolved address, if possible. If we don't have that we'll
             // fall back to the resolved address.
-            HostAndPort effectiveHostAndPort = requestInfo.request().effectiveHostAndPort();
+            HostAndPort effectiveHostAndPort = effectiveHostAndPort(requestInfo);
             if (effectiveHostAndPort != null) {
                 return effectiveHostAndPort.hostName();
             }
@@ -224,7 +226,7 @@ abstract class HttpAttributesGetter
         @Nullable
         @Override
         public Integer getServerPort(RequestInfo requestInfo) {
-            final HostAndPort effectiveHostAndPort = requestInfo.request().effectiveHostAndPort();
+            final HostAndPort effectiveHostAndPort = effectiveHostAndPort(requestInfo);
             if (effectiveHostAndPort != null) {
                 return effectiveHostAndPort.port();
             }
@@ -327,5 +329,59 @@ abstract class HttpAttributesGetter
             // Try to turn it into something meaningful.
             return address.toString();
         }
+    }
+
+    @Nullable
+    static HostAndPort effectiveHostAndPort(final RequestInfo requestInfo) {
+        HostAndPort hostAndPort = requestInfo.request().effectiveHostAndPort();
+        if (hostAndPort == null) {
+            // On the client side we lazily populate the attributes because adding the host header happens last.
+            // For HTTP/2, this host header will get turned into an ':authority' header by the ServiceTalk internals
+            // and that is what we typically observer after the request.
+            hostAndPort = parseAuthorityHeader(requestInfo.request().headers().get(AUTHORITY));
+        }
+        return hostAndPort;
+    }
+
+    @Nullable
+    // exposed for testing
+    static HostAndPort parseAuthorityHeader(@Nullable CharSequence authority) {
+        if (authority == null || authority.length() == 0) {
+            return null;
+        }
+        final int colonPosition;
+        // need to determine if this authority is ipv6 before we can look for ':' chars to see if we have a port.
+        if (authority.length() > 0 && authority.charAt(0) == '[') {
+            // ipv6. We need to look for a ':' after the ending ']' char.
+            int endIpv6Address = CharSequences.indexOf(authority, ']', 0);
+            if (endIpv6Address == -1) {
+                // invalid address: just return null.
+                return null;
+            }
+            colonPosition = CharSequences.indexOf(authority, ':', endIpv6Address + 1);
+        } else {
+            colonPosition = CharSequences.indexOf(authority, ':', 0);
+        }
+        final CharSequence host;
+        final int port;
+        if (colonPosition < 0) {
+            // no port.
+            host = authority;
+            port = -1;
+        } else if (colonPosition == 0 || colonPosition == authority.length() - 1) {
+            // something like "foo:" or ":123", which we assume is invalid.
+            return null;
+        } else {
+            host = authority.subSequence(0, colonPosition);
+            try {
+                port = Math.max(-1,
+                        (int) CharSequences.parseLong(authority.subSequence(colonPosition + 1, authority.length())));
+            } catch (IllegalArgumentException ex) {
+                // malformed port, give up.
+                return null;
+            }
+        }
+        // If we don't have a host name we assume it's malformed.
+        return host.length() == 0 ? null : HostAndPort.of(host.toString(), port);
     }
 }
