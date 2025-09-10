@@ -22,13 +22,18 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.DomainSocketAddress;
+import io.servicetalk.transport.api.HostAndPort;
 
 import io.opentelemetry.instrumentation.api.semconv.network.NetworkAttributesGetter;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.stream.Stream;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
@@ -291,6 +296,35 @@ class HttpAttributesGetterTest {
         // Client attributes (null without connection)
         assertThat(SERVER_INSTANCE.getClientAddress(requestInfo), nullValue());
         assertThat(SERVER_INSTANCE.getClientPort(requestInfo), nullValue());
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] authority={0}, expected={1}")
+    @MethodSource("effectiveHostPairs")
+    void effectiveHostAndPortAuthorityParsing(String authority, HostAndPort expected) {
+        HostAndPort result = HttpAttributesGetter.parseAuthorityHeader(authority);
+        assertThat(result, equalTo(expected));
+    }
+
+    static Stream<Arguments> effectiveHostPairs() {
+        return Stream.of(
+                Arguments.of(null, null),
+                // host names
+                Arguments.of("foo", HostAndPort.of("foo", -1)),
+                Arguments.of("foo:8080", HostAndPort.of("foo", 8080)),
+                // ipv4
+                Arguments.of("1.2.3.4", HostAndPort.of("1.2.3.4", -1)),
+                Arguments.of("1.2.3.4:8080", HostAndPort.of("1.2.3.4", 8080)),
+                // ipv6
+                Arguments.of("[2001:db8::1]", HostAndPort.of("[2001:db8::1]", -1)),
+                Arguments.of("[2001:db8::1]:8080", HostAndPort.of("[2001:db8::1]", 8080)),
+                // Error cases
+                Arguments.of("", null),
+                Arguments.of(":", null),
+                Arguments.of("::", null),
+                Arguments.of("foo:", null),
+                Arguments.of(":1foo", null),
+                Arguments.of("[2001:db8::1", null)
+        );
     }
 
     private static StreamingHttpRequest newRequest(String requestTarget) {
