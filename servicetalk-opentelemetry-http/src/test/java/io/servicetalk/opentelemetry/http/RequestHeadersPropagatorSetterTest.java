@@ -18,9 +18,11 @@ package io.servicetalk.opentelemetry.http;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.netty.H2HeadersFactory;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class RequestHeadersPropagatorSetterTest {
 

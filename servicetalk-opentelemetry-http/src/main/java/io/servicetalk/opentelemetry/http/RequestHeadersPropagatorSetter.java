@@ -17,6 +17,7 @@
 package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.http.api.HttpHeaders;
+
 import io.opentelemetry.context.propagation.TextMapSetter;
 
 import java.util.Locale;
