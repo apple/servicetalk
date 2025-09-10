@@ -19,7 +19,9 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpSerializerDeserializer;
+import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -29,16 +31,24 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
+import io.servicetalk.http.netty.HttpClients;
+import io.servicetalk.http.netty.HttpProtocolConfigs;
+import io.servicetalk.http.netty.HttpServers;
+import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.api.ServerContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
+import java.net.InetSocketAddress;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.data.jackson.JacksonSerializerFactory.JACKSON;
 import static io.servicetalk.http.api.HttpSerializers.jsonSerializer;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 
 public final class TestUtils {
 
@@ -57,6 +67,17 @@ public final class TestUtils {
         jsonSerializer(JACKSON.serializerDeserializer(TestSpanState.class));
 
     private TestUtils() {
+    }
+
+    static HttpServerBuilder httpServerBuilder(boolean useHttp2) {
+        return HttpServers.forAddress(localAddress(0))
+                .protocols(useHttp2 ? HttpProtocolConfigs.h2Default() : HttpProtocolConfigs.h1Default());
+    }
+
+    static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder(
+            boolean useHttp2, ServerContext context) {
+        return HttpClients.forSingleAddress(serverHostAndPort(context))
+                .protocols(useHttp2 ? HttpProtocolConfigs.h2Default() : HttpProtocolConfigs.h1Default());
     }
 
     /**
