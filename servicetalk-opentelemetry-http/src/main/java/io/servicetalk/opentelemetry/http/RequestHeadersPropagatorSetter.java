@@ -16,6 +16,9 @@
 
 package io.servicetalk.opentelemetry.http;
 
+import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpProtocolVersion;
+
 import io.opentelemetry.context.propagation.TextMapSetter;
 
 import java.util.Locale;
@@ -30,8 +33,25 @@ final class RequestHeadersPropagatorSetter implements TextMapSetter<RequestInfo>
 
     @Override
     public void set(@Nullable final RequestInfo requestInfo, final String key, final String value) {
-        if (requestInfo != null) {
-            requestInfo.request().headers().set(key.toLowerCase(Locale.ENGLISH), value);
+        if (requestInfo == null) {
+            return;
+        }
+
+        // TODO: This noise is necessary because our HTTP/2 headers structure is case sensitive.
+        //  Once we fix that, we can delete all the normalization noise.
+        final HttpProtocolVersion httpProtocolVersion;
+        if (requestInfo.connectionInfo() != null &&
+                requestInfo.connectionInfo().protocol() instanceof HttpProtocolVersion) {
+            httpProtocolVersion = (HttpProtocolVersion) requestInfo.connectionInfo().protocol();
+        } else {
+            httpProtocolVersion = requestInfo.request().version();
+        }
+
+        HttpHeaders httpHeaders = requestInfo.request().headers();
+        if (httpProtocolVersion.major() >= 2) {
+            httpHeaders.set(key.toLowerCase(Locale.ENGLISH), value);
+        } else {
+            httpHeaders.set(key, value);
         }
     }
 }

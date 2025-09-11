@@ -21,6 +21,7 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.opentelemetry.context.propagation.TextMapGetter;
 
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -64,7 +65,8 @@ final class HeadersPropagatorGetter implements TextMapGetter<HttpHeaders> {
         if (carrier == null) {
             return null;
         }
-        final CharSequence value = carrier.get(key);
+        // For now, we need to normalize the key to lower case for compatibility with our HTTP/2 headers.
+        final CharSequence value = carrier.get(key.toLowerCase(Locale.ENGLISH));
         return value == null ? null : value.toString();
     }
 }
