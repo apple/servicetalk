@@ -12195,7 +12195,7 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/api/ExecutionContext.html#ioExecutor()" class="member-name-link">ioExecutor()</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api">ExecutionContext</a></dt>
 <dd>
-<div class="block">Get the <a href="io/servicetalk/transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> that is used to handle the I/O.</div>
+<div class="block">Get the <a href="io/servicetalk/transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> that is used to handle network transport I/O operations.</div>
 </dd>
 <dt><a href="io/servicetalk/dns/discovery/netty/DefaultDnsServiceDiscovererBuilder.html#ioExecutor(io.servicetalk.transport.api.IoExecutor)" class="member-name-link">ioExecutor(IoExecutor)</a> - Method in class io.servicetalk.dns.discovery.netty.<a href="io/servicetalk/dns/discovery/netty/DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></dt>
 <dd>
@@ -12237,7 +12237,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/transport/api/IoExecutor.html" class="type-name-link" title="interface in io.servicetalk.transport.api">IoExecutor</a> - Interface in <a href="io/servicetalk/transport/api/package-summary.html">io.servicetalk.transport.api</a></dt>
 <dd>
-<div class="block"><a href="io/servicetalk/concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> that handles IO.</div>
+<div class="block"><a href="io/servicetalk/concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> that handles network transport I/O operations.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/api/IoThreadFactory.html" class="type-name-link" title="interface in io.servicetalk.transport.api">IoThreadFactory</a>&lt;<a href="io/servicetalk/transport/api/IoThreadFactory.html" title="type parameter in IoThreadFactory">T</a> extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Thread.html" title="class or interface in java.lang" class="external-link">Thread</a> &amp; <a href="io/servicetalk/transport/api/IoThreadFactory.IoThread.html" title="interface in io.servicetalk.transport.api">IoThreadFactory.IoThread</a>&gt; - Interface in <a href="io/servicetalk/transport/api/package-summary.html">io.servicetalk.transport.api</a></dt>
 <dd>
@@ -20879,7 +20879,7 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/transport/api/IoExecutor.html#shouldOffloadSupplier()" class="member-name-link">shouldOffloadSupplier()</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a></dt>
 <dd>
 <div class="block">Returns a boolean supplier, if this IoExecutor supports <a href="io/servicetalk/transport/api/IoThreadFactory.IoThread.html" title="interface in io.servicetalk.transport.api"><code>IoThreadFactory.IoThread</code></a> markers, that
- conditionally recommends offloading if the current thread is an IO thread.</div>
+ conditionally recommends offloading if the current thread is a network I/O thread.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Single.html" class="type-name-link" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="io/servicetalk/concurrent/api/Single.html" title="type parameter in Single">T</a>&gt; - Class in <a href="io/servicetalk/concurrent/api/package-summary.html">io.servicetalk.concurrent.api</a></dt>
 <dd>

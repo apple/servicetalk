@@ -83,7 +83,9 @@ loadScripts(document, 'script');</script>
 <hr>
 <div class="type-signature"><span class="modifiers">public interface </span><span class="element-name type-name-label">IoExecutor</span><span class="extends-implements">
 extends <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a></span></div>
-<div class="block"><a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> that handles IO.</div>
+<div class="block"><a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> that handles network transport I/O operations.
+ <p> This executor is specifically designed for network-related I/O operations such as socket connections.
+ It is not intended for general I/O operations or general offloading work.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -129,7 +131,7 @@ extends <a href="../../concurrent/api/Executor.html" title="interface in io.serv
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#shouldOffloadSupplier()" class="member-name-link">shouldOffloadSupplier</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
 <div class="block">Returns a boolean supplier, if this IoExecutor supports <a href="IoThreadFactory.IoThread.html" title="interface in io.servicetalk.transport.api"><code>IoThreadFactory.IoThread</code></a> markers, that
- conditionally recommends offloading if the current thread is an IO thread.</div>
+ conditionally recommends offloading if the current thread is a network I/O thread.</div>
 </div>
 </div>
 </div>
@@ -202,8 +204,8 @@ extends <a href="../../concurrent/api/Executor.html" title="interface in io.serv
 <h3>shouldOffloadSupplier</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BooleanSupplier.html" title="class or interface in java.util.function" class="external-link">BooleanSupplier</a></span>&nbsp;<span class="element-name">shouldOffloadSupplier</span>()</div>
 <div class="block">Returns a boolean supplier, if this IoExecutor supports <a href="IoThreadFactory.IoThread.html" title="interface in io.servicetalk.transport.api"><code>IoThreadFactory.IoThread</code></a> markers, that
- conditionally recommends offloading if the current thread is an IO thread. If this IoExecutor does not support
- IoThread marker interface then the boolean supplier will always return <code>true</code>.</div>
+ conditionally recommends offloading if the current thread is a network I/O thread. If this IoExecutor does not
+ support IoThread marker interface then the boolean supplier will always return <code>true</code>.</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>a Boolean supplier to recommend offloading appropriately based upon IoExecutor configuration.</dd>
