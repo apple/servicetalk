@@ -16,6 +16,7 @@
 package io.servicetalk.examples.http.opentelemetry;
 
 import io.servicetalk.http.netty.HttpServers;
+import io.servicetalk.http.utils.HttpRequestAutoDrainingServiceFilter;
 import io.servicetalk.opentelemetry.http.OpenTelemetryHttpServiceFilter;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
@@ -27,14 +28,13 @@ import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetSocketAddress;
-
 /**
  * A server that demonstrates OpenTelemetry distributed tracing with ServiceTalk.
  * This example shows how to:
  * <ul>
  *   <li>Configure OpenTelemetry SDK with logging exporter</li>
  *   <li>Set up ServiceTalk HTTP server with OpenTelemetry tracing filter</li>
+ *   <li>Demonstrate proper filter ordering for accurate tracing</li>
  *   <li>Automatically capture HTTP request/response spans</li>
  * </ul>
  */
@@ -52,11 +52,21 @@ public final class OpenTelemetryServer {
         // Set the global OpenTelemetry instance
         GlobalOpenTelemetry.set(openTelemetry);
 
-        final InetSocketAddress bindAddress = new InetSocketAddress(8080);
-        HttpServers.forAddress(bindAddress)
-                // Use non-offloading filter for proper context propagation
+        HttpServers.forPort(8080)
+                // CRITICAL: OpenTelemetry filter MUST be first for proper context propagation
+                // Use non-offloading filter to maintain async context across threads
                 .appendNonOffloadingServiceFilter(new OpenTelemetryHttpServiceFilter.Builder()
                         .build())
+                
+                // IMPORTANT: Request draining filter MUST come after OpenTelemetry filter
+                // This ensures tracing information is captured for auto-drained requests (e.g., GET requests)
+                // If auto-draining occurs before OpenTelemetry filter processes the request,
+                // tracing information may be incomplete or incorrect
+                .appendNonOffloadingServiceFilter(HttpRequestAutoDrainingServiceFilter.INSTANCE)
+                
+                // Other filters can be added after the critical ordering above
+                // Exception mapping, logging, etc. should come after OpenTelemetry and request draining
+                
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     LOGGER.info("Processing request: {} {}", request.method(), request.requestTarget());
 

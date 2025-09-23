@@ -20,6 +20,7 @@ apply from: "../../gradle/idea.gradle"
 dependencies {
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-http-netty")
+  implementation project(":servicetalk-http-utils") // For HttpRequestAutoDrainingServiceFilter
   implementation project(":servicetalk-opentelemetry-http") // OpenTelemetry client/server filters
   implementation project(":servicetalk-opentelemetry-asynccontext") // OpenTelemetry async context propagation
 

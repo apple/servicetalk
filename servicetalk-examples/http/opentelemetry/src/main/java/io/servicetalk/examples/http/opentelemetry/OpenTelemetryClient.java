@@ -34,6 +34,7 @@ import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
  * <ul>
  *   <li>Configure OpenTelemetry SDK with logging exporter</li>
  *   <li>Set up ServiceTalk HTTP client with OpenTelemetry tracing filter</li>
+ *   <li>Demonstrate proper client-side filter ordering</li>
  *   <li>Automatically capture HTTP request/response spans</li>
  *   <li>Propagate trace context to downstream services</li>
  * </ul>
@@ -53,6 +54,8 @@ public final class OpenTelemetryClient {
         GlobalOpenTelemetry.set(openTelemetry);
 
         try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
+                // IMPORTANT: OpenTelemetry filter should be placed EARLY in the filter chain
+                // This ensures proper span creation and context propagation for downstream filters
                 .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
                         .componentName(serviceName)
                         .build())
