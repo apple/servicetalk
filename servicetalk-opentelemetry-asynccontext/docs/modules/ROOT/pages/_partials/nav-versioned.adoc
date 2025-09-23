@@ -1,1 +1,0 @@
-* xref:{page-version}@servicetalk-opentelemetry-asynccontext::index.adoc[OpenTelemetry Async Context]

@@ -15,7 +15,7 @@
 #
 
 name: servicetalk-opentelemetry-http
-title: OpenTelemetry HTTP
+title: OpenTelemetry
 version: SNAPSHOT
 nav:
   - modules/ROOT/nav.adoc

@@ -50,7 +50,6 @@ include::{page-version}@servicetalk-traffic-resilience-http:ROOT:partial$nav-ver
 * Observability
 +
 --
-include::{page-version}@servicetalk-opentelemetry-asynccontext:ROOT:partial$nav-versioned.adoc[]
 include::{page-version}@servicetalk-opentelemetry-http:ROOT:partial$nav-versioned.adoc[]
 --
 +
