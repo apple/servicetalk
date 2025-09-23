@@ -153,6 +153,7 @@ project(":servicetalk-examples:http:timeout").name = "servicetalk-examples-http-
 project(":servicetalk-examples:http:jaxrs").name = "servicetalk-examples-http-jaxrs"
 project(":servicetalk-examples:http:loadbalancer").name = "servicetalk-examples-http-loadbalancer"
 project(":servicetalk-examples:http:metadata").name = "servicetalk-examples-http-metadata"
+project(":servicetalk-examples:http:opentelemetry").name = "servicetalk-examples-http-opentelemetry"
 project(":servicetalk-examples:http:opentracing").name = "servicetalk-examples-http-opentracing"
 project(":servicetalk-examples:http:observer").name = "servicetalk-examples-http-observer"
 project(":servicetalk-examples:http:retry").name = "servicetalk-examples-http-retry"
