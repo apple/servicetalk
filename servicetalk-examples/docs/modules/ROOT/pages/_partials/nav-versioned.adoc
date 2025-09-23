@@ -14,6 +14,7 @@
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#Observer[Observer]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#LoadBalancer[LoadBalancer]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#OpenTracing[OpenTracing]
+** xref:{page-version}@servicetalk-examples::http/index.adoc#OpenTelemetry[OpenTelemetry]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#Redirects[Redirects]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#Retries[Retries]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#uds[Unix Domain Sockets]

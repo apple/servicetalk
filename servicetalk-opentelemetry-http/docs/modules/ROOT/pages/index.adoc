@@ -19,7 +19,7 @@ The `servicetalk-opentelemetry-http` module provides HTTP tracing filters that i
 === Client-Side Tracing
 * link:{source-root}/servicetalk-opentelemetry-http/src/main/java/io/servicetalk/opentelemetry/http/OpenTelemetryHttpRequesterFilter.java[OpenTelemetryHttpRequesterFilter] - HTTP client tracing filter
 
-=== Server-Side Tracing  
+=== Server-Side Tracing
 * link:{source-root}/servicetalk-opentelemetry-http/src/main/java/io/servicetalk/opentelemetry/http/OpenTelemetryHttpServiceFilter.java[OpenTelemetryHttpServiceFilter] - HTTP server tracing filter
 
 === Configuration
