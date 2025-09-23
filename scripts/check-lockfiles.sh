@@ -25,6 +25,7 @@ if [ -n "$status" ]; then
   echo "You MUST regenerate lockfiles using: ./gradlew resolveAndLockAll --write-locks"
   echo "The following files are not updated:"
   echo "$status"
+  git diff
   exit 1
 else
   echo "All Gradle lockfiles are up to date"
