@@ -216,7 +216,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
 
         idea {
           module {
-            testSourceDirs += fixturesDir
+            testSources.from(fixturesDir)
           }
         }
       }
@@ -259,6 +259,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
 
       dependencies {
         testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junit5Version")
+        testRuntimeOnly("org.junit.platform:junit-platform-launcher")
       }
     }
   }
@@ -301,8 +302,8 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       }
 
       // This task defaults to XML reporting for CI, but humans like HTML
-      tasks.withType(SpotBugsTask) {
-        reports {
+      tasks.withType(SpotBugsTask).configureEach {
+        reports.configure {
           xml.enabled = project.ext.isCiBuild
           html.enabled = !project.ext.isCiBuild
         }

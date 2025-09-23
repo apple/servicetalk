@@ -36,11 +36,15 @@ jobs:
       - name: Set up JDK ${{ matrix.java }}
         uses: actions/setup-java@v5
         with:
-          java-version: ${{ matrix.java }}
+          java-version: |
+            17
+            ${{ matrix.java }}
           distribution: 'zulu'
           cache: 'gradle'
       - name: Print JDK Version
         run: java -version
+      - name: Set Gradle Environment
+        run: echo "GRADLE_OPTS=-Dorg.gradle.java.home=$JAVA_HOME_17_${{ runner.arch }}" >> "$GITHUB_ENV"
       - name: Make gradlew Executable
         run: chmod +x gradlew
       - name: Clean Gradle project

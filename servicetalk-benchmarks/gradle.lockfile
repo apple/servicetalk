@@ -33,6 +33,7 @@ org.junit.jupiter:junit-jupiter-api:5.11.4=jmhRuntimeClasspath
 org.junit.jupiter:junit-jupiter-engine:5.11.4=jmhRuntimeClasspath
 org.junit.platform:junit-platform-commons:1.11.4=jmhRuntimeClasspath
 org.junit.platform:junit-platform-engine:1.11.4=jmhRuntimeClasspath
+org.junit.platform:junit-platform-launcher:1.11.4=jmhRuntimeClasspath
 org.junit:junit-bom:5.11.4=jmhRuntimeClasspath
 org.openjdk.jmh:jmh-core:1.37=jmhCompileClasspath,jmhRuntimeClasspath
 org.openjdk.jmh:jmh-generator-asm:1.37=jmhCompileClasspath,jmhRuntimeClasspath

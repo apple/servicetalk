@@ -44,15 +44,15 @@ compileTestJava {
 }
 
 tasks.withType(Checkstyle).all {
-  enabled false
+  enabled = false
 }
 
 tasks.withType(Pmd).all {
-  enabled false
+  enabled = false
 }
 
 tasks.withType(com.github.spotbugs.snom.SpotBugsTask).all {
-  enabled false
+  enabled = false
 }
 
 task cleanSources(type: Delete) {
@@ -73,6 +73,7 @@ task copySourcesForJersey3(type: Copy) {
 tasks.processResources.dependsOn(copySourcesForJersey3)
 tasks.sourcesJar.dependsOn(copySourcesForJersey3)
 tasks.compileJava.dependsOn(copySourcesForJersey3)
+tasks.generateProto.dependsOn(copySourcesForJersey3)
 tasks.generateTestProto.dependsOn(copySourcesForJersey3)
 tasks.processTestResources.dependsOn(copySourcesForJersey3)
 tasks.compileTestJava.dependsOn(copySourcesForJersey3)
