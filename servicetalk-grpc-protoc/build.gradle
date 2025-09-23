@@ -15,7 +15,7 @@
  */
 
 plugins {
-  id "com.github.johnrengelman.shadow" version "$shadowPluginVersion"
+  id "com.gradleup.shadow" version "$shadowPluginVersion"
   id "com.google.protobuf" version "$protobufGradlePluginVersion"
 }
 

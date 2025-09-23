@@ -30,6 +30,8 @@ import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.javadoc.Javadoc
 
+import groovy.xml.XmlParser
+
 import java.lang.reflect.Field
 
 final class ProjectUtils {
