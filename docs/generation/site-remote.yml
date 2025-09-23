@@ -72,6 +72,12 @@ content:
       branches: main
       tags: [0.42.59]
       start_path: servicetalk-traffic-resilience-http/docs
+    - url: https://github.com/apple/servicetalk.git
+      branches: main
+      start_path: servicetalk-opentelemetry-asynccontext/docs
+    - url: https://github.com/apple/servicetalk.git
+      branches: main
+      start_path: servicetalk-opentelemetry-http/docs
 asciidoc:
   attributes:
     experimental: ''

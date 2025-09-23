@@ -1,0 +1,32 @@
+// Configure {source-root} values based on how this document is rendered: on GitHub or not
+ifdef::env-github[]
+:source-root:
+endif::[]
+ifndef::env-github[]
+ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
+endif::[]
+
+= OpenTelemetry Async Context
+
+ServiceTalk provides OpenTelemetry integration through async context propagation that ensures OpenTelemetry context and spans are properly maintained across asynchronous boundaries.
+
+== Overview
+
+The `servicetalk-opentelemetry-asynccontext` module provides the link:{source-root}/servicetalk-opentelemetry-asynccontext/src/main/java/io/servicetalk/opentelemetry/asynccontext/OtelCapturedContextProvider.java[OtelCapturedContextProvider] which integrates OpenTelemetry's context propagation with ServiceTalk's xref:{page-version}@servicetalk-concurrent-api::async-context.adoc[Asynchronous Context] system.
+
+== Key Features
+
+* **Automatic Context Propagation**: OpenTelemetry context is automatically captured and restored across ServiceTalk's asynchronous boundaries
+* **Thread Safety**: Works correctly in ServiceTalk's multi-threaded, asynchronous execution model
+* **Zero Configuration**: Automatically discovered and enabled via Java's ServiceLoader mechanism
+
+== Usage
+
+This module is typically used in conjunction with the `servicetalk-opentelemetry-http` module to provide end-to-end tracing for HTTP services and clients.
+
+For detailed usage examples, see the OpenTelemetry examples in the ServiceTalk examples module.
+
+== Related Documentation
+
+* xref:{page-version}@servicetalk-concurrent-api::async-context.adoc[ServiceTalk Asynchronous Context]
+* xref:{page-version}@servicetalk-opentelemetry-http::index.adoc[OpenTelemetry HTTP Tracing]

@@ -1,0 +1,66 @@
+// Configure {source-root} values based on how this document is rendered: on GitHub or not
+ifdef::env-github[]
+:source-root:
+endif::[]
+ifndef::env-github[]
+ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
+endif::[]
+
+= OpenTelemetry HTTP Tracing
+
+ServiceTalk provides comprehensive OpenTelemetry tracing support for HTTP clients and servers through a set of filters that automatically instrument HTTP requests and responses.
+
+== Overview
+
+The `servicetalk-opentelemetry-http` module provides HTTP tracing filters that integrate with OpenTelemetry to automatically create spans for HTTP operations, propagate trace context, and collect telemetry data.
+
+== Key Components
+
+=== Client-Side Tracing
+* link:{source-root}/servicetalk-opentelemetry-http/src/main/java/io/servicetalk/opentelemetry/http/OpenTelemetryHttpRequesterFilter.java[OpenTelemetryHttpRequesterFilter] - HTTP client tracing filter
+
+=== Server-Side Tracing  
+* link:{source-root}/servicetalk-opentelemetry-http/src/main/java/io/servicetalk/opentelemetry/http/OpenTelemetryHttpServiceFilter.java[OpenTelemetryHttpServiceFilter] - HTTP server tracing filter
+
+=== Configuration
+* link:{source-root}/servicetalk-opentelemetry-http/src/main/java/io/servicetalk/opentelemetry/http/OpenTelemetryFilterBuilder.java[OpenTelemetryFilterBuilder] - Base builder for configuring tracing options
+
+== Key Features
+
+* **Automatic Span Creation**: Creates spans for HTTP requests and responses following OpenTelemetry semantic conventions
+* **Context Propagation**: Propagates trace context across HTTP boundaries using standard headers
+* **Configurable Attributes**: Capture custom request and response headers as span attributes
+* **Metrics Support**: Optional collection of HTTP operation metrics
+* **gRPC Support**: Specialized support for gRPC over HTTP/2 tracing
+* **Filter Ordering**: Proper integration with ServiceTalk's filter chain for correct context handling
+
+== Quick Start
+
+=== Client Configuration
+```java
+HttpClient client = HttpClients.forSingleAddress("example.com", 80)
+    .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
+        .componentName("my-client")
+        .build())
+    .build();
+```
+
+=== Server Configuration
+```java
+HttpServerBuilder.forAddress(localAddress(0))
+    .appendNonOffloadingServiceFilter(new OpenTelemetryHttpServiceFilter.Builder()
+        .build())
+    .listen(service);
+```
+
+== Dependencies
+
+This module requires:
+* `servicetalk-opentelemetry-asynccontext` for async context propagation
+* OpenTelemetry Java libraries for span creation and context management
+
+== Related Documentation
+
+* xref:{page-version}@servicetalk-opentelemetry-http::tracing.adoc[Detailed Tracing Guide]
+* xref:{page-version}@servicetalk-opentelemetry-asynccontext::index.adoc[OpenTelemetry Async Context]
+* xref:{page-version}@servicetalk-concurrent-api::async-context.adoc[ServiceTalk Asynchronous Context]

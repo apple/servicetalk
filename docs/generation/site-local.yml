@@ -57,6 +57,12 @@ content:
     - url: ../../
       branches: HEAD
       start_path: servicetalk-traffic-resilience-http/docs
+    - url: ../../
+      branches: HEAD
+      start_path: servicetalk-opentelemetry-asynccontext/docs
+    - url: ../../
+      branches: HEAD
+      start_path: servicetalk-opentelemetry-http/docs
 asciidoc:
   attributes:
     experimental: ''

@@ -1,0 +1,2 @@
+* xref:{page-version}@servicetalk-opentelemetry-http::index.adoc[OpenTelemetry HTTP Tracing]
+** xref:{page-version}@servicetalk-opentelemetry-http::tracing.adoc[Tracing Guide]
