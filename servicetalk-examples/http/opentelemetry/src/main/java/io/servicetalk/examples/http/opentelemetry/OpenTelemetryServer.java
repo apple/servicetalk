@@ -57,16 +57,15 @@ public final class OpenTelemetryServer {
                 // Use non-offloading filter to maintain async context across threads
                 .appendNonOffloadingServiceFilter(new OpenTelemetryHttpServiceFilter.Builder()
                         .build())
-                
+
                 // IMPORTANT: Request draining filter MUST come after OpenTelemetry filter
                 // This ensures tracing information is captured for auto-drained requests (e.g., GET requests)
                 // If auto-draining occurs before OpenTelemetry filter processes the request,
                 // tracing information may be incomplete or incorrect
                 .appendNonOffloadingServiceFilter(HttpRequestAutoDrainingServiceFilter.INSTANCE)
-                
+
                 // Other filters can be added after the critical ordering above
                 // Exception mapping, logging, etc. should come after OpenTelemetry and request draining
-                
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     LOGGER.info("Processing request: {} {}", request.method(), request.requestTarget());
 
