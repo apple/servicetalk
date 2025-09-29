@@ -8,6 +8,6 @@ jakarta.ws.rs:jakarta.ws.rs-api:3.1.0=compileClasspath,runtimeClasspath
 org.glassfish.hk2:osgi-resource-locator:1.0.3=runtimeClasspath
 org.glassfish.jersey.core:jersey-common:3.1.11=runtimeClasspath
 org.glassfish.jersey:jersey-bom:3.1.11=compileClasspath,runtimeClasspath
-org.jctools:jctools-core:4.0.3=runtimeClasspath
+org.jctools:jctools-core:4.0.5=runtimeClasspath
 org.slf4j:slf4j-api:1.7.36=runtimeClasspath
 empty=annotationProcessor,jmhCompileClasspath,jmhRuntimeClasspath,spotbugsPlugins,testAnnotationProcessor

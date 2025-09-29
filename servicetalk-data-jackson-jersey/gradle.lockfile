@@ -20,6 +20,6 @@ org.glassfish.jersey.core:jersey-client:2.41=compileClasspath,runtimeClasspath
 org.glassfish.jersey.core:jersey-common:2.41=compileClasspath,runtimeClasspath
 org.glassfish.jersey.core:jersey-server:2.41=compileClasspath,runtimeClasspath
 org.glassfish.jersey:jersey-bom:2.41=compileClasspath,runtimeClasspath
-org.jctools:jctools-core:4.0.3=runtimeClasspath
+org.jctools:jctools-core:4.0.5=runtimeClasspath
 org.slf4j:slf4j-api:1.7.36=compileClasspath,runtimeClasspath
 empty=annotationProcessor,jmhCompileClasspath,jmhRuntimeClasspath,spotbugsPlugins,testAnnotationProcessor
