@@ -139,5 +139,5 @@
   </rule>
 
   <!-- generated -->
-  <exclude-pattern>.*/generated/source/proto/.*</exclude-pattern>
+  <exclude-pattern>.*/generated/sources/proto/.*</exclude-pattern>
 </ruleset>
