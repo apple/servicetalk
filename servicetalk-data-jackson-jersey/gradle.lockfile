@@ -1,10 +1,10 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
-com.fasterxml.jackson.core:jackson-annotations:2.16.2=compileClasspath,runtimeClasspath
-com.fasterxml.jackson.core:jackson-core:2.16.2=compileClasspath,runtimeClasspath
-com.fasterxml.jackson.core:jackson-databind:2.16.2=compileClasspath,runtimeClasspath
-com.fasterxml.jackson:jackson-bom:2.16.2=compileClasspath,runtimeClasspath
+com.fasterxml.jackson.core:jackson-annotations:2.18.4=compileClasspath,runtimeClasspath
+com.fasterxml.jackson.core:jackson-core:2.18.4=compileClasspath,runtimeClasspath
+com.fasterxml.jackson.core:jackson-databind:2.18.4=compileClasspath,runtimeClasspath
+com.fasterxml.jackson:jackson-bom:2.18.4=compileClasspath,runtimeClasspath
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
 com.sun.activation:jakarta.activation:1.2.2=runtimeClasspath
 com.sun.xml.bind:jaxb-core:2.3.0.1=runtimeClasspath
