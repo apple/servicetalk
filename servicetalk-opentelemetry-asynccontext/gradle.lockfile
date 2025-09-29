@@ -4,6 +4,6 @@
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
 io.opentelemetry:opentelemetry-bom:1.48.0=compileClasspath,runtimeClasspath
 io.opentelemetry:opentelemetry-context:1.48.0=compileClasspath,runtimeClasspath
-org.jctools:jctools-core:4.0.3=runtimeClasspath
+org.jctools:jctools-core:4.0.5=runtimeClasspath
 org.slf4j:slf4j-api:1.7.36=runtimeClasspath
 empty=annotationProcessor,jmhCompileClasspath,jmhRuntimeClasspath,spotbugsPlugins,testAnnotationProcessor
