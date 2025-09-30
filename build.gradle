@@ -74,16 +74,16 @@ if (JavaVersion.current().isJava11Compatible()) {
           exclude(":servicetalk-test-resources")
         }
         onUsedTransitiveDependencies {
-          // We import it as api dependency via :servicetalk-annotations
+          // We import it as api dependency via :servicetalk-annotations and don't want to repeat it explicitly
           exclude("com.google.code.findbugs:jsr305")
         }
         onIncorrectConfiguration {
-          // We import it as api dependency via :servicetalk-annotations
+          // We don't want to leak it as api dependency to our users
           exclude("com.google.code.findbugs:jsr305")
         }
         onCompileOnly {
-          // For backward compatibility
-          exclude(":servicetalk-annotations") // FIXME: 0.43 - move to compileOnly
+          // False positive, these annotations use RetentionPolicy.RUNTIME
+          exclude(":servicetalk-annotations")
         }
       }
     }
