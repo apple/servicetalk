@@ -81,6 +81,10 @@ if (JavaVersion.current().isJava11Compatible()) {
           // We import it as api dependency via :servicetalk-annotations
           exclude("com.google.code.findbugs:jsr305")
         }
+        onCompileOnly {
+          // For backward compatibility
+          exclude(":servicetalk-annotations") // FIXME: 0.43 - move to compileOnly
+        }
       }
     }
   }

@@ -89,7 +89,8 @@ dependencies {
   implementation platform("org.glassfish.jersey:jersey-bom:$actualJerseyVersion")
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api")
-  implementation "jakarta.annotation:jakarta.annotation-api:$actualJavaxAnnotationsApiVersion"
+
+  compileOnly "jakarta.annotation:jakarta.annotation-api:$actualJavaxAnnotationsApiVersion"
 
   runtimeOnly "org.glassfish.jersey.core:jersey-common"
 
