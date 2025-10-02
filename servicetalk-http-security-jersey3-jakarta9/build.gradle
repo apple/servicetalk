@@ -19,7 +19,10 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 // Required version for module
 def javaLanguageVersion = JavaVersion.VERSION_11
 
-if (!JavaVersion.current().isCompatibleWith(javaLanguageVersion)) {
+def toolchainVersion = project.hasProperty('testJavaVersion')
+  ? Integer.parseInt(project.property('testJavaVersion').toString())
+  : 8
+if (toolchainVersion < Integer.parseInt(javaLanguageVersion.getMajorVersion())) {
   project.tasks.all { task -> task.enabled = false }
 }
 

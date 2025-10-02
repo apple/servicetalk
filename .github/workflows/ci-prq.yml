@@ -12,7 +12,7 @@ on:
       - '*.txt'
 jobs:
   quality:
-    name: JDK ${{ matrix.java }}
+    name: JDK ${{ matrix.java }} Toolchain (Gradle on JDK 21)
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -20,10 +20,10 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v5
-      - name: Set up JDK ${{ matrix.java }}
+      - name: Set up JDK 21 (Gradle Execution)
         uses: actions/setup-java@v5
         with:
-          java-version: ${{ matrix.java }}
+          java-version: 21
           distribution: 'zulu'
           cache: 'gradle'
       - name: Print JDK Version
@@ -37,6 +37,8 @@ jobs:
       - name: Clean Gradle project
         run: ./gradlew --parallel clean
       - name: Build with Gradle
+        env:
+          ORG_GRADLE_PROJECT_testJavaVersion: ${{ matrix.java }}
         run: ./gradlew --parallel -Pdependency.analysis.print.build.health=true quality
       - name: Upload CheckStyle Results
         if: always()

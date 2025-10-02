@@ -50,43 +50,39 @@ buildscript {
     }
   }
   dependencies {
-    if (JavaVersion.current().isJava11Compatible()) {
-      classpath("com.autonomousapps:dependency-analysis-gradle-plugin:$dependencyAnalysisPluginVersion")
-    }
+    // With toolchains, the dependency analysis plugin can always be applied since Gradle runs on JDK 17+
+    classpath("com.autonomousapps:dependency-analysis-gradle-plugin:$dependencyAnalysisPluginVersion")
   }
 }
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-root"
 
-// Unfortunately, we can not make this validation part of our servicetalk-gradle-plugin-internal because it requires
-// JDK11 while we build and package our plugin with JDK8.
-if (JavaVersion.current().isJava11Compatible()) {
-  apply plugin: "com.autonomousapps.dependency-analysis"
+// With toolchains, Gradle always runs on JDK 17+ so dependency analysis can always be applied
+apply plugin: "com.autonomousapps.dependency-analysis"
 
-  dependencyAnalysis {
-    issues {
-      all {
-        onAny {
-          severity("fail")
-        }
-        onUnusedDependencies {
-          // We use it for log4j2.xml configuration
-          exclude(":servicetalk-test-resources")
-        }
-        onUsedTransitiveDependencies {
-          // We import it as api dependency via :servicetalk-annotations
-          exclude("com.google.code.findbugs:jsr305")
-        }
-        onIncorrectConfiguration {
-          // We import it as api dependency via :servicetalk-annotations
-          exclude("com.google.code.findbugs:jsr305")
-        }
+dependencyAnalysis {
+  issues {
+    all {
+      onAny {
+        severity("fail")
+      }
+      onUnusedDependencies {
+        // We use it for log4j2.xml configuration
+        exclude(":servicetalk-test-resources")
+      }
+      onUsedTransitiveDependencies {
+        // We import it as api dependency via :servicetalk-annotations
+        exclude("com.google.code.findbugs:jsr305")
+      }
+      onIncorrectConfiguration {
+        // We import it as api dependency via :servicetalk-annotations
+        exclude("com.google.code.findbugs:jsr305")
       }
     }
   }
-
-  quality.dependsOn buildHealth
 }
+
+quality.dependsOn buildHealth
 
 task validateLocalDocSite(type: Exec) {
   group = 'Documentation'
@@ -97,8 +93,11 @@ task validateLocalDocSite(type: Exec) {
 quality.dependsOn validateLocalDocSite
 
 subprojects {
-  // mockito 5 only supports jdk11+
-  if (JavaVersion.current() < JavaVersion.VERSION_11) {
+  // mockito 5 only supports jdk11+, but with toolchains we check the toolchain version, not Gradle's JVM
+  def toolchainVersion = project.hasProperty('testJavaVersion')
+    ? Integer.parseInt(project.property('testJavaVersion').toString())
+    : 8
+  if (toolchainVersion < 11) {
     project.setProperty("mockitoCoreVersion", mockitoCorePreJdk11Version)
   } else {
     apply plugin: "com.autonomousapps.dependency-analysis"
