@@ -39,8 +39,10 @@ jobs:
         run: java -version
       - name: Make gradlew Executable
         run: chmod +x gradlew
-      - name: List Java Toolchains
+      - name: List Java Toolchains (non-linux)
         run: ./gradlew -q javaToolchains
+      - name: List Java Toolchains (linux)
+        run:  sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew -q javaToolchains"
       - name: Clean Gradle project
         run: ./gradlew --parallel clean
       # https://github.community/t/error-the-paging-file-is-too-small-for-this-operation-to-complete/17141
