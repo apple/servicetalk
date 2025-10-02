@@ -1,10 +1,10 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
-com.fasterxml.jackson.core:jackson-annotations:2.16.2=compileClasspath,runtimeClasspath
-com.fasterxml.jackson.core:jackson-core:2.16.2=compileClasspath,runtimeClasspath
-com.fasterxml.jackson.core:jackson-databind:2.16.2=compileClasspath,runtimeClasspath
-com.fasterxml.jackson:jackson-bom:2.16.2=compileClasspath,runtimeClasspath
+com.fasterxml.jackson.core:jackson-annotations:2.18.4=compileClasspath,runtimeClasspath
+com.fasterxml.jackson.core:jackson-core:2.18.4=compileClasspath,runtimeClasspath
+com.fasterxml.jackson.core:jackson-databind:2.18.4=compileClasspath,runtimeClasspath
+com.fasterxml.jackson:jackson-bom:2.18.4=compileClasspath,runtimeClasspath
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
 io.netty:netty-bom:4.1.127.Final=runtimeClasspath
 io.netty:netty-buffer:4.1.127.Final=runtimeClasspath
@@ -29,6 +29,6 @@ io.netty:netty-transport:4.1.127.Final=runtimeClasspath
 org.apache.logging.log4j:log4j-api:2.23.1=runtimeClasspath
 org.apache.logging.log4j:log4j-core:2.23.1=runtimeClasspath
 org.apache.logging.log4j:log4j-slf4j-impl:2.23.1=runtimeClasspath
-org.jctools:jctools-core:4.0.3=runtimeClasspath
+org.jctools:jctools-core:4.0.5=runtimeClasspath
 org.slf4j:slf4j-api:1.7.36=compileClasspath,runtimeClasspath
 empty=annotationProcessor,jmhCompileClasspath,jmhRuntimeClasspath,testAnnotationProcessor

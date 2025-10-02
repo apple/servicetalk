@@ -4,6 +4,6 @@
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
 com.google.protobuf:protobuf-bom:3.25.5=compileClasspath,runtimeClasspath
 com.google.protobuf:protobuf-java:3.25.5=compileClasspath,runtimeClasspath
-org.jctools:jctools-core:4.0.3=runtimeClasspath
+org.jctools:jctools-core:4.0.5=runtimeClasspath
 org.slf4j:slf4j-api:1.7.36=runtimeClasspath
 empty=annotationProcessor,jmhCompileClasspath,jmhRuntimeClasspath,protobuf,spotbugsPlugins,testAnnotationProcessor,testProtobuf
