@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.opentelemetry;
+package io.servicetalk.examples.http.opentelemetry.tracing;
 
+import io.servicetalk.http.api.HttpExceptionMapperServiceFilter;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.http.utils.HttpRequestAutoDrainingServiceFilter;
 import io.servicetalk.opentelemetry.http.OpenTelemetryHttpServiceFilter;
@@ -38,8 +39,8 @@ import org.slf4j.LoggerFactory;
  *   <li>Automatically capture HTTP request/response spans</li>
  * </ul>
  */
-public final class OpenTelemetryServer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(OpenTelemetryServer.class);
+public final class OpenTelemetryTracingServer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(OpenTelemetryTracingServer.class);
 
     public static void main(String[] args) throws Exception {
         // Configure OpenTelemetry SDK
@@ -58,11 +59,15 @@ public final class OpenTelemetryServer {
                 .appendNonOffloadingServiceFilter(new OpenTelemetryHttpServiceFilter.Builder()
                         .build())
 
-                // IMPORTANT: Request draining filter MUST come after OpenTelemetry filter
+                // IMPORTANT: Request draining MUST come after OpenTelemetry filter
                 // This ensures tracing information is captured for auto-drained requests (e.g., GET requests)
                 // If auto-draining occurs before OpenTelemetry filter processes the request,
-                // tracing information may be incomplete or incorrect
+                // tracing information may be incomplete or incorrect.
                 .appendNonOffloadingServiceFilter(HttpRequestAutoDrainingServiceFilter.INSTANCE)
+                // Similarly, exception mapping should also come after the OTEL filter so that the OTEL span properly
+                // reflects what was sent back to the client.
+                .appendNonOffloadingServiceFilter(HttpExceptionMapperServiceFilter.INSTANCE)
+
 
                 // Other filters can be added after the critical ordering above
                 // Exception mapping, logging, etc. should come after OpenTelemetry and request draining

@@ -17,6 +17,6 @@
  * OpenTelemetry examples showing distributed tracing with ServiceTalk.
  */
 @ElementsAreNonnullByDefault
-package io.servicetalk.examples.http.opentelemetry;
+package io.servicetalk.examples.http.opentelemetry.tracing;
 
 import io.servicetalk.annotations.ElementsAreNonnullByDefault;

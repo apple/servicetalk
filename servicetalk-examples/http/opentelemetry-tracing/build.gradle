@@ -18,17 +18,20 @@ apply plugin: "java"
 apply from: "../../gradle/idea.gradle"
 
 dependencies {
+  implementation platform("io.opentelemetry:opentelemetry-bom:$opentelemetryVersion")
+
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-http-netty")
   implementation project(":servicetalk-http-utils") // For HttpRequestAutoDrainingServiceFilter
   implementation project(":servicetalk-opentelemetry-http") // OpenTelemetry client/server filters
-  implementation project(":servicetalk-opentelemetry-asynccontext") // OpenTelemetry async context propagation
+
+  runtimeOnly project(":servicetalk-opentelemetry-asynccontext") // OpenTelemetry async context propagation
 
   // OpenTelemetry Java SDK
-  implementation "io.opentelemetry:opentelemetry-api:$opentelemetryVersion"
-  implementation "io.opentelemetry:opentelemetry-sdk:$opentelemetryVersion"
-  implementation "io.opentelemetry:opentelemetry-exporter-logging:$opentelemetryVersion"
-  implementation "io.opentelemetry:opentelemetry-exporter-otlp:$opentelemetryVersion"
+  implementation "io.opentelemetry:opentelemetry-api"
+  implementation "io.opentelemetry:opentelemetry-sdk"
+  implementation "io.opentelemetry:opentelemetry-exporter-logging"
+  implementation "io.opentelemetry:opentelemetry-exporter-otlp"
 
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
   runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"

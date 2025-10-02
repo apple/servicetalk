@@ -18,6 +18,9 @@ IMPORTANT: The `servicetalk-opentelemetry-asynccontext` module must be on your c
 
 == Key Components
 
+=== Context Propagation
+* link:{source-root}/servicetalk-opentelemetry-asynccontext/src/main/java/io/servicetalk/opentelemetry/asynccontext/OtelCapturedContextProvider.java[OtelCapturedContextProvider] - Service loaded provider that lets ServiceTalk properly propagate the OTEL context and span information. The package just needs to be on the runtime classpath.
+
 === Client-Side Tracing
 * link:{source-root}/servicetalk-opentelemetry-http/src/main/java/io/servicetalk/opentelemetry/http/OpenTelemetryHttpRequesterFilter.java[OpenTelemetryHttpRequesterFilter] - Client tracing filter for HTTP and gRPC
 
@@ -25,7 +28,8 @@ IMPORTANT: The `servicetalk-opentelemetry-asynccontext` module must be on your c
 * link:{source-root}/servicetalk-opentelemetry-http/src/main/java/io/servicetalk/opentelemetry/http/OpenTelemetryHttpServiceFilter.java[OpenTelemetryHttpServiceFilter] - Server tracing filter for HTTP and gRPC
 
 === Configuration
-* link:{source-root}/servicetalk-opentelemetry-http/src/main/java/io/servicetalk/opentelemetry/http/OpenTelemetryFilterBuilder.java[OpenTelemetryFilterBuilder] - Base builder for configuring tracing options
+* link:{source-root}/servicetalk-opentelemetry-http/src/main/java/io/servicetalk/opentelemetry/http/OpenTelemetryHttpRequesterFilter.java[OpenTelemetryHttpRequesterFilter.Builder] - Builder for configuring tracing options for requesters.
+* link:{source-root}/servicetalk-opentelemetry-http/src/main/java/io/servicetalk/opentelemetry/http/OpenTelemetryHttpServiceFilter.java[OpenTelemetryHttpServiceFilter.Builder] - Builder for configuring tracing options for services.
 
 == Key Features
 
@@ -37,7 +41,7 @@ IMPORTANT: The `servicetalk-opentelemetry-asynccontext` module must be on your c
 
 == Quick Start
 
-NOTE: For complete dependency setup and OpenTelemetry SDK configuration, see the working examples in the ServiceTalk examples module.
+NOTE: For complete dependency setup and OpenTelemetry SDK configuration, see the working examples in the ServiceTalk examples module link:{source-root}/servicetalk-examples/http/opentelemetry-tracing/src/main/java/io/servicetalk/examples/http/opentelemetry/tracing[here].
 
 === Client Configuration
 
@@ -46,8 +50,6 @@ NOTE: For complete dependency setup and OpenTelemetry SDK configuration, see the
 HttpClient client = HttpClients.forSingleAddress("example.com", 80)
     .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
         .componentName("my-client")
-        .capturedRequestHeaders(Arrays.asList("user-agent", "x-request-id"))
-        .capturedResponseHeaders(Arrays.asList("content-type", "x-response-id"))
         .build())
     .build();
 ----
@@ -59,12 +61,11 @@ HttpClient client = HttpClients.forSingleAddress("example.com", 80)
 HttpServerBuilder.forAddress(localAddress(0))
     // IMPORTANT: Use non-offloading filter for proper context propagation
     .appendNonOffloadingServiceFilter(new OpenTelemetryHttpServiceFilter.Builder()
-        .capturedRequestHeaders(Arrays.asList("user-agent", "x-request-id"))
-        .capturedResponseHeaders(Arrays.asList("content-type"))
         .build())
-
-    // Add request draining AFTER OpenTelemetry filter
+    // Add request draining and exception mapping AFTER OpenTelemetry filter.
+    //
     .appendNonOffloadingServiceFilter(HttpRequestAutoDrainingServiceFilter.INSTANCE)
+    .appendNonOffloadingServiceFilter(HttpExceptionMapperServiceFilter.INSTANCE)
 
     .listen(service);
 ----
@@ -78,8 +79,8 @@ HttpServerBuilder.forAddress(localAddress(0))
 // Capture specific request and response headers as span attributes
 OpenTelemetryHttpRequesterFilter filter = new OpenTelemetryHttpRequesterFilter.Builder()
     .componentName("my-client")
-    .capturedRequestHeaders(Arrays.asList("x-custom-header", "authorization"))
-    .capturedResponseHeaders(Arrays.asList("x-response-id", "content-type"))
+    .capturedRequestHeaders(Arrays.asList("content-encoding", "content-length"))
+    .capturedResponseHeaders(Arrays.asList("content-type"))
     .build();
 ----
 
@@ -117,17 +118,21 @@ When using multiple filters on clients, place the OpenTelemetry filter appropria
 
 [source,java]
 ----
-HttpClient client = HttpClients.forSingleAddress("example.com", 80)
-    // Logging or other observability filters before tracing
-    .appendClientFilter(loggingFilter)
-
-    // OpenTelemetry filter for span creation and context propagation
-    .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
+OpenTelemetryHttpRequesterFilter filter =
+    new OpenTelemetryHttpRequesterFilter.Builder()
         .componentName("my-client")
-        .build())
-
-    // Retry and other resilience filters after tracing
+        .build();
+HttpClient client = HttpClients.forSingleAddress("example.com", 80)
+    // OpenTelemetry filter for span creation and context propagation
+    .appendClientFilter(filter)
+    // Adding the same filter as a connection filter will give you
+    // additional spans for each physical request sent over the wire
+    .appendConnectionFilter(filter)
+    // Logging comes after tracing so we can get trace-id's in logs
+    .appendClientFilter(loggingFilter)
+    // Retry and other resilience filters also come after tracing
     .appendClientFilter(retryFilter)
+
     .build();
 ----
 
@@ -167,7 +172,7 @@ ServiceTalk's async context system ensures OpenTelemetry context is maintained a
 * **Executor transitions** when work is offloaded
 * **Filter chains** where context must be preserved
 
-This integration is provided by the `servicetalk-opentelemetry-asynccontext` module, which implements the `CapturedContextProvider` interface.
+This integration is provided by the `servicetalk-opentelemetry-asynccontext` module which should be added as a `runtimeOnly` dependency. This module provides the `CapturedContextProvider` class which will be service-loaded by the ServiceTalk framework.
 
 === Context Scope Management
 
@@ -180,7 +185,7 @@ client.request(client.get("/api"))
     .beforeOnSuccess(response -> {
         // Current span is still active here
         Span currentSpan = Span.current();
-        currentSpan.setStatus(StatusCode.OK);
+        currentSpan.setAttribute(myStringAttributeKey, "attribute value");
     });
 
 // Server side: span is active during service method execution
@@ -212,7 +217,7 @@ Verify OpenTelemetry is properly configured and the global OpenTelemetry instanc
 
 == Examples
 
-For complete working examples, see the OpenTelemetry examples in the ServiceTalk examples module.
+For complete working examples, see the link:{source-root}/servicetalk-examples/http/opentelemetry-tracing/src/main/java/io/servicetalk/examples/http/opentelemetry/tracing[OpenTelemetry tracing examples] in the ServiceTalk examples module.
 
 == Related Documentation
 

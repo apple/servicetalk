@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.opentelemetry;
+package io.servicetalk.examples.http.opentelemetry.tracing;
 
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponse;
@@ -39,7 +39,7 @@ import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
  *   <li>Propagate trace context to downstream services</li>
  * </ul>
  */
-public final class OpenTelemetryClient {
+public final class OpenTelemetryTracingClient {
     public static void main(String[] args) throws Exception {
         // Configure OpenTelemetry SDK
         final String serviceName = "servicetalk-example-client";
@@ -53,12 +53,18 @@ public final class OpenTelemetryClient {
         // Set the global OpenTelemetry instance
         GlobalOpenTelemetry.set(openTelemetry);
 
+        OpenTelemetryHttpRequesterFilter filter = new OpenTelemetryHttpRequesterFilter.Builder()
+                .componentName(serviceName)
+                .build();
+
         try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
                 // IMPORTANT: OpenTelemetry filter should be placed EARLY in the filter chain
                 // This ensures proper span creation and context propagation for downstream filters
-                .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
-                        .componentName(serviceName)
-                        .build())
+                .appendClientFilter(filter)
+                // Adding the filter a second time as a connection filter will enable 'physical spans'
+                // where there will be a higher level 'logical' span and a sub-physical span for each
+                // request sent over the wire.
+                .appendConnectionFilter(filter)
                 .buildBlocking()) {
 
             System.out.println("Making first request...");
