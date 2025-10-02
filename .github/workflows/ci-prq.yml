@@ -12,7 +12,7 @@ on:
       - '*.txt'
 jobs:
   quality:
-    name: PRQ JDK ${{ matrix.java }} Toolchain
+    name: JDK ${{ matrix.java }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
