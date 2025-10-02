@@ -33,6 +33,12 @@ jobs:
           java-version: 21
           distribution: 'zulu'
           cache: 'gradle'
+      - name: Set up JDK ${{ matrix.java}} for Toolchain
+        uses: actions/setup-java@v5
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: 'zulu'
+          cache: 'gradle'
       - name: Print JDK Version
         run: java -version
       - name: Make gradlew Executable
