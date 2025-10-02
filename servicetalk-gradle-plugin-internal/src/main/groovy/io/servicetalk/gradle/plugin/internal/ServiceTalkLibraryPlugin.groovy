@@ -24,6 +24,7 @@ import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.tasks.AbstractPublishToMaven
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addManifestAttributes
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addQualityTask
@@ -57,13 +58,29 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       pluginManager.apply("java-library")
 
       java {
+        // Keep explicit source/target compatibility
         sourceCompatibility = TARGET_VERSION
         targetCompatibility = TARGET_VERSION
+
+        // Configure Java toolchain - defaults to Java 8, but can be overridden via testJavaVersion property
+        toolchain {
+          languageVersion = JavaLanguageVersion.of(
+            project.hasProperty('testJavaVersion')
+              ? project.property('testJavaVersion') as Integer
+              : Integer.parseInt(TARGET_VERSION.getMajorVersion())
+          )
+        }
       }
 
       def javaRelease = Integer.parseInt(TARGET_VERSION.getMajorVersion())
 
-      if (JavaVersion.current().isJava9Compatible()) {
+      // Determine the toolchain version being used
+      def toolchainVersion = project.hasProperty('testJavaVersion')
+        ? Integer.parseInt(project.property('testJavaVersion').toString())
+        : Integer.parseInt(TARGET_VERSION.getMajorVersion())
+
+      // Only use --release flag if toolchain is Java 9+, since --release was added in Java 9
+      if (toolchainVersion >= 9) {
         compileJava {
           options.release = javaRelease
         }
@@ -216,7 +233,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
 
         idea {
           module {
-            testSourceDirs += fixturesDir
+            testSources.from(fixturesDir)
           }
         }
       }
@@ -259,6 +276,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
 
       dependencies {
         testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junit5Version")
+        testRuntimeOnly("org.junit.platform:junit-platform-launcher")
       }
     }
   }
@@ -301,8 +319,8 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       }
 
       // This task defaults to XML reporting for CI, but humans like HTML
-      tasks.withType(SpotBugsTask) {
-        reports {
+      tasks.withType(SpotBugsTask).configureEach {
+        reports.configure {
           xml.enabled = project.ext.isCiBuild
           html.enabled = !project.ext.isCiBuild
         }

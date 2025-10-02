@@ -20,10 +20,12 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v5
-      - name: Set up JDK ${{ matrix.java }}
+      - name: Set up JDKs 17 and ${{ matrix.java }}
         uses: actions/setup-java@v5
         with:
-          java-version: ${{ matrix.java }}
+          java-version: |
+            ${{ matrix.java }}
+            17
           distribution: 'zulu'
           cache: 'gradle'
       - name: Print JDK Version
@@ -37,6 +39,8 @@ jobs:
       - name: Clean Gradle project
         run: ./gradlew --parallel clean
       - name: Build with Gradle
+        env:
+          ORG_GRADLE_PROJECT_testJavaVersion: ${{ matrix.java }}
         run: ./gradlew --parallel -Pdependency.analysis.print.build.health=true quality
       - name: Upload CheckStyle Results
         if: always()

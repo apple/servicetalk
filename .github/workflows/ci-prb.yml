@@ -13,7 +13,7 @@ on:
       - '**.txt'
 jobs:
   build:
-    name: JDK ${{ matrix.java }} ${{ matrix.os_label }}
+    name: JDK ${{ matrix.java }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -27,16 +27,20 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v5
-      - name: Set up JDK ${{ matrix.java }}
+      - name: Set up JDKs 17 and ${{ matrix.java }}
         uses: actions/setup-java@v5
         with:
-          java-version: ${{ matrix.java }}
+          java-version: |
+            ${{ matrix.java }}
+            17
           distribution: 'zulu'
           cache: 'gradle'
       - name: Print JDK Version
         run: java -version
       - name: Make gradlew Executable
         run: chmod +x gradlew
+      - name: List Java Toolchains
+        run: ./gradlew --no-daemon -q javaToolchains
       - name: Clean Gradle project
         run: ./gradlew --parallel clean
       # https://github.community/t/error-the-paging-file-is-too-small-for-this-operation-to-complete/17141
@@ -51,11 +55,15 @@ jobs:
         if: runner.os == 'Linux'
         env:
           JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
-        run:  sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel test"
+          ORG_GRADLE_PROJECT_testJavaVersion: ${{ matrix.java }}
+        run: |
+          sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a"
+          ./gradlew --no-daemon --parallel test
       - name: Build and Test (non-Linux)
         if: runner.os != 'Linux'
         env:
           JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
+          ORG_GRADLE_PROJECT_testJavaVersion: ${{ matrix.java }}
         run: ./gradlew --no-daemon --parallel test
       - name: Upload Test Results
         if: always()
