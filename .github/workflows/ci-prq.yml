@@ -12,7 +12,7 @@ on:
       - '*.txt'
 jobs:
   quality:
-    name: JDK ${{ matrix.java }} Toolchain (Gradle on JDK 21)
+    name: PRQ JDK ${{ matrix.java }} Toolchain
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -20,10 +20,12 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v5
-      - name: Set up JDK 21 (Gradle Execution)
+      - name: Set up JDKs 17 and ${{ matrix.java }}
         uses: actions/setup-java@v5
         with:
-          java-version: 21
+          java-version: |
+            ${{ matrix.java }}
+            17
           distribution: 'zulu'
           cache: 'gradle'
       - name: Print JDK Version

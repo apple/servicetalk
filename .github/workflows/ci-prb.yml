@@ -13,7 +13,7 @@ on:
       - '**.txt'
 jobs:
   build:
-    name: JDK ${{ matrix.java }} Toolchain (Gradle on JDK 21)
+    name: PRB JDK ${{ matrix.java }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -27,7 +27,7 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v5
-      - name: Set up JDKs 21 and ${{ matrix.java }}
+      - name: Set up JDKs 17 and ${{ matrix.java }}
         uses: actions/setup-java@v5
         with:
           java-version: |
