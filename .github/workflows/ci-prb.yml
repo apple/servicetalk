@@ -60,7 +60,10 @@ jobs:
         env:
           JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
           ORG_GRADLE_PROJECT_testJavaVersion: ${{ matrix.java }}
-        run:  sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel test"
+        run: |
+          sudo ulimit -l 65536
+          sudo ulimit -a
+          ./gradlew --no-daemon --parallel test
       - name: Build and Test (non-Linux)
         if: runner.os != 'Linux'
         env:
