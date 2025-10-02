@@ -103,7 +103,7 @@ HttpServerBuilder.forAddress(localAddress(0))
     .appendNonOffloadingServiceFilter(HttpRequestAutoDrainingServiceFilter.INSTANCE)
 
     // Exception mapping should come after tracing to ensure correct status codes
-    .appendServiceFilter(HttpExceptionMapperServiceFilter.create())
+    .appendNonOffloadingServiceFilter(HttpExceptionMapperServiceFilter.INSTANCE)
 
     // Other filters can follow
     .listen(service);
@@ -134,7 +134,7 @@ HttpClient client = HttpClients.forSingleAddress("example.com", 80)
 === Filter Ordering Best Practices
 
 1. **OpenTelemetry filters should be among the first filters** to ensure proper context establishment
-2. **Use non-offloading filters** (`appendNonOffloadingServiceFilter`) for OpenTelemetry filters to maintain context
+2. **Use non-offloading filters** (`appendNonOffloadingServiceFilter`) for OpenTelemetry filters on the server-side to ensure earlier context establishment
 3. **Request draining must come after OpenTelemetry** on the server side
 4. **Exception mapping should come after OpenTelemetry** to ensure trace status reflects actual response codes
 5. **Lifecycle observers should come after OpenTelemetry** to see correct span information

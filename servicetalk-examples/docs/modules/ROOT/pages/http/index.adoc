@@ -271,7 +271,7 @@ This example demonstrates the following:
 
 - automatically generate and propagate distributed tracing metadata using OpenTelemetry
 - configure OpenTelemetry SDK with logging span exporter for local development
-- integrate ServiceTalk HTTP filters with OpenTelemetry tracing
+- use of ServiceTalk HTTP filters for OpenTelemetry tracing
 - proper async context propagation for span correlation
 
 Using the following classes:
