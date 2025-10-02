@@ -40,8 +40,10 @@ jobs:
       - name: Make gradlew Executable
         run: chmod +x gradlew
       - name: List Java Toolchains (non-linux)
+        if: runner.os != 'Linux'
         run: ./gradlew -q javaToolchains
       - name: List Java Toolchains (linux)
+        if: runner.os == 'Linux'
         run:  sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew -q javaToolchains"
       - name: Clean Gradle project
         run: ./gradlew --parallel clean
