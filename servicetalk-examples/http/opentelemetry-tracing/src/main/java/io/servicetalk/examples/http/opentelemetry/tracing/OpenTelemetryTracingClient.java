@@ -61,7 +61,7 @@ public final class OpenTelemetryTracingClient {
                 // IMPORTANT: OpenTelemetry filter should be placed EARLY in the filter chain
                 // This ensures proper span creation and context propagation for downstream filters
                 .appendClientFilter(filter)
-                // Adding the filter a second time as a connection filter will enable 'physical spans'
+                // Optional: adding the filter a second time as a connection filter will enable 'physical spans'
                 // where there will be a higher level 'logical' span and a sub-physical span for each
                 // request sent over the wire.
                 .appendConnectionFilter(filter)

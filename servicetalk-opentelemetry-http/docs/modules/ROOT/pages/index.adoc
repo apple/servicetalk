@@ -124,8 +124,8 @@ OpenTelemetryHttpRequesterFilter filter =
 HttpClient client = HttpClients.forSingleAddress("example.com", 80)
     // OpenTelemetry filter for span creation and context propagation
     .appendClientFilter(filter)
-    // Adding the same filter as a connection filter will give you
-    // additional spans for each physical request sent over the wire
+    // Optional: adding the same filter as a connection filter will give
+    // you additional spans for each physical request sent over the wire
     .appendConnectionFilter(filter)
     // Logging comes after tracing so we can get trace-id's in logs
     .appendClientFilter(loggingFilter)
