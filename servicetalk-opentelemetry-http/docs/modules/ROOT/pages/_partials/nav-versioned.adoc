@@ -1,0 +1,1 @@
+* xref:{page-version}@servicetalk-opentelemetry-http::index.adoc[OpenTelemetry Tracing]

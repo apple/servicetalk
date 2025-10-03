@@ -47,5 +47,11 @@ include::{page-version}@servicetalk-loadbalancer:ROOT:partial$nav-versioned.adoc
 include::{page-version}@servicetalk-traffic-resilience-http:ROOT:partial$nav-versioned.adoc[]
 --
 +
+* Observability
++
+--
+include::{page-version}@servicetalk-opentelemetry-http:ROOT:partial$nav-versioned.adoc[]
+--
++
 * xref:{page-version}@servicetalk::javadoc/index.adoc[Javadoc]
 * xref:{page-version}@servicetalk::contributing.adoc[Contributing]
