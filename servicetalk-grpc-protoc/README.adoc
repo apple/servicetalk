@@ -68,8 +68,6 @@ task.plugins {
 
 And with Maven:
 
-And with Maven:
-
 [source, xml]
 ----
 <protocPlugin>
@@ -101,8 +99,6 @@ task.plugins {
 
 And with Maven:
 
-And with Maven:
-
 [source, xml]
 ----
 <protocPlugin>
@@ -117,6 +113,8 @@ And with Maven:
 ==== `defaultServiceMethods=<true|false> (default: false)`
 Generates default service interface methods to ensure implementations will continue to compile as the API is evolved.
 
+NOTE: We plan to flip the default value of this option to `true` in the next major release.
+
 If you are using the
 link:https://github.com/google/protobuf-gradle-plugin#configure-what-to-generate[protobuf-gradle-plugin] this is how you
 can specify an option:
@@ -129,8 +127,6 @@ task.plugins {
   }
 }
 ----
-
-And with Maven:
 
 And with Maven:
 
