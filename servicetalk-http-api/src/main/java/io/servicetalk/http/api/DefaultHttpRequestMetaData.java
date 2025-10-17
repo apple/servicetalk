@@ -85,7 +85,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
     @Nullable
     @Override
-    public BufferEncoder contentEncoding() {
+    public final BufferEncoder contentEncoding() {
         return encoder;
     }
 
@@ -119,7 +119,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
-    public String requestTarget(final Charset encoding) {
+    public final String requestTarget(final Charset encoding) {
         return CONNECT.equals(method) ? HttpAuthorityFormUri.decode(requestTarget(), encoding) :
                 Uri3986.decode(requestTarget(), encoding);
     }
@@ -240,6 +240,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         return requestTarget(sb.toString());
     }
 
+    @Nullable
     @Override
     public final String rawQuery() {
         checkDirtyQuery();
@@ -265,8 +266,9 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         return requestTarget(sb.toString());
     }
 
+    @Nullable
     @Override
-    public String query() {
+    public final String query() {
         checkDirtyQuery();
         if (queryDecoded != null) {
             return queryDecoded;
@@ -282,42 +284,42 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
     @Nullable
     @Override
-    public String queryParameter(final String key) {
+    public final String queryParameter(final String key) {
         return lazyParseQueryString().get(key);
     }
 
     @Override
-    public Iterable<Entry<String, String>> queryParameters() {
+    public final Iterable<Entry<String, String>> queryParameters() {
         return lazyParseQueryString();
     }
 
     @Override
-    public Iterable<String> queryParameters(final String key) {
+    public final Iterable<String> queryParameters(final String key) {
         return lazyParseQueryString().values(key);
     }
 
     @Override
-    public Iterator<String> queryParametersIterator(final String key) {
+    public final Iterator<String> queryParametersIterator(final String key) {
         return lazyParseQueryString().valuesIterator(key);
     }
 
     @Override
-    public Set<String> queryParametersKeys() {
+    public final Set<String> queryParametersKeys() {
         return lazyParseQueryString().keys();
     }
 
     @Override
-    public boolean hasQueryParameter(final String key) {
+    public final boolean hasQueryParameter(final String key) {
         return lazyParseQueryString().contains(key);
     }
 
     @Override
-    public boolean hasQueryParameter(final String key, @Nullable final String value) {
+    public final boolean hasQueryParameter(final String key, @Nullable final String value) {
         return lazyParseQueryString().contains(key, value);
     }
 
     @Override
-    public int queryParametersSize() {
+    public final int queryParametersSize() {
         return lazyParseQueryString().size();
     }
 
@@ -358,17 +360,18 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
-    public boolean removeQueryParameters(final String key) {
+    public final boolean removeQueryParameters(final String key) {
         return lazyParseQueryString().remove(key);
     }
 
     @Override
-    public boolean removeQueryParameters(final String key, @Nullable final String value) {
+    public final boolean removeQueryParameters(final String key, @Nullable final String value) {
         return lazyParseQueryString().remove(key, value);
     }
 
+    @Nullable
     @Override
-    public HostAndPort effectiveHostAndPort() {
+    public final HostAndPort effectiveHostAndPort() {
         final CharSequence hostHeader;
         final Uri effectiveRequestUri = lazyParseRequestTarget();
         final String effectiveRequestUriHost = effectiveRequestUri.host();
@@ -446,7 +449,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
     @Nullable
     @Override
-    public String fragment() {
+    public final String fragment() {
       return lazyParseRequestTarget().fragment();
     }
 
@@ -479,7 +482,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
     @Override
     public final String toString() {
-        return method().toString() + " " + requestTarget() + " " + version();
+        return method() + " " + requestTarget() + " " + version();
     }
 
     @Override
