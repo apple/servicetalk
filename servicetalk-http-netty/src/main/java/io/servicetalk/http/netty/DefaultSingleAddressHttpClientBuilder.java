@@ -55,7 +55,7 @@ import io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.Interna
 import io.servicetalk.http.utils.HostHeaderHttpRequesterFilter;
 import io.servicetalk.http.utils.IdleTimeoutConnectionFilter;
 import io.servicetalk.loadbalancer.LoadBalancers;
-import io.servicetalk.loadbalancer.OutlierDetectorConfig;
+import io.servicetalk.loadbalancer.OutlierDetectorConfigs;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.DomainSocketAddress;
@@ -70,7 +70,6 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
-import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
@@ -843,14 +842,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         return new DefaultHttpLoadBalancerFactory<>(
                 LoadBalancers.<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection>builder(
                         DefaultHttpLoadBalancerFactory.class.getSimpleName())
-                            .outlierDetectorConfig(
-                                new OutlierDetectorConfig.Builder()
-                                    // For now, we will disable the L7 failure detection by default.
-                                    .ewmaHalfLife(Duration.ZERO)
-                                    .enforcingFailurePercentage(0)
-                                    .enforcingSuccessRate(0)
-                                    .enforcingConsecutive5xx(0)
-                                    .build())
+                        // For now, only use the l4 detection to reproduce the old RoundRobinLoadBalancer behavior
+                        .outlierDetectorConfig(OutlierDetectorConfigs.l4Only())
                         .build());
     }
 
