@@ -1,4 +1,6 @@
 name: Snapshot Publisher
+permissions:
+  contents: read
 on:
   push:
     branches: [ main, '0.41', '0.42' ]

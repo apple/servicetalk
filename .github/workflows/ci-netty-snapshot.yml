@@ -1,4 +1,6 @@
 name: Test with the latest Netty Snapshots
+permissions:
+  contents: read
 on:
   schedule:
     - cron: '0 15 * * 1-5'

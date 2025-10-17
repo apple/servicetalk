@@ -1,4 +1,6 @@
 name: PR Quality Reports
+permissions:
+  contents: read
 on:
   workflow_run:
     workflows: [ "PR Quality" ]

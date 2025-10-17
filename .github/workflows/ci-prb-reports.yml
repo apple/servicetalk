@@ -1,4 +1,6 @@
 name: PR Builder Reports
+permissions:
+  contents: read
 on:
   workflow_run:
     workflows: [ "PR Builder" ]

@@ -1,4 +1,6 @@
 name: Release Publisher
+permissions:
+  contents: read
 on:
   push:
     tags:

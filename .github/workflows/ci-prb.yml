@@ -1,4 +1,6 @@
 name: PR Builder
+permissions:
+  contents: read
 on:
   pull_request:
     branches: [ main, '0.41', '0.42' ]
