@@ -139,13 +139,10 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             backgroundExecutor = healthCheckConfig.executor;
         }
 
-        OutlierDetectorConfig outlierDetectorConfig = new OutlierDetectorConfig.Builder()
-                .ewmaHalfLife(Duration.ZERO)
-                // disable the xDS outlier detectors
-                .enforcingFailurePercentage(0)
-                .enforcingSuccessRate(0)
-                .enforcingConsecutive5xx(0)
-                // set the ServiceTalk L4 connection outlier detector settings
+        OutlierDetectorConfig outlierDetectorConfig =
+                // Start with outlier detection disabled. When we set failedConnectionsThreshold it may turn
+                // L4 outlier detection back on.
+                new OutlierDetectorConfig.Builder(OutlierDetectorConfigs.disabled())
                 .failedConnectionsThreshold(healthCheckFailedConnectionsThreshold)
                 .failureDetectorInterval(healthCheckInterval, healthCheckJitter)
                 .serviceDiscoveryResubscribeInterval(healthCheckResubscribeInterval, healthCheckResubscribeJitter)
