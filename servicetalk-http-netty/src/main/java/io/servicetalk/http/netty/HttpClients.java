@@ -41,7 +41,8 @@ import io.servicetalk.http.api.PartitionedHttpClientBuilder;
 import io.servicetalk.http.api.ProxyConfig;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.loadbalancer.RoundRobinLoadBalancers;
+import io.servicetalk.loadbalancer.LoadBalancers;
+import io.servicetalk.loadbalancer.OutlierDetectorConfig;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.TransportObserver;
 
@@ -51,6 +52,7 @@ import org.slf4j.LoggerFactory;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
@@ -485,12 +487,21 @@ public final class HttpClients {
                         .retryServiceDiscoveryErrors(NoRetriesStrategy.INSTANCE)
                         // Disable health-checking:
                         .loadBalancerFactory(new DefaultHttpLoadBalancerFactory<>(
-                                RoundRobinLoadBalancers.<R, FilterableStreamingHttpLoadBalancedConnection>builder(
+                                LoadBalancers.<R, FilterableStreamingHttpLoadBalancedConnection>builder(
                                         // Use a different ID to let providers distinguish this LB from the default one
                                         DefaultHttpLoadBalancerFactory.class.getSimpleName() + '-' +
                                                 DiscoveryStrategy.ON_NEW_CONNECTION.name())
-                                        .healthCheckFailedConnectionsThreshold(-1)
-                                        .build()))
+                                                .outlierDetectorConfig(
+                                                    // Disable all outlier detection since we're really using the
+                                                    // Host as the load balancer and not the LoadBalancer itself.
+                                                    new OutlierDetectorConfig.Builder()
+                                                    .ewmaHalfLife(Duration.ZERO)
+                                                    .enforcingSuccessRate(0)
+                                                    .enforcingFailurePercentage(0)
+                                                    .enforcingConsecutive5xx(0)
+                                                    .failedConnectionsThreshold(-1)
+                                                    .build())
+                                                .build()))
                         .appendConnectionFactoryFilter(resolvingConnectionFactory.get());
             default:
                 throw new IllegalArgumentException("Unsupported strategy: " + discoveryStrategy);
