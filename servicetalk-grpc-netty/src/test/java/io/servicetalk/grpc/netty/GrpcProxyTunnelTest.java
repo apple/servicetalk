@@ -48,7 +48,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
-import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
+import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNAUTHENTICATED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNAVAILABLE;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
@@ -168,7 +168,7 @@ class GrpcProxyTunnelTest {
             os.write((protocol + ' ' + BAD_REQUEST + "\r\n\r\n").getBytes(UTF_8));
             os.flush();
         });
-        assertProxyConnectResponseException(INVALID_ARGUMENT, BAD_REQUEST);
+        assertProxyConnectResponseException(INTERNAL, BAD_REQUEST);
     }
 
     private void assertProxyConnectResponseException(GrpcStatusCode grpcStatusCode,
