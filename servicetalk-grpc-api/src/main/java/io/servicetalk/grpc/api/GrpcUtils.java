@@ -264,8 +264,20 @@ final class GrpcUtils {
                 .setMessage("Unexpected HTTP status code received: " + status).build());
     }
 
-    // See https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md and
-    // https://github.com/grpc/grpc-java/blob/master/core/src/main/java/io/grpc/internal/GrpcUtil.java
+    // ServiceTalk provides semantically better mappings than the original spec:
+    // https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md
+    //
+    // Following grpc-java's precedent (431 → INTERNAL), we map additional HTTP status codes to their semantic gRPC
+    // equivalents rather than defaulting to UNKNOWN:
+    //   407 Proxy Authentication Required → UNAUTHENTICATED (like 401)
+    //   408 Request Timeout → DEADLINE_EXCEEDED (timeout semantic)
+    //   412 Precondition Failed → FAILED_PRECONDITION (exact semantic match)
+    //   417 Expectation Failed → FAILED_PRECONDITION (similar to 412)
+    //   501 Not Implemented → UNIMPLEMENTED (method not supported)
+    //
+    // While this diverges from grpc-java's UNKNOWN fallback, it provides better error classification for clients.
+    // grpc-java itself diverges from the spec with 431 → INTERNAL mapping, acknowledging the spec is not comprehensive.
+    // See https://github.com/grpc/grpc-java/blob/master/core/src/main/java/io/grpc/internal/GrpcUtil.java
     static GrpcStatusCode fromHttpStatus(final HttpResponseStatus status) {
         final int statusCode = status.code();
         final GrpcStatusCode grpcStatusCode;

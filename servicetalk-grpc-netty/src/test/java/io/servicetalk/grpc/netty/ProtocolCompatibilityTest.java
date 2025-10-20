@@ -653,7 +653,6 @@ class ProtocolCompatibilityTest {
                             stClient.clientStreamingCall(Publisher.from(request)) :
                             stClient.scalarCall(request))
                             .toFuture().get();
-                    stClient.scalarCall(request).toFuture().get();
                 } catch (ExecutionException e) {
                     logger.debug("servicetalk-grpc failed for httpCode={} with", httpCode, e.getCause());
                     stCode = ((GrpcStatusException) e.getCause()).status().code().value();
