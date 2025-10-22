@@ -30,7 +30,7 @@ import java.time.Duration;
  */
 public final class OutlierDetectorConfigs {
 
-    private static final OutlierDetectorConfig L4_ONLY =
+    private static final OutlierDetectorConfig CONSECUTIVE_CONNECT_FAILURES =
             new OutlierDetectorConfig.Builder()
                 .ewmaHalfLife(Duration.ZERO)
                 .enforcingFailurePercentage(0)
@@ -39,7 +39,7 @@ public final class OutlierDetectorConfigs {
                 .build();
 
     private static final OutlierDetectorConfig DISABLED =
-            new OutlierDetectorConfig.Builder(L4_ONLY)
+            new OutlierDetectorConfig.Builder(CONSECUTIVE_CONNECT_FAILURES)
                     .failedConnectionsThreshold(-1)
                     .build();
 
@@ -51,8 +51,8 @@ public final class OutlierDetectorConfigs {
      * {@link OutlierDetectorConfig} that only enables the default consecutive connection failure detection.
      * @return the {@link OutlierDetectorConfig} that only enables the default consecutive connection failure detection.
      */
-    public static OutlierDetectorConfig l4Only() {
-        return L4_ONLY;
+    public static OutlierDetectorConfig consecutiveConnectFailures() {
+        return CONSECUTIVE_CONNECT_FAILURES;
     }
 
     /**

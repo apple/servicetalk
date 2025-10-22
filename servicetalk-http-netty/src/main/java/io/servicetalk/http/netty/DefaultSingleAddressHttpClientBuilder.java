@@ -843,7 +843,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 LoadBalancers.<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection>builder(
                         DefaultHttpLoadBalancerFactory.class.getSimpleName())
                         // For now, only use the l4 detection to reproduce the old RoundRobinLoadBalancer behavior
-                        .outlierDetectorConfig(OutlierDetectorConfigs.l4Only())
+                        .outlierDetectorConfig(OutlierDetectorConfigs.consecutiveConnectFailures())
                         .build());
     }
 
