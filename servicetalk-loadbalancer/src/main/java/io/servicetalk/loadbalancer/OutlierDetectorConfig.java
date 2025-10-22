@@ -36,6 +36,7 @@ import static java.time.Duration.ofSeconds;
  * <p>
  * See the <a href="https://www.envoyproxy.io/docs/envoy/v1.29.0/api-v3/config/cluster/v3/outlier_detection.proto#envoy-v3-api-msg-config-cluster-v3-outlierdetection">Envoy docs</a>
  * for the official OutlierDetector configuration definition.
+ * @see OutlierDetectorConfigs for pre-defined configurations.
  */
 public final class OutlierDetectorConfig {
 
@@ -390,6 +391,7 @@ public final class OutlierDetectorConfig {
 
     /**
      * A builder for {@link OutlierDetectorConfig} instances.
+     * @see OutlierDetectorConfigs for pre-defined configurations.
      */
     public static final class Builder {
 
@@ -455,7 +457,7 @@ public final class OutlierDetectorConfig {
          * Construct a new builder initialized with the values of an existing {@link OutlierDetectorConfig}.
          * @param outlierDetectorConfig the configuration to use as the initial values for this builder.
          */
-        Builder(final OutlierDetectorConfig outlierDetectorConfig) {
+        public Builder(final OutlierDetectorConfig outlierDetectorConfig) {
             this.ewmaHalfLife = outlierDetectorConfig.ewmaHalfLife;
             this.failedConnectionsThreshold = outlierDetectorConfig.failedConnectionsThreshold;
             this.intervalJitter = outlierDetectorConfig.failureDetectorIntervalJitter;
