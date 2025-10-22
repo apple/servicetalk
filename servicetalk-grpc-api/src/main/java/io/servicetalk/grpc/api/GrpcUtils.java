@@ -80,7 +80,6 @@ import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.FAILED_PRECONDITION;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
-import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.PERMISSION_DENIED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNAUTHENTICATED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNAVAILABLE;
@@ -98,6 +97,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.USER_AGENT;
 import static io.servicetalk.http.api.HttpHeaderValues.TRAILERS;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_GATEWAY;
+import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
 import static io.servicetalk.http.api.HttpResponseStatus.FORBIDDEN;
 import static io.servicetalk.http.api.HttpResponseStatus.GATEWAY_TIMEOUT;
@@ -106,9 +106,9 @@ import static io.servicetalk.http.api.HttpResponseStatus.NOT_IMPLEMENTED;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.PRECONDITION_FAILED;
 import static io.servicetalk.http.api.HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED;
+import static io.servicetalk.http.api.HttpResponseStatus.REQUEST_HEADER_FIELDS_TOO_LARGE;
 import static io.servicetalk.http.api.HttpResponseStatus.REQUEST_TIMEOUT;
 import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
-import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.CLIENT_ERROR_4XX;
 import static io.servicetalk.http.api.HttpResponseStatus.TOO_MANY_REQUESTS;
 import static io.servicetalk.http.api.HttpResponseStatus.UNAUTHORIZED;
 import static java.lang.String.valueOf;
@@ -120,33 +120,8 @@ final class GrpcUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(GrpcUtils.class);
     private static final GrpcStatus STATUS_OK = GrpcStatus.fromCodeValue(GrpcStatusCode.OK.value());
     private static final BufferDecoderGroup EMPTY_BUFFER_DECODER_GROUP = new BufferDecoderGroupBuilder().build();
-
-    private static final StatelessTrailersTransformer<Buffer> ENSURE_GRPC_STATUS_RECEIVED =
-            new StatelessTrailersTransformer<Buffer>() {
-                @Override
-                protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
-                    ensureGrpcStatusReceived(trailers);
-                    return trailers;
-                }
-
-                @Override
-                protected HttpHeaders payloadFailed(final Throwable cause, final HttpHeaders trailers)
-                        throws Throwable {
-                    // local cancel
-                    if (cause instanceof CancellationException) {
-                        // include the cause so that caller can determine who cancelled request
-                        throw new GrpcStatusException(new GrpcStatus(CANCELLED), () -> null, cause);
-                    }
-
-                    // local timeout
-                    if (cause instanceof TimeoutException) {
-                        // include the cause so the caller sees the time duration.
-                        throw new GrpcStatusException(new GrpcStatus(DEADLINE_EXCEEDED), () -> null, cause);
-                    }
-
-                    throw cause;
-                }
-            };
+    private static final StatelessTrailersTransformer<Buffer> ENSURE_GRPC_STATUS_RECEIVED_FOR_OK =
+            ensureGrpcStatusReceived(OK);
 
     private GrpcUtils() {
         // No instances.
@@ -281,20 +256,36 @@ final class GrpcUtils {
         return status;
     }
 
-    private static void validateStatusCode(HttpResponseStatus status) {
+    static void validateStatusCode(HttpResponseStatus status) {
         if (status.code() == OK.code()) {
             return;
         }
         throw GrpcStatusException.of(Status.newBuilder().setCode(fromHttpStatus(status).value())
-                .setMessage("HTTP status code: " + status).build());
+                .setMessage("Unexpected HTTP status code received: " + status).build());
     }
 
+    // ServiceTalk provides semantically better mappings than the original spec:
+    // https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md
+    //
+    // Following grpc-java's precedent (431 → INTERNAL), we map additional HTTP status codes to their semantic gRPC
+    // equivalents rather than defaulting to UNKNOWN:
+    //   407 Proxy Authentication Required → UNAUTHENTICATED (like 401)
+    //   408 Request Timeout → DEADLINE_EXCEEDED (timeout semantic)
+    //   412 Precondition Failed → FAILED_PRECONDITION (exact semantic match)
+    //   417 Expectation Failed → FAILED_PRECONDITION (similar to 412)
+    //   501 Not Implemented → UNIMPLEMENTED (method not supported)
+    //
+    // While this diverges from grpc-java's UNKNOWN fallback, it provides better error classification for clients.
+    // grpc-java itself diverges from the spec with 431 → INTERNAL mapping, acknowledging the spec is not comprehensive.
+    // See https://github.com/grpc/grpc-java/blob/master/core/src/main/java/io/grpc/internal/GrpcUtil.java
     static GrpcStatusCode fromHttpStatus(final HttpResponseStatus status) {
         final int statusCode = status.code();
         final GrpcStatusCode grpcStatusCode;
         if (statusCode == BAD_GATEWAY.code() || statusCode == SERVICE_UNAVAILABLE.code() ||
                 statusCode == GATEWAY_TIMEOUT.code() || statusCode == TOO_MANY_REQUESTS.code()) {
             grpcStatusCode = UNAVAILABLE;
+        } else if (statusCode == BAD_REQUEST.code() || statusCode == REQUEST_HEADER_FIELDS_TOO_LARGE.code()) {
+            grpcStatusCode = INTERNAL;
         } else if (statusCode == UNAUTHORIZED.code() || statusCode == PROXY_AUTHENTICATION_REQUIRED.code()) {
             grpcStatusCode = UNAUTHENTICATED;
         } else if (statusCode == FORBIDDEN.code()) {
@@ -305,8 +296,6 @@ final class GrpcUtils {
             grpcStatusCode = DEADLINE_EXCEEDED;
         } else if (statusCode == PRECONDITION_FAILED.code() || statusCode == EXPECTATION_FAILED.code()) {
             grpcStatusCode = FAILED_PRECONDITION;
-        } else if (CLIENT_ERROR_4XX.contains(statusCode)) {
-            grpcStatusCode = INVALID_ARGUMENT;
         } else {
             grpcStatusCode = UNKNOWN;
         }
@@ -318,13 +307,12 @@ final class GrpcUtils {
                                                                 final BufferAllocator allocator,
                                                                 final GrpcStreamingDeserializer<Resp> deserializer,
                                                                 final String httpPath) {
-        validateStatusCode(response.status()); // gRPC protocol requires 200, don't look further if this check fails.
         // In case of an empty response, gRPC-server may return only one HEADER frame with endStream=true. Our
         // HTTP1-based implementation translates them into response headers so we need to look for a grpc-status in both
         // headers and trailers. Since this is streaming response and we have the headers now, we check for the
         // grpc-status here first. If there is no grpc-status in headers, we look for it in trailers later.
         final HttpHeaders headers = response.headers();
-        validateContentType(headers, expectedContentType);
+        validateContentType(response, expectedContentType);
         final GrpcStatusCode grpcStatusCode = extractGrpcStatusCodeFromHeaders(headers);
         if (grpcStatusCode != null) {
             // Drain the response messageBody to make sure concurrency controller marks the request as finished.
@@ -355,13 +343,21 @@ final class GrpcUtils {
                     }).subscribe().cancel();
                 });
             } else {
+                // gRPC protocol requires 200, don't return payload if this check fails.
+                validateStatusCode(response.status());
                 // In case of OK, return drainResponse to make sure the full request is transmitted to the server before
                 // we terminate the response publisher.
                 return drainResponse.toPublisher();
             }
         }
 
-        response.transform(ENSURE_GRPC_STATUS_RECEIVED);
+        final HttpResponseStatus status = response.status();
+        if (status.code() == OK.code()) {
+            // Avoid allocation for the most often path
+            response.transform(ENSURE_GRPC_STATUS_RECEIVED_FOR_OK);
+        } else {
+            response.transform(ensureGrpcStatusReceived(status));
+        }
         return deserializer.deserialize(response.payloadBody(), allocator);
     }
 
@@ -369,13 +365,12 @@ final class GrpcUtils {
                                                      final CharSequence expectedContentType,
                                                      final BufferAllocator allocator,
                                                      final GrpcDeserializer<Resp> deserializer) {
-        validateStatusCode(response.status()); // gRPC protocol requires 200, don't look further if this check fails.
         // In case of an empty response, gRPC-server may return only one HEADER frame with endStream=true. Our
         // HTTP1-based implementation translates them into response headers so we need to look for a grpc-status in both
         // headers and trailers.
         final HttpHeaders headers = response.headers();
         final HttpHeaders trailers = response.trailers();
-        validateContentType(headers, expectedContentType);
+        validateContentType(response, expectedContentType);
 
         // We will try the trailers first as this is the most likely place to find the gRPC-related headers.
         final GrpcStatusCode grpcStatusCode = extractGrpcStatusCodeFromHeaders(trailers);
@@ -384,22 +379,40 @@ final class GrpcUtils {
             if (grpcStatusException != null) {
                 throw grpcStatusException;
             }
-            return deserializer.deserialize(response.payloadBody(), allocator);
+        } else {
+            // There was no grpc-status in the trailers, so it must be in headers.
+            ensureGrpcStatusReceived(response.status(), headers);
         }
 
-        // There was no grpc-status in the trailers, so it must be in headers.
-        ensureGrpcStatusReceived(headers);
+        validateStatusCode(response.status()); // gRPC protocol requires 200, don't return payload if this check fails.
         return deserializer.deserialize(response.payloadBody(), allocator);
     }
 
+    static void validateContentType(HttpResponseMetaData metaData, CharSequence expectedContentType) {
+        validateContentType(metaData.status(), metaData.headers(), expectedContentType);
+    }
+
     static void validateContentType(HttpHeaders headers, CharSequence expectedContentType) {
+        // For incoming requests we can use OK status as a way to skip inference from a status code
+        validateContentType(OK, headers, expectedContentType);
+    }
+
+    private static void validateContentType(final HttpResponseStatus status,
+                                            final HttpHeaders headers,
+                                            final CharSequence expectedContentType) {
         CharSequence requestContentType = headers.get(CONTENT_TYPE);
         if (!contentEqualsIgnoreCase(requestContentType, expectedContentType) &&
                 (requestContentType == null ||
-                    !regionMatches(requestContentType, true, 0, APPLICATION_GRPC, 0, APPLICATION_GRPC.length()))) {
-            throw GrpcStatusException.of(Status.newBuilder().setCode(UNKNOWN.value())
-                    .setMessage("invalid content-type: " + requestContentType).build());
+                        !regionMatches(requestContentType, true, 0, APPLICATION_GRPC, 0, APPLICATION_GRPC.length()))) {
+            throw newGrpcStatusException(status, "invalid content-type: " + requestContentType);
         }
+    }
+
+    private static GrpcStatusException newGrpcStatusException(final HttpResponseStatus status, final String details) {
+        final GrpcStatusCode code = status.code() == OK.code() ? UNKNOWN : fromHttpStatus(status);
+        final String message = status.code() == OK.code() ? details :
+                "Unexpected HTTP status code received: " + status + '\n' + details;
+        return GrpcStatusException.of(Status.newBuilder().setCode(code.value()).setMessage(message).build());
     }
 
     static CharSequence grpcContentType(CharSequence contentType) {
@@ -407,17 +420,45 @@ final class GrpcUtils {
                 newAsciiString(GRPC_CONTENT_TYPE_PREFIX + contentType);
     }
 
-    private static void ensureGrpcStatusReceived(final HttpHeaders headers) {
+    static void ensureGrpcStatusReceived(final HttpResponseStatus status, final HttpHeaders headers) {
         final GrpcStatusCode statusCode = extractGrpcStatusCodeFromHeaders(headers);
         if (statusCode == null) {
             // This is a protocol violation as we expect to receive grpc-status.
-            throw new GrpcStatusException(new GrpcStatus(UNKNOWN,
-                    "Response does not contain " + GRPC_STATUS + " header or trailer"));
+            throw newGrpcStatusException(status, "Response does not contain " + GRPC_STATUS + " header or trailer");
         }
         final GrpcStatusException grpcStatusException = convertToGrpcStatusException(statusCode, headers);
         if (grpcStatusException != null) {
             throw grpcStatusException;
         }
+    }
+
+    private static StatelessTrailersTransformer<Buffer> ensureGrpcStatusReceived(final HttpResponseStatus status) {
+        return new StatelessTrailersTransformer<Buffer>() {
+            @Override
+            protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
+                ensureGrpcStatusReceived(status, trailers);
+                validateStatusCode(status);
+                return trailers;
+            }
+
+            @Override
+            protected HttpHeaders payloadFailed(final Throwable cause, final HttpHeaders trailers)
+                    throws Throwable {
+                // local cancel
+                if (cause instanceof CancellationException) {
+                    // include the cause so that caller can determine who cancelled request
+                    throw new GrpcStatusException(new GrpcStatus(CANCELLED), () -> null, cause);
+                }
+
+                // local timeout
+                if (cause instanceof TimeoutException) {
+                    // include the cause so the caller sees the time duration.
+                    throw new GrpcStatusException(new GrpcStatus(DEADLINE_EXCEEDED), () -> null, cause);
+                }
+
+                throw cause;
+            }
+        };
     }
 
     static <T> T readGrpcMessageEncodingRaw(final HttpHeaders headers, final T identityEncoder,

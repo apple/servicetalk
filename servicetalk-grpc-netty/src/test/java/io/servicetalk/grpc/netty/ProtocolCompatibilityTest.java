@@ -16,6 +16,7 @@
 package io.servicetalk.grpc.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.SingleSource.Processor;
@@ -52,6 +53,7 @@ import io.servicetalk.grpc.netty.CompatProto.Compat.ServerStreamingCallMetadata;
 import io.servicetalk.grpc.netty.CompatProto.Compat.ServiceFactory;
 import io.servicetalk.grpc.netty.CompatProto.RequestContainer.CompatRequest;
 import io.servicetalk.grpc.netty.CompatProto.ResponseContainer.CompatResponse;
+import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServerContext;
@@ -89,12 +91,13 @@ import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.ThrowingSupplier;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -111,6 +114,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import javax.annotation.Nullable;
@@ -124,23 +128,15 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategy.from;
+import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS;
+import static io.servicetalk.grpc.api.GrpcHeaderValues.APPLICATION_GRPC;
 import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
-import static io.servicetalk.grpc.api.GrpcStatusCode.FAILED_PRECONDITION;
-import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
-import static io.servicetalk.grpc.api.GrpcStatusCode.UNAUTHENTICATED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
-import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_TIMEOUT_HEADER_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
-import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
-import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
-import static io.servicetalk.http.api.HttpResponseStatus.PRECONDITION_FAILED;
-import static io.servicetalk.http.api.HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED;
-import static io.servicetalk.http.api.HttpResponseStatus.REQUEST_HEADER_FIELDS_TOO_LARGE;
-import static io.servicetalk.http.api.HttpResponseStatus.REQUEST_TIMEOUT;
-import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.CLIENT_ERROR_4XX;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.test.resources.DefaultTestCerts.loadServerKey;
 import static io.servicetalk.test.resources.DefaultTestCerts.loadServerPem;
@@ -153,7 +149,6 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -161,6 +156,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class ProtocolCompatibilityTest {
+    private static final Logger logger = LoggerFactory.getLogger(ProtocolCompatibilityTest.class);
+
     private interface TestServerContext extends AutoCloseable {
         SocketAddress listenAddress();
 
@@ -272,6 +269,16 @@ class ProtocolCompatibilityTest {
                         args.add(Arguments.of(isClientServiceTalk, isServerServiceTalk, isServerBlocking));
                     }
                 }
+            }
+        }
+        return args;
+    }
+
+    private static Collection<Arguments> clientH2ReturnStatusParams() {
+        List<Arguments> args = new ArrayList<>();
+        for (HttpToGrpcStatusVariant variant : HttpToGrpcStatusVariant.values()) {
+            for (boolean streamingCall : TRUE_FALSE) {
+                args.add(Arguments.of(variant, streamingCall));
             }
         }
         return args;
@@ -567,11 +574,14 @@ class ProtocolCompatibilityTest {
         testRequestResponse(client, server, streaming, compression);
     }
 
-    @Test
-    void clientH2ReturnStatus() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: variant={0} streamingCall={1}")
+    @MethodSource("clientH2ReturnStatusParams")
+    void clientH2ReturnStatus(HttpToGrpcStatusVariant variant, boolean streamingCall) throws Exception {
+        final AtomicInteger counter = new AtomicInteger();
         try (HttpServerContext server = HttpServers.forAddress(localAddress(0))
                 .protocols(h2Default())
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
+                    BufferAllocator alloc = ctx.executionContext().bufferAllocator();
                     byte meta = request.payloadBody().readByte();
                     if (meta != 0) {
                         throw new IllegalArgumentException("compression not supported");
@@ -582,8 +592,46 @@ class ProtocolCompatibilityTest {
                     }
                     CompatRequest compatRequest = CompatRequest.parser().parseFrom(
                             Buffer.asInputStream(request.payloadBody()));
-                    return responseFactory.newResponse(HttpResponseStatus.of(compatRequest.getId(), "foo"))
-                            .payloadBody(ctx.executionContext().bufferAllocator().fromAscii("error"));
+                    HttpResponse response = responseFactory
+                            .newResponse(HttpResponseStatus.of(compatRequest.getId(), "foo"))
+                            .setHeader(CONTENT_TYPE, APPLICATION_GRPC);
+                    if (compatRequest.getId() < 200) {
+                        // If we don't send any payload for 1xx status codes, grpc-java hangs forever
+                        response.payloadBody(alloc.fromAscii("error"));
+                    }
+                    switch (variant) {
+                        case NO_GRPC_STATUS:
+                            break;
+                        case GRPC_STATUS_IN_HEADERS:
+                            response.setHeader(GRPC_STATUS, String.valueOf(variant.statusToReturn().value()));
+                            break;
+                        case GRPC_STATUS_IN_TRAILERS:
+                            response.setTrailer(GRPC_STATUS, String.valueOf(variant.statusToReturn().value()));
+                            // We need to test this use-case with and without payload body
+                            if (counter.incrementAndGet() % 3 == 0) {
+                                CompatResponse protoResponse = CompatResponse.newBuilder()
+                                        .setId(compatRequest.getId()).build();
+                                int size = protoResponse.getSerializedSize();
+                                Buffer payloadBody = alloc.newBuffer(5 + size);
+                                payloadBody.writeByte(0);   // compression flag
+                                payloadBody.writeInt(size);
+                                Compat.ClientStreamingCallRpc.methodDescriptor()
+                                        .responseDescriptor().serializerDescriptor().serializer()
+                                        .serialize(protoResponse, alloc, payloadBody);
+                                response.payloadBody(payloadBody);
+                            }
+                            break;
+                        case NO_CONTENT_TYPE_HEADER:
+                            response.headers().remove(CONTENT_TYPE);
+                            break;
+                        case NO_CONTENT_TYPE_HEADER_WITH_GRPC_STATUS:
+                            response.headers().remove(CONTENT_TYPE);
+                            response.setHeader(GRPC_STATUS, String.valueOf(variant.statusToReturn().value()));
+                            break;
+                        default:
+                            throw new IllegalArgumentException("Unknown HttpToGrpcStatusVariant: " + variant);
+                    }
+                    return response;
                 });
              CompatClient grpcJavaClient = grpcJavaClient(server.listenAddress(), null, false, null);
              CompatClient stClient = serviceTalkClient(server.listenAddress(), false, null, null)) {
@@ -592,36 +640,24 @@ class ProtocolCompatibilityTest {
                 int grpcJavaCode = Code.OK.getNumber();
                 int stCode = GrpcStatusCode.OK.value();
                 try {
-                    grpcJavaClient.scalarCall(request).toFuture().get();
+                    (streamingCall ?
+                            grpcJavaClient.clientStreamingCall(Publisher.from(request)) :
+                            grpcJavaClient.scalarCall(request))
+                            .toFuture().get();
                 } catch (ExecutionException e) {
+                    logger.debug("grpc-java failed for httpCode={} with", httpCode, e.getCause());
                     grpcJavaCode = ((StatusRuntimeException) e.getCause()).getStatus().getCode().value();
                 }
                 try {
-                    stClient.scalarCall(request).toFuture().get();
+                    (streamingCall ?
+                            stClient.clientStreamingCall(Publisher.from(request)) :
+                            stClient.scalarCall(request))
+                            .toFuture().get();
                 } catch (ExecutionException e) {
+                    logger.debug("servicetalk-grpc failed for httpCode={} with", httpCode, e.getCause());
                     stCode = ((GrpcStatusException) e.getCause()).status().code().value();
                 }
-                if (httpCode < 200) {
-                    // grpc-java maps 1xx responses to error code INTERNAL, we currently map to UNKNOWN. The test server
-                    // isn't following the http protocol by returning only a 1xx response and each framework catches
-                    // this exception differently internally.
-                    assertThat("h2 response code: " + httpCode, stCode, equalTo(UNKNOWN.value()));
-                    assertThat("h2 response code: " + httpCode, grpcJavaCode, equalTo(INTERNAL.value()));
-                } else if (httpCode == PROXY_AUTHENTICATION_REQUIRED.code()) {
-                    assertThat("h2 response code: " + httpCode, stCode, equalTo(UNAUTHENTICATED.value()));
-                    assertThat("h2 response code: " + httpCode, grpcJavaCode, equalTo(UNKNOWN.value()));
-                } else if (httpCode == REQUEST_TIMEOUT.code()) {
-                    assertThat("h2 response code: " + httpCode, stCode, equalTo(DEADLINE_EXCEEDED.value()));
-                    assertThat("h2 response code: " + httpCode, grpcJavaCode, equalTo(UNKNOWN.value()));
-                } else if (httpCode == PRECONDITION_FAILED.code() || httpCode == EXPECTATION_FAILED.code()) {
-                    assertThat("h2 response code: " + httpCode, stCode, equalTo(FAILED_PRECONDITION.value()));
-                    assertThat("h2 response code: " + httpCode, grpcJavaCode, equalTo(UNKNOWN.value()));
-                } else if (stCode != grpcJavaCode && CLIENT_ERROR_4XX.contains(httpCode)) {
-                    assertThat("h2 response code: " + httpCode, stCode, equalTo(INVALID_ARGUMENT.value()));
-                    assertThat("h2 response code: " + httpCode, grpcJavaCode, equalTo(
-                            httpCode == BAD_REQUEST.code() || httpCode == REQUEST_HEADER_FIELDS_TOO_LARGE.code() ?
-                                    INTERNAL.value() : UNKNOWN.value()));
-                }
+                variant.assertStatusCodes(httpCode, stCode, grpcJavaCode);
             }
         }
     }
@@ -1539,7 +1575,7 @@ class ProtocolCompatibilityTest {
                 final StreamObserver<CompatRequest> requestObserver =
                         finalStub.clientStreamingCall(adaptResponse(processor));
                 sendRequest(request, requestObserver);
-                return (Single<CompatResponse>) processor;
+                return fromSource(processor);
             }
 
             @Deprecated
@@ -1560,7 +1596,7 @@ class ProtocolCompatibilityTest {
             public Single<CompatResponse> scalarCall(final CompatRequest request) {
                 final Processor<CompatResponse, CompatResponse> processor = newSingleProcessor();
                 finalStub.scalarCall(request, adaptResponse(processor));
-                return (Single<CompatResponse>) processor;
+                return fromSource(processor);
             }
 
             @Deprecated
@@ -1625,9 +1661,12 @@ class ProtocolCompatibilityTest {
             private StreamObserver<CompatResponse> adaptResponse(
                     final Processor<CompatResponse, CompatResponse> processor) {
                 return new StreamObserver<CompatResponse>() {
+                    @Nullable
+                    private CompatResponse value;
+
                     @Override
                     public void onNext(final CompatResponse value) {
-                        processor.onSuccess(value);
+                        this.value = value;
                     }
 
                     @Override
@@ -1637,7 +1676,8 @@ class ProtocolCompatibilityTest {
 
                     @Override
                     public void onCompleted() {
-                        // ignored
+                        assert value != null;
+                        processor.onSuccess(value);
                     }
                 };
             }
