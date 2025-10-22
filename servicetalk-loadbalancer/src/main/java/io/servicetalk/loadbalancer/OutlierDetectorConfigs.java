@@ -49,7 +49,7 @@ public final class OutlierDetectorConfigs {
 
     /**
      * {@link OutlierDetectorConfig} that only enables the default consecutive connection failure detection.
-     * @return the {@link OutlierDetectorConfig}
+     * @return the {@link OutlierDetectorConfig} that only enables the default consecutive connection failure detection.
      */
     public static OutlierDetectorConfig l4Only() {
         return L4_ONLY;
@@ -57,7 +57,7 @@ public final class OutlierDetectorConfigs {
 
     /**
      * {@link OutlierDetectorConfig} that disables all outlier detection.
-     * @return the {@link OutlierDetectorConfig}
+     * @return the {@link OutlierDetectorConfig} that disables all outlier detection.
      */
     public static OutlierDetectorConfig disabled() {
         return DISABLED;
