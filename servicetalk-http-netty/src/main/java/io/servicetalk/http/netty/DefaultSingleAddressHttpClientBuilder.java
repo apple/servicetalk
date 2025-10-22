@@ -54,7 +54,8 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.InternalRetryingHttpClientFilter;
 import io.servicetalk.http.utils.HostHeaderHttpRequesterFilter;
 import io.servicetalk.http.utils.IdleTimeoutConnectionFilter;
-import io.servicetalk.loadbalancer.RoundRobinLoadBalancers;
+import io.servicetalk.loadbalancer.LoadBalancers;
+import io.servicetalk.loadbalancer.OutlierDetectorConfigs;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.DomainSocketAddress;
@@ -839,8 +840,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     private static <ResolvedAddress> HttpLoadBalancerFactory<ResolvedAddress> defaultLoadBalancer() {
         return new DefaultHttpLoadBalancerFactory<>(
-                RoundRobinLoadBalancers.<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection>builder(
-                                DefaultHttpLoadBalancerFactory.class.getSimpleName()).build());
+                LoadBalancers.<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection>builder(
+                        DefaultHttpLoadBalancerFactory.class.getSimpleName())
+                        // For now, only use the l4 detection to reproduce the old RoundRobinLoadBalancer behavior
+                        .outlierDetectorConfig(OutlierDetectorConfigs.consecutiveConnectFailures())
+                        .build());
     }
 
     // Because of the change in https://github.com/apple/servicetalk/pull/2379, we should constrain the type back to

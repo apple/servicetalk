@@ -41,7 +41,8 @@ import io.servicetalk.http.api.PartitionedHttpClientBuilder;
 import io.servicetalk.http.api.ProxyConfig;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.loadbalancer.RoundRobinLoadBalancers;
+import io.servicetalk.loadbalancer.LoadBalancers;
+import io.servicetalk.loadbalancer.OutlierDetectorConfigs;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.TransportObserver;
 
@@ -485,12 +486,14 @@ public final class HttpClients {
                         .retryServiceDiscoveryErrors(NoRetriesStrategy.INSTANCE)
                         // Disable health-checking:
                         .loadBalancerFactory(new DefaultHttpLoadBalancerFactory<>(
-                                RoundRobinLoadBalancers.<R, FilterableStreamingHttpLoadBalancedConnection>builder(
+                                LoadBalancers.<R, FilterableStreamingHttpLoadBalancedConnection>builder(
                                         // Use a different ID to let providers distinguish this LB from the default one
                                         DefaultHttpLoadBalancerFactory.class.getSimpleName() + '-' +
                                                 DiscoveryStrategy.ON_NEW_CONNECTION.name())
-                                        .healthCheckFailedConnectionsThreshold(-1)
-                                        .build()))
+                                                // Disable all outlier detection since we're really using the
+                                                // Host as the load balancer and not the LoadBalancer itself.
+                                                .outlierDetectorConfig(OutlierDetectorConfigs.disabled())
+                                                .build()))
                         .appendConnectionFactoryFilter(resolvingConnectionFactory.get());
             default:
                 throw new IllegalArgumentException("Unsupported strategy: " + discoveryStrategy);
