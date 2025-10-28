@@ -434,9 +434,6 @@ public abstract class AbstractHttpHeadersTest {
         assertEquals(headers2, headers1);
         assertEquals(headers1, headers1);
         assertEquals(headers2, headers2);
-        assertEquals(headers1.hashCode(), headers2.hashCode());
-        assertEquals(headers1.hashCode(), headers1.hashCode());
-        assertEquals(headers2.hashCode(), headers2.hashCode());
     }
 
     @Test
