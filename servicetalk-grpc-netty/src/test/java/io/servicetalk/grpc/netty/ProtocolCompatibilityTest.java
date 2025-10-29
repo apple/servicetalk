@@ -53,6 +53,9 @@ import io.servicetalk.grpc.netty.CompatProto.Compat.ServerStreamingCallMetadata;
 import io.servicetalk.grpc.netty.CompatProto.Compat.ServiceFactory;
 import io.servicetalk.grpc.netty.CompatProto.RequestContainer.CompatRequest;
 import io.servicetalk.grpc.netty.CompatProto.ResponseContainer.CompatResponse;
+import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.HttpExecutionStrategies;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
@@ -60,13 +63,17 @@ import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
+import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ServerContext;
@@ -91,6 +98,7 @@ import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.function.ThrowingSupplier;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -200,6 +208,15 @@ class ProtocolCompatibilityTest {
     private static final String CUSTOM_ERROR_MESSAGE = "custom error message";
     private static final DeliberateException SERVER_PROCESSED_TOKEN = new DeliberateException();
     private static final Duration DEFAULT_DEADLINE = ofMillis(100);
+    private static final boolean[] TRUE_FALSE = {true, false};
+    private static final String[] COMPRESSION = {"gzip", "identity", null};
+
+    private final ResponseLeakValidator responseLeakValidator = new ResponseLeakValidator();
+
+    @AfterEach
+    void finalChecks() {
+        responseLeakValidator.assertNoPendingRequests();
+    }
 
     private enum ErrorMode {
         NONE,
@@ -210,9 +227,6 @@ class ProtocolCompatibilityTest {
         STATUS_IN_SERVER_FILTER,
         STATUS_IN_RESPONSE
     }
-
-    private static final boolean[] TRUE_FALSE = {true, false};
-    private static final String[] COMPRESSION = {"gzip", "identity", null};
 
     private static Collection<Arguments> sslStreamingAndCompressionParams() {
         List<Arguments> args = new ArrayList<>();
@@ -1217,16 +1231,21 @@ class ProtocolCompatibilityTest {
                 .build();
     }
 
-    private static CompatClient serviceTalkClient(final SocketAddress serverAddress, final boolean ssl,
-                                                  @Nullable final String compression,
-                                                  @Nullable final Duration timeout) {
+    private CompatClient serviceTalkClient(final SocketAddress serverAddress, final boolean ssl,
+                                           @Nullable final String compression,
+                                           @Nullable final Duration timeout) {
         final GrpcClientBuilder<InetSocketAddress, InetSocketAddress> builder =
                 GrpcClients.forResolvedAddress((InetSocketAddress) serverAddress);
-        if (ssl) {
-            builder.initializeHttp(b -> b.sslConfig(new ClientSslConfigBuilder(
-                    DefaultTestCerts::loadServerCAPem).peerHost(serverPemHostname()).build()));
-        }
-        if (null != timeout) {
+
+        builder.initializeHttp(b -> {
+            if (ssl) {
+                b.sslConfig(new ClientSslConfigBuilder(
+                        DefaultTestCerts::loadServerCAPem).peerHost(serverPemHostname()).build());
+            }
+            b.appendClientFilter(responseLeakValidator);
+        });
+
+        if (timeout != null) {
             builder.defaultTimeout(timeout);
         }
         return builder.build(new Compat.ClientFactory()
@@ -1852,6 +1871,36 @@ class ProtocolCompatibilityTest {
                 throw StatusProto.toStatusException(newStatus(description));
             }
             return computeResponse(value);
+        }
+    }
+
+    private static final class ResponseLeakValidator implements StreamingHttpClientFilterFactory {
+
+        private final AtomicInteger pendingRequests = new AtomicInteger();
+
+        @Override
+        public StreamingHttpClientFilter create(FilterableStreamingHttpClient client) {
+            return new StreamingHttpClientFilter(client) {
+                @Override
+                protected Single<StreamingHttpResponse> request(StreamingHttpRequester delegate,
+                                                                StreamingHttpRequest request) {
+                    return Single.defer(() -> {
+                        pendingRequests.incrementAndGet();
+                        return delegate.request(request)
+                                .liftSync(new BeforeFinallyHttpOperator(pendingRequests::decrementAndGet))
+                                .shareContextOnSubscribe();
+                    });
+                }
+            };
+        }
+
+        @Override
+        public HttpExecutionStrategy requiredOffloads() {
+            return HttpExecutionStrategies.offloadNone();
+        }
+
+        void assertNoPendingRequests() {
+            assertThat("Detected pending requests, possible response leak", pendingRequests.get(), is(0));
         }
     }
 }
