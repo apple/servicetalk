@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
 import io.servicetalk.encoding.api.BufferDecoder;
 import io.servicetalk.encoding.api.BufferDecoderGroup;
 import io.servicetalk.encoding.api.BufferEncoder;
@@ -41,6 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.BlockingIterables.singletonBlockingIterable;
 import static io.servicetalk.encoding.api.Identity.identityEncoder;
 import static io.servicetalk.grpc.api.GrpcHeaderValues.GRPC_CONTENT_TYPE_PROTO_SUFFIX;
@@ -154,11 +156,17 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                     streamingHttpClient.executionContext().bufferAllocator()));
             return streamingHttpClient.request(httpRequest)
                     .flatMapPublisher(response -> {
-                        extractResponseContext(response, metadata);
-                        return validateResponseAndGetPayload(response, responseContentType,
-                                streamingHttpClient.executionContext().bufferAllocator(),
-                                readGrpcMessageEncodingRaw(response.headers(), deserializerIdentity, deserializers,
-                                        GrpcStreamingDeserializer::messageEncoding), httpRequest.requestTarget());
+                        try {
+
+                            extractResponseContext(response, metadata);
+                            return validateResponseAndGetPayload(response, responseContentType,
+                                    streamingHttpClient.executionContext().bufferAllocator(),
+                                    readGrpcMessageEncodingRaw(response.headers(), deserializerIdentity, deserializers,
+                                            GrpcStreamingDeserializer::messageEncoding), httpRequest.requestTarget());
+                        } catch (Throwable t) {
+                            toSource(response.messageBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
+                            return Publisher.failed(GrpcStatusException.fromThrowable(t));
+                        }
                     })
                     .onErrorMap(GrpcStatusException::fromThrowable);
         };
@@ -291,11 +299,16 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                     streamingHttpClient.executionContext().bufferAllocator()));
             try {
                 final BlockingStreamingHttpResponse response = client.request(httpRequest);
-                extractResponseContext(response, metadata);
-                return validateResponseAndGetPayload(response.toStreamingResponse(), responseContentType,
-                        client.executionContext().bufferAllocator(), readGrpcMessageEncodingRaw(
-                                response.headers(), deserializerIdentity, deserializers,
-                                GrpcStreamingDeserializer::messageEncoding), httpRequest.requestTarget()).toIterable();
+                try {
+                    extractResponseContext(response, metadata);
+                    return validateResponseAndGetPayload(response.toStreamingResponse(), responseContentType,
+                            client.executionContext().bufferAllocator(), readGrpcMessageEncodingRaw(response.headers(),
+                                    deserializerIdentity, deserializers, GrpcStreamingDeserializer::messageEncoding),
+                            httpRequest.requestTarget()).toIterable();
+                } catch (Throwable t) {
+                    response.messageBody().iterator().close();
+                    throw GrpcStatusException.fromThrowable(t);
+                }
             } catch (Throwable cause) {
                 throw GrpcStatusException.fromThrowable(cause);
             }
