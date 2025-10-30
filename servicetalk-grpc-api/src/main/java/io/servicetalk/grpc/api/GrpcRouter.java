@@ -900,8 +900,7 @@ final class GrpcRouter {
         assert codeValue != null;
         GrpcStatusCode statusCode = GrpcStatusCode.fromCodeValue(codeValue);
         String msg = "Exception from {} for a request to {} was converted to grpc-status={}";
-        boolean logAsError = !(error instanceof GrpcStatusException) && serverCatchAllShouldLog(error);
-        if (logAsError) {
+        if (serverCatchAllShouldLog(error)) {
             LOGGER.error(msg, where, methodDescriptor.httpPath(), statusCode, error);
         } else {
             LOGGER.debug(msg, where, methodDescriptor.httpPath(), statusCode, error);
