@@ -41,6 +41,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -88,9 +89,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -701,7 +704,11 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
 
         // Events for the new Subscriber change the state
         sendServiceDiscoveryEvents(upEvent("address-2"), upEvent("address-3"), upEvent("address-4"));
-        assertAddresses(lb.usedAddresses(), "address-2", "address-3", "address-4");
+        assertThat(lb.usedAddresses(), containsInAnyOrder(
+            hasProperty("key", is("address-2")),
+            hasProperty("key", is("address-3")),
+            hasProperty("key", is("address-4"))
+        ));
 
         // Verify the LB is recovered
         Map<String, Matcher<? super String>> expected = new HashMap<>();
