@@ -84,13 +84,26 @@ public final class GrpcExceptionMapperServiceFilter implements StreamingHttpServ
         final StreamingHttpResponse response = newErrorResponse(responseFactory, APPLICATION_GRPC, cause,
                 ctx.executionContext().bufferAllocator(), null);
         if (serverCatchAllShouldLog(cause)) {
-            final CharSequence codeValue = response.headers().get(GRPC_STATUS);
-            assert codeValue != null;
-            LOGGER.error("Unexpected exception during a {} processing for connection='{}', request='{} {} {}' was " +
-                            "mapped to grpc-status: {} ({})", what, ctx, request.method(), request.requestTarget(),
-                    request.version(), codeValue, fromCodeValue(codeValue), cause);
+            log(response, false, what, ctx, request, cause);
+        } else if (LOGGER.isDebugEnabled()) {
+            log(response, true, what, ctx, request, cause);
         }
         return response;
+    }
+
+    private static void log(final StreamingHttpResponse response, final boolean debug, final String what,
+                            final HttpServiceContext ctx, final StreamingHttpRequest request, final Throwable cause) {
+        final CharSequence codeValue = response.headers().get(GRPC_STATUS);
+        assert codeValue != null;
+        final String format =
+                "{} during a {} processing for connection='{}', request='{} {} {}' was mapped to grpc-status: {} ({})";
+        if (debug) {
+            LOGGER.debug(format, "Exception", what, ctx, request.method(), request.requestTarget(),
+                    request.version(), codeValue, fromCodeValue(codeValue), cause);
+        } else {
+            LOGGER.error(format, "Unexpected exception", what, ctx, request.method(), request.requestTarget(),
+                    request.version(), codeValue, fromCodeValue(codeValue), cause);
+        }
     }
 
     @Override
