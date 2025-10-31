@@ -117,9 +117,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -214,7 +218,7 @@ class ProtocolCompatibilityTest {
     private final ResponseLeakValidator responseLeakValidator = new ResponseLeakValidator();
 
     @AfterEach
-    void finalChecks() {
+    void finalChecks() throws Exception {
         responseLeakValidator.assertNoPendingRequests();
     }
 
@@ -1876,7 +1880,8 @@ class ProtocolCompatibilityTest {
 
     private static final class ResponseLeakValidator implements StreamingHttpClientFilterFactory {
 
-        private final AtomicInteger pendingRequests = new AtomicInteger();
+        private final AtomicInteger requestCounter = new AtomicInteger();
+        private final ConcurrentMap<String, CountDownLatch> pendingRequests = new ConcurrentHashMap<>();
 
         @Override
         public StreamingHttpClientFilter create(FilterableStreamingHttpClient client) {
@@ -1885,9 +1890,11 @@ class ProtocolCompatibilityTest {
                 protected Single<StreamingHttpResponse> request(StreamingHttpRequester delegate,
                                                                 StreamingHttpRequest request) {
                     return Single.defer(() -> {
-                        pendingRequests.incrementAndGet();
+                        CountDownLatch requestLatch = new CountDownLatch(1);
+                        pendingRequests.put(requestCounter.incrementAndGet() + ". " + request.requestTarget(),
+                                requestLatch);
                         return delegate.request(request)
-                                .liftSync(new BeforeFinallyHttpOperator(pendingRequests::decrementAndGet))
+                                .liftSync(new BeforeFinallyHttpOperator(requestLatch::countDown))
                                 .shareContextOnSubscribe();
                     });
                 }
@@ -1899,8 +1906,11 @@ class ProtocolCompatibilityTest {
             return HttpExecutionStrategies.offloadNone();
         }
 
-        void assertNoPendingRequests() {
-            assertThat("Detected pending requests, possible response leak", pendingRequests.get(), is(0));
+        void assertNoPendingRequests() throws Exception {
+            for (Map.Entry<String, CountDownLatch> entry : pendingRequests.entrySet()) {
+                assertThat("Request #" + entry.getKey() + "was not properly drained, possible response leak",
+                        entry.getValue().await(5, SECONDS), is(true));
+            }
         }
     }
 }
