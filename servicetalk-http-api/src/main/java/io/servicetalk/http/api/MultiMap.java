@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -144,7 +145,7 @@ abstract class MultiMap<K, V> {
             return emptySet();
         }
         // Overall iteration order does not need to be preserved.
-        final Set<K> names = new HashSet<>((int) (size() / .75), .75f);
+        final Set<K> names = new LinkedHashSet<>((int) (size() / .75), .75f);
         BucketHead<K, V> bucketHead = lastBucketHead;
         while (bucketHead != null) {
             MultiMapEntry<K, V> e = bucketHead.entry;
