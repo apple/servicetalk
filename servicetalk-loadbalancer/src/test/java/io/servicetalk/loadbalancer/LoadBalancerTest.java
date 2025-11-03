@@ -60,6 +60,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.EXPIRED;
@@ -719,11 +720,14 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
         assertThat(selected1, is(anyOf(expected.values())));
 
         if (isRoundRobin()) {
-            // These asserts are flaky for p2c because we don't have deterministic selection.
             expected.remove(selected1);
             assertThat(lb.selectConnection(any(), null).toFuture().get().address(), is(anyOf(expected.values())));
-            assertConnectionCount(lb.usedAddresses(), connectionsCount("address-2", 0),
-                    connectionsCount("address-3", 1), connectionsCount("address-4", 1));
+            Map<String, Integer> connectionCounts = lb.usedAddresses().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().size()));
+
+            assertEquals(0, connectionCounts.getOrDefault("address-2", -1).intValue(), "address-2 count mismatch");
+            assertEquals(1, connectionCounts.getOrDefault("address-3", -1).intValue(), "address-3 count mismatch");
+            assertEquals(1, connectionCounts.getOrDefault("address-4", -1).intValue(), "address-4 count mismatch");
         }
     }
 
