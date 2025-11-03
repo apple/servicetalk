@@ -17,9 +17,8 @@ package io.servicetalk.http.api;
 
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
