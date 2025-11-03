@@ -866,7 +866,7 @@ final class GrpcUtils {
             GrpcStatus status = setStatus(trailers, cause, allocator);
             // Swallow exception as we are converting it to the trailers.
             String msg = "Exception from response payload for a request to {} was converted to grpc-status={}";
-            if (!(cause instanceof GrpcStatusException) && serverCatchAllShouldLog(cause)) {
+            if (serverCatchAllShouldLog(cause)) {
                 LOGGER.error(msg, methodDescriptor.httpPath(), status.code(), cause);
             } else {
                 LOGGER.debug(msg, methodDescriptor.httpPath(), status.code(), cause);

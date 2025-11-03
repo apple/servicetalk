@@ -155,6 +155,7 @@ public final class GrpcStatusException extends RuntimeException {
     }
 
     static boolean serverCatchAllShouldLog(Throwable cause) {
-        return !(cause instanceof TimeoutException || cause instanceof CancellationException);
+        return !(cause instanceof TimeoutException || cause instanceof CancellationException ||
+                cause instanceof GrpcStatusException);
     }
 }
