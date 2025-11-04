@@ -8,6 +8,10 @@ on:
       - completed
 jobs:
   tests:
+    permissions:
+      contents: read
+      actions: read
+      checks: write
     runs-on: ubuntu-latest
     strategy:
       # Matrix should be coordinated with ci-prb.yml.

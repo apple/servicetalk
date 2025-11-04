@@ -8,6 +8,10 @@ on:
       - completed
 jobs:
   checkstyle:
+    permissions:
+      contents: read
+      actions: read
+      checks: write
     runs-on: ubuntu-latest
     strategy:
       matrix:
