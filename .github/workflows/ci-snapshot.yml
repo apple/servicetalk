@@ -18,6 +18,10 @@ on:
       - '*.txt'
 jobs:
   build:
+    permissions:
+      contents: read
+      actions: read
+      checks: write
     name: Snapshot JDK ${{ matrix.java }}
     runs-on: ubuntu-latest
     strategy:
