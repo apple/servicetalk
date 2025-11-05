@@ -19,7 +19,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        java: [ 8, 11, 17, 21, 24 ]
+        java: [ 8, 11, 17, 21, 25 ]
         os: [ ubuntu-latest ]
         os_label: [ ubuntu ]
         include:
