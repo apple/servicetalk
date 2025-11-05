@@ -41,10 +41,12 @@ jobs:
         run: java -version
       - name: Print Java Home
         run: echo $JAVA_HOME
+      - name: Print Arch
+        run: echo ${{ RUNNER_ARCH }}
       - name: Make gradlew Executable
         run: chmod +x gradlew
       - name: Clean Gradle project
-        run: ./gradlew --parallel clean
+        run: ./gradlew -Dorg.gradle.java.home=$JAVA_HOME_17_${{ RUNNER_ARCH }} --parallel clean
       # https://github.community/t/error-the-paging-file-is-too-small-for-this-operation-to-complete/17141
       - name: Configure Windows Pagefile
         if: ${{ runner.os == 'Windows' }}
@@ -57,12 +59,12 @@ jobs:
         if: runner.os == 'Linux'
         env:
           JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
-        run:  sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew -Dorg.gradle.java.home=$JAVA_HOME_17_X64 --no-daemon --parallel test"
+        run:  sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew -Dorg.gradle.java.home=$JAVA_HOME_17_${{ RUNNER_ARCH }} --no-daemon --parallel test"
       - name: Build and Test (non-Linux)
         if: runner.os != 'Linux'
         env:
           JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
-        run: ./gradlew -Dorg.gradle.java.home=$JAVA_HOME_17_X64 --no-daemon --parallel test
+        run: ./gradlew -Dorg.gradle.java.home=$JAVA_HOME_17_${{ RUNNER_ARCH }} --no-daemon --parallel test
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v5
