@@ -705,11 +705,7 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
 
         // Events for the new Subscriber change the state
         sendServiceDiscoveryEvents(upEvent("address-2"), upEvent("address-3"), upEvent("address-4"));
-        assertThat(lb.usedAddresses(), containsInAnyOrder(
-            hasProperty("key", is("address-2")),
-            hasProperty("key", is("address-3")),
-            hasProperty("key", is("address-4"))
-        ));
+        assertAddresses(lb.usedAddresses(), "address-2", "address-3", "address-4");
 
         // Verify the LB is recovered
         Map<String, Matcher<? super String>> expected = new HashMap<>();
@@ -720,14 +716,11 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
         assertThat(selected1, is(anyOf(expected.values())));
 
         if (isRoundRobin()) {
+            // These asserts are flaky for p2c because we don't have deterministic selection.
             expected.remove(selected1);
             assertThat(lb.selectConnection(any(), null).toFuture().get().address(), is(anyOf(expected.values())));
-            Map<String, Integer> connectionCounts = lb.usedAddresses().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().size()));
-
-            assertEquals(0, connectionCounts.getOrDefault("address-2", -1).intValue(), "address-2 count mismatch");
-            assertEquals(1, connectionCounts.getOrDefault("address-3", -1).intValue(), "address-3 count mismatch");
-            assertEquals(1, connectionCounts.getOrDefault("address-4", -1).intValue(), "address-4 count mismatch");
+            assertConnectionCount(lb.usedAddresses(), connectionsCount("address-2", 0),
+                    connectionsCount("address-3", 1), connectionsCount("address-4", 1));
         }
     }
 
