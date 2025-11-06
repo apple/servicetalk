@@ -88,6 +88,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -273,24 +274,24 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
 
     @Test
     void roundRobining() throws Exception {
-        assumeTrue(isRoundRobin());
+        if (isRoundRobin()) {
+            sendServiceDiscoveryEvents(upEvent("address-1"));
+            sendServiceDiscoveryEvents(upEvent("address-2"));
+            final List<String> connections = awaitIndefinitely((lb.selectConnection(any(), null)
+                    .concat(lb.selectConnection(any(), null))
+                    .concat(lb.selectConnection(any(), null))
+                    .concat(lb.selectConnection(any(), null))
+                    .concat(lb.selectConnection(any(), null))
+                    .map(TestLoadBalancedConnection::address)));
 
-        sendServiceDiscoveryEvents(upEvent("address-1"));
-        sendServiceDiscoveryEvents(upEvent("address-2"));
-        final List<String> connections = awaitIndefinitely((lb.selectConnection(any(), null)
-                .concat(lb.selectConnection(any(), null))
-                .concat(lb.selectConnection(any(), null))
-                .concat(lb.selectConnection(any(), null))
-                .concat(lb.selectConnection(any(), null))
-                .map(TestLoadBalancedConnection::address)));
+            assertThat(connections, contains("address-1", "address-2", "address-1", "address-2", "address-1"));
 
-        assertThat(connections, contains("address-1", "address-2", "address-1", "address-2", "address-1"));
+            assertConnectionCount(lb.usedAddresses(),
+                    connectionsCount("address-1", 1),
+                    connectionsCount("address-2", 1));
 
-        assertConnectionCount(lb.usedAddresses(),
-                connectionsCount("address-1", 1),
-                connectionsCount("address-2", 1));
-
-        assertThat(connectionsCreated, hasSize(2));
+            assertThat(connectionsCreated, hasSize(2));
+        }
     }
 
     @Test

@@ -175,15 +175,10 @@ abstract class LoadBalancerTestScaffold {
         assertThat(addresses, iterableMatcher);
     }
 
-    <T> void assertAddresses(Iterable<T> addresses, String... address) {
+    <T extends Map.Entry<String, ?>> void assertAddresses(Iterable<T> addresses, String... address) {
         List<String> actualKeys = new ArrayList<>();
         for (T item : addresses) {
-            try {
-                Object key = item.getClass().getMethod("getKey").invoke(item);
-                actualKeys.add(String.valueOf(key));
-            } catch (Exception e) {
-                throw new AssertionError("Object " + item + " does not have a getKey() method");
-            }
+            actualKeys.add(item.getKey());
         }
         assertThat(actualKeys, containsInAnyOrder(address));
     }
