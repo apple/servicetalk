@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.ToIntFunction;
 import javax.annotation.Nullable;
@@ -38,7 +37,7 @@ final class CacheConnectionFactory<ResolvedAddress, C extends ListenableAsyncClo
         extends DelegatingConnectionFactory<ResolvedAddress, C> {
     private static final Logger LOGGER = LoggerFactory.getLogger(CacheConnectionFactory.class);
 
-    private final Lock lock = new ReentrantLock();
+    private final ReentrantLock lock = new ReentrantLock();
     // access to `map` must be protected by `lock`.
     private final Map<ResolvedAddress, Item<C>> map = new HashMap<>();
     private final ToIntFunction<ResolvedAddress> maxConcurrencyFunc;
@@ -82,7 +81,7 @@ final class CacheConnectionFactory<ResolvedAddress, C extends ListenableAsyncClo
                                 public void onSubscribe(final Cancellable cancellable) {
                                     subscriber.onSubscribe(() -> {
                                         try {
-                                            assert Thread.holdsLock(map);
+                                            assert lock.isHeldByCurrentThread();
                                             map.remove(resolvedAddress, item2);
                                         } finally {
                                             cancellable.cancel();
