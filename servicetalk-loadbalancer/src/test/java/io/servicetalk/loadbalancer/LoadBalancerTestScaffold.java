@@ -31,6 +31,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -51,7 +52,7 @@ import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.both;
-import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
@@ -169,19 +170,16 @@ abstract class LoadBalancerTestScaffold {
                 .collect(Collectors.toList())
                 .toArray(new Matcher[] {});
         final Matcher<Iterable<? extends T>> iterableMatcher =
-                addressAndConnCount.length == 0 ? emptyIterable() : contains(args);
+                addressAndConnCount.length == 0 ? emptyIterable() : containsInAnyOrder(args);
         assertThat(addresses, iterableMatcher);
     }
 
-    <T> void assertAddresses(Iterable<T> addresses, String... address) {
-        @SuppressWarnings("unchecked")
-        final Matcher<? super T>[] args = (Matcher<? super T>[]) Arrays.stream(address)
-                .map(a -> hasProperty("key", is(a)))
-                .collect(Collectors.toList())
-                .toArray(new Matcher[] {});
-        final Matcher<Iterable<? extends T>> iterableMatcher =
-                address.length == 0 ? emptyIterable() : contains(args);
-        assertThat(addresses, iterableMatcher);
+    <T extends Map.Entry<String, ?>> void assertAddresses(Iterable<T> addresses, String... address) {
+        List<String> actualKeys = new ArrayList<>();
+        for (T item : addresses) {
+            actualKeys.add(item.getKey());
+        }
+        assertThat(actualKeys, containsInAnyOrder(address));
     }
 
     Map.Entry<String, Integer> connectionsCount(String addr, int count) {

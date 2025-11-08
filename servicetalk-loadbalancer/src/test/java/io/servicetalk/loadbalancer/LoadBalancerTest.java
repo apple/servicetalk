@@ -101,7 +101,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -273,24 +272,24 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
 
     @Test
     void roundRobining() throws Exception {
-        assumeTrue(isRoundRobin());
+        if (isRoundRobin()) {
+            sendServiceDiscoveryEvents(upEvent("address-1"));
+            sendServiceDiscoveryEvents(upEvent("address-2"));
+            final List<String> connections = awaitIndefinitely((lb.selectConnection(any(), null)
+                    .concat(lb.selectConnection(any(), null))
+                    .concat(lb.selectConnection(any(), null))
+                    .concat(lb.selectConnection(any(), null))
+                    .concat(lb.selectConnection(any(), null))
+                    .map(TestLoadBalancedConnection::address)));
 
-        sendServiceDiscoveryEvents(upEvent("address-1"));
-        sendServiceDiscoveryEvents(upEvent("address-2"));
-        final List<String> connections = awaitIndefinitely((lb.selectConnection(any(), null)
-                .concat(lb.selectConnection(any(), null))
-                .concat(lb.selectConnection(any(), null))
-                .concat(lb.selectConnection(any(), null))
-                .concat(lb.selectConnection(any(), null))
-                .map(TestLoadBalancedConnection::address)));
+            assertThat(connections, contains("address-1", "address-2", "address-1", "address-2", "address-1"));
 
-        assertThat(connections, contains("address-1", "address-2", "address-1", "address-2", "address-1"));
+            assertConnectionCount(lb.usedAddresses(),
+                    connectionsCount("address-1", 1),
+                    connectionsCount("address-2", 1));
 
-        assertConnectionCount(lb.usedAddresses(),
-                connectionsCount("address-1", 1),
-                connectionsCount("address-2", 1));
-
-        assertThat(connectionsCreated, hasSize(2));
+            assertThat(connectionsCreated, hasSize(2));
+        }
     }
 
     @Test
