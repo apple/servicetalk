@@ -47,7 +47,6 @@ import io.netty.resolver.ResolvedAddressTypes;
 import io.netty.resolver.dns.DefaultAuthoritativeDnsServerCache;
 import io.netty.resolver.dns.DefaultDnsCache;
 import io.netty.resolver.dns.DefaultDnsCnameCache;
-import io.netty.resolver.dns.DnsNameResolver;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
 import io.netty.resolver.dns.NameServerComparator;
 import io.netty.resolver.dns.NoopAuthoritativeDnsServerCache;
@@ -127,7 +126,7 @@ final class DefaultDnsClient implements DnsClient {
     private static final Cancellable TERMINATED = () -> { };
 
     private final EventLoopAwareNettyIoExecutor nettyIoExecutor;
-    private final DnsNameResolver resolver;
+    private final UnderlyingDnsResolver resolver;
     private final MinTtlCache ttlCache;
     private final long maxTTLNanos;
     private final long ttlJitterNanos;
@@ -229,7 +228,16 @@ final class DefaultDnsClient implements DnsClient {
         if (dnsServerAddressStreamProvider != null) {
             builder.nameServerProvider(toNettyType(dnsServerAddressStreamProvider));
         }
-        resolver = builder.build();
+        if (true /* hedging enabled */) { // need to wire this in.
+            DnsNameResolverBuilderUtils.consolidateCacheSize(id, builder, 0);
+            resolver = new HedgingDnsNameResolver(
+//                    new UnderlyingDnsResolver.NettyDnsNameResolver(builder.build()), nettyIoExecutor);
+                    // TODO: this is just for hacking together tests.
+                    new UnderlyingDnsResolver.NettyDnsNameResolver(builder.build()), nettyIoExecutor,
+                    HedgingDnsNameResolver.constantTracker(100), HedgingDnsNameResolver.alwaysAllowBudget());
+        } else {
+            resolver = new UnderlyingDnsResolver.NettyDnsNameResolver(builder.build());
+        }
         this.resolutionTimeoutMillis = resolutionTimeout != null ? resolutionTimeout.toMillis() :
                 // Default value is chosen based on a combination of default "timeout" and "attempts" options of
                 // /etc/resolv.conf: https://man7.org/linux/man-pages/man5/resolv.conf.5.html
@@ -439,7 +447,7 @@ final class DefaultDnsClient implements DnsClient {
                     final EventLoop eventLoop = nettyIoExecutor.eventLoopGroup().next();
                     final Promise<DnsAnswer<HostAndPort>> promise = eventLoop.newPromise();
                     final Future<List<DnsRecord>> resolveFuture =
-                            resolver.resolveAll(new DefaultDnsQuestion(name, SRV));
+                            resolver.resolveAllQuestion(new DefaultDnsQuestion(name, SRV));
                     final Future<?> timeoutFuture = resolutionTimeoutMillis == 0L ? null : eventLoop.schedule(() -> {
                         if (!promise.isDone() && promise.tryFailure(DnsNameResolverTimeoutException.newInstance(
                                 name, resolutionTimeoutMillis, SRV.toString(),
