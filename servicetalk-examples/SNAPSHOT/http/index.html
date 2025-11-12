@@ -111,6 +111,9 @@
     <a class="nav-link" href="#OpenTracing">OpenTracing</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#OpenTelemetryTracing">OpenTelemetry Tracing</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="#Redirects">Redirects</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -246,6 +249,15 @@
   </li>
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../../../servicetalk-traffic-resilience-http/SNAPSHOT/traffic-resilience-features.html">Resilience Features</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-toggle"></button>
+    <span class="nav-text">Observability</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../../servicetalk-opentelemetry-http/SNAPSHOT/index.html">OpenTelemetry Tracing</a>
   </li>
 </ul>
   </li>
@@ -882,6 +894,14 @@
         </li>
         <li class="version">
           <a href="../../../servicetalk-loadbalancer/0.20/index.html">0.20</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">OpenTelemetry</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../../servicetalk-opentelemetry-http/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
       </ul>
     </li>
@@ -1601,6 +1621,43 @@ on via a client filter on the client builder.</p>
 </li>
 <li>
 <p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/opentracing/src/main/java/io/servicetalk/examples/http/opentracing/BraveTracingServer.java">BraveTracingServer</a> - A server that uses <a href="https://github.com/openzipkin-contrib/brave-opentracing">Brave OpenTracing</a> implementation.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="OpenTelemetryTracing"><a class="anchor" href="#OpenTelemetryTracing"></a><a class="link" href="#OpenTelemetryTracing">OpenTelemetry Tracing</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example demonstrates the following:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>automatically generate and propagate distributed tracing metadata using OpenTelemetry</p>
+</li>
+<li>
+<p>configure OpenTelemetry SDK with logging span exporter for local development</p>
+</li>
+<li>
+<p>use of ServiceTalk HTTP filters for OpenTelemetry tracing</p>
+</li>
+<li>
+<p>proper <a href="../../../servicetalk-concurrent-api/SNAPSHOT/async-context.html" class="page">async context propagation</a> for span correlation</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Using the following classes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/opentelemetry-tracing/src/main/java/io/servicetalk/examples/http/opentelemetry/tracing/OpenTelemetryTracingServer.java">OpenTelemetryTracingServer</a> - A server that demonstrates OpenTelemetry tracing configuration and automatic span generation for HTTP requests.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/opentelemetry-tracing/src/main/java/io/servicetalk/examples/http/opentelemetry/tracing/OpenTelemetryTracingClient.java">OpenTelemetryTracingClient</a> - A client that demonstrates OpenTelemetry tracing configuration and automatic span generation for HTTP requests with context propagation.</p>
 </li>
 </ul>
 </div>

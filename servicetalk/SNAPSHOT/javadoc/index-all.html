@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="script.js"></script>
-<script type="text/javascript" src="script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="index-page">
@@ -2973,6 +2973,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Creates a new builder for an <a href="io/servicetalk/http/api/StreamingHttpServiceFilter.html" title="class in io.servicetalk.http.api"><code>StreamingHttpServiceFilter</code></a>, which filters HTTP requests using <a href="https://tools.ietf.org/html/rfc7617">RFC7617</a>: The 'Basic' HTTP Authentication Scheme.</div>
 </dd>
+<dt><a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.Builder.html#%3Cinit%3E(io.servicetalk.loadbalancer.OutlierDetectorConfig)" class="member-name-link">Builder(OutlierDetectorConfig)</a> - Constructor for class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></dt>
+<dd>
+<div class="block">Construct a new builder initialized with the values of an existing <a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer"><code>OutlierDetectorConfig</code></a>.</div>
+</dd>
 <dt><a href="io/servicetalk/opentracing/inmemory/DefaultInMemoryTracer.Builder.html#%3Cinit%3E(io.servicetalk.opentracing.inmemory.api.InMemoryScopeManager)" class="member-name-link">Builder(InMemoryScopeManager)</a> - Constructor for class io.servicetalk.opentracing.inmemory.<a href="io/servicetalk/opentracing/inmemory/DefaultInMemoryTracer.Builder.html" title="class in io.servicetalk.opentracing.inmemory">DefaultInMemoryTracer.Builder</a></dt>
 <dd>
 <div class="block">Constructs a builder for an <a href="io/servicetalk/opentracing/inmemory/DefaultInMemoryTracer.html" title="class in io.servicetalk.opentracing.inmemory"><code>DefaultInMemoryTracer</code></a>.</div>
@@ -4751,6 +4755,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.Builder.html#consecutive5xx(int)" class="member-name-link">consecutive5xx(int)</a> - Method in class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></dt>
 <dd>
 <div class="block">Set the threshold for consecutive failures before a host is ejected.</div>
+</dd>
+<dt><a href="io/servicetalk/loadbalancer/OutlierDetectorConfigs.html#consecutiveConnectFailures()" class="member-name-link">consecutiveConnectFailures()</a> - Static method in class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/OutlierDetectorConfigs.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfigs</a></dt>
+<dd>
+<div class="block"><a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer"><code>OutlierDetectorConfig</code></a> that only enables the default consecutive connection failure detection.</div>
 </dd>
 <dt><a href="io/servicetalk/buffer/api/CompositeBuffer.html#consolidate()" class="member-name-link">consolidate()</a> - Method in interface io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/CompositeBuffer.html" title="interface in io.servicetalk.buffer.api">CompositeBuffer</a></dt>
 <dd>
@@ -6705,6 +6713,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/http/netty/H2KeepAlivePolicies.html#disabled()" class="member-name-link">disabled()</a> - Static method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H2KeepAlivePolicies.html" title="class in io.servicetalk.http.netty">H2KeepAlivePolicies</a></dt>
 <dd>
 <div class="block">Returns a <a href="io/servicetalk/http/netty/H2ProtocolConfig.KeepAlivePolicy.html" title="interface in io.servicetalk.http.netty"><code>H2ProtocolConfig.KeepAlivePolicy</code></a> that disables all keep alive behaviors.</div>
+</dd>
+<dt><a href="io/servicetalk/loadbalancer/OutlierDetectorConfigs.html#disabled()" class="member-name-link">disabled()</a> - Static method in class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/OutlierDetectorConfigs.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfigs</a></dt>
+<dd>
+<div class="block"><a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer"><code>OutlierDetectorConfig</code></a> that disables all outlier detection.</div>
 </dd>
 <dt><a href="io/servicetalk/buffer/api/CompositeBuffer.html#discardSomeReadBytes()" class="member-name-link">discardSomeReadBytes()</a> - Method in interface io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/CompositeBuffer.html" title="interface in io.servicetalk.buffer.api">CompositeBuffer</a></dt>
 <dd>
@@ -12828,31 +12840,31 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Completable.html#liftAsync(io.servicetalk.concurrent.api.CompletableOperator)" class="member-name-link">liftAsync(CompletableOperator)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></dt>
 <dd>
-<div class="block"><strong>This method requires advanced knowledge of building operators.</strong></div>
+<div class="block"><strong>This method requires advanced knowledge of building operators.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Publisher.html#liftAsync(io.servicetalk.concurrent.api.PublisherOperator)" class="member-name-link">liftAsync(PublisherOperator&lt;? super T, ? extends R&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
 <dd>
-<div class="block"><strong>This method requires advanced knowledge of building operators.</strong></div>
+<div class="block"><strong>This method requires advanced knowledge of building operators.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Single.html#liftAsync(io.servicetalk.concurrent.api.SingleOperator)" class="member-name-link">liftAsync(SingleOperator&lt;? super T, ? extends R&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a></dt>
 <dd>
-<div class="block"><strong>This method requires advanced knowledge of building operators.</strong></div>
+<div class="block"><strong>This method requires advanced knowledge of building operators.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Completable.html#liftSync(io.servicetalk.concurrent.api.CompletableOperator)" class="member-name-link">liftSync(CompletableOperator)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></dt>
 <dd>
-<div class="block"><strong>This method requires advanced knowledge of building operators.</strong></div>
+<div class="block"><strong>This method requires advanced knowledge of building operators.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Publisher.html#liftSync(io.servicetalk.concurrent.api.PublisherOperator)" class="member-name-link">liftSync(PublisherOperator&lt;? super T, ? extends R&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
 <dd>
-<div class="block"><strong>This method requires advanced knowledge of building operators.</strong></div>
+<div class="block"><strong>This method requires advanced knowledge of building operators.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Single.html#liftSync(io.servicetalk.concurrent.api.SingleOperator)" class="member-name-link">liftSync(SingleOperator&lt;? super T, ? extends R&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a></dt>
 <dd>
-<div class="block"><strong>This method requires advanced knowledge of building operators.</strong></div>
+<div class="block"><strong>This method requires advanced knowledge of building operators.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Publisher.html#liftSyncToSingle(io.servicetalk.concurrent.api.PublisherToSingleOperator)" class="member-name-link">liftSyncToSingle(PublisherToSingleOperator&lt;? super T, ? extends R&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
 <dd>
-<div class="block"><strong>This method requires advanced knowledge of building operators.</strong></div>
+<div class="block"><strong>This method requires advanced knowledge of building operators.</div>
 </dd>
 <dt><a href="io/servicetalk/client/api/LimitingConnectionFactoryFilter.html" class="type-name-link" title="class in io.servicetalk.client.api">LimitingConnectionFactoryFilter</a>&lt;<a href="io/servicetalk/client/api/LimitingConnectionFactoryFilter.html" title="type parameter in LimitingConnectionFactoryFilter">ResolvedAddress</a>,<wbr><a href="io/servicetalk/client/api/LimitingConnectionFactoryFilter.html" title="type parameter in LimitingConnectionFactoryFilter">C</a> extends <a href="io/servicetalk/concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>&gt; - Class in <a href="io/servicetalk/client/api/package-summary.html">io.servicetalk.client.api</a></dt>
 <dd>
@@ -16428,6 +16440,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.Builder.html" class="type-name-link" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a> - Class in <a href="io/servicetalk/loadbalancer/package-summary.html">io.servicetalk.loadbalancer</a></dt>
 <dd>
 <div class="block">A builder for <a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer"><code>OutlierDetectorConfig</code></a> instances.</div>
+</dd>
+<dt><a href="io/servicetalk/loadbalancer/OutlierDetectorConfigs.html" class="type-name-link" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfigs</a> - Class in <a href="io/servicetalk/loadbalancer/package-summary.html">io.servicetalk.loadbalancer</a></dt>
+<dd>
+<div class="block">Useful default <a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer"><code>OutlierDetectorConfig</code></a> values.</div>
 </dd>
 <dt><a href="io/servicetalk/grpc/health/DefaultHealthService.html#OVERALL_SERVICE_NAME" class="member-name-link">OVERALL_SERVICE_NAME</a> - Static variable in class io.servicetalk.grpc.health.<a href="io/servicetalk/grpc/health/DefaultHealthService.html" title="class in io.servicetalk.grpc.health">DefaultHealthService</a></dt>
 <dd>
