@@ -32,6 +32,9 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.transport.api.TransportObserver;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,11 +50,14 @@ import static java.util.Objects.requireNonNull;
  * {@link Single} instead of creating a new connection each time. This is useful when a spike of connections occurs
  * instead of creating a new connection for each request, if the underlying protocol version supports concurrency
  * (pipelining, multiplexing) a single connection creation attempt can be used before the connection is actually
- * established, which will reduce the overall number of connectiosn required.
+ * established, which will reduce the overall number of connections required.
  * @param <ResolvedAddress> The resolved address type.
  */
 public final class CacheConnectionHttpLoadBalanceFactory<ResolvedAddress>
         implements HttpLoadBalancerFactory<ResolvedAddress> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CacheConnectionHttpLoadBalanceFactory.class);
+
     private final ToIntFunction<ResolvedAddress> maxConcurrencyFunc;
     private final HttpLoadBalancerFactory<ResolvedAddress> delegate;
 
@@ -167,8 +173,12 @@ public final class CacheConnectionHttpLoadBalanceFactory<ResolvedAddress>
                                 // Connections may set their max concurrency to 0 before shutting down.
                                 // Map cleanup is done in terminal method.
                                 if (concurrency > 0) {
-                                    maxConcurrentMap.computeIfPresent(resolvedAddress,
+                                    ConcurrencyRefCnt old = maxConcurrentMap.computeIfPresent(resolvedAddress,
                                             (ra, refCnt) -> new ConcurrencyRefCnt(concurrency, refCnt.refCnt));
+                                    if (LOGGER.isDebugEnabled()) {
+                                        LOGGER.debug("Connection {} received concurrency update from {} to {}",
+                                                delegate(), old.concurrency, integerConsumableEvent.event());
+                                    }
                                 }
                             }
                         }
@@ -190,6 +200,15 @@ public final class CacheConnectionHttpLoadBalanceFactory<ResolvedAddress>
                                             new ConcurrencyRefCnt(refCnt.concurrency, refCnt.refCnt - 1));
                         }
                     });
+        }
+
+        @Override
+        public Result tryRequest() {
+            Result result = delegate().tryRequest();
+            if (result != Result.Accepted && LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Connection {} `.tryRequest()` failed with result: {}", delegate(), result);
+            }
+            return result;
         }
     }
 
