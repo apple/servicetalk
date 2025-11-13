@@ -93,8 +93,8 @@ if (JavaVersion.current().isJava11Compatible()) {
 }
 
 task validateLocalDocSite(type: Exec) {
-  group 'Documentation'
-  description 'Generate and validate servicetalk.io site documentation'
+  group = 'Documentation'
+  description = 'Generate and validate servicetalk.io site documentation'
   workingDir 'docs/generation'
   commandLine './gradlew', 'clean', 'validateLocalSite'
 }
@@ -123,20 +123,10 @@ subprojects {
     lockMode = LockMode.STRICT
   }
 
-  configurations {
-    annotationProcessor {
-      resolutionStrategy.activateDependencyLocking()
-    }
-    compileClasspath {
-      resolutionStrategy.activateDependencyLocking()
-    }
-    runtimeClasspath {
-      resolutionStrategy.activateDependencyLocking()
-    }
-    jmhCompileClasspath {
-      resolutionStrategy.activateDependencyLocking()
-    }
-    jmhRuntimeClasspath {
+  def lockableConfigs = ["annotationProcessor", "compileClasspath", "runtimeClasspath", "jmhCompileClasspath",
+                         "jmhRuntimeClasspath"]
+  configurations.configureEach {
+    if (lockableConfigs.contains(it.name)) {
       resolutionStrategy.activateDependencyLocking()
     }
   }

@@ -37,15 +37,15 @@ compileTestJava {
 }
 
 tasks.withType(Checkstyle).all {
-  enabled false
+  enabled = false
 }
 
 tasks.withType(Pmd).all {
-  enabled false
+  enabled = false
 }
 
 tasks.withType(com.github.spotbugs.snom.SpotBugsTask).all {
-  enabled false
+  enabled = false
 }
 
 task cleanSources(type: Delete) {
