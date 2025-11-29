@@ -17,8 +17,8 @@ package io.servicetalk.http.api;
 
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
@@ -144,7 +144,7 @@ abstract class MultiMap<K, V> {
             return emptySet();
         }
         // Overall iteration order does not need to be preserved.
-        final Set<K> names = new LinkedHashSet<>((int) (size() / .75), .75f);
+        final Set<K> names = new HashSet<>((int) (size() / .75), .75f);
         BucketHead<K, V> bucketHead = lastBucketHead;
         while (bucketHead != null) {
             MultiMapEntry<K, V> e = bucketHead.entry;
@@ -433,12 +433,18 @@ abstract class MultiMap<K, V> {
             return 0;
         }
         int result = HASH_CODE_SEED;
+        // Because we use a hashmap internally, our key iteration order may not be consistent across two
+        // instances even if they have same contents because the bucket ordering may be different.
+        // To make the hashcode work correctly we make a sub-hashcode for each key and its associated values,
+        // and then we simply sum them up to because the sum is invariant over key iteration order.
         for (final K key : getKeys()) {
-            result = 31 * result + hashCode(key);
+            int itemHashCode = hashCode(key);
             final Iterator<? extends V> valueItr = getValues(key);
             while (valueItr.hasNext()) {
-                result = 31 * result + hashCodeForValue(valueItr.next());
+                // Note that for each item, this algorith makes the hashcode order dependent on it's elements
+                itemHashCode = 31 * itemHashCode + hashCodeForValue(valueItr.next());
             }
+            result += itemHashCode;
         }
         return result;
     }
