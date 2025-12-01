@@ -49,9 +49,9 @@ dependencies {
   runtimeOnly (group:"io.netty", name:"netty-tcnative-boringssl-static", classifier:"linux-aarch_64")
   runtimeOnly (group:"io.netty", name:"netty-tcnative-boringssl-static", classifier:"osx-x86_64")
   runtimeOnly (group:"io.netty", name:"netty-tcnative-boringssl-static", classifier:"osx-aarch_64")
-  runtimeOnly "io.netty:netty-transport-native-epoll"
-  runtimeOnly (group:"io.netty", name:"netty-transport-native-epoll", classifier:"linux-x86_64")
-  runtimeOnly (group:"io.netty", name:"netty-transport-native-epoll", classifier:"linux-aarch_64")
+  // runtimeOnly "io.netty:netty-transport-native-epoll"
+  // runtimeOnly (group:"io.netty", name:"netty-transport-native-epoll", classifier:"linux-x86_64")
+  // runtimeOnly (group:"io.netty", name:"netty-transport-native-epoll", classifier:"linux-aarch_64")
   runtimeOnly "io.netty:netty-transport-native-kqueue"
   if (!project.ext.isNettySnapshot) {
     // Netty doesn't publish snapshots for macos artifacts
