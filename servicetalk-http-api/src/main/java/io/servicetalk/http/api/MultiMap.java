@@ -441,7 +441,7 @@ abstract class MultiMap<K, V> {
             int itemHashCode = hashCode(key);
             final Iterator<? extends V> valueItr = getValues(key);
             while (valueItr.hasNext()) {
-                // Note that for each item, this algorith makes the hashcode order dependent on it's elements
+                // Note that for each item, this algorith makes the hashcode order dependent on its elements
                 itemHashCode = 31 * itemHashCode + hashCodeForValue(valueItr.next());
             }
             result += itemHashCode;
