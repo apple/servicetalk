@@ -433,12 +433,18 @@ abstract class MultiMap<K, V> {
             return 0;
         }
         int result = HASH_CODE_SEED;
+        // Because we use a hashmap internally, our key iteration order may not be consistent across two
+        // instances even if they have same contents because the bucket ordering may be different.
+        // To make the hashcode work correctly we make a sub-hashcode for each key and its associated values,
+        // and then we simply sum them up to because the sum is invariant over key iteration order.
         for (final K key : getKeys()) {
-            result = 31 * result + hashCode(key);
+            int itemHashCode = hashCode(key);
             final Iterator<? extends V> valueItr = getValues(key);
             while (valueItr.hasNext()) {
-                result = 31 * result + hashCodeForValue(valueItr.next());
+                // Note that for each item, this algorith makes the hashcode order dependent on its elements
+                itemHashCode = 31 * itemHashCode + hashCodeForValue(valueItr.next());
             }
+            result += itemHashCode;
         }
         return result;
     }
