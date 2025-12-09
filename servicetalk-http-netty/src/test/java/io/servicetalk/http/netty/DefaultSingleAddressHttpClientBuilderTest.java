@@ -79,18 +79,19 @@ class DefaultSingleAddressHttpClientBuilderTest {
         assertThrows(NumberFormatException.class, () -> hostToCharSequenceFunction("[", "1:2:3::5%80]", ":s", 1));
     }
 
+    private static final class TestAddress {
+        @Override
+        public String toString() {
+            return "foo:bar";
+        }
+    }
+
     @Test
     void oddFormattedToString() {
-        class TestAddress {
-            @Override
-            public String toString() {
-                return "foo:bar";
-            }
-        }
         new DefaultSingleAddressHttpClientBuilder<>(
              new TestAddress(),
-             mappingServiceDiscoverer(u -> null, "description"))
-             .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build());
+            mappingServiceDiscoverer(u -> null, "description"))
+                .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build());
     }
 
     private static void hostToCharSequenceFunction(String hostNamePrefix, String hostName, String hostNameSuffix,
