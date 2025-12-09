@@ -71,7 +71,6 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
@@ -120,7 +119,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private final ClientStrategyInfluencerChainBuilder strategyComputation;
     private HttpLoadBalancerFactory<R> loadBalancerFactory;
     private ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer;
-    private Function<U, Optional<CharSequence>> hostToCharSequenceFunction =
+    private Function<U, CharSequence> hostToCharSequenceFunction =
             DefaultSingleAddressHttpClientBuilder::toAuthorityForm;
     private boolean addHostHeaderFallbackFilter = true;
     private boolean addIdleTimeoutConnectionFilter = true;
@@ -599,7 +598,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> unresolvedAddressToHost(
             final Function<U, CharSequence> unresolvedAddressToHostFunction) {
-        this.hostToCharSequenceFunction = unresolvedAddressToHostFunction.andThen(Optional::ofNullable);
+        this.hostToCharSequenceFunction = unresolvedAddressToHostFunction;
         return this;
     }
 
@@ -668,23 +667,24 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         return this;
     }
 
-    private static <U> Optional<CharSequence> toAuthorityForm(final U address) {
+    @Nullable
+    private static <U> CharSequence toAuthorityForm(final U address) {
         if (address instanceof CharSequence) {
-            return Optional.of((CharSequence) address);
+            return (CharSequence) address;
         }
         if (address instanceof HostAndPort) {
             final HostAndPort hostAndPort = (HostAndPort) address;
-            return Optional.of(toSocketAddressString(hostAndPort.hostName(), hostAndPort.port()));
+            return toSocketAddressString(hostAndPort.hostName(), hostAndPort.port());
         }
         if (address instanceof InetSocketAddress) {
-            return Optional.of(toSocketAddressString((InetSocketAddress) address));
+            return toSocketAddressString((InetSocketAddress) address);
         }
-        return Optional.empty();
+        return null;
     }
 
     private CharSequence hostToCharSequenceFunctionOrToString(final U address) {
-        Optional<CharSequence> result = this.hostToCharSequenceFunction.apply(address);
-        return result.isPresent() ? result.get() : address.toString();
+        CharSequence result = this.hostToCharSequenceFunction.apply(address);
+        return result != null ? result : address.toString();
     }
 
     private void setFallbackHostAndPort(HttpClientConfig config, U address) {
@@ -697,12 +697,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             config.fallbackPeerHost(inetSocketAddress.getHostString());
             config.fallbackPeerPort(inetSocketAddress.getPort());
         } else {
-            Optional<CharSequence> ocs = hostToCharSequenceFunction.apply(address);
-            if (!ocs.isPresent()) {
+            CharSequence cs = hostToCharSequenceFunction.apply(address);
+            if (cs == null) {
                 config.fallbackPeerHost(null);
                 config.fallbackPeerPort(-1);
             } else {
-                CharSequence cs = ocs.get();
                 int colon = CharSequences.indexOf(cs, ':', 0);
                 if (colon < 0) {
                     config.fallbackPeerHost(cs.toString());
