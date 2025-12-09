@@ -598,7 +598,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> unresolvedAddressToHost(
             final Function<U, CharSequence> unresolvedAddressToHostFunction) {
-        this.hostToCharSequenceFunction = unresolvedAddressToHostFunction;
+        this.hostToCharSequenceFunction = requireNonNull(unresolvedAddressToHostFunction);
         return this;
     }
 
