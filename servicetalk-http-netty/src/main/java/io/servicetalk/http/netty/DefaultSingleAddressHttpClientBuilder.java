@@ -115,7 +115,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     @Nullable
     private U proxyAddress;
     private final HttpClientConfig config;
-    final HttpExecutionContextBuilder executionContextBuilder;
+    private final HttpExecutionContextBuilder executionContextBuilder;
     private final ClientStrategyInfluencerChainBuilder strategyComputation;
     private HttpLoadBalancerFactory<R> loadBalancerFactory;
     private ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer;
@@ -328,7 +328,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 //  GrpcClientAttributesExtractor.java for an example which needs to inspect the ":authority" header
                 //  since the H2 dispatcher has replaced the Host header with the H2 specific ":authority" header.
                 currClientFilterFactory = appendFilter(currClientFilterFactory, new HostHeaderHttpRequesterFilter(
-                        ctx.builder.hostToCharSequenceFunction.apply(ctx.builder.address)));
+                        ctx.builder.hostToCharSequenceFunctionOrToString(ctx.builder.address)));
             }
 
             FilterableStreamingHttpClient lbClient = closeOnException.prepend(
@@ -463,13 +463,13 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     private AbsoluteAddressHttpRequesterFilter proxyAbsoluteAddressFilterFactory() {
-        return new AbsoluteAddressHttpRequesterFilter("http", hostToCharSequenceFunction.apply(address));
+        return new AbsoluteAddressHttpRequesterFilter("http", hostToCharSequenceFunctionOrToString(address));
     }
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> proxyConfig(final ProxyConfig<U> proxyConfig) {
         this.proxyAddress = requireNonNull(proxyConfig.address());
-        config.proxyConfig(hostToCharSequenceFunction.apply(address), proxyConfig);
+        config.proxyConfig(hostToCharSequenceFunctionOrToString(address), proxyConfig);
         return this;
     }
 
@@ -667,6 +667,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         return this;
     }
 
+    @Nullable
     private static <U> CharSequence toAuthorityForm(final U address) {
         if (address instanceof CharSequence) {
             return (CharSequence) address;
@@ -678,7 +679,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         if (address instanceof InetSocketAddress) {
             return toSocketAddressString((InetSocketAddress) address);
         }
-        return address.toString();
+        return null;
+    }
+
+    private CharSequence hostToCharSequenceFunctionOrToString(final U address) {
+        CharSequence result = this.hostToCharSequenceFunction.apply(address);
+        return result != null ? result : address.toString();
     }
 
     private void setFallbackHostAndPort(HttpClientConfig config, U address) {
