@@ -39,6 +39,35 @@ jobs:
           cache: 'gradle'
       - name: Print JDK Version
         run: java -version
+      - name: Debug macOS TCP/Socket Configuration
+        if: runner.os == 'macOS'
+        run: |
+          echo "=== OS Version ==="
+          sw_vers
+          uname -a
+
+          echo ""
+          echo "=== TCP/Socket Kernel Parameters ==="
+          sysctl kern.ipc.somaxconn
+          sysctl kern.ipc.soqlimitcompat 2>/dev/null || echo "soqlimitcompat not available"
+          sysctl kern.ipc.soqlencomp 2>/dev/null || echo "soqlencomp not available"
+
+          echo ""
+          echo "=== All Socket-Related Sysctls ==="
+          sysctl -a 2>/dev/null | grep -E "kern\.ipc\.(so|tcp)" | sort
+
+          echo ""
+          echo "=== Java Version ==="
+          java -version
+
+          echo ""
+          echo "=== Hardware Info ==="
+          sysctl hw.ncpu hw.physicalcpu hw.memsize
+
+          echo ""
+          echo "=== Virtualization Check ==="
+          sysctl -a 2>/dev/null | grep -i virtual || echo "No virtualization sysctls found"
+          system_profiler SPHardwareDataType 2>/dev/null | grep -E "(Model|Chip|Memory|Cores)" || true
       - name: Set Gradle Environment
         run: echo "GRADLE_OPTS=-Dorg.gradle.java.home=$JAVA_HOME_17_${{ runner.arch }}" >> "$GITHUB_ENV"
       - name: Make gradlew Executable
