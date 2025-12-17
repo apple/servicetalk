@@ -21,7 +21,7 @@ jobs:
         os_label: [ ubuntu ]
         include:
           - java: 11
-            os: [self-hosted, macos, general]
+            os: [self-hosted, macos, sequoia]
             os_label: macos
     steps:
       - name: Download Artifacts
