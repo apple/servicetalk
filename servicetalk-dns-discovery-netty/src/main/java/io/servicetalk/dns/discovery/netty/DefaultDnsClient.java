@@ -41,21 +41,27 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.EventLoop;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.dns.DefaultDnsQuestion;
+import io.netty.handler.codec.dns.DnsQuestion;
 import io.netty.handler.codec.dns.DnsRawRecord;
 import io.netty.handler.codec.dns.DnsRecord;
 import io.netty.resolver.ResolvedAddressTypes;
+import io.netty.resolver.SimpleNameResolver;
 import io.netty.resolver.dns.DefaultAuthoritativeDnsServerCache;
 import io.netty.resolver.dns.DefaultDnsCache;
 import io.netty.resolver.dns.DefaultDnsCnameCache;
+import io.netty.resolver.dns.DefaultDnsQueryInflightHandler;
 import io.netty.resolver.dns.DnsNameResolver;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
+import io.netty.resolver.dns.DnsQueryInflightHandler;
 import io.netty.resolver.dns.NameServerComparator;
 import io.netty.resolver.dns.NoopAuthoritativeDnsServerCache;
 import io.netty.resolver.dns.NoopDnsCache;
 import io.netty.resolver.dns.NoopDnsCnameCache;
 import io.netty.util.ReferenceCountUtil;
+import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,6 +81,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.IntFunction;
 import javax.annotation.Nullable;
 
@@ -104,6 +113,7 @@ import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.toRecor
 import static io.servicetalk.dns.discovery.netty.ServiceDiscovererUtils.calculateDifference;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChannel;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
+import static io.servicetalk.transport.netty.internal.BuilderUtils.toResolvedInetSocketAddress;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.lang.Integer.toHexString;
@@ -193,6 +203,7 @@ final class DefaultDnsClient implements DnsClient {
         final ResolvedAddressTypes resolvedAddressTypes = DnsResolverAddressTypes.toNettyType(addressTypes);
         final DnsNameResolverBuilder builder = new DnsNameResolverBuilder(eventLoop)
                 .localAddress(localAddress)
+                .inflightHandler(new BackupCompatibleInflightQueryHandler())
                 .channelType(datagramChannel(eventLoop))
                 .resolvedAddressTypes(resolvedAddressTypes)
                 // We should complete once the preferred address types could be resolved to ensure we always
@@ -296,6 +307,91 @@ final class DefaultDnsClient implements DnsClient {
                     }
                 });
         });
+    }
+
+    private static class BackupCompatibleInflightQueryHandler implements DnsQueryInflightHandler {
+
+        private final DnsQueryInflightHandler delegate;
+
+        BackupCompatibleInflightQueryHandler() {
+            delegate = new DefaultDnsQueryInflightHandler(5);
+        }
+
+        @Override
+        @Nullable
+        public DnsQueryInflightHandle handle(DnsQuestion question) {
+            DnsQueryInflightHandle result = delegate.handle(question);
+            if (result != null) {
+                result = new DnsQueryInflightHandleImpl(result);
+            }
+            return result;
+        }
+
+        private static class DnsQueryInflightHandleImpl implements DnsQueryInflightHandle {
+            private final DnsQueryInflightHandle delegate;
+            private final long startTime;
+
+            DnsQueryInflightHandleImpl(DnsQueryInflightHandle delegate) {
+                this.delegate = delegate;
+                this.startTime = System.nanoTime();
+            }
+
+            @Override
+            public boolean consolidate() {
+                long now = System.nanoTime();
+                long duration = now - startTime;
+                if (NANOSECONDS.toMillis(duration) > 100) {
+                    // TODO: check if we have exhausted a retry budget to avoid DNS query amplification.
+                    return false;
+                }
+                return delegate.consolidate();
+            }
+
+            @Override
+            public void complete(Throwable cause) {
+                delegate.complete(cause);
+            }
+        }
+    }
+
+    private static class BackupResolver extends SimpleNameResolver<InetAddress> {
+
+        BackupResolver(EventExecutor executor) {
+            super(executor);
+        }
+
+        private final DnsNameResolver delegate = null;
+
+        @Override
+        protected void doResolve(String inetHost, Promise<InetAddress> promise) throws Exception {
+            withBackup(promise, () -> delegate.resolve(inetHost));
+        }
+
+        @Override
+        protected void doResolveAll(String inetHost, Promise<List<InetAddress>> promise) throws Exception {
+            withBackup(promise, () -> delegate.resolveAll(inetHost));
+        }
+
+        private <T> void withBackup(Promise<T> originalPromise, Delegate<T> toCall) {
+            Future<T> result = toCall.resolve();
+            if (result.isDone()) {
+                link(originalPromise, result, null);
+                return;
+            }
+
+            ScheduledFuture<?> task = executor().schedule(() -> {
+
+            }, 100, MILLISECONDS);
+            task.cancel(true);
+        }
+
+        private <T> void link(Promise<T> promise, Future<T> result, @Nullable ScheduledFuture<?> task) {
+            // TODO: link the futures.
+        }
+
+        private interface Delegate<T> {
+            Future<T> resolve();
+        }
     }
 
     @Override

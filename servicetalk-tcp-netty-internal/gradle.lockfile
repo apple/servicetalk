@@ -2,20 +2,23 @@
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
-io.netty:netty-bom:4.1.127.Final=compileClasspath,runtimeClasspath
-io.netty:netty-buffer:4.1.127.Final=compileClasspath,runtimeClasspath
-io.netty:netty-codec:4.1.127.Final=compileClasspath,runtimeClasspath
-io.netty:netty-common:4.1.127.Final=compileClasspath,runtimeClasspath
-io.netty:netty-handler:4.1.127.Final=compileClasspath,runtimeClasspath
-io.netty:netty-resolver:4.1.127.Final=compileClasspath,runtimeClasspath
-io.netty:netty-tcnative-boringssl-static:2.0.73.Final=runtimeClasspath
-io.netty:netty-tcnative-classes:2.0.73.Final=runtimeClasspath
-io.netty:netty-transport-classes-epoll:4.1.127.Final=runtimeClasspath
-io.netty:netty-transport-classes-kqueue:4.1.127.Final=runtimeClasspath
-io.netty:netty-transport-native-epoll:4.1.127.Final=runtimeClasspath
-io.netty:netty-transport-native-kqueue:4.1.127.Final=runtimeClasspath
-io.netty:netty-transport-native-unix-common:4.1.127.Final=compileClasspath,runtimeClasspath
-io.netty:netty-transport:4.1.127.Final=compileClasspath,runtimeClasspath
+io.netty:netty-bom:4.2.8.Final-SNAPSHOT=compileClasspath,runtimeClasspath
+io.netty:netty-buffer:4.2.8.Final-SNAPSHOT=compileClasspath,runtimeClasspath
+io.netty:netty-codec-base:4.2.8.Final-SNAPSHOT=compileClasspath,runtimeClasspath
+io.netty:netty-codec-compression:4.2.8.Final-SNAPSHOT=runtimeClasspath
+io.netty:netty-codec-marshalling:4.2.8.Final-SNAPSHOT=runtimeClasspath
+io.netty:netty-codec-protobuf:4.2.8.Final-SNAPSHOT=runtimeClasspath
+io.netty:netty-codec:4.2.8.Final-SNAPSHOT=runtimeClasspath
+io.netty:netty-common:4.2.8.Final-SNAPSHOT=compileClasspath,runtimeClasspath
+io.netty:netty-handler:4.2.8.Final-SNAPSHOT=compileClasspath,runtimeClasspath
+io.netty:netty-resolver:4.2.8.Final-SNAPSHOT=compileClasspath,runtimeClasspath
+io.netty:netty-tcnative-boringssl-static:2.0.74.Final=runtimeClasspath
+io.netty:netty-tcnative-classes:2.0.74.Final=runtimeClasspath
+io.netty:netty-transport-classes-epoll:4.2.8.Final-SNAPSHOT=runtimeClasspath
+io.netty:netty-transport-classes-kqueue:4.2.8.Final-SNAPSHOT=runtimeClasspath
+io.netty:netty-transport-native-kqueue:4.2.8.Final-SNAPSHOT=runtimeClasspath
+io.netty:netty-transport-native-unix-common:4.2.8.Final-SNAPSHOT=compileClasspath,runtimeClasspath
+io.netty:netty-transport:4.2.8.Final-SNAPSHOT=compileClasspath,runtimeClasspath
 org.jctools:jctools-core:4.0.5=runtimeClasspath
 org.slf4j:slf4j-api:1.7.36=compileClasspath,runtimeClasspath
 empty=annotationProcessor,jmhCompileClasspath,jmhRuntimeClasspath,spotbugsPlugins,testAnnotationProcessor,testFixturesAnnotationProcessor
