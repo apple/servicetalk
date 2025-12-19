@@ -98,7 +98,7 @@ final class StreamingConnectionFactory {
                     newSniHostname = null;
                     hostnameVerificationAlgorithm = "";
                 } else {
-                    newPeerHost = peerHost + '-' + toHostAddress(inetAddress);
+                    newPeerHost = toHostAndIpBundle(peerHost, inetAddress);
                     // We are overriding the peerHost to make it qualified with the resolved address. If sniHostname is
                     // not set and the hostnameVerificationAlgorithm is set, the SSLEngine will take the peerHost value
                     // for validation, which will fail to match now that we have changed the value.
@@ -111,7 +111,7 @@ final class StreamingConnectionFactory {
                     }
                 }
             } else {
-                newPeerHost = sniHostname + '-' + toHostAddress(inetAddress);
+                newPeerHost = toHostAndIpBundle(sniHostname, inetAddress);
                 newSniHostname = sniHostname;
                 hostnameVerificationAlgorithm = sslConfig.hostnameVerificationAlgorithm();
             }
@@ -120,6 +120,18 @@ final class StreamingConnectionFactory {
                     hostnameVerificationAlgorithm);
         }
         return config;
+    }
+
+    /**
+     * Bundling the host with address helps to increase probability for SSLSession resumption cache hits when the
+     * hostname resolves to multiple IPs.
+     */
+    static String toHostAndIpBundle(final String hostname, final InetAddress address) {
+        if (address.isLoopbackAddress()) {
+            // No need to alter the host in this case
+            return hostname;
+        }
+        return hostname + '-' + toHostAddress(address);
     }
 
     static String toHostAddress(final InetAddress address) {
