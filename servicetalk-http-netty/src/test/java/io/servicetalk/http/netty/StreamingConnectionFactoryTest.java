@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -24,6 +25,10 @@ import java.net.NetworkInterface;
 import java.util.Enumeration;
 import java.util.stream.Stream;
 
+import static io.servicetalk.http.netty.StreamingConnectionFactory.toHostAndIpBundle;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StreamingConnectionFactoryTest {
@@ -60,5 +65,12 @@ class StreamingConnectionFactoryTest {
     void mustConvertInetAddressesToValidHostnames(InetAddress address) throws Exception {
         String hostAddress = StreamingConnectionFactory.toHostAddress(address);
         assertTrue(StreamingConnectionFactory.isValidSniHostname(hostAddress), hostAddress);
+    }
+
+    @Test
+    void loopbackAddressIsNotBundled() {
+        InetAddress loopbackAddress = InetAddress.getLoopbackAddress();
+        assertThat(toHostAndIpBundle("localhost", loopbackAddress), is(equalTo("localhost")));
+        assertThat(toHostAndIpBundle("servicetalk.io", loopbackAddress), is(equalTo("servicetalk.io")));
     }
 }
