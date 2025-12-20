@@ -41,6 +41,8 @@ import static io.servicetalk.http.netty.HeaderUtils.OBJ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.http.netty.HttpExecutionContextUtils.channelExecutionContext;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
+import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV4Address;
+import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingConnectionFactory {
@@ -127,7 +129,7 @@ final class StreamingConnectionFactory {
      * hostname resolves to multiple IPs.
      */
     static String toHostAndIpBundle(final String hostname, final InetAddress address) {
-        if (address.isLoopbackAddress()) {
+        if (address.isLoopbackAddress() || isValidIpV4Address(hostname) || isValidIpV6Address(hostname)) {
             // No need to alter the host in this case
             return hostname;
         }
