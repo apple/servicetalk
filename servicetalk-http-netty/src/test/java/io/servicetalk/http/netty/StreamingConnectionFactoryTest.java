@@ -31,6 +31,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@SuppressWarnings("PMD.AvoidUsingHardCodedIP")
 class StreamingConnectionFactoryTest {
     static Stream<InetAddress> addresses() throws Exception {
         Stream.Builder<InetAddress> builder = Stream.builder();
@@ -72,5 +73,14 @@ class StreamingConnectionFactoryTest {
         InetAddress loopbackAddress = InetAddress.getLoopbackAddress();
         assertThat(toHostAndIpBundle("localhost", loopbackAddress), is(equalTo("localhost")));
         assertThat(toHostAndIpBundle("servicetalk.io", loopbackAddress), is(equalTo("servicetalk.io")));
+    }
+
+    @Test
+    void ipAddressesAreNotBundled() {
+        InetAddress loopbackAddress = InetAddress.getLoopbackAddress();
+        assertThat(toHostAndIpBundle("127.0.0.1", loopbackAddress), is(equalTo("127.0.0.1")));
+        assertThat(toHostAndIpBundle("192.168.1.1", loopbackAddress), is(equalTo("192.168.1.1")));
+        assertThat(toHostAndIpBundle("::1", loopbackAddress), is(equalTo("::1")));
+        assertThat(toHostAndIpBundle("2001:db8:0:1::1/64", loopbackAddress), is(equalTo("2001:db8:0:1::1/64")));
     }
 }
