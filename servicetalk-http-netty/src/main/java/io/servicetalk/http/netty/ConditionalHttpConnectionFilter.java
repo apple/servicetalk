@@ -16,8 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompositeCloseable;
-import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
@@ -26,14 +24,11 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 
 import java.util.function.Predicate;
 
-import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.failed;
 
 final class ConditionalHttpConnectionFilter extends StreamingHttpConnectionFilter {
     private final Predicate<StreamingHttpRequest> predicate;
     private final FilterableStreamingHttpConnection predicatedConnection;
-    private final ListenableAsyncCloseable closeable;
 
     ConditionalHttpConnectionFilter(final Predicate<StreamingHttpRequest> predicate,
                                     final FilterableStreamingHttpConnection predicatedConnection,
@@ -41,10 +36,6 @@ final class ConditionalHttpConnectionFilter extends StreamingHttpConnectionFilte
         super(connection);
         this.predicate = predicate;
         this.predicatedConnection = predicatedConnection;
-        CompositeCloseable compositeCloseable = newCompositeCloseable();
-        compositeCloseable.append(predicatedConnection);
-        compositeCloseable.append(connection);
-        closeable = toListenableAsyncCloseable(compositeCloseable);
     }
 
     @Override
@@ -65,21 +56,21 @@ final class ConditionalHttpConnectionFilter extends StreamingHttpConnectionFilte
 
     @Override
     public Completable closeAsync() {
-        return closeable.closeAsync();
+        return predicatedConnection.closeAsync();
     }
 
     @Override
     public Completable closeAsyncGracefully() {
-        return closeable.closeAsyncGracefully();
+        return predicatedConnection.closeAsyncGracefully();
     }
 
     @Override
     public Completable onClose() {
-        return closeable.onClose();
+        return predicatedConnection.onClose();
     }
 
     @Override
     public Completable onClosing() {
-        return closeable.onClosing();
+        return predicatedConnection.onClosing();
     }
 }

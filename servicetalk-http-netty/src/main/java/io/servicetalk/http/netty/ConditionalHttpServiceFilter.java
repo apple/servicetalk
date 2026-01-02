@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -27,12 +26,9 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 
 import java.util.function.Predicate;
 
-import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-
 final class ConditionalHttpServiceFilter extends StreamingHttpServiceFilter {
     private final Predicate<StreamingHttpRequest> predicate;
     private final StreamingHttpServiceFilter predicatedFilter;
-    private final CompositeCloseable closeable;
 
     ConditionalHttpServiceFilter(final Predicate<StreamingHttpRequest> predicate,
                                  final StreamingHttpServiceFilter predicatedFilter,
@@ -40,9 +36,6 @@ final class ConditionalHttpServiceFilter extends StreamingHttpServiceFilter {
         super(service);
         this.predicate = predicate;
         this.predicatedFilter = predicatedFilter;
-        closeable = newCompositeCloseable();
-        closeable.append(predicatedFilter);
-        closeable.append(service);
     }
 
     @Override
@@ -57,11 +50,11 @@ final class ConditionalHttpServiceFilter extends StreamingHttpServiceFilter {
 
     @Override
     public Completable closeAsync() {
-        return closeable.closeAsync();
+        return predicatedFilter.closeAsync();
     }
 
     @Override
     public Completable closeAsyncGracefully() {
-        return closeable.closeAsyncGracefully();
+        return predicatedFilter.closeAsyncGracefully();
     }
 }
