@@ -62,7 +62,7 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
                     copyMeta(streamingHttpResponse, svcResponse);
                     return new MessageBodyToPayloadWriter(streamingHttpResponse.messageBody(),
                             svcResponse.sendMetaData(), demandBatchSize);
-                });
+                }).shareContextOnSubscribe();
     }
 
     private void copyMeta(final StreamingHttpResponse streamingResponse,
