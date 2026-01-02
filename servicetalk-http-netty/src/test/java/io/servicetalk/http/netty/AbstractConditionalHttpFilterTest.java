@@ -91,7 +91,8 @@ public abstract class AbstractConditionalHttpFilterTest {
 
     protected abstract Single<StreamingHttpResponse> sendTestRequest(StreamingHttpRequest req);
 
-    protected abstract AsyncCloseable returnConditionallyFilteredResource(AtomicBoolean closed, AtomicInteger closedCount);
+    protected abstract AsyncCloseable returnConditionallyFilteredResource(AtomicBoolean closed,
+                                                                          AtomicInteger closedCount);
 
     protected static HttpExecutionContext testHttpExecutionContext() {
         return new DefaultHttpExecutionContext(TEST_CTX.bufferAllocator(), TEST_CTX.ioExecutor(), TEST_CTX.executor(),

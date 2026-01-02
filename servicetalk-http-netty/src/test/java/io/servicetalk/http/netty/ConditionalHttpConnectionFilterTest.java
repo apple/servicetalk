@@ -80,8 +80,8 @@ public class ConditionalHttpConnectionFilterTest extends AbstractConditionalHttp
         return TestStreamingHttpConnection.from(REQ_RES_FACTORY, testHttpExecutionContext(),
                 mock(HttpConnectionContext.class),
                 Stream.concat(IntStream
-                                        .rangeClosed(1, NUM_FILTERS)
-                                        .mapToObj(unused -> (StreamingHttpConnectionFilterFactory) new TestCondFilterFactory(closed, closedCount)),
+                                    .rangeClosed(1, NUM_FILTERS)
+                                    .mapToObj(unused -> new TestCondFilterFactory(closed, closedCount)),
                                 Stream.of(REQ_FILTER)
                         )
                         .reduce((prev, filter) -> conn -> prev.create(filter.create(conn)))
@@ -95,7 +95,8 @@ public class ConditionalHttpConnectionFilterTest extends AbstractConditionalHttp
     }
 
     @Override
-    protected AsyncCloseable returnConditionallyFilteredResource(final AtomicBoolean closed, final AtomicInteger closedCount) {
+    protected AsyncCloseable returnConditionallyFilteredResource(final AtomicBoolean closed,
+                                                                 final AtomicInteger closedCount) {
         return newConnection(closed, closedCount);
     }
 }

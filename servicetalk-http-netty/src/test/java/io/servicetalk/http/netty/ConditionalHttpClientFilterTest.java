@@ -76,8 +76,8 @@ public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilt
     public static StreamingHttpClient newClient(AtomicBoolean closed, AtomicInteger closedCount) {
         return TestStreamingHttpClient.from(REQ_RES_FACTORY, testHttpExecutionContext(),
                 Stream.concat(IntStream
-                                        .rangeClosed(1, NUM_FILTERS)
-                                        .mapToObj(unused -> (StreamingHttpClientFilterFactory) new TestCondFilterFactory(closed, closedCount)),
+                                    .rangeClosed(1, NUM_FILTERS)
+                                    .mapToObj(unused -> new TestCondFilterFactory(closed, closedCount)),
                                 Stream.of(REQ_FILTER)
                         )
                         .reduce((prev, filter) -> client -> prev.create(filter.create(client)))
@@ -91,7 +91,8 @@ public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilt
     }
 
     @Override
-    protected AsyncCloseable returnConditionallyFilteredResource(final AtomicBoolean closed, final AtomicInteger closedCount) {
+    protected AsyncCloseable returnConditionallyFilteredResource(final AtomicBoolean closed,
+                                                                 final AtomicInteger closedCount) {
         return newClient(closed, closedCount);
     }
 }
