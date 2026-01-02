@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
@@ -53,6 +54,7 @@ import static org.hamcrest.Matchers.is;
 
 public abstract class AbstractConditionalHttpFilterTest {
     private static final String FILTERED_HEADER = "X-Filtered";
+    protected static final int NUM_FILTERS = 12;
 
     protected static final StreamingHttpRequestResponseFactory REQ_RES_FACTORY =
             new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE,
@@ -76,11 +78,12 @@ public abstract class AbstractConditionalHttpFilterTest {
         return req.setHeader(FILTERED_HEADER, "true");
     }
 
-    protected static Completable markClosed(AtomicBoolean closed, Completable completable) {
+    protected static Completable markClosed(AtomicBoolean closed, AtomicInteger closedCount, Completable completable) {
         return new Completable() {
             @Override
             protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
                 closed.set(true);
+                closedCount.incrementAndGet();
                 toSource(completable).subscribe(subscriber);
             }
         };
@@ -88,7 +91,8 @@ public abstract class AbstractConditionalHttpFilterTest {
 
     protected abstract Single<StreamingHttpResponse> sendTestRequest(StreamingHttpRequest req);
 
-    protected abstract AsyncCloseable returnConditionallyFilteredResource(AtomicBoolean closed);
+    protected abstract AsyncCloseable returnConditionallyFilteredResource(AtomicBoolean closed,
+                                                                          AtomicInteger closedCount);
 
     protected static HttpExecutionContext testHttpExecutionContext() {
         return new DefaultHttpExecutionContext(TEST_CTX.bufferAllocator(), TEST_CTX.ioExecutor(), TEST_CTX.executor(),
@@ -133,14 +137,18 @@ public abstract class AbstractConditionalHttpFilterTest {
     @Test
     void closeAsyncImpactsBoth() throws Exception {
         AtomicBoolean closed = new AtomicBoolean();
-        returnConditionallyFilteredResource(closed).closeAsync().toFuture().get();
+        AtomicInteger closedCount = new AtomicInteger();
+        returnConditionallyFilteredResource(closed, closedCount).closeAsync().toFuture().get();
         assertThat(closed.get(), is(true));
+        assertThat(closedCount.get(), is(NUM_FILTERS));
     }
 
     @Test
     void closeAsyncGracefullyImpactsBoth() throws Exception {
         AtomicBoolean closed = new AtomicBoolean();
-        returnConditionallyFilteredResource(closed).closeAsyncGracefully().toFuture().get();
+        AtomicInteger closedCount = new AtomicInteger();
+        returnConditionallyFilteredResource(closed, closedCount).closeAsyncGracefully().toFuture().get();
         assertThat(closed.get(), is(true));
+        assertThat(closedCount.get(), is(NUM_FILTERS));
     }
 }

@@ -28,6 +28,9 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static org.mockito.Mockito.mock;
@@ -36,9 +39,11 @@ public class ConditionalHttpServiceFilterTest extends AbstractConditionalHttpFil
 
     private static final class TestCondFilterFactory implements StreamingHttpServiceFilterFactory {
         private final AtomicBoolean closed;
+        private final AtomicInteger closedCount;
 
-        private TestCondFilterFactory(AtomicBoolean closed) {
+        private TestCondFilterFactory(AtomicBoolean closed, AtomicInteger closedCount) {
             this.closed = closed;
+            this.closedCount = closedCount;
         }
 
         @Override
@@ -54,30 +59,35 @@ public class ConditionalHttpServiceFilterTest extends AbstractConditionalHttpFil
 
                         @Override
                         public Completable closeAsync() {
-                            return markClosed(closed, super.closeAsync());
+                            return markClosed(closed, closedCount, super.closeAsync());
                         }
 
                         @Override
                         public Completable closeAsyncGracefully() {
-                            return markClosed(closed, super.closeAsyncGracefully());
+                            return markClosed(closed, closedCount, super.closeAsyncGracefully());
                         }
 
                     }, service);
         }
     }
 
-    private StreamingHttpService newService(AtomicBoolean closed) {
-        return new TestStreamingHttpService(new TestCondFilterFactory(closed));
+    private StreamingHttpService newService(AtomicBoolean closed, AtomicInteger closedCount) {
+        return new TestStreamingHttpService(IntStream
+                .rangeClosed(1, NUM_FILTERS)
+                .mapToObj(_unused -> new TestCondFilterFactory(closed, closedCount))
+        );
     }
 
     @Override
     protected Single<StreamingHttpResponse> sendTestRequest(final StreamingHttpRequest req) {
-        return newService(new AtomicBoolean()).handle(mock(HttpServiceContext.class), req, REQ_RES_FACTORY);
+        return newService(new AtomicBoolean(), new AtomicInteger())
+                .handle(mock(HttpServiceContext.class), req, REQ_RES_FACTORY);
     }
 
     @Override
-    protected AsyncCloseable returnConditionallyFilteredResource(final AtomicBoolean closed) {
-        return newService(closed);
+    protected AsyncCloseable returnConditionallyFilteredResource(final AtomicBoolean closed,
+                                                                 final AtomicInteger closedCount) {
+        return newService(closed, closedCount);
     }
 
     private static final class TestStreamingHttpService implements StreamingHttpService {
@@ -85,25 +95,28 @@ public class ConditionalHttpServiceFilterTest extends AbstractConditionalHttpFil
         private final StreamingHttpServiceFilter filterChain;
         private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
 
-        private TestStreamingHttpService(StreamingHttpServiceFilterFactory factory) {
-            filterChain = factory.create(new StreamingHttpService() {
-                @Override
-                public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                            final StreamingHttpRequest request,
-                                                            final StreamingHttpResponseFactory responseFactory) {
-                    return TEST_REQ_HANDLER.apply(request, responseFactory);
-                }
+        private TestStreamingHttpService(Stream<StreamingHttpServiceFilterFactory> factories) {
+            filterChain = factories
+                .reduce((prev, filter) -> svc -> prev.create(filter.create(svc)))
+                .map(filter -> filter.create(new StreamingHttpService() {
+                    @Override
+                    public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                                final StreamingHttpRequest request,
+                                                                final StreamingHttpResponseFactory responseFactory) {
+                        return TEST_REQ_HANDLER.apply(request, responseFactory);
+                    }
 
-                @Override
-                public Completable closeAsync() {
-                    return closeable.closeAsync();
-                }
+                    @Override
+                    public Completable closeAsync() {
+                        return closeable.closeAsync();
+                    }
 
-                @Override
-                public Completable closeAsyncGracefully() {
-                    return closeable.closeAsyncGracefully();
-                }
-            });
+                    @Override
+                    public Completable closeAsyncGracefully() {
+                        return closeable.closeAsyncGracefully();
+                    }
+                }))
+                .get();
         }
 
         @Override

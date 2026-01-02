@@ -28,8 +28,9 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.TestStreamingHttpClient;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static io.servicetalk.http.api.FilterFactoryUtils.appendClientFilterFactory;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilterTest {
 
@@ -43,9 +44,11 @@ public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilt
 
     private static final class TestCondFilterFactory implements StreamingHttpClientFilterFactory {
         private final AtomicBoolean closed;
+        private final AtomicInteger closedCount;
 
-        private TestCondFilterFactory(AtomicBoolean closed) {
+        private TestCondFilterFactory(AtomicBoolean closed, AtomicInteger closedCount) {
             this.closed = closed;
+            this.closedCount = closedCount;
         }
 
         @Override
@@ -59,29 +62,37 @@ public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilt
 
                 @Override
                 public Completable closeAsync() {
-                    return markClosed(closed, super.closeAsync());
+                    return markClosed(closed, closedCount, super.closeAsync());
                 }
 
                 @Override
                 public Completable closeAsyncGracefully() {
-                    return markClosed(closed, super.closeAsyncGracefully());
+                    return markClosed(closed, closedCount, super.closeAsyncGracefully());
                 }
             }, client);
         }
     }
 
-    public static StreamingHttpClient newClient(AtomicBoolean closed) {
+    public static StreamingHttpClient newClient(AtomicBoolean closed, AtomicInteger closedCount) {
         return TestStreamingHttpClient.from(REQ_RES_FACTORY, testHttpExecutionContext(),
-                appendClientFilterFactory(new TestCondFilterFactory(closed), REQ_FILTER));
+                Stream.concat(IntStream
+                                    .rangeClosed(1, NUM_FILTERS)
+                                    .mapToObj(unused -> new TestCondFilterFactory(closed, closedCount)),
+                                Stream.of(REQ_FILTER)
+                        )
+                        .reduce((prev, filter) -> client -> prev.create(filter.create(client)))
+                        .get()
+        );
     }
 
     @Override
     protected Single<StreamingHttpResponse> sendTestRequest(final StreamingHttpRequest req) {
-        return newClient(new AtomicBoolean()).request(req);
+        return newClient(new AtomicBoolean(), new AtomicInteger()).request(req);
     }
 
     @Override
-    protected AsyncCloseable returnConditionallyFilteredResource(final AtomicBoolean closed) {
-        return newClient(closed);
+    protected AsyncCloseable returnConditionallyFilteredResource(final AtomicBoolean closed,
+                                                                 final AtomicInteger closedCount) {
+        return newClient(closed, closedCount);
     }
 }
