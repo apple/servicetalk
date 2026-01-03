@@ -72,7 +72,7 @@ dependencies {
   testFixturesApi "org.glassfish.jersey.core:jersey-server"
   testFixturesApi "org.hamcrest:hamcrest:$hamcrestVersion"
   testFixturesApi "org.junit.jupiter:junit-jupiter-api"
-  testFixturesApi "org.junit.platform:junit-platform-suite-api:$junitPlatformVersion"
+  testFixturesApi "org.junit.platform:junit-platform-suite-api"
 
   testFixturesImplementation platform("com.fasterxml.jackson:jackson-bom:$jacksonVersion")
   testFixturesImplementation testFixtures(project(":servicetalk-concurrent-api"))
