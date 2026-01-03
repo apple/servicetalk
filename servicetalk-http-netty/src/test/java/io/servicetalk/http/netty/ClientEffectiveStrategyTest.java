@@ -62,8 +62,8 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.platform.commons.logging.Logger;
-import org.junit.platform.commons.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -587,7 +587,7 @@ class ClientEffectiveStrategyTest {
                 }
             }
             if (firstFlakyException != null) {
-                LOGGER.warn(firstFlakyException, () -> "Flaky throwable detected. Ignoring until test can be fixed.");
+                LOGGER.warn("Flaky throwable detected. Ignoring until test can be fixed.", firstFlakyException);
             }
             verifyOffloads(clientApi, clientStrategy, apiStrategy);
         }
