@@ -2,8 +2,8 @@
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
-com.google.protobuf:protobuf-bom:3.25.5=compileClasspath,runtimeClasspath
-com.google.protobuf:protobuf-java:3.25.5=compileClasspath,runtimeClasspath
+com.google.protobuf:protobuf-bom:3.25.8=compileClasspath,runtimeClasspath
+com.google.protobuf:protobuf-java:3.25.8=compileClasspath,runtimeClasspath
 com.sun.activation:jakarta.activation:2.0.1=runtimeClasspath
 com.sun.istack:istack-commons-runtime:4.0.1=runtimeClasspath
 jakarta.annotation:jakarta.annotation-api:2.1.1=compileClasspath,runtimeClasspath
