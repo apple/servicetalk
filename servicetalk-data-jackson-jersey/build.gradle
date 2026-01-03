@@ -57,7 +57,7 @@ dependencies {
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "net.javacrumbs.json-unit:json-unit:$jsonUnitVersion"
 
-  testCompileOnly "org.junit.platform:junit-platform-suite-api:$junitPlatformVersion"
+  testCompileOnly "org.junit.platform:junit-platform-suite-api"
 
   testRuntimeOnly "org.glassfish.jersey.inject:jersey-hk2"
   testRuntimeOnly "org.glassfish.jersey.media:jersey-media-sse"
