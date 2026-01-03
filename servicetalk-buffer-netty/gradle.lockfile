@@ -2,9 +2,9 @@
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
-io.netty:netty-bom:4.1.127.Final=compileClasspath,runtimeClasspath
-io.netty:netty-buffer:4.1.127.Final=compileClasspath,runtimeClasspath
-io.netty:netty-common:4.1.127.Final=compileClasspath,runtimeClasspath
+io.netty:netty-bom:4.1.130.Final=compileClasspath,runtimeClasspath
+io.netty:netty-buffer:4.1.130.Final=compileClasspath,runtimeClasspath
+io.netty:netty-common:4.1.130.Final=compileClasspath,runtimeClasspath
 org.jctools:jctools-core:4.0.5=runtimeClasspath
 org.slf4j:slf4j-api:1.7.36=compileClasspath,runtimeClasspath
 empty=annotationProcessor,jmhCompileClasspath,jmhRuntimeClasspath,spotbugsPlugins,testAnnotationProcessor
