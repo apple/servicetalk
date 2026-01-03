@@ -1,7 +1,7 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
-com.google.api.grpc:proto-google-common-protos:2.29.0=compileClasspath,runtimeClasspath
+com.google.api.grpc:proto-google-common-protos:2.51.0=compileClasspath,runtimeClasspath
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
 com.google.protobuf:protobuf-bom:3.25.8=compileClasspath,runtimeClasspath
 com.google.protobuf:protobuf-java:3.25.8=compileClasspath,runtimeClasspath
