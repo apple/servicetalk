@@ -82,13 +82,15 @@ class AsyncContextTest extends AbstractJerseyStreamingHttpServiceTest {
 
     @Test
     void noArgsNoReturn() {
-        setUp(false, false, false);
+        // FIXME: lazyPayload=false, see https://github.com/apple/servicetalk/issues/3384
+        setUp(true, false, false);
         sendAndAssertResponse(get("/noArgsNoReturn"), NO_CONTENT, null, is(emptyString()), __ -> null);
     }
 
     @Test
     void getBuffer() {
-        setUp(false, false, false);
+        // FIXME: lazyPayload=false, see https://github.com/apple/servicetalk/issues/3384
+        setUp(true, false, false);
         sendAndAssertResponse(get("/getBuffer"), OK, TEXT_PLAIN, is(equalTo("foo")), 3);
     }
 
@@ -132,13 +134,15 @@ class AsyncContextTest extends AbstractJerseyStreamingHttpServiceTest {
 
     @Test
     void completable() {
-        setUp(false, true, false);
+        // FIXME: lazyPayload=false, see https://github.com/apple/servicetalk/issues/3384
+        setUp(true, true, false);
         sendAndAssertResponse(get("/completable"), NO_CONTENT, null, is(emptyString()), __ -> null);
     }
 
     @Test
     void getSingleBuffer() {
-        setUp(false, true, false);
+        // FIXME: lazyPayload=false, see https://github.com/apple/servicetalk/issues/3384
+        setUp(true, true, false);
         sendAndAssertResponse(get("/getSingleBuffer"), OK, TEXT_PLAIN, is(equalTo("foo")), 3);
     }
 
@@ -166,7 +170,8 @@ class AsyncContextTest extends AbstractJerseyStreamingHttpServiceTest {
 
     @Test
     void getPublisherBuffer() {
-        setUp(false, true, true);
+        // FIXME: lazyPayload=false, see https://github.com/apple/servicetalk/issues/3384
+        setUp(true, false, true);
         sendAndAssertResponse(get("/getPublisherBuffer"),
                 OK, TEXT_PLAIN, is(equalTo("foo")), __ -> null);
     }
@@ -196,13 +201,15 @@ class AsyncContextTest extends AbstractJerseyStreamingHttpServiceTest {
 
     @Test
     void getCompletionStage() {
-        setUp(false, true, false);
+        // FIXME: lazyPayload=false, see https://github.com/apple/servicetalk/issues/3384
+        setUp(true, true, false);
         sendAndAssertResponse(get("/getCompletionStage"), OK, TEXT_PLAIN, is(equalTo("foo")), 3);
     }
 
     @Test
     void getCompletionStageCompleteWithStExecutor() {
-        setUp(false, true, false);
+        // FIXME: lazyPayload=false, see https://github.com/apple/servicetalk/issues/3384
+        setUp(true, true, false);
         sendAndAssertResponse(get("/getCompletionStageCompleteWithStExecutor"), OK, TEXT_PLAIN, is(equalTo("foo")), 3);
     }
 }

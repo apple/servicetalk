@@ -87,7 +87,8 @@ public final class BufferPublisherInputStream extends InputStream {
     public void offloadSourcePublisher(final HttpExecutionStrategy executionStrategy, final Executor executor) {
         if (inputStream == EMPTY_INPUT_STREAM) {
             publisher = executionStrategy.isMetadataReceiveOffloaded() || executionStrategy.isDataReceiveOffloaded() ?
-                    publisher.publishOn(executor, IoThreadFactory.IoThread::currentThreadIsIoThread) : publisher;
+                    publisher.publishOn(executor, IoThreadFactory.IoThread::currentThreadIsIoThread)
+                            .shareContextOnSubscribe() : publisher;
         } else {
             throw new IllegalStateException("Can't offload source publisher because it is consumed via InputStream");
         }
