@@ -155,7 +155,7 @@ public class AsyncContextResources {
     @Consumes(TEXT_PLAIN)
     public void postSingleBufferSync(Single<Buffer> in) {
         AsyncContext.put(K1, V1);
-        in.shareContextOnSubscribe().toCompletionStage().toCompletableFuture().join();
+        in.toCompletionStage().toCompletableFuture().join();
         AsyncContext.put(K2, V2);
     }
 
@@ -173,6 +173,7 @@ public class AsyncContextResources {
     @Produces(TEXT_PLAIN)
     public Publisher<Buffer> getPublisherBuffer() {
         AsyncContext.put(K1, V1);
+        AsyncContext.put(K2, V2);
         return Publisher.from(ctx.executionContext().bufferAllocator().fromUtf8("foo"))
                 .beforeOnComplete(() -> AsyncContext.put(K3, V3));
     }
@@ -198,9 +199,9 @@ public class AsyncContextResources {
     @Path("/publisherEchoSync")
     @Consumes(TEXT_PLAIN)
     @Produces(TEXT_PLAIN)
-    public Publisher<Buffer> publisherEchoSync(Publisher<Buffer> in) throws Exception {
+    public Publisher<Buffer> publisherEchoSync(Publisher<Buffer> in) {
         AsyncContext.put(K1, V1);
-        in.ignoreElements().shareContextOnSubscribe().toFuture().get();
+        in.toCompletionStage().toCompletableFuture().join();
         return Publisher.from(ctx.executionContext().bufferAllocator().fromUtf8("foo"))
                 .beforeOnComplete(() -> AsyncContext.put(K3, V3));
     }

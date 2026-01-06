@@ -245,8 +245,7 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
                                     final io.servicetalk.serialization.api.Serializer ser,
                                    final Class<T> type, final int contentLength,
                                    final BufferAllocator allocator) {
-        return awaitResult(deserializeOld(bufferPublisher, ser, type, contentLength, allocator)
-                .shareContextOnSubscribe().toFuture());
+        return awaitResult(deserializeOld(bufferPublisher, ser, type, contentLength, allocator).toFuture());
     }
 
     private JacksonSerializationProvider getOldJacksonSerializer(final MediaType mediaType) {
@@ -305,8 +304,7 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
     // visible for testing
     static <T> T deserializeObject(final Publisher<Buffer> bufferPublisher, final Deserializer<T> deserializer,
                                    final int contentLength, final BufferAllocator allocator) {
-        return awaitResult(deserialize(bufferPublisher, deserializer, contentLength, allocator)
-                .shareContextOnSubscribe().toFuture());
+        return awaitResult(deserialize(bufferPublisher, deserializer, contentLength, allocator).toFuture());
     }
 
     private static boolean isSse(ContainerRequestContext requestCtx) {

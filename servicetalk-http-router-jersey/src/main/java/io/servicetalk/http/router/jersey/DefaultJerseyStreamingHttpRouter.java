@@ -253,8 +253,8 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
         req.headers().forEach(h ->
                 containerRequest.getHeaders().add(h.getKey().toString(), h.getValue().toString()));
 
-        final BufferPublisherInputStream entityStream = new BufferPublisherInputStream(
-                req.payloadBody().shareContextOnSubscribe(), publisherInputStreamQueueCapacity);
+        final BufferPublisherInputStream entityStream = new BufferPublisherInputStream(req.payloadBody(),
+                publisherInputStreamQueueCapacity);
         containerRequest.setEntityStream(entityStream);
         initRequestProperties(entityStream, containerRequest);
 

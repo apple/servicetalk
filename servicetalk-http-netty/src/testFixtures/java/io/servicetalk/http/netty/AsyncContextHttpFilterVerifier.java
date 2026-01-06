@@ -255,9 +255,8 @@ public final class AsyncContextHttpFilterVerifier {
                     return delegate().handle(ctx, request.transformMessageBody(p -> p.beforeFinally(() -> {
                                 assertSameContext(current, errorQueue);
                                 assertAsyncContext(K1, lazyPayload ? V1 : null, errorQueue);
-                                // FIXME: uncomment the next lines, see https://github.com/apple/servicetalk/issues/3384
-                                // assertAsyncContext(K2, null, errorQueue);
-                                // assertAsyncContext(K3, null, errorQueue);
+                                assertAsyncContext(K2, null, errorQueue);
+                                assertAsyncContext(K3, null, errorQueue);
                             })), responseFactory)
                             .beforeOnSuccess(__ -> {
                                 assertSameContext(current, errorQueue);
