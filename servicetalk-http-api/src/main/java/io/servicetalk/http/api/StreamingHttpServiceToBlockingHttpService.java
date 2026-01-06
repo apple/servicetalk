@@ -31,7 +31,9 @@ final class StreamingHttpServiceToBlockingHttpService implements BlockingHttpSer
                                final HttpResponseFactory responseFactory) throws Exception {
         return futureGetCancelOnInterrupt(
                 original.handle(ctx, request.toStreamingRequest(), ctx.streamingResponseFactory())
-                        .flatMap(StreamingHttpResponse::toResponse).shareContextOnSubscribe().toFuture());
+                        .flatMap(response -> response.toResponse().shareContextOnSubscribe())
+                        .shareContextOnSubscribe()
+                        .toFuture());
     }
 
     @Override

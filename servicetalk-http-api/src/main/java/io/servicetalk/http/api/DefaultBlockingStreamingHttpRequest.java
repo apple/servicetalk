@@ -162,7 +162,7 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
 
     @Override
     public BlockingIterable<Buffer> payloadBody() {
-        return original.payloadBody().toIterable();
+        return original.payloadBody().shareContextOnSubscribe().toIterable();
     }
 
     @Override
@@ -180,12 +180,12 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
 
     @Override
     public HttpMessageBodyIterable<Buffer> messageBody() {
-        return newMessageBody(original.messageBody().toIterable());
+        return newMessageBody(original.messageBody().shareContextOnSubscribe().toIterable());
     }
 
     @Override
     public <T> HttpMessageBodyIterable<T> messageBody(final HttpStreamingDeserializer<T> deserializer) {
-        return newMessageBody(original.messageBody().toIterable(), headers(), deserializer,
+        return newMessageBody(original.messageBody().shareContextOnSubscribe().toIterable(), headers(), deserializer,
                 original.payloadHolder().allocator());
     }
 
@@ -246,7 +246,8 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
     public <T> BlockingStreamingHttpRequest transformPayloadBody(
             final Function<BlockingIterable<Buffer>, BlockingIterable<T>> transformer,
             final HttpSerializer<T> serializer) {
-        original.transformPayloadBody(bufferPublisher -> fromIterable(transformer.apply(bufferPublisher.toIterable())),
+        original.transformPayloadBody(bufferPublisher -> fromIterable(
+                transformer.apply(bufferPublisher.shareContextOnSubscribe().toIterable())),
                 serializer);
         return this;
     }
@@ -255,7 +256,8 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
     @Override
     public BlockingStreamingHttpRequest transformPayloadBody(
             final UnaryOperator<BlockingIterable<Buffer>> transformer) {
-        original.transformPayloadBody(bufferPublisher -> fromIterable(transformer.apply(bufferPublisher.toIterable())));
+        original.transformPayloadBody(bufferPublisher -> fromIterable(
+                transformer.apply(bufferPublisher.shareContextOnSubscribe().toIterable())));
         return this;
     }
 

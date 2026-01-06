@@ -72,7 +72,7 @@ class AsyncContextTest extends AbstractJerseyStreamingHttpServiceTest {
     @Override
     void configureBuilders(HttpServerBuilder serverBuilder, HttpJerseyRouterBuilder jerseyRouterBuilder) {
         super.configureBuilders(serverBuilder, jerseyRouterBuilder);
-        serverBuilder.appendServiceFilter(new AsyncContextAssertionFilter(errors, lazyPayload, hasK2, hasK3));
+        serverBuilder.appendServiceFilter(new AsyncContextAssertionFilter(errors, lazyPayload, hasK2, hasK3, false));
     }
 
     @Override
