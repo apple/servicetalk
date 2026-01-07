@@ -92,6 +92,7 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
      *                              outlier detection.
      * @return {code this}
      * @see #loadBalancingPolicy(LoadBalancingPolicy)
+     * @see OutlierDetectorConfigs for common preconfigured policies
      */
     LoadBalancerBuilder<ResolvedAddress, C> outlierDetectorConfig(OutlierDetectorConfig outlierDetectorConfig);
 
