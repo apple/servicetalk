@@ -223,7 +223,20 @@ public final class AsyncContextHttpFilterVerifier {
          * @param errorQueue {@link Queue} to add an {@link AssertionError} in case an assertion fails
          */
         public AsyncContextAssertionFilter(final Queue<Throwable> errorQueue) {
-            this(errorQueue, true, true, true, false, false);
+            this(errorQueue, true, true, true);
+        }
+
+        /**
+         * Creates a new instance.
+         *
+         * @param errorQueue {@link Queue} to add an {@link AssertionError} in case an assertion fails
+         * @param lazyPayload {@code true} if the target service consumes request payload body lazily
+         * @param hasK2 {@code true} if the target service sets {@link #K2} before completion of the response meta-data
+         * @param hasK3 {@code true} if the target service sets {@link #K3} before completion of the response payload
+         */
+        public AsyncContextAssertionFilter(final Queue<Throwable> errorQueue,
+                                           final boolean lazyPayload, final boolean hasK2, final boolean hasK3) {
+            this(errorQueue, lazyPayload, hasK2, hasK3, false, false);
         }
 
         /**

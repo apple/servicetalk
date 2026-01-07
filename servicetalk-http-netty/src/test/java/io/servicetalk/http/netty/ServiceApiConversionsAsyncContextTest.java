@@ -75,13 +75,6 @@ class ServiceApiConversionsAsyncContextTest {
                     .setClassLevel(true);
 
     @Test
-    void testStreaming() throws Exception {
-        runTest((builder, errors) -> builder
-                .appendServiceFilter(new AsyncContextAssertionFilter(errors, true, true, true, false, false))
-                .listenStreaming(asyncContextRequestHandler(errors)));
-    }
-
-    @Test
     void testOriginalBlockingHttpService() throws Exception {
         runTest((builder, errors) -> builder
                 .appendServiceFilter(new AsyncContextAssertionFilter(errors, false, true, false, true, false))
@@ -92,21 +85,6 @@ class ServiceApiConversionsAsyncContextTest {
                         AsyncContext.put(K1, V1);
                         AsyncContext.put(K2, V2);
                         return responseFactory.ok().payloadBody(request.payloadBody());
-                    }
-                }));
-    }
-
-    @Test
-    void testOriginalHttpService() throws Exception {
-        runTest((builder, errors) -> builder
-                .appendServiceFilter(new AsyncContextAssertionFilter(errors, false, true, false, true, false))
-                .listen(new HttpService() {
-                    @Override
-                    public Single<HttpResponse> handle(final HttpServiceContext ctx, final HttpRequest request,
-                                                       final HttpResponseFactory responseFactory) {
-                        AsyncContext.put(K1, V1);
-                        return Single.succeeded(responseFactory.ok().payloadBody(request.payloadBody()))
-                                .beforeOnSuccess(ignore -> AsyncContext.put(K2, V2));
                     }
                 }));
     }
@@ -139,21 +117,43 @@ class ServiceApiConversionsAsyncContextTest {
     }
 
     @Test
-    void testToBlockingHttpService() throws Exception {
+    void testOriginalHttpService() throws Exception {
+        runTest((builder, errors) -> builder
+                .appendServiceFilter(new AsyncContextAssertionFilter(errors, false, true, false, true, false))
+                .listen(new HttpService() {
+                    @Override
+                    public Single<HttpResponse> handle(final HttpServiceContext ctx, final HttpRequest request,
+                                                       final HttpResponseFactory responseFactory) {
+                        AsyncContext.put(K1, V1);
+                        return Single.succeeded(responseFactory.ok().payloadBody(request.payloadBody()))
+                                .beforeOnSuccess(ignore -> AsyncContext.put(K2, V2));
+                    }
+                }));
+    }
+
+    @Test
+    void testStreaming() throws Exception {
+        runTest((builder, errors) -> builder
+                .appendServiceFilter(new AsyncContextAssertionFilter(errors, true, true, true, false, false))
+                .listenStreaming(asyncContextRequestHandler(errors)));
+    }
+
+    @Test
+    void testStreamingToBlockingHttpService() throws Exception {
         runTest((builder, errors) -> builder
                 .appendServiceFilter(new AsyncContextAssertionFilter(errors, false, true, true, true, false))
                 .listenBlocking(toBlockingHttpService(asyncContextRequestHandler(errors))));
     }
 
     @Test
-    void testToBlockingStreamingHttpService() throws Exception {
+    void testStreamingToBlockingStreamingHttpService() throws Exception {
         runTest((builder, errors) -> builder
                 .appendServiceFilter(new AsyncContextAssertionFilter(errors, true, true, true, false, false))
                 .listenBlockingStreaming(toBlockingStreamingHttpService(asyncContextRequestHandler(errors))));
     }
 
     @Test
-    void testToHttpService() throws Exception {
+    void testStreamingToHttpService() throws Exception {
         runTest((builder, errors) -> builder
                 .appendServiceFilter(new AsyncContextAssertionFilter(errors, false, true, true, true, false))
                 .listen(HttpApiConversions.toHttpService(asyncContextRequestHandler(errors))));
