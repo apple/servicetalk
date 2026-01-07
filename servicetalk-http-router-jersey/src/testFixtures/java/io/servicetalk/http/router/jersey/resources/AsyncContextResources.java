@@ -16,6 +16,7 @@
 package io.servicetalk.http.router.jersey.resources;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -198,10 +199,11 @@ public class AsyncContextResources {
     @Path("/publisherEchoSync")
     @Consumes(TEXT_PLAIN)
     @Produces(TEXT_PLAIN)
-    public Publisher<Buffer> publisherEchoSync(Publisher<Buffer> in) throws Exception {
+    public Publisher<Buffer> publisherEchoSync(Publisher<Buffer> in) {
         AsyncContext.put(K1, V1);
-        in.ignoreElements().shareContextOnSubscribe().toFuture().get();
-        return Publisher.from(ctx.executionContext().bufferAllocator().fromUtf8("foo"))
+        final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
+        return in.ignoreElements()
+                .concat(Publisher.from(allocator.fromUtf8("foo")).shareContextOnSubscribe())
                 .beforeOnComplete(() -> AsyncContext.put(K3, V3));
     }
 
