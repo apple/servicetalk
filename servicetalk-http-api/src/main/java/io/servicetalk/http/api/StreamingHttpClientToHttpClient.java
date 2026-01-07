@@ -19,13 +19,19 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
+import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_DATA_EVENT_STRATEGY;
 import static io.servicetalk.http.api.HttpApiConversions.assignStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
-import static io.servicetalk.http.api.StreamingHttpConnectionToHttpConnection.DEFAULT_ASYNC_CONNECTION_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpClientToHttpClient implements HttpClient {
+    /**
+     * For aggregation, we invoke the user callback (Single from client#request()) after the payload is completed,
+     * hence we need to offload data.
+     */
+    private static final HttpExecutionStrategy DEFAULT_ASYNC_CONNECTION_STRATEGY = OFFLOAD_RECEIVE_DATA_EVENT_STRATEGY;
+
     private final StreamingHttpClient client;
     private final HttpExecutionStrategy strategy;
     private final HttpExecutionContext context;

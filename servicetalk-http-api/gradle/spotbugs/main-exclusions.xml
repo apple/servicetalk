@@ -146,8 +146,6 @@
       <Class name="io.servicetalk.http.api.StreamingHttpClientToBlockingHttpClient$ReservedStreamingHttpConnectionToReservedBlockingHttpConnection"/>
       <Class name="io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient"/>
       <Class name="io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient$ReservedStreamingHttpConnectionToBlockingStreaming"/>
-      <Class name="io.servicetalk.http.api.StreamingHttpConnectionToBlockingHttpConnection"/>
-      <Class name="io.servicetalk.http.api.StreamingHttpConnectionToBlockingStreamingHttpConnection"/>
     </Or>
     <Or>
       <Method name="close"/>
@@ -257,9 +255,6 @@
       <Class name="io.servicetalk.http.api.StreamingHttpClientToHttpClient"/>
       <Class name="io.servicetalk.http.api.StreamingHttpClientToHttpClient$ReservedStreamingHttpConnectionToReservedHttpConnection"/>
       <Class name="io.servicetalk.http.api.StreamingHttpConnection"/>
-      <Class name="io.servicetalk.http.api.StreamingHttpConnectionToBlockingHttpConnection"/>
-      <Class name="io.servicetalk.http.api.StreamingHttpConnectionToBlockingStreamingHttpConnection"/>
-      <Class name="io.servicetalk.http.api.StreamingHttpConnectionToHttpConnection"/>
       <Class name="io.servicetalk.http.api.StreamingHttpServiceToBlockingStreamingHttpService"/>
     </Or>
     <Or>

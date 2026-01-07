@@ -18,13 +18,16 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.BlockingIterable;
 
 import static io.servicetalk.concurrent.api.internal.BlockingUtils.blockingInvocation;
+import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_SEND_EVENT_STRATEGY;
 import static io.servicetalk.http.api.HttpApiConversions.assignStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.RequestResponseFactories.toBlockingStreaming;
-import static io.servicetalk.http.api.StreamingHttpConnectionToBlockingStreamingHttpConnection.DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpClientToBlockingStreamingHttpClient implements BlockingStreamingHttpClient {
+    private static final HttpExecutionStrategy DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY =
+            OFFLOAD_SEND_EVENT_STRATEGY;
+
     private final StreamingHttpClient client;
     private final HttpExecutionStrategy strategy;
     private final HttpExecutionContext context;

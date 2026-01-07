@@ -25,9 +25,9 @@ import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
-import static io.servicetalk.http.api.HttpApiConversions.toBlockingConnection;
-import static io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingConnection;
-import static io.servicetalk.http.api.HttpApiConversions.toConnection;
+import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingConnection;
+import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingStreamingConnection;
+import static io.servicetalk.http.api.HttpApiConversions.toReservedConnection;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -52,7 +52,9 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
         return ((StreamingHttpConnection) requester).asBlockingStreamingConnection();
     }
 
-    private abstract static class TestStreamingHttpConnection implements StreamingHttpConnection, TestHttpRequester {
+    private abstract static class TestStreamingHttpConnection implements ReservedStreamingHttpConnection,
+                                                                         TestHttpRequester {
+
         private final AtomicBoolean closed = new AtomicBoolean();
         private final CompletableSource.Processor onClose = newCompletableProcessor();
         private final HttpExecutionContext executionContext;
@@ -65,6 +67,11 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
             this.executionContext = executionContext;
             this.connectionContext = mock(HttpConnectionContext.class);
             when(connectionContext.executionContext()).thenReturn(executionContext);
+        }
+
+        @Override
+        public Completable releaseAsync() {
+            return Completable.completed(); // nothing to release
         }
 
         @Override
@@ -116,18 +123,18 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
         }
 
         @Override
-        public HttpConnection asConnection() {
-            return toConnection(this, offloadNone());
+        public ReservedHttpConnection asConnection() {
+            return toReservedConnection(this, offloadNone());
         }
 
         @Override
-        public BlockingStreamingHttpConnection asBlockingStreamingConnection() {
-            return toBlockingStreamingConnection(this, offloadNone());
+        public ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
+            return toReservedBlockingStreamingConnection(this, offloadNone());
         }
 
         @Override
-        public BlockingHttpConnection asBlockingConnection() {
-            return toBlockingConnection(this, offloadNone());
+        public ReservedBlockingHttpConnection asBlockingConnection() {
+            return toReservedBlockingConnection(this, offloadNone());
         }
     }
 }
