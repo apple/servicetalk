@@ -77,14 +77,14 @@ class ServiceApiConversionsAsyncContextTest {
     @Test
     void testStreaming() throws Exception {
         runTest((builder, errors) -> builder
-                .appendServiceFilter(new AsyncContextAssertionFilter(errors, true, true, true, false))
+                .appendServiceFilter(new AsyncContextAssertionFilter(errors, true, true, true, false, false))
                 .listenStreaming(asyncContextRequestHandler(errors)));
     }
 
     @Test
     void testOriginalBlockingHttpService() throws Exception {
         runTest((builder, errors) -> builder
-                .appendServiceFilter(new AsyncContextAssertionFilter(errors, false, true, false, true))
+                .appendServiceFilter(new AsyncContextAssertionFilter(errors, false, true, false, true, false))
                 .listenBlocking(new BlockingHttpService() {
                     @Override
                     public HttpResponse handle(final HttpServiceContext ctx, final HttpRequest request,
@@ -99,7 +99,7 @@ class ServiceApiConversionsAsyncContextTest {
     @Test
     void testOriginalHttpService() throws Exception {
         runTest((builder, errors) -> builder
-                .appendServiceFilter(new AsyncContextAssertionFilter(errors, false, true, false, true))
+                .appendServiceFilter(new AsyncContextAssertionFilter(errors, false, true, false, true, false))
                 .listen(new HttpService() {
                     @Override
                     public Single<HttpResponse> handle(final HttpServiceContext ctx, final HttpRequest request,
@@ -114,7 +114,10 @@ class ServiceApiConversionsAsyncContextTest {
     @Test
     void testOriginalBlockingStreamingHttpService() throws Exception {
         runTest((builder, errors) -> builder
-                .appendServiceFilter(new AsyncContextAssertionFilter(errors, true, true, true, false))
+                // We expect that the service will make a copy of the AsyncContext when it subscribes to payload body
+                // because if we share, then behavior of any modifications inside for-each loop are not guaranteed to be
+                // visible inside request.transformMessageBody because of the intermediate queueing of data.
+                .appendServiceFilter(new AsyncContextAssertionFilter(errors, true, true, true, false, true))
                 .listenBlockingStreaming(new BlockingStreamingHttpService() {
                     @Override
                     public void handle(final HttpServiceContext ctx, final BlockingStreamingHttpRequest request,
@@ -138,21 +141,21 @@ class ServiceApiConversionsAsyncContextTest {
     @Test
     void testToBlockingHttpService() throws Exception {
         runTest((builder, errors) -> builder
-                .appendServiceFilter(new AsyncContextAssertionFilter(errors, false, true, true, true))
+                .appendServiceFilter(new AsyncContextAssertionFilter(errors, false, true, true, true, false))
                 .listenBlocking(toBlockingHttpService(asyncContextRequestHandler(errors))));
     }
 
     @Test
     void testToBlockingStreamingHttpService() throws Exception {
         runTest((builder, errors) -> builder
-                .appendServiceFilter(new AsyncContextAssertionFilter(errors, true, true, true, false))
+                .appendServiceFilter(new AsyncContextAssertionFilter(errors, true, true, true, false, false))
                 .listenBlockingStreaming(toBlockingStreamingHttpService(asyncContextRequestHandler(errors))));
     }
 
     @Test
     void testToHttpService() throws Exception {
         runTest((builder, errors) -> builder
-                .appendServiceFilter(new AsyncContextAssertionFilter(errors, false, true, true, true))
+                .appendServiceFilter(new AsyncContextAssertionFilter(errors, false, true, true, true, false))
                 .listen(HttpApiConversions.toHttpService(asyncContextRequestHandler(errors))));
     }
 

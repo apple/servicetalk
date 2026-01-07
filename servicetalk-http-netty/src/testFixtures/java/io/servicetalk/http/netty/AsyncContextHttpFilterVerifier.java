@@ -215,6 +215,7 @@ public final class AsyncContextHttpFilterVerifier {
         private final boolean hasK2;
         private final boolean hasK3;
         private final boolean aggregatedResponse;
+        private final boolean requestPayloadContextCopy;
 
         /**
          * Creates a new instance.
@@ -222,7 +223,7 @@ public final class AsyncContextHttpFilterVerifier {
          * @param errorQueue {@link Queue} to add an {@link AssertionError} in case an assertion fails
          */
         public AsyncContextAssertionFilter(final Queue<Throwable> errorQueue) {
-            this(errorQueue, true, true, true, false);
+            this(errorQueue, true, true, true, false, false);
         }
 
         /**
@@ -232,15 +233,20 @@ public final class AsyncContextHttpFilterVerifier {
          * @param lazyPayload {@code true} if the target service consumes request payload body lazily
          * @param hasK2 {@code true} if the target service sets {@link #K2} before completion of the response meta-data
          * @param hasK3 {@code true} if the target service sets {@link #K3} before completion of the response payload
+         * @param aggregatedResponse {@code true} if the target service returns aggregated response, in this case keys
+         * set during response payload body processing will be visible together with response metadata
+         * @param requestPayloadContextCopy {@code true} if the request payload body should use a copy of the context
+         * instead of sharing the same instance
          */
         public AsyncContextAssertionFilter(final Queue<Throwable> errorQueue,
                                            final boolean lazyPayload, final boolean hasK2, final boolean hasK3,
-                                           final boolean aggregatedResponse) {
+                                           final boolean aggregatedResponse, final boolean requestPayloadContextCopy) {
             this.errorQueue = errorQueue;
             this.lazyPayload = lazyPayload;
             this.hasK2 = hasK2;
             this.hasK3 = hasK3;
             this.aggregatedResponse = aggregatedResponse;
+            this.requestPayloadContextCopy = requestPayloadContextCopy;
         }
 
         @Override
@@ -255,7 +261,12 @@ public final class AsyncContextHttpFilterVerifier {
                     assertAsyncContext(K2, null, errorQueue);
                     assertAsyncContext(K3, null, errorQueue);
                     return delegate().handle(ctx, request.transformMessageBody(p -> p.beforeFinally(() -> {
-                                assertSameContext(current, errorQueue);
+                                if (requestPayloadContextCopy) {
+                                    assertNotSameContext(current, errorQueue);
+                                    assertContext(equalTo(current), errorQueue);
+                                } else {
+                                    assertSameContext(current, errorQueue);
+                                }
                                 assertAsyncContext(K1, lazyPayload ? V1 : null, errorQueue);
                                 assertAsyncContext(K2, null, errorQueue);
                                 assertAsyncContext(K3, null, errorQueue);
