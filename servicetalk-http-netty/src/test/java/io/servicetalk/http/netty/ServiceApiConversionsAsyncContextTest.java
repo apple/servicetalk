@@ -20,18 +20,12 @@ import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpService;
-import io.servicetalk.http.api.BlockingStreamingHttpRequest;
-import io.servicetalk.http.api.BlockingStreamingHttpServerResponse;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
-import io.servicetalk.http.api.HttpApiConversions;
 import io.servicetalk.http.api.HttpPayloadWriter;
-import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpResponseFactory;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.HttpService;
-import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.AsyncContextAssertionFilter;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
@@ -47,6 +41,7 @@ import java.util.function.BiFunction;
 
 import static io.servicetalk.http.api.HttpApiConversions.toBlockingHttpService;
 import static io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingHttpService;
+import static io.servicetalk.http.api.HttpApiConversions.toHttpService;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.K1;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.K2;
@@ -78,14 +73,10 @@ class ServiceApiConversionsAsyncContextTest {
     void testOriginalBlockingHttpService() throws Exception {
         runTest((builder, errors) -> builder
                 .appendServiceFilter(new AsyncContextAssertionFilter(errors, false, true, false, true, false))
-                .listenBlocking(new BlockingHttpService() {
-                    @Override
-                    public HttpResponse handle(final HttpServiceContext ctx, final HttpRequest request,
-                                               final HttpResponseFactory responseFactory) {
-                        AsyncContext.put(K1, V1);
-                        AsyncContext.put(K2, V2);
-                        return responseFactory.ok().payloadBody(request.payloadBody());
-                    }
+                .listenBlocking((BlockingHttpService) (ctx, request, responseFactory) -> {
+                    AsyncContext.put(K1, V1);
+                    AsyncContext.put(K2, V2);
+                    return responseFactory.ok().payloadBody(request.payloadBody());
                 }));
     }
 
@@ -96,22 +87,18 @@ class ServiceApiConversionsAsyncContextTest {
                 // because if we share, then behavior of any modifications inside for-each loop are not guaranteed to be
                 // visible inside request.transformMessageBody because of the intermediate queueing of data.
                 .appendServiceFilter(new AsyncContextAssertionFilter(errors, true, true, true, false, true))
-                .listenBlockingStreaming(new BlockingStreamingHttpService() {
-                    @Override
-                    public void handle(final HttpServiceContext ctx, final BlockingStreamingHttpRequest request,
-                                       final BlockingStreamingHttpServerResponse response) throws Exception {
-                        AsyncContext.put(K1, V1);
-                        List<Buffer> received = new ArrayList<>();
-                        for (Buffer buffer : request.payloadBody()) {
-                            received.add(buffer);
+                .listenBlockingStreaming((BlockingStreamingHttpService) (ctx, request, response) -> {
+                    AsyncContext.put(K1, V1);
+                    List<Buffer> received = new ArrayList<>();
+                    for (Buffer buffer : request.payloadBody()) {
+                        received.add(buffer);
+                    }
+                    AsyncContext.put(K2, V2);
+                    try (HttpPayloadWriter<Buffer> writer = response.sendMetaData()) {
+                        for (Buffer buffer : received) {
+                            writer.write(buffer);
                         }
-                        AsyncContext.put(K2, V2);
-                        try (HttpPayloadWriter<Buffer> writer = response.sendMetaData()) {
-                            for (Buffer buffer : received) {
-                                writer.write(buffer);
-                            }
-                            AsyncContext.put(K3, V3);
-                        }
+                        AsyncContext.put(K3, V3);
                     }
                 }));
     }
@@ -120,14 +107,10 @@ class ServiceApiConversionsAsyncContextTest {
     void testOriginalHttpService() throws Exception {
         runTest((builder, errors) -> builder
                 .appendServiceFilter(new AsyncContextAssertionFilter(errors, false, true, false, true, false))
-                .listen(new HttpService() {
-                    @Override
-                    public Single<HttpResponse> handle(final HttpServiceContext ctx, final HttpRequest request,
-                                                       final HttpResponseFactory responseFactory) {
-                        AsyncContext.put(K1, V1);
-                        return Single.succeeded(responseFactory.ok().payloadBody(request.payloadBody()))
-                                .beforeOnSuccess(ignore -> AsyncContext.put(K2, V2));
-                    }
+                .listen((HttpService) (ctx, request, responseFactory) -> {
+                    AsyncContext.put(K1, V1);
+                    return Single.succeeded(responseFactory.ok().payloadBody(request.payloadBody()))
+                            .beforeOnSuccess(ignore -> AsyncContext.put(K2, V2));
                 }));
     }
 
@@ -156,7 +139,7 @@ class ServiceApiConversionsAsyncContextTest {
     void testStreamingToHttpService() throws Exception {
         runTest((builder, errors) -> builder
                 .appendServiceFilter(new AsyncContextAssertionFilter(errors, false, true, true, true, false))
-                .listen(HttpApiConversions.toHttpService(asyncContextRequestHandler(errors))));
+                .listen(toHttpService(asyncContextRequestHandler(errors))));
     }
 
     private void runTest(BiFunction<HttpServerBuilder, Queue<Throwable>, Single<HttpServerContext>> serverModifier)
