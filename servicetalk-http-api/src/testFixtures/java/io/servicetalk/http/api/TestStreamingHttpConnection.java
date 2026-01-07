@@ -22,9 +22,10 @@ import io.servicetalk.concurrent.api.Single;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.failed;
-import static io.servicetalk.http.api.HttpApiConversions.toBlockingConnection;
-import static io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingConnection;
-import static io.servicetalk.http.api.HttpApiConversions.toConnection;
+import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingConnection;
+import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingStreamingConnection;
+import static io.servicetalk.http.api.HttpApiConversions.toReservedConnection;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 
 public final class TestStreamingHttpConnection {
 
@@ -95,7 +96,12 @@ public final class TestStreamingHttpConnection {
     }
 
     public static StreamingHttpConnection from(FilterableStreamingHttpConnection filterChain) {
-        return new StreamingHttpConnection() {
+        return new ReservedStreamingHttpConnection() {
+            @Override
+            public Completable releaseAsync() {
+                return Completable.completed(); // nothing to release
+            }
+
             @Override
             public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
                 return filterChain.newRequest(method, requestTarget);
@@ -147,18 +153,18 @@ public final class TestStreamingHttpConnection {
             }
 
             @Override
-            public HttpConnection asConnection() {
-                return toConnection(this, HttpExecutionStrategies.offloadNone());
+            public ReservedHttpConnection asConnection() {
+                return toReservedConnection(this, offloadNone());
             }
 
             @Override
-            public BlockingStreamingHttpConnection asBlockingStreamingConnection() {
-                return toBlockingStreamingConnection(this, HttpExecutionStrategies.offloadNone());
+            public ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
+                return toReservedBlockingStreamingConnection(this, offloadNone());
             }
 
             @Override
-            public BlockingHttpConnection asBlockingConnection() {
-                return toBlockingConnection(this, HttpExecutionStrategies.offloadNone());
+            public ReservedBlockingHttpConnection asBlockingConnection() {
+                return toReservedBlockingConnection(this, offloadNone());
             }
         };
     }

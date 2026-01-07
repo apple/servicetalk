@@ -20,6 +20,7 @@ import io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient.
 import io.servicetalk.http.api.StreamingHttpClientToHttpClient.ReservedStreamingHttpConnectionToReservedHttpConnection;
 
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
+import static io.servicetalk.http.api.ReservedStreamingHttpConnectionUtils.toReservedStreamingHttpConnection;
 
 /**
  * Conversion routines to {@link StreamingHttpService}.
@@ -138,9 +139,12 @@ public final class HttpApiConversions {
      * @param original {@link StreamingHttpConnection} to convert.
      * @param strategy required strategy for the service when invoking the resulting {@link HttpConnection}
      * @return The conversion result.
+     * @deprecated Use {@link StreamingHttpConnection#asConnection()} or
+     * {@link #toReservedConnection(ReservedStreamingHttpConnection, HttpExecutionStrategy)} instead.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     public static HttpConnection toConnection(StreamingHttpConnection original, HttpExecutionStrategy strategy) {
-        return new StreamingHttpConnectionToHttpConnection(original, strategy);
+        return toReservedConnection(toReservedStreamingHttpConnection(original), strategy);
     }
 
     /**
@@ -165,10 +169,13 @@ public final class HttpApiConversions {
      * @param original {@link StreamingHttpConnection} to convert.
      * @param strategy required strategy for the service when invoking the resulting {@link BlockingHttpConnection}
      * @return The conversion result.
+     * @deprecated Use {@link StreamingHttpConnection#asBlockingConnection()} or
+     * {@link #toReservedBlockingConnection(ReservedStreamingHttpConnection, HttpExecutionStrategy)} instead.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     public static BlockingHttpConnection toBlockingConnection(StreamingHttpConnection original,
                                                               HttpExecutionStrategy strategy) {
-        return new StreamingHttpConnectionToBlockingHttpConnection(original, strategy);
+        return toReservedBlockingConnection(toReservedStreamingHttpConnection(original), strategy);
     }
 
     /**
@@ -194,10 +201,13 @@ public final class HttpApiConversions {
      * @param strategy required strategy for the service when invoking the resulting
      * {@link BlockingStreamingHttpConnection}
      * @return The conversion result.
+     * @deprecated Use {@link StreamingHttpConnection#asBlockingStreamingConnection()} or
+     * {@link #toReservedBlockingStreamingConnection(ReservedStreamingHttpConnection, HttpExecutionStrategy)} instead.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     public static BlockingStreamingHttpConnection toBlockingStreamingConnection(
             StreamingHttpConnection original, HttpExecutionStrategy strategy) {
-        return new StreamingHttpConnectionToBlockingStreamingHttpConnection(original, strategy);
+        return toReservedBlockingStreamingConnection(toReservedStreamingHttpConnection(original), strategy);
     }
 
     /**
