@@ -38,7 +38,8 @@ final class ServiceToStreamingService extends AbstractServiceAdapterHolder {
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                 final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory responseFactory) {
-        return request.toRequest().flatMap(req -> original.handle(ctx, req, ctx.responseFactory()))
+        return request.toRequest()
+                .flatMap(req -> original.handle(ctx, req, ctx.responseFactory()).shareContextOnSubscribe())
                 .map(HttpResponse::toStreamingResponse);
     }
 

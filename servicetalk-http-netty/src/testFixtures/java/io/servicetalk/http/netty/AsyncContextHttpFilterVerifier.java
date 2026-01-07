@@ -21,9 +21,8 @@ import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.context.api.ContextMap.Key;
-import io.servicetalk.http.api.BlockingStreamingHttpClient;
-import io.servicetalk.http.api.BlockingStreamingHttpRequest;
-import io.servicetalk.http.api.BlockingStreamingHttpResponse;
+import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -44,13 +43,12 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.util.Collections.singletonList;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -89,28 +87,29 @@ public final class AsyncContextHttpFilterVerifier {
                 .appendServiceFilter(new AsyncContextAssertionFilter(errors))
                 .appendServiceFilter(filter)
                 .listenStreamingAndAwait(asyncContextRequestHandler(errors));
-             BlockingStreamingHttpClient client = forSingleAddress(serverHostAndPort(serverContext))
-                     .buildBlockingStreaming()) {
+             BlockingHttpClient client = forSingleAddress(serverHostAndPort(serverContext)).buildBlocking()) {
 
-            BlockingStreamingHttpRequest request = client.post("/test")
-                    .payloadBody(singletonList(content), appSerializerUtf8FixLen());
-
-            BlockingStreamingHttpResponse resp = client.request(request);
+            HttpResponse resp = client.request(client.post("/test")
+                    .payloadBody(client.executionContext().bufferAllocator().fromAscii(content)));
             assertThat(resp.status(), is(OK));
-            StringBuilder sb = new StringBuilder();
-            resp.payloadBody(appSerializerUtf8FixLen()).forEach(sb::append);
-            assertThat(sb.toString(), is(equalTo(content)));
+            assertThat(resp.payloadBody().toString(US_ASCII), is(equalTo(content)));
         }
         assertNoAsyncErrors(errors);
     }
 
-    private static StreamingHttpService asyncContextRequestHandler(final BlockingQueue<Throwable> errorQueue) {
+    /**
+     * Creates new {@link StreamingHttpService} that sets keys.
+     *
+     * @param errorQueue {@link Queue} to add an {@link AssertionError} in case the assertion fails
+     * @return {@link StreamingHttpService} that sets keys
+     */
+    public static StreamingHttpService asyncContextRequestHandler(final Queue<Throwable> errorQueue) {
         return (ctx, request, respFactory) -> {
             AsyncContext.put(K1, V1);
             ContextMap current = AsyncContext.context();
-            return request.payloadBody(appSerializerUtf8FixLen())
+            return request.payloadBody()
                     .collect(StringBuilder::new, (collector, it) -> {
-                        collector.append(it);
+                        collector.append(it.toString(US_ASCII));
                         return collector;
             }).map(StringBuilder::toString).map(it -> {
                 AsyncContext.put(K2, V2);
@@ -124,8 +123,8 @@ public final class AsyncContextHttpFilterVerifier {
                     assertAsyncContext(K2, V2, errorQueue);
                     assertAsyncContext(K3, V3, errorQueue);
                     assertSameContext(current, errorQueue);
-                    return body;
-                }), appSerializerUtf8FixLen()).transformPayloadBody(publisher ->
+                    return ctx.executionContext().bufferAllocator().fromAscii(body);
+                })).transformPayloadBody(publisher ->
                             publisher.beforeSubscriber(() -> new PublisherSource.Subscriber<Buffer>() {
                         @Override
                         public void onSubscribe(final PublisherSource.Subscription subscription) {
@@ -215,6 +214,8 @@ public final class AsyncContextHttpFilterVerifier {
         private final boolean lazyPayload;
         private final boolean hasK2;
         private final boolean hasK3;
+        private final boolean aggregatedResponse;
+        private final boolean requestPayloadContextCopy;
 
         /**
          * Creates a new instance.
@@ -235,10 +236,30 @@ public final class AsyncContextHttpFilterVerifier {
          */
         public AsyncContextAssertionFilter(final Queue<Throwable> errorQueue,
                                            final boolean lazyPayload, final boolean hasK2, final boolean hasK3) {
+            this(errorQueue, lazyPayload, hasK2, hasK3, false, false);
+        }
+
+        /**
+         * Creates a new instance.
+         *
+         * @param errorQueue {@link Queue} to add an {@link AssertionError} in case an assertion fails
+         * @param lazyPayload {@code true} if the target service consumes request payload body lazily
+         * @param hasK2 {@code true} if the target service sets {@link #K2} before completion of the response meta-data
+         * @param hasK3 {@code true} if the target service sets {@link #K3} before completion of the response payload
+         * @param aggregatedResponse {@code true} if the target service returns aggregated response, in this case keys
+         * set during response payload body processing will be visible together with response metadata
+         * @param requestPayloadContextCopy {@code true} if the request payload body should use a copy of the context
+         * instead of sharing the same instance
+         */
+        public AsyncContextAssertionFilter(final Queue<Throwable> errorQueue,
+                                           final boolean lazyPayload, final boolean hasK2, final boolean hasK3,
+                                           final boolean aggregatedResponse, final boolean requestPayloadContextCopy) {
             this.errorQueue = errorQueue;
             this.lazyPayload = lazyPayload;
             this.hasK2 = hasK2;
             this.hasK3 = hasK3;
+            this.aggregatedResponse = aggregatedResponse;
+            this.requestPayloadContextCopy = requestPayloadContextCopy;
         }
 
         @Override
@@ -253,7 +274,12 @@ public final class AsyncContextHttpFilterVerifier {
                     assertAsyncContext(K2, null, errorQueue);
                     assertAsyncContext(K3, null, errorQueue);
                     return delegate().handle(ctx, request.transformMessageBody(p -> p.beforeFinally(() -> {
-                                assertSameContext(current, errorQueue);
+                                if (requestPayloadContextCopy) {
+                                    assertNotSameContext(current, errorQueue);
+                                    assertContext(equalTo(current), errorQueue);
+                                } else {
+                                    assertSameContext(current, errorQueue);
+                                }
                                 assertAsyncContext(K1, lazyPayload ? V1 : null, errorQueue);
                                 assertAsyncContext(K2, null, errorQueue);
                                 assertAsyncContext(K3, null, errorQueue);
@@ -262,7 +288,7 @@ public final class AsyncContextHttpFilterVerifier {
                                 assertSameContext(current, errorQueue);
                                 assertAsyncContext(K1, V1, errorQueue);
                                 assertAsyncContext(K2, hasK2 ? V2 : null, errorQueue);
-                                assertAsyncContext(K3, null, errorQueue);
+                                assertAsyncContext(K3, aggregatedResponse && hasK3 ? V3 : null, errorQueue);
                             })
                             .liftSync(new BeforeFinallyHttpOperator(() -> {
                                 assertSameContext(current, errorQueue);

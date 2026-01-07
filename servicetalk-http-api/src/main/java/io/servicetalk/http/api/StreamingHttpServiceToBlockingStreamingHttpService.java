@@ -61,7 +61,7 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
                 .flatMapCompletable(streamingHttpResponse -> {
                     copyMeta(streamingHttpResponse, svcResponse);
                     return new MessageBodyToPayloadWriter(streamingHttpResponse.messageBody(),
-                            svcResponse.sendMetaData(), demandBatchSize);
+                            svcResponse.sendMetaData(), demandBatchSize).shareContextOnSubscribe();
                 }).shareContextOnSubscribe();
     }
 
@@ -97,7 +97,8 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
 
         @Override
         protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
-            toSource(messageBody).subscribe(new PayloadPump(subscriber, payloadWriter, demandBatchSize));
+            toSource(messageBody.shareContextOnSubscribe())
+                    .subscribe(new PayloadPump(subscriber, payloadWriter, demandBatchSize));
         }
 
         private static final class PayloadPump implements PublisherSource.Subscriber<Object> {
