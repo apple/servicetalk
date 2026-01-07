@@ -43,8 +43,7 @@ import org.junit.platform.suite.api.SuiteDisplayName;
         MixedModeResourceTest.class,
 
         // AsyncContext
-        // FIXME: https://github.com/apple/servicetalk/issues/3384
-        // AsyncContextTest.class
+        AsyncContextTest.class
 })
 public abstract class BaseJerseyRouterTestSuite {
     // NOOP

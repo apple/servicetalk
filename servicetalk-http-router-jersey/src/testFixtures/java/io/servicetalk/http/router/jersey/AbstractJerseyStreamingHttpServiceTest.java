@@ -83,10 +83,20 @@ import static org.hamcrest.Matchers.notNullValue;
 public abstract class AbstractJerseyStreamingHttpServiceTest {
 
     public enum RouterApi {
-        ASYNC_AGGREGATED,
-        ASYNC_STREAMING,
-        BLOCKING_AGGREGATED,
-        BLOCKING_STREAMING
+        ASYNC_AGGREGATED(true),
+        ASYNC_STREAMING(false),
+        BLOCKING_AGGREGATED(true),
+        BLOCKING_STREAMING(false);
+
+        private final boolean aggregated;
+
+        RouterApi(boolean aggregated) {
+            this.aggregated = aggregated;
+        }
+
+        boolean isAggregated() {
+            return aggregated;
+        }
     }
 
     @RegisterExtension

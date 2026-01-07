@@ -198,7 +198,8 @@ final class ProtobufSerializerMessageBodyReaderWriter implements MessageBodyRead
     // visible for testing
     static <T> T deserializeObject(final Publisher<Buffer> bufferPublisher, final Deserializer<T> deserializer,
                                    final int contentLength, final BufferAllocator allocator) {
-        return awaitResult(deserialize(bufferPublisher, deserializer, contentLength, allocator).toFuture());
+        return awaitResult(deserialize(bufferPublisher, deserializer, contentLength, allocator)
+                .shareContextOnSubscribe().toFuture());
     }
 
     private static boolean isSse(ContainerRequestContext requestCtx) {
