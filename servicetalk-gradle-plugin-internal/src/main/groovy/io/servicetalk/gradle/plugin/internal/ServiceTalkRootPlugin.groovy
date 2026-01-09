@@ -50,6 +50,10 @@ final class ServiceTalkRootPlugin extends ServiceTalkCorePlugin {
           options.addBooleanOption('-no-module-directories', true)
         }
 
+        // Create FileCollections for aggregation (avoids triggering configuration resolution)
+        def aggregatedSources = project.files()
+        def aggregatedClasspath = project.files()
+
         gradle.projectsEvaluated {
           subprojects.findAll {
             !it.name.contains("examples")
@@ -57,14 +61,19 @@ final class ServiceTalkRootPlugin extends ServiceTalkCorePlugin {
                 && !it.name.contains("-jersey3-jakarta")
           }.each { prj ->
             prj.tasks.withType(Javadoc).findAll {it.name.equals("javadoc")}.each { javadocTask ->
-              source += javadocTask.source
-              classpath += javadocTask.classpath
+              // Use .from and .files to eagerly resolve during configuration phase
+              aggregatedSources.from(javadocTask.source.files)
+              aggregatedClasspath.from(javadocTask.classpath.files)
+              // excludes/includes are Sets, safe to use +=
               excludes += javadocTask.excludes
               includes += javadocTask.includes
               dependsOn javadocTask
             }
           }
         }
+        // Set the aggregated collections on the task
+        source = aggregatedSources
+        classpath = aggregatedClasspath
       }
     }
   }
