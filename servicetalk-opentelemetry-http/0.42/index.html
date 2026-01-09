@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>OpenTelemetry Tracing :: ServiceTalk Docs</title>
+    <meta name="generator" content="Antora 2.3.4">
+    <link rel="stylesheet" href="../../_/css/site.css">
+<meta name="description" content="ServiceTalk is a JVM network application framework with APIs tailored to specific protocols (e.g. HTTP/1.x, HTTP/2.x, etc…​) and supports multiple programming paradigms.">
+<meta name="keywords" content="servicetalk, java, reactive, reactive-streams, microservices, framework, http, http2, rpc, grpc, netty">
+<link rel="stylesheet" href="../../_/css/site-extra.css">
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-151504011-1"></script>
+<script>function gtag(){dataLayer.push(arguments)};window.dataLayer=window.dataLayer||[];gtag('js',new Date());gtag('config','UA-151504011-1')</script>
+    <link rel="icon" href="../../favicon.ico" type="image/x-icon">
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <div class="navbar-item">
+        <a href="https://github.com/apple/servicetalk">
+          <img class="navbar-logo" src="../../_/img/servicetalk.png" alt="ServiceTalk logo" />
+          <span>ServiceTalk</span>
+        </a>
+        <span class="separator">//</span>
+        <a href="../..">Docs</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="main-wrapper">
+    <div class="navigation-container"
+      data-component="servicetalk-opentelemetry-http" data-version="0.42">
+    <aside class="navigation">
+        <div class="panels">
+            <div class="navigation-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="index.html">OpenTelemetry</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="1">
+    <a class="nav-link" href="index.html">OpenTelemetry Tracing</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+            <div class="navigation-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenTelemetry</span>
+    <span class="version">0.42</span>
+  </div>
+  <ul class="components">
+    <li class="component">
+      <span class="title">Client API</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-client-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.42/index.html">0.42</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.41/index.html">0.41</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.40/index.html">0.40</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.39/index.html">0.39</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.36/index.html">0.36</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.25/index.html">0.25</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">Concurrent API</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-concurrent-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.42/index.html">0.42</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.41/index.html">0.41</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.40/index.html">0.40</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.39/index.html">0.39</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.36/index.html">0.36</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">Examples</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-examples/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.42/index.html">0.42</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.41/index.html">0.41</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.40/index.html">0.40</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.39/index.html">0.39</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.36/index.html">0.36</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">gRPC</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-grpc-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.42/index.html">0.42</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.41/index.html">0.41</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.40/index.html">0.40</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.39/index.html">0.39</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.36/index.html">0.36</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">HTTP</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-http-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.42/index.html">0.42</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.41/index.html">0.41</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.40/index.html">0.40</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.39/index.html">0.39</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.36/index.html">0.36</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">JAX-RS Router (Jersey)</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-http-router-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.42/index.html">0.42</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.41/index.html">0.41</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.40/index.html">0.40</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.39/index.html">0.39</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.36/index.html">0.36</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">JSON (Jackson)</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-data-jackson-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.42/index.html">0.42</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.41/index.html">0.41</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.40/index.html">0.40</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.39/index.html">0.39</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.36/index.html">0.36</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">Load Balancing</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-loadbalancer/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.42/index.html">0.42</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.41/index.html">0.41</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.40/index.html">0.40</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.39/index.html">0.39</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.36/index.html">0.36</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.20/index.html">0.20</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component is-current">
+      <span class="title">OpenTelemetry</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version is-current">
+          <a href="index.html">0.42</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">Security</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-http-security-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.42/index.html">0.42</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.41/index.html">0.41</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.40/index.html">0.40</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.39/index.html">0.39</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.36/index.html">0.36</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">ServiceTalk</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.42/index.html">0.42</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.41/index.html">0.41</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.40/index.html">0.40</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.39/index.html">0.39</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.36/index.html">0.36</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">Traffic Resilience</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-traffic-resilience-http/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-traffic-resilience-http/0.42/index.html">0.42</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+        </div>
+    </aside>
+</div>
+    <main class="main">
+        <div class="toolbar" role="navigation">
+  <button class="navigation-toggle"></button>
+  <a href="../../servicetalk/SNAPSHOT/index.html" class="home-link"></a>
+<nav class="crumbs" aria-label="breadcrumbs">
+        <ul>
+                    <li class="crumb"><a href="index.html">OpenTelemetry</a></li>
+                <li class="crumb"><a href="index.html">OpenTelemetry Tracing</a></li>
+        </ul>
+</nav>
+<div class="page-versions">
+  <button class="versions-menu-toggle" title="Show other versions of page">0.42</button>
+  <div class="versions-menu">
+    <a class="version" href="../SNAPSHOT/index.html">SNAPSHOT</a>
+    <a class="version is-current" href="index.html">0.42</a>
+  </div>
+</div>
+</div>
+        <article class="doc">
+<h1>OpenTelemetry Tracing</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>ServiceTalk provides comprehensive OpenTelemetry tracing support for HTTP and gRPC clients and servers through a set of filters that automatically instrument requests and responses.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="overview"><a class="anchor" href="#overview"></a><a class="link" href="#overview">Overview</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>servicetalk-opentelemetry-http</code> module provides tracing filters that integrate with OpenTelemetry to automatically create spans for HTTP and gRPC operations, propagate trace context, and collect telemetry data.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+The <code>servicetalk-opentelemetry-asynccontext</code> module must be on your classpath for proper async context propagation. You need to explicitly add both <code>servicetalk-opentelemetry-http</code> and <code>servicetalk-opentelemetry-asynccontext</code> as dependencies to your project.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="key-components"><a class="anchor" href="#key-components"></a><a class="link" href="#key-components">Key Components</a></h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="context-propagation"><a class="anchor" href="#context-propagation"></a><a class="link" href="#context-propagation">Context Propagation</a></h3>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.61/servicetalk-opentelemetry-asynccontext/src/main/java/io/servicetalk/opentelemetry/asynccontext/OtelCapturedContextProvider.java">OtelCapturedContextProvider</a> - Service loaded provider that lets ServiceTalk properly propagate the OTEL context and span information. The package just needs to be on the runtime classpath.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="client-side-tracing"><a class="anchor" href="#client-side-tracing"></a><a class="link" href="#client-side-tracing">Client-Side Tracing</a></h3>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.61/servicetalk-opentelemetry-http/src/main/java/io/servicetalk/opentelemetry/http/OpenTelemetryHttpRequesterFilter.java">OpenTelemetryHttpRequesterFilter</a> - Client tracing filter for HTTP and gRPC</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="server-side-tracing"><a class="anchor" href="#server-side-tracing"></a><a class="link" href="#server-side-tracing">Server-Side Tracing</a></h3>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.61/servicetalk-opentelemetry-http/src/main/java/io/servicetalk/opentelemetry/http/OpenTelemetryHttpServiceFilter.java">OpenTelemetryHttpServiceFilter</a> - Server tracing filter for HTTP and gRPC</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configuration"><a class="anchor" href="#configuration"></a><a class="link" href="#configuration">Configuration</a></h3>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.61/servicetalk-opentelemetry-http/src/main/java/io/servicetalk/opentelemetry/http/OpenTelemetryHttpRequesterFilter.java">OpenTelemetryHttpRequesterFilter.Builder</a> - Builder for configuring tracing options for requesters.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.61/servicetalk-opentelemetry-http/src/main/java/io/servicetalk/opentelemetry/http/OpenTelemetryHttpServiceFilter.java">OpenTelemetryHttpServiceFilter.Builder</a> - Builder for configuring tracing options for services.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="key-features"><a class="anchor" href="#key-features"></a><a class="link" href="#key-features">Key Features</a></h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Automatic Span Creation</strong>: Creates spans for HTTP and gRPC requests and responses following OpenTelemetry semantic conventions</p>
+</li>
+<li>
+<p><strong>Context Propagation</strong>: Propagates trace context across service boundaries using standard headers</p>
+</li>
+<li>
+<p><strong>Configurable Attributes</strong>: Capture custom request and response headers as span attributes</p>
+</li>
+<li>
+<p><strong>gRPC Support</strong>: Specialized support for gRPC over HTTP/2 tracing</p>
+</li>
+<li>
+<p><strong>Filter Ordering</strong>: Proper integration with ServiceTalk&#8217;s filter chain for correct context handling</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="quick-start"><a class="anchor" href="#quick-start"></a><a class="link" href="#quick-start">Quick Start</a></h2>
+<div class="sectionbody">
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+For complete dependency setup and OpenTelemetry SDK configuration, see the working examples in the ServiceTalk examples module <a href="https://github.com/apple/servicetalk/blob/0.42.61/servicetalk-examples/http/opentelemetry-tracing/src/main/java/io/servicetalk/examples/http/opentelemetry/tracing">here</a>.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="client-configuration"><a class="anchor" href="#client-configuration"></a><a class="link" href="#client-configuration">Client Configuration</a></h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">HttpClient client = HttpClients.forSingleAddress("example.com", 80)
+    .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
+        .componentName("my-client")
+        .build())
+    .build();</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="server-configuration"><a class="anchor" href="#server-configuration"></a><a class="link" href="#server-configuration">Server Configuration</a></h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">HttpServerBuilder.forAddress(localAddress(0))
+    // IMPORTANT: Use non-offloading filter for proper context propagation
+    .appendNonOffloadingServiceFilter(new OpenTelemetryHttpServiceFilter.Builder()
+        .build())
+    // Add request draining and exception mapping AFTER OpenTelemetry filter.
+    .appendNonOffloadingServiceFilter(HttpRequestAutoDrainingServiceFilter.INSTANCE)
+    .appendNonOffloadingServiceFilter(HttpExceptionMapperServiceFilter.INSTANCE)
+
+    .listen(service);</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="advanced-configuration"><a class="anchor" href="#advanced-configuration"></a><a class="link" href="#advanced-configuration">Advanced Configuration</a></h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="capturing-custom-headers"><a class="anchor" href="#capturing-custom-headers"></a><a class="link" href="#capturing-custom-headers">Capturing Custom Headers</a></h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">// Capture specific request and response headers as span attributes
+OpenTelemetryHttpRequesterFilter filter = new OpenTelemetryHttpRequesterFilter.Builder()
+    .componentName("my-client")
+    .capturedRequestHeaders(Arrays.asList("content-encoding", "content-length"))
+    .capturedResponseHeaders(Arrays.asList("content-type"))
+    .build();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="filter-ordering-guidelines"><a class="anchor" href="#filter-ordering-guidelines"></a><a class="link" href="#filter-ordering-guidelines">Filter Ordering Guidelines</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Proper filter ordering is crucial for OpenTelemetry tracing to work correctly with other ServiceTalk features.</p>
+</div>
+<div class="sect2">
+<h3 id="server-filters"><a class="anchor" href="#server-filters"></a><a class="link" href="#server-filters">Server Filters</a></h3>
+<div class="paragraph">
+<p>For servers, use non-offloading filters for proper context propagation and pay special attention to filter ordering:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">HttpServerBuilder.forAddress(localAddress(0))
+    // OpenTelemetry filter MUST be first for proper context propagation
+    .appendNonOffloadingServiceFilter(new OpenTelemetryHttpServiceFilter.Builder()
+        .build())
+
+    // Request draining filter MUST come after OpenTelemetry filter
+    // This ensures tracing information is captured for auto-drained requests
+    .appendNonOffloadingServiceFilter(HttpRequestAutoDrainingServiceFilter.INSTANCE)
+
+    // Exception mapping should come after tracing to ensure correct status codes
+    .appendNonOffloadingServiceFilter(HttpExceptionMapperServiceFilter.INSTANCE)
+
+    // Other filters can follow
+    .listen(service);</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Important:</strong> The <code>HttpRequestAutoDrainingServiceFilter</code> must be placed <strong>after</strong> the OpenTelemetry filter. This is critical for server-side tracing accuracy, particularly for requests like GET where the request body is typically ignored. If auto-draining occurs before the OpenTelemetry filter processes the request, tracing information may be incomplete or incorrect.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="client-filters"><a class="anchor" href="#client-filters"></a><a class="link" href="#client-filters">Client Filters</a></h3>
+<div class="paragraph">
+<p>When using multiple filters on clients, place the OpenTelemetry filter appropriately in the chain:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">OpenTelemetryHttpRequesterFilter filter =
+    new OpenTelemetryHttpRequesterFilter.Builder()
+        .componentName("my-client")
+        .build();
+HttpClient client = HttpClients.forSingleAddress("example.com", 80)
+    // OpenTelemetry filter for span creation and context propagation
+    .appendClientFilter(filter)
+    // Optional: adding the same filter as a connection filter will give
+    // you additional spans for each physical request sent over the wire
+    .appendConnectionFilter(filter)
+    // Logging comes after tracing so we can get trace-id's in logs
+    .appendClientFilter(loggingFilter)
+    // Retry and other resilience filters also come after tracing
+    .appendClientFilter(retryFilter)
+
+    .build();</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="filter-ordering-best-practices"><a class="anchor" href="#filter-ordering-best-practices"></a><a class="link" href="#filter-ordering-best-practices">Filter Ordering Best Practices</a></h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>OpenTelemetry filters should be among the first filters</strong> to ensure proper context establishment</p>
+</li>
+<li>
+<p><strong>Use non-offloading filters</strong> (<code>appendNonOffloadingServiceFilter</code>) for OpenTelemetry filters on the server-side to ensure earlier context establishment</p>
+</li>
+<li>
+<p><strong>Request draining must come after OpenTelemetry</strong> on the server side</p>
+</li>
+<li>
+<p><strong>Exception mapping should come after OpenTelemetry</strong> to ensure trace status reflects actual response codes</p>
+</li>
+<li>
+<p><strong>Lifecycle observers should come after OpenTelemetry</strong> to see correct span information</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="context-propagation-2"><a class="anchor" href="#context-propagation-2"></a><a class="link" href="#context-propagation-2">Context Propagation</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenTelemetry context is automatically propagated through multiple mechanisms to ensure traces are correlated correctly across service boundaries and async operations.</p>
+</div>
+<div class="sect2">
+<h3 id="header-propagation"><a class="anchor" href="#header-propagation"></a><a class="link" href="#header-propagation">Header Propagation</a></h3>
+<div class="paragraph">
+<p>OpenTelemetry context is automatically injected into and extracted from headers using the standard OpenTelemetry propagation format:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>W3C Trace Context</strong> (<code>traceparent</code>, <code>tracestate</code> headers)</p>
+</li>
+<li>
+<p><strong>B3 Propagation</strong> (if configured)</p>
+</li>
+<li>
+<p><strong>Custom propagators</strong> (if configured in the OpenTelemetry SDK)</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">// Context is automatically propagated via headers
+HttpResponse response = client.request(client.get("/api/endpoint"));
+// The server will receive trace context via HTTP headers</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="async-context-integration"><a class="anchor" href="#async-context-integration"></a><a class="link" href="#async-context-integration">Async Context Integration</a></h3>
+<div class="paragraph">
+<p>ServiceTalk&#8217;s async context system ensures OpenTelemetry context is maintained across:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Thread boundaries</strong> during async operations</p>
+</li>
+<li>
+<p><strong>Publisher/Subscriber chains</strong> in reactive streams</p>
+</li>
+<li>
+<p><strong>Executor transitions</strong> when work is offloaded</p>
+</li>
+<li>
+<p><strong>Filter chains</strong> where context must be preserved</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This integration is provided by the <code>servicetalk-opentelemetry-asynccontext</code> module which should be added as a <code>runtimeOnly</code> dependency. This module provides the <code>CapturedContextProvider</code> class which will be service-loaded by the ServiceTalk framework.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="context-scope-management"><a class="anchor" href="#context-scope-management"></a><a class="link" href="#context-scope-management">Context Scope Management</a></h3>
+<div class="paragraph">
+<p>OpenTelemetry spans are automatically activated and deactivated at appropriate points:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">// Client side: span is active during request processing
+client.request(client.get("/api"))
+    .beforeOnSuccess(response -&gt; {
+        // Current span is still active here
+        Span currentSpan = Span.current();
+        currentSpan.setAttribute(myStringAttributeKey, "attribute value");
+    });
+
+// Server side: span is active during service method execution
+service.handle((ctx, request, responseFactory) -&gt; {
+    // Current span is active and contains trace context from client
+    Span currentSpan = Span.current();
+    currentSpan.addEvent("Processing request");
+    return responseFactory.ok();
+});</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="grpc-support"><a class="anchor" href="#grpc-support"></a><a class="link" href="#grpc-support">gRPC Support</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The tracing filters provide specialized support for gRPC over HTTP/2:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Automatic detection of gRPC requests</p>
+</li>
+<li>
+<p>gRPC-specific span naming and attributes</p>
+</li>
+<li>
+<p>Proper status code mapping</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="troubleshooting"><a class="anchor" href="#troubleshooting"></a><a class="link" href="#troubleshooting">Troubleshooting</a></h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="common-issues"><a class="anchor" href="#common-issues"></a><a class="link" href="#common-issues">Common Issues</a></h3>
+<div class="paragraph">
+<p><strong>Context Not Propagating</strong>
+Ensure <code>servicetalk-opentelemetry-asynccontext</code> is on the classpath and the filter is properly ordered.</p>
+</div>
+<div class="paragraph">
+<p><strong>Missing Spans</strong>
+Verify OpenTelemetry is properly configured and the global OpenTelemetry instance is set.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="examples"><a class="anchor" href="#examples"></a><a class="link" href="#examples">Examples</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For complete working examples, see the <a href="https://github.com/apple/servicetalk/blob/0.42.61/servicetalk-examples/http/opentelemetry-tracing/src/main/java/io/servicetalk/examples/http/opentelemetry/tracing">OpenTelemetry tracing examples</a> in the ServiceTalk examples module.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="related-documentation"><a class="anchor" href="#related-documentation"></a><a class="link" href="#related-documentation">Related Documentation</a></h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="../../servicetalk-concurrent-api/0.42/async-context.html" class="page">ServiceTalk Asynchronous Context</a></p>
+</li>
+<li>
+<p><a href="https://opentelemetry.io/docs/instrumentation/java/">OpenTelemetry Java Documentation</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</article>
+    </main>
+</div>
+<footer class="footer">
+  <p>Copyright © <span class="footer-year"></span> Apple Inc. All rights reserved.</p>
+  <script>
+    document.querySelector('.footer-year').textContent = new Date().getFullYear();
+  </script>
+</footer>
+<script src="../../_/js/site.js"></script>
+<script async src="../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

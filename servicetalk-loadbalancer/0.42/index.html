@@ -111,6 +111,9 @@
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#OpenTracing">OpenTracing</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#OpenTelemetryTracing">OpenTelemetry Tracing</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#Redirects">Redirects</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -246,6 +249,15 @@
   </li>
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../../servicetalk-traffic-resilience-http/0.42/traffic-resilience-features.html">Resilience Features</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-toggle"></button>
+    <span class="nav-text">Observability</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../servicetalk-opentelemetry-http/0.42/index.html">OpenTelemetry Tracing</a>
   </li>
 </ul>
   </li>
@@ -891,6 +903,9 @@
         <li class="version is-latest">
           <a href="../../servicetalk-opentelemetry-http/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
+        <li class="version">
+          <a href="../../servicetalk-opentelemetry-http/0.42/index.html">0.42</a>
+        </li>
       </ul>
     </li>
     <li class="component">
@@ -1127,7 +1142,7 @@ in the future.
 </div>
 <div class="paragraph">
 <p>One of the core abstractions in ServiceTalk is its <em>Client side</em>
-<a href="https://github.com/apple/servicetalk/blob/0.42.60/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java">LoadBalancer</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.61/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java">LoadBalancer</a>
 underpinning the various protocol <em>Clients</em> (eg. HTTP/1.1, HTTP/2, gRPC, etc.).</p>
 </div>
 <div class="paragraph">
@@ -1168,14 +1183,14 @@ resilient and performant system.</p>
 and can be influenced by protocol feedback. This enables building a rich set of features on top such as: intelligent
 capacity management, smart connection and host selection, circuit breaking, etc. The <em>Connection</em> abstraction which is
 the basis for all protocol-specific <em>Connections</em> allows the
-<a href="https://github.com/apple/servicetalk/blob/0.42.60/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java">LoadBalancer</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.61/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java">LoadBalancer</a>
 implementations to be reusable across all the protocols.</p>
 </div>
 <div class="paragraph">
 <p>The <em>LoadBalancer</em> is able to combine availability information from
-<a href="https://github.com/apple/servicetalk/blob/0.42.60/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java">ServiceDiscoverer</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.61/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java">ServiceDiscoverer</a>
 and protocol metrics from the
-<a href="https://github.com/apple/servicetalk/blob/0.42.60/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ConnectionFactory.java">ConnectionFactory</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.61/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ConnectionFactory.java">ConnectionFactory</a>
 (e.g. latency, &#8230;&#8203;) in order to pick a more optimal <em>Connection</em> for each request.</p>
 </div>
 </div>
@@ -1185,7 +1200,7 @@ and protocol metrics from the
 <div class="sectionbody">
 <div class="paragraph">
 <p>As mentioned earlier the <em>Client-Side</em>
-<a href="https://github.com/apple/servicetalk/blob/0.42.60/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java">LoadBalancer</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.61/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java">LoadBalancer</a>
 abstraction allows for various protocol-independent <em>LoadBalancing</em> algorithms to be implemented. However, the built-in
 default Load Balancer is a highly featured implementation that we strongly recommend and creating custom load balancing
 solutions should be done as a last resort.</p>
@@ -1194,7 +1209,7 @@ solutions should be done as a last resort.</p>
 <h3 id="default-load-balancer"><a class="anchor" href="#default-load-balancer"></a><a class="link" href="#default-load-balancer">Default Load Balancer</a></h3>
 <div class="paragraph">
 <p>The ServiceTalk default Load Balancer is the recommended load balancer. It is a modularization of the
-<a href="https://github.com/apple/servicetalk/blob/0.42.60/servicetalk-loadbalancer/src/main/java/io/servicetalk/loadbalancer/RoundRobinLoadBalancer.java">RoundRobinLoadBalancer</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.61/servicetalk-loadbalancer/src/main/java/io/servicetalk/loadbalancer/RoundRobinLoadBalancer.java">RoundRobinLoadBalancer</a>
 intended to support features necessary for proxyless service-to-service communication. It supports multiple selection
 algorithms including Power of Two Choices (P2C) and Round-Robin as well as layer-7 outlier detection mechanisms
 including consecutive failure and outlier detection.</p>

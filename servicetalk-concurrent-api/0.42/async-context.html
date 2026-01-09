@@ -111,6 +111,9 @@
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#OpenTracing">OpenTracing</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#OpenTelemetryTracing">OpenTelemetry Tracing</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#Redirects">Redirects</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -246,6 +249,15 @@
   </li>
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../../servicetalk-traffic-resilience-http/0.42/traffic-resilience-features.html">Resilience Features</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-toggle"></button>
+    <span class="nav-text">Observability</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../servicetalk-opentelemetry-http/0.42/index.html">OpenTelemetry Tracing</a>
   </li>
 </ul>
   </li>
@@ -891,6 +903,9 @@
         <li class="version is-latest">
           <a href="../../servicetalk-opentelemetry-http/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
+        <li class="version">
+          <a href="../../servicetalk-opentelemetry-http/0.42/index.html">0.42</a>
+        </li>
       </ul>
     </li>
     <li class="component">
@@ -1175,7 +1190,7 @@ String doMap(String in) {
 </div>
 <div class="paragraph">
 <p>In both cases, the result of the program is the same. Similarly, a program can use a
-<a href="https://github.com/apple/servicetalk/blob/0.42.60/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/CapturedContextProvider.java">CapturedContextProvider</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.61/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/CapturedContextProvider.java">CapturedContextProvider</a>
 to save any state they desire and it will be passed along the ServiceTalk async boundaries.</p>
 </div>
 <div class="paragraph">
@@ -1391,7 +1406,7 @@ passing it. The <code>ThreadLocal</code> class provides general retention of thr
 frequency in which we need to save/restore the static state has been shown to introduce non-trivial costs. Since we know
 that all of our threads will require this thread local state we can have our threads explicitly have a <code>AsyncContext</code>
 member variable (see
-<a href="https://github.com/apple/servicetalk/blob/0.42.60/servicetalk-context-api/src/main/java/io/servicetalk/context/api/ContextMapHolder.java">ContextMapHolder</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.61/servicetalk-context-api/src/main/java/io/servicetalk/context/api/ContextMapHolder.java">ContextMapHolder</a>
 ). There is also additional wrapping/unwrapping introduced on the asynchronous boundaries so there is additional object
 allocation.</p>
 </div>
@@ -1439,7 +1454,7 @@ public static Single&lt;Resposne&gt; authenticate(Single&lt;Response&gt; respons
 <div class="paragraph">
 <p>In contrast to <code>AsyncContext</code>, the main use case of <code>CapturedContext</code> is to work with third-party context abstractions.
 Users can define a
-<a href="https://github.com/apple/servicetalk/blob/0.42.60/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/CapturedContextProvider.java">CapturedContextProvider</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.61/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/CapturedContextProvider.java">CapturedContextProvider</a>
 which will provide a way for ServiceTalk to capture and restore third-party context along the execution chain. An
 important example of third-party context information is the OpenTelemetry Context. By using the
 <code>CapturedContextProvider</code> users can correctly propagate OpenTelemetry context information in a non-invasive way which
@@ -1447,7 +1462,7 @@ makes it much more likely to work with other third-party libraries.</p>
 </div>
 <div class="paragraph">
 <p>See the JavaDocs for
-<a href="https://github.com/apple/servicetalk/blob/0.42.60/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/CapturedContextProvider.java">CapturedContextProvider</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.61/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/CapturedContextProvider.java">CapturedContextProvider</a>
 for an example of how to define the context capture and restore process.</p>
 </div>
 <div class="sect2">

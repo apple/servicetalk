@@ -111,6 +111,9 @@
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#OpenTracing">OpenTracing</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#OpenTelemetryTracing">OpenTelemetry Tracing</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#Redirects">Redirects</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -246,6 +249,15 @@
   </li>
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../../servicetalk-traffic-resilience-http/0.42/traffic-resilience-features.html">Resilience Features</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-toggle"></button>
+    <span class="nav-text">Observability</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../servicetalk-opentelemetry-http/0.42/index.html">OpenTelemetry Tracing</a>
   </li>
 </ul>
   </li>
@@ -891,6 +903,9 @@
         <li class="version is-latest">
           <a href="../../servicetalk-opentelemetry-http/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
+        <li class="version">
+          <a href="../../servicetalk-opentelemetry-http/0.42/index.html">0.42</a>
+        </li>
       </ul>
     </li>
     <li class="component">
@@ -1265,7 +1280,7 @@ session acquisition flow is roughly like this:</p>
 <p>Not all hosts are created equal! Due to different underlying hardware platforms, other tenants on the same host, or even
 just a bad cache day, we often find that not all instances of a service have the same capacity. The P2C selection
 algorithm can bias toward better performing hosts, but if the capacity of a backend is known it can be accounted for
-explicitly. With <a href="https://github.com/apple/servicetalk/blob/0.42.60/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java">ServiceDiscoverer</a>
+explicitly. With <a href="https://github.com/apple/servicetalk/blob/0.42.61/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java">ServiceDiscoverer</a>
 or control-plane support we can explicitly propagate weight information to ServiceTalk&#8217;s default load balancer. Adding
 weight support to the host selection process will let users leverage this data.</p>
 </div>
