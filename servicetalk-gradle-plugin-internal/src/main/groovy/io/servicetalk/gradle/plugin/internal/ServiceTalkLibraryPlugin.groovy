@@ -40,8 +40,9 @@ import static org.gradle.api.tasks.testing.logging.TestLogEvent.SKIPPED
 import static org.gradle.api.tasks.testing.logging.TestLogEvent.STARTED
 
 final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
+  @Override
   void apply(Project project) {
-    super.apply project
+    super.apply(project, true)
 
     applyJavaLibraryPlugin project
     configureTestFixtures project

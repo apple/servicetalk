@@ -31,7 +31,12 @@ import static io.servicetalk.gradle.plugin.internal.Versions.CHECKSTYLE_VERSION
 import static io.servicetalk.gradle.plugin.internal.Versions.TARGET_VERSION
 
 class ServiceTalkCorePlugin implements Plugin<Project> {
-  void apply(Project project, boolean publishesArtifacts = true) {
+  @Override
+  void apply(Project project) {
+    apply(project, true)
+  }
+
+  protected void apply(Project project, boolean publishesArtifacts) {
     enforceUtf8FileSystem()
     addBuildContextExtensions project
     enforceProjectVersionScheme project

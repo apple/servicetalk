@@ -22,6 +22,7 @@ import org.gradle.api.tasks.javadoc.Javadoc
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addQualityTask
 
 final class ServiceTalkRootPlugin extends ServiceTalkCorePlugin {
+  @Override
   void apply(Project project) {
     super.apply(project, false)
 
