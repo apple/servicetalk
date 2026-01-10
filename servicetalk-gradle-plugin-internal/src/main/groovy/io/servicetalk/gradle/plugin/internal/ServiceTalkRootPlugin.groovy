@@ -40,6 +40,13 @@ final class ServiceTalkRootPlugin extends ServiceTalkCorePlugin {
 
   private static void addJavadocAllTask(Project project) {
     project.configure(project) {
+      // Check if this build is being included in a composite build (--include-build)
+      if (gradle.parent != null) {
+        project.logger.lifecycle(
+            "Skipping 'javadocAll' task registration: build is running in composite mode (--include-build)")
+        return
+      }
+
       project.task("javadocAll", type: Javadoc) {
         description = "Consolidate sub-project's Javadoc into a single location"
         group = "documentation"
