@@ -65,7 +65,7 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
         }
       }
 
-      project.task("checkstyleResources") {
+      tasks.register("checkstyleResources") {
         description = "Copy Checkstyle resources to its configuration directory"
         group = "verification"
 
@@ -88,7 +88,7 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
         }
       }
 
-      project.task("checkstyleRoot", type: Checkstyle) {
+      tasks.register("checkstyleRoot", Checkstyle) {
         description = "Run Checkstyle analysis for files in the root directory"
         // The classpath field must be non-null, but could be empty because it's not required for this task:
         classpath = project.files([])
@@ -104,7 +104,7 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
         it.dependsOn checkstyleResources
       }
 
-      project.task("checkstyle") {
+      tasks.register("checkstyle") {
         description = "Run Checkstyle analysis for all source sets"
         group = "verification"
         dependsOn tasks.withType(Checkstyle)

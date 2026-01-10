@@ -47,7 +47,7 @@ final class ServiceTalkRootPlugin extends ServiceTalkCorePlugin {
         return
       }
 
-      project.task("javadocAll", type: Javadoc) {
+      tasks.register("javadocAll", Javadoc) {
         description = "Consolidate sub-project's Javadoc into a single location"
         group = "documentation"
         destinationDir = file("$buildDir/javadoc")
