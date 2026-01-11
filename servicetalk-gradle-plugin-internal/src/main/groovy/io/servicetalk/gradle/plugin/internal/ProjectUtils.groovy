@@ -237,7 +237,7 @@ final class ProjectUtils {
 
   static void addQualityTask(Project project) {
     project.configure(project) {
-      project.task("quality") {
+      tasks.register("quality") {
         description = "Run all quality analyzers for all source sets"
         group = "verification"
         if (tasks.findByName("checkstyle")) {

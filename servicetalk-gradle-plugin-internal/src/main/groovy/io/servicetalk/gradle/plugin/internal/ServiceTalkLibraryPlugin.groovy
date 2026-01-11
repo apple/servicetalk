@@ -287,7 +287,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         group = "verification"
       }
 
-      project.task("pmd") {
+      tasks.register("pmd") {
         description = "Run PMD analysis for all source sets"
         group = "verification"
         dependsOn tasks.withType(Pmd)
@@ -326,7 +326,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         }
       }
 
-      project.task("spotbugs") {
+      tasks.register("spotbugs") {
         description = "Run SpotBugs analysis for all source sets"
         group = "verification"
         dependsOn tasks.withType(SpotBugsTask)
