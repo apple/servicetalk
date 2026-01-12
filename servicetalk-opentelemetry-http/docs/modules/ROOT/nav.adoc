@@ -2,4 +2,4 @@ ifndef::page-version[]
 :page-version: SNAPSHOT
 endif::[]
 
-include::{page-version}@servicetalk-opentelemetry-http:ROOT:partial$nav-versioned.adoc[]
+include::{page-version}@servicetalk::partial$nav-versioned.adoc[]
