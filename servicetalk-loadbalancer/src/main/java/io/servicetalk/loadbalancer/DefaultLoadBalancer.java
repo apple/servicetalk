@@ -510,6 +510,15 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             }
             nextHosts = priorityStrategy.prioritize(nextHosts);
             nextHosts = subsetter.subset(nextHosts);
+
+            // We now mark our active hosts. We use two iterations to avoid needing to build sets.
+            for (PrioritizedHostImpl<?, ?> host : nextHosts) {
+                host.markWithinSubset();
+            }
+            for (PrioritizedHostImpl<?, ?> host : this.usedHosts) {
+                host.activateWithinSubset();
+            }
+
             this.hostSelector = newHostSelector = hostSelector.rebuildWithHosts(nextHosts);
         } else {
             newHostSelector = oldHostSelector;
@@ -670,12 +679,13 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             implements Host<ResolvedAddress, C>, PrioritizedHost, LoadBalancerObserver.Host {
 
         private final long randomSeed = ThreadLocalRandom.current().nextLong();
-        private final Host<ResolvedAddress, C> delegate;
+        private final DefaultHost<ResolvedAddress, C> delegate;
+        private boolean withinSubset;
         private int priority;
         private double serviceDiscoveryWeight;
         private double loadBalancingWeight;
 
-        PrioritizedHostImpl(final Host<ResolvedAddress, C> delegate, final double serviceDiscoveryWeight,
+        PrioritizedHostImpl(final DefaultHost<ResolvedAddress, C> delegate, final double serviceDiscoveryWeight,
                             final int priority) {
             this.delegate = delegate;
             this.priority = priority;
@@ -709,6 +719,18 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
         double serviceDiscoveryWeight() {
             return serviceDiscoveryWeight;
+        }
+
+        // Called to annotate that this particular host is within the subset.
+        void markWithinSubset() {
+            this.withinSubset = true;
+        }
+
+        // On the second pass of marking all hosts have this method called. It sets whether it was marked the first
+        // iteration and also clears the flag for future iterations.
+        void activateWithinSubset() {
+            delegate.isWithinSubset(this.withinSubset);
+            this.withinSubset = false;
         }
 
         // Set the weight to use in load balancing. This includes derived weight information such as prioritization
