@@ -47,7 +47,7 @@ final class ServiceTalkRootPlugin extends ServiceTalkCorePlugin {
         return
       }
 
-      tasks.register("javadocAll", Javadoc) {
+      def javadocAllTask = tasks.register("javadocAll", Javadoc) {
         description = "Consolidate sub-project's Javadoc into a single location"
         group = "documentation"
         destinationDir = file("$buildDir/javadoc")
@@ -57,12 +57,14 @@ final class ServiceTalkRootPlugin extends ServiceTalkCorePlugin {
         if (JavaVersion.current().isJava11()) {
           options.addBooleanOption('-no-module-directories', true)
         }
+      }
 
-        // Create FileCollections for aggregation (avoids triggering configuration resolution)
-        def aggregatedSources = project.files()
-        def aggregatedClasspath = project.files()
+      gradle.projectsEvaluated {
+        javadocAllTask.configure {
+          // Create FileCollections for aggregation (avoids triggering configuration resolution)
+          def aggregatedSources = project.files()
+          def aggregatedClasspath = project.files()
 
-        gradle.projectsEvaluated {
           subprojects.findAll {
             !it.name.contains("examples")
                 // No need to generate javadoc for -jersey3 modules because they are copied from -jersey
@@ -78,10 +80,10 @@ final class ServiceTalkRootPlugin extends ServiceTalkCorePlugin {
               dependsOn javadocTask
             }
           }
+          // Set the aggregated collections on the task
+          source = aggregatedSources
+          classpath = aggregatedClasspath
         }
-        // Set the aggregated collections on the task
-        source = aggregatedSources
-        classpath = aggregatedClasspath
       }
     }
   }
