@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -301,5 +301,39 @@ class DefaultHostTest {
         createdConnections.pop().closeAsync().toFuture().get();
         createdConnections.pop().closeAsync().toFuture().get();
         assertTrue(createdConnections.isEmpty());
+    }
+
+    @Test
+    void minConnectionsRespectSubsetMembership() throws Exception {
+        Deque<ListenableAsyncCloseable> createdConnections = new ArrayDeque<>();
+        connectionFactory = new TestConnectionFactory(address -> {
+            ListenableAsyncCloseable closable = AsyncCloseables.emptyAsyncCloseable();
+            createdConnections.add(closable);
+            return succeeded(TestLoadBalancedConnection.mockConnection(address, closable));
+        });
+
+        host = new DefaultHost<>("lbDescription", DEFAULT_ADDRESS,
+                ConnectionSelectorPolicies.<TestLoadBalancedConnection>linearSearch()
+                        .buildConnectionSelector("resource"),
+                connectionFactory, 2, mockHostObserver, healthCheckConfig, null);
+
+        // Test host outside subset - should not warm connections
+        host.isWithinSubset(false);
+        TestLoadBalancedConnection cxn = host.newConnection(unused -> true,
+                false, null).toFuture().get();
+        assertEquals(1, createdConnections.size(), "Host outside subset should not warm connections");
+
+        // Test host inside subset - should warm connections
+        host.isWithinSubset(true);
+        cxn.closeAsync().subscribe();
+        assertEquals(3, createdConnections.size());
+
+        // Transition back outside the subset and close all connections. This should not trigger new connections.
+        host.isWithinSubset(false);
+        for (ListenableAsyncCloseable closeable : createdConnections) {
+            closeable.closeAsync().subscribe();
+        }
+
+        assertEquals(3, createdConnections.size());
     }
 }
