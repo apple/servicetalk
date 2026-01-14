@@ -30,6 +30,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -42,11 +43,12 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 public class TestExecutor implements Executor {
 
     private static final AtomicInteger INSTANCES = new AtomicInteger();
+
     private final Queue<RunnableWrapper> tasks = new ConcurrentLinkedQueue<>();
     private final ConcurrentNavigableMap<Long, Queue<RunnableWrapper>> scheduledTasksByNano =
             new ConcurrentSkipListMap<>();
     private final long nanoOffset;
-    private long currentNanos;
+    private final AtomicLong currentNanos;
     private final CompletableProcessor closeProcessor = new CompletableProcessor();
     private final AtomicInteger tasksExecuted = new AtomicInteger();
     private final AtomicInteger scheduledTasksExecuted = new AtomicInteger();
@@ -65,7 +67,7 @@ public class TestExecutor implements Executor {
      * @param epochNanos initial value for {@link #currentTime(TimeUnit)} in nanoseconds
      */
     public TestExecutor(final long epochNanos) {
-        currentNanos = epochNanos;
+        currentNanos = new AtomicLong(epochNanos);
         nanoOffset = epochNanos - Long.MIN_VALUE;
     }
 
@@ -136,7 +138,7 @@ public class TestExecutor implements Executor {
      * @return the internal clock time in nanoseconds.
      */
     public long currentNanos() {
-        return currentNanos;
+        return currentNanos.get();
     }
 
     /**
@@ -150,7 +152,7 @@ public class TestExecutor implements Executor {
 
     @Override
     public long currentTime(final TimeUnit unit) {
-        return unit.convert(currentNanos, NANOSECONDS);
+        return unit.convert(currentNanos.get(), NANOSECONDS);
     }
 
     /**
@@ -182,7 +184,7 @@ public class TestExecutor implements Executor {
         if (time <= 0) {
             throw new IllegalArgumentException("time (" + time + ") must be >0");
         }
-        currentNanos += unit.toNanos(time);
+        currentNanos.addAndGet(unit.toNanos(time));
         return this;
     }
 

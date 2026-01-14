@@ -59,6 +59,7 @@ public final class AimdCapacityLimiterBuilder {
 
     /**
      * Defines a name for this {@link CapacityLimiter}.
+     *
      * @param name the name to be used when building this {@link CapacityLimiter}.
      * @return {@code this}.
      */
@@ -69,13 +70,14 @@ public final class AimdCapacityLimiterBuilder {
 
     /**
      * Define {@code min} and {@code max} concurrency limits for this {@link CapacityLimiter}.
+     * <p>
      * The active concurrency will fluctuate between these limits starting from the {@code min} and never
      * going beyond {@code max}. AIMD will keep incrementing the limit by 1 everytime a successful response is
-     * received, and will decrement by the {@code onDrop} {@link #limits(int, int, int)} ratio,
-     * for every {@code dropped} request (i.e. rejected or timeout).
+     * received, and will decrement by the {@code onDrop} ratio, for every {@code dropped} request
+     * (i.e. rejected or timeout).
      * <p>
-     * The limit translates to a concurrency figure, eg. how many requests can be in-flight simultaneously and
-     * doesn't represent a constant rate (i.e. has no notion of time).*
+     * The limit translates to a concurrency figure, e.g. how many requests can be in-flight simultaneously and
+     * doesn't represent a constant rate (i.e. has no notion of time).
      * <p>
      * The lower the {@code min} is, the slower the ramp up will be, and the bigger it is the more aggressive the
      * service will be, keep concurrently issuing {@code min} requests to meet this limit. The defaults are within
@@ -105,13 +107,12 @@ public final class AimdCapacityLimiterBuilder {
 
     /**
      * Defines the backoff ratios for AIMD.
+     * <p>
      * Ratios are used to alter the limit of the {@link CapacityLimiter} by the provided multiplier on different
      * conditions as identified by their name.
-     *
      * <p>
      * The formula for the backoff ratio used is: {@code NewLimit = OldLimit * BackoffRatio}, always respecting the
      * {@link #min} and {@link #max} values.
-     *
      * <p>
      * Both limits must be between 0 and 1 exclusively.
      *
@@ -129,6 +130,7 @@ public final class AimdCapacityLimiterBuilder {
 
     /**
      * Defines the additive factor of this algorithm.
+     * <p>
      * Tuning this preference allows to control the speed that the limit can grow within a certain
      * {@link #cooldown(Duration) cool-down period}.
      *
@@ -142,6 +144,7 @@ public final class AimdCapacityLimiterBuilder {
 
     /**
      * Defines a period during which the additive part of the algorithm doesn't kick-in.
+     * <p>
      * This period helps to allow the transport to adjust on the new limits before more adjustments happen. Tuning
      * this allows more stable limits rather than continuous increases and decreases.
      *

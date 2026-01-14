@@ -38,6 +38,8 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.netty.util.internal.PlatformDependent.throwException;
+import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferUtils.extractByteBufOrCreate;
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
@@ -46,21 +48,57 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static java.util.Objects.requireNonNull;
 
 @Deprecated
-final class NettyChannelContentCodec extends AbstractContentCodec {
+final class NettyChannelContentCodec implements ContentCodec { // FIXME: 0.43 - remove deprecated class
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NettyChannelContentCodec.class);
     private static final Buffer END_OF_STREAM = DEFAULT_RO_ALLOCATOR.fromAscii(" ");
     private static final int MAX_SIZE_FOR_MERGED_BUFFER = 1024; //1KiB
 
+    private final CharSequence name;
     private final Supplier<MessageToByteEncoder<ByteBuf>> encoderSupplier;
     private final Supplier<ByteToMessageDecoder> decoderSupplier;
 
     NettyChannelContentCodec(final CharSequence name,
                              final Supplier<MessageToByteEncoder<ByteBuf>> encoderSupplier,
                              final Supplier<ByteToMessageDecoder> decoderSupplier) {
-        super(name);
+        if (name.length() <= 0) {
+            throw new IllegalArgumentException("Name should not be blank.");
+        }
+
+        this.name = name;
         this.encoderSupplier = encoderSupplier;
         this.decoderSupplier = decoderSupplier;
+    }
+
+    @Override
+    public CharSequence name() {
+        return name;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (!(o instanceof NettyChannelContentCodec)) {
+            return false;
+        }
+
+        final NettyChannelContentCodec that = (NettyChannelContentCodec) o;
+        return contentEqualsIgnoreCase(name, that.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return caseInsensitiveHashCode(name);
+    }
+
+    @Override
+    public String toString() {
+        return "ContentCodec{" +
+                "name=" + name +
+                '}';
     }
 
     @Override

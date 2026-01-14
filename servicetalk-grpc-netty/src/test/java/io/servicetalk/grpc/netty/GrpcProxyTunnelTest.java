@@ -68,7 +68,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class GrpcProxyTunnelTest {
+final class GrpcProxyTunnelTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GrpcProxyTunnelTest.class);
     private static final String AUTH_TOKEN = "aGVsbG86d29ybGQ=";

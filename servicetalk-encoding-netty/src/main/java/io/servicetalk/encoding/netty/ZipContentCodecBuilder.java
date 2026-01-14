@@ -29,7 +29,7 @@ import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
  * @deprecated Use {@link ZipCompressionBuilder}.
  */
 @Deprecated
-public abstract class ZipContentCodecBuilder {
+public abstract class ZipContentCodecBuilder {  // FIXME: 0.43 - remove deprecated class
 
     private static final int DEFAULT_MAX_CHUNK_SIZE = 4 << 20; //4MiB
 

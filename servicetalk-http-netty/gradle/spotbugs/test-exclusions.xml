@@ -79,4 +79,16 @@
     <Class name="io.servicetalk.http.netty.HttpClientResolvesOnNewConnectionTest$FailureCase$1"/>
     <Bug pattern="NP_NONNULL_RETURN_VIOLATION"/>
   </Match>
+
+  <!-- Test setup methods with controlled single-threaded access -->
+  <Match>
+    <Class name="io.servicetalk.http.netty.GracefulConnectionClosureHandlingTest"/>
+    <Field name="initiateClosureFromClient"/>
+    <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.netty.H2PriorKnowledgeFeatureParityTest"/>
+    <Field name="h2PriorKnowledge"/>
+    <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
+  </Match>
 </FindBugsFilter>

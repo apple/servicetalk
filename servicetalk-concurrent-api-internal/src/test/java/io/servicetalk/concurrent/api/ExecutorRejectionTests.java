@@ -46,7 +46,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class ExecutorRejectionTests {
+final class ExecutorRejectionTests {
 
     private final AtomicBoolean rejectNextTask = new AtomicBoolean();
     private final AtomicInteger rejectTaskCount = new AtomicInteger();

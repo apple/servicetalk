@@ -17,16 +17,15 @@ package io.servicetalk.capacity.limiter.api;
 
 import io.servicetalk.capacity.limiter.api.GradientCapacityLimiterBuilder.Observer;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
-import java.util.function.LongSupplier;
-import javax.annotation.Nullable;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static io.servicetalk.capacity.limiter.api.GradientCapacityLimiterProfiles.DEFAULT_INITIAL_LIMIT;
 import static io.servicetalk.capacity.limiter.api.GradientCapacityLimiterProfiles.DEFAULT_MIN_LIMIT;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.AdditionalMatchers.not;
@@ -43,19 +42,12 @@ class GradientCapacityLimiterTest {
     private static final Classification DEFAULT = () -> 0;
 
     private final Observer observer = mock(Observer.class);
-    @Nullable
-    private CapacityLimiter capacityLimiter;
-    @Nullable
-    private LongSupplier timeSource;
-    private volatile long currentTime;
+    private final CapacityLimiter capacityLimiter;
+    private final AtomicLong currentTime = new AtomicLong();
 
-    @BeforeEach
-    void setup() {
-        if (timeSource == null) {
-            timeSource = () -> currentTime;
-        }
+    GradientCapacityLimiterTest() {
         capacityLimiter = new GradientCapacityLimiterBuilder()
-                .timeSource(timeSource)
+                .timeSource(currentTime::get)
                 .limitUpdateInterval(Duration.ofMillis(50))
                 .observer(observer)
                 .build();
@@ -77,7 +69,8 @@ class GradientCapacityLimiterTest {
     void capacityCanDepleteToTheMinLimit() {
         for (;;) {
             CapacityLimiter.Ticket ticket = capacityLimiter.tryAcquire(DEFAULT, null);
-            currentTime += Duration.ofMillis(10).toNanos();
+            assertThat(ticket, is(notNullValue()));
+            currentTime.addAndGet(Duration.ofMillis(10).toNanos());
             int capacity = ticket.failed(SAD_EXCEPTION);
             if (capacity == DEFAULT_MIN_LIMIT) {
                 break;
@@ -99,7 +92,7 @@ class GradientCapacityLimiterTest {
         assertThat(lastTicket, nullValue());
 
         // complete all the tickets.
-        currentTime += Duration.ofMillis(10).toNanos();
+        currentTime.addAndGet(Duration.ofMillis(10).toNanos());
         lastGoodTicket.completed();
 
         // We should be able to acquire a ticket again.
@@ -110,14 +103,16 @@ class GradientCapacityLimiterTest {
     @Test
     void observesLimitChanges() {
         CapacityLimiter.Ticket ticket = capacityLimiter.tryAcquire(DEFAULT, null);
-        currentTime += Duration.ofMillis(10).toNanos();
+        assertThat(ticket, is(notNullValue()));
+        currentTime.addAndGet(Duration.ofMillis(10).toNanos());
         ticket.failed(SAD_EXCEPTION);
 
         // ticket failure will not use gradient
         verify(observer).onLimitChange(eq(-1.0), eq(-1.0), eq(-1.0), eq(100.0), eq(50.0));
 
         ticket = capacityLimiter.tryAcquire(DEFAULT, null);
-        currentTime += Duration.ofMillis(50).toNanos();
+        assertThat(ticket, is(notNullValue()));
+        currentTime.addAndGet(Duration.ofMillis(50).toNanos());
         // Ticket success should adjust observation upward.
         ticket.completed();
         verify(observer).onLimitChange(not(eq(-1.0)), not(eq(-1.0)), not(eq(-1.0)), anyDouble(), anyDouble());

@@ -67,7 +67,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class ConcurrentHttpRequestTest {
+final class ConcurrentHttpRequestTest {
 
     @RegisterExtension
     static final ExecutorExtension<Executor> executorExtension = withCachedExecutor().setClassLevel(true);

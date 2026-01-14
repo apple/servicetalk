@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 class JacksonSerializationExceptionMapperTest {
 
-    private class Pojo {
+    private static class Pojo {
         protected int i;
     }
 

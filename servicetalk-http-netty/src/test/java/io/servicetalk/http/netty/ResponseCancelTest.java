@@ -46,7 +46,6 @@ import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -75,8 +74,7 @@ import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
-@Timeout(3)
-class ResponseCancelTest {
+final class ResponseCancelTest {
 
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =

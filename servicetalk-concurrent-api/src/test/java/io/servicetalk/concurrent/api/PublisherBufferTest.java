@@ -53,7 +53,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
-class PublisherBufferTest {
+final class PublisherBufferTest {
     private static final int EMPTY_ACCUMULATOR_VAL = -1;
     static final int BUFFER_SIZE_HINT = 8;
     private final TestSubscription tSubscription = new TestSubscription("tSubscription");

@@ -61,7 +61,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
-class ServerRespondsOnClosingTest {
+final class ServerRespondsOnClosingTest {
 
     private static final HttpResponseFactory RESPONSE_FACTORY = new DefaultHttpResponseFactory(
             DefaultHttpHeadersFactory.INSTANCE, DEFAULT_ALLOCATOR, HTTP_1_1);

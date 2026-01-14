@@ -32,4 +32,11 @@
     <Source name="~.*Test\.java"/>
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
   </Match>
+
+  <!-- Test field with controlled single-threaded access in setup methods -->
+  <Match>
+    <Class name="io.servicetalk.loadbalancer.RoundRobinSelectorTest"/>
+    <Field name="failOpen"/>
+    <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
+  </Match>
 </FindBugsFilter>

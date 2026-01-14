@@ -22,7 +22,7 @@ import io.servicetalk.encoding.api.ContentCodec;
  * @deprecated Use {@link NettyCompression} and {@link NettyBufferEncoders}.
  */
 @Deprecated
-public final class ContentCodings {
+public final class ContentCodings { // FIXME: 0.43 - remove deprecated class
 
     private static final ContentCodec DEFAULT_GZIP = gzip().build();
 

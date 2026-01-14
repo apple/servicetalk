@@ -58,7 +58,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
-class ConnectionFactoryFilterTest {
+final class ConnectionFactoryFilterTest {
 
     private final ServerContext serverContext;
     private final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder;

@@ -62,7 +62,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class ConcurrentGrpcRequestTest {
+final class ConcurrentGrpcRequestTest {
 
     private enum AsyncVariant {
         TEST,
