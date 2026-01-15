@@ -598,14 +598,16 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
     List<DefaultHost<ResolvedAddress, C>> usedHosts() {
         return await(() -> {
-            List<DefaultHost<ResolvedAddress, C>> result = new ArrayList<>(this.usedHosts.size());
-            for (PrioritizedHostImpl<ResolvedAddress, C> host : this.usedHosts) {
+            List<PrioritizedHostImpl<ResolvedAddress, C>> usedHosts = this.usedHosts;
+            List<DefaultHost<ResolvedAddress, C>> result = new ArrayList<>(usedHosts.size());
+            for (PrioritizedHostImpl<ResolvedAddress, C> host : usedHosts) {
                 result.add(host.delegate);
             }
             return result;
         });
     }
 
+    // For testing, compute a value from within the sequential executor to ensure thread safety.
     private <T> T await(Supplier<T> f) {
         // If we're already in the executor we can't submit a task and wait for it without deadlock but
         // the access is thread safe anyway so just go for it.
@@ -691,14 +693,16 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     }
 
     static final class PrioritizedHostImpl<ResolvedAddress, C extends LoadBalancedConnection>
-            implements Host<ResolvedAddress, C>, PrioritizedHost, LoadBalancerObserver.Host {
+            implements Host<ResolvedAddress, C>, PrioritizedHost {
 
         private final long randomSeed = ThreadLocalRandom.current().nextLong();
         private final DefaultHost<ResolvedAddress, C> delegate;
-        private boolean withinSubset;
         private int priority;
         private double serviceDiscoveryWeight;
         private double loadBalancingWeight;
+        // This field is only used for marking within the `sequentialUpdateUsedHosts`, where single-threaded
+        // behavior is guaranteed.
+        private boolean withinSubset;
 
         PrioritizedHostImpl(final DefaultHost<ResolvedAddress, C> delegate, final double serviceDiscoveryWeight,
                             final int priority) {
@@ -711,10 +715,6 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         @Override
         public long randomSeed() {
             return randomSeed;
-        }
-
-        Host<ResolvedAddress, C> delegate() {
-            return delegate;
         }
 
         @Override
@@ -827,6 +827,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             return getClass().getSimpleName() + "(priority: " + priority +
                 ", intrinsicWeight: " + serviceDiscoveryWeight +
                 ", loadBalancedWeight: " + loadBalancingWeight +
+                ", withinSubset: " + withinSubset +
                 ", host: " + delegate +
                 ")";
         }
