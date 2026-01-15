@@ -702,7 +702,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         private double loadBalancingWeight;
         // This field is only used for marking within the `sequentialUpdateUsedHosts`, where single-threaded
         // behavior is guaranteed.
-        private boolean withinSubset;
+        private boolean withinSubsetMark;
 
         PrioritizedHostImpl(final DefaultHost<ResolvedAddress, C> delegate, final double serviceDiscoveryWeight,
                             final int priority) {
@@ -738,14 +738,14 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
         // Called to annotate that this particular host is within the subset.
         void markWithinSubset() {
-            this.withinSubset = true;
+            this.withinSubsetMark = true;
         }
 
         // On the second pass of marking all hosts have this method called. It sets whether it was marked the first
         // iteration and also clears the flag for future iterations.
         void activateWithinSubset() {
-            delegate.isWithinSubset(this.withinSubset);
-            this.withinSubset = false;
+            delegate.isWithinSubset(this.withinSubsetMark);
+            this.withinSubsetMark = false;
         }
 
         // Set the weight to use in load balancing. This includes derived weight information such as prioritization
@@ -827,7 +827,6 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             return getClass().getSimpleName() + "(priority: " + priority +
                 ", intrinsicWeight: " + serviceDiscoveryWeight +
                 ", loadBalancedWeight: " + loadBalancingWeight +
-                ", withinSubset: " + withinSubset +
                 ", host: " + delegate +
                 ")";
         }
