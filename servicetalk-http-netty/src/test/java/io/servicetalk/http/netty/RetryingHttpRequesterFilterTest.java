@@ -107,7 +107,7 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class RetryingHttpRequesterFilterTest {
+final class RetryingHttpRequesterFilterTest {
 
     private static final String RETRYABLE_HEADER = "RETRYABLE";
     private static final String RESPONSE_BODY = "ok";

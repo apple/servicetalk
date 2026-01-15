@@ -26,4 +26,11 @@
     <Method name="close"/>
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
   </Match>
+
+  <!-- False positive: the state is updated before invoking wakeupWaiters() -->
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.TestCancellable"/>
+    <Method name="wakeupWaiters"/>
+    <Bug pattern="NN_NAKED_NOTIFY"/>
+  </Match>
 </FindBugsFilter>

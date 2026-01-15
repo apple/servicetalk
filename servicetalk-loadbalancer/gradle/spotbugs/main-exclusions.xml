@@ -26,4 +26,30 @@
     <Method name="healthCheckInterval"/>
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
+
+  <!-- Class constructor throws exception by design for validation -->
+  <Match>
+    <Class name="io.servicetalk.loadbalancer.XdsHealthIndicator"/>
+    <Method name="&lt;init&gt;"/>
+    <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+  </Match>
+
+  <!-- XdsHealthIndicator uses SequentialExecutor for thread safety, sequential execution guarantees -->
+  <Match>
+    <Class name="io.servicetalk.loadbalancer.XdsHealthIndicator"/>
+    <Field name="failureMultiplier"/>
+    <Bug pattern="AT_NONATOMIC_OPERATIONS_ON_SHARED_VARIABLE"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.loadbalancer.XdsHealthIndicator"/>
+    <Field name="cancelled"/>
+    <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
+  </Match>
+
+  <!-- XdsOutlierDetector access methods are package-private and controlled -->
+  <Match>
+    <Class name="io.servicetalk.loadbalancer.XdsOutlierDetector"/>
+    <Field name="ejectedHostCount"/>
+    <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
+  </Match>
 </FindBugsFilter>

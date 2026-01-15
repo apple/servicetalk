@@ -136,4 +136,33 @@
     <Field name="h2Settings"/>
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
+
+  <!-- False positive: this is not a Singleton, the filter can be build multiple times by its Builder -->
+  <Match>
+    <Class name="io.servicetalk.http.netty.RetryingHttpRequesterFilter"/>
+    <Method name="&lt;init&gt;"/>
+    <Bug pattern="SING_SINGLETON_HAS_NONPRIVATE_CONSTRUCTOR"/>
+  </Match>
+
+  <!-- Builder pattern classes are designed for single-threaded use, no thread safety needed -->
+  <Match>
+    <Class name="io.servicetalk.http.netty.DefaultPartitionedHttpClientBuilder"/>
+    <Field name="serviceDiscoveryMaxQueueSize"/>
+    <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder"/>
+    <Field name="addHostHeaderFallbackFilter"/>
+    <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder"/>
+    <Field name="addIdleTimeoutConnectionFilter"/>
+    <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder$SdStatusCompletable"/>
+    <Field name="seenError"/>
+    <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
+  </Match>
 </FindBugsFilter>

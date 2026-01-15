@@ -64,4 +64,15 @@
     <Class name="io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer"/>
     <Bug pattern="NP_NONNULL_PARAM_VIOLATION"/>
   </Match>
+
+  <!-- These classes are not designed for inheritance and will become final in the next major release -->
+  <!-- FIXME: 0.43 - remove these exclusions -->
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer"/>
+      <Class name="io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer"/>
+    </Or>
+    <Method name="&lt;init&gt;"/>
+    <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+  </Match>
 </FindBugsFilter>

@@ -36,7 +36,7 @@ import java.lang.reflect.Type;
  * TypeReference</a> which can be used directly.
  */
 @Deprecated
-public abstract class TypeHolder<T> {
+public abstract class TypeHolder<T> {   // FIXME: 0.43 - remove deprecated class
 
     private final Type type;
 

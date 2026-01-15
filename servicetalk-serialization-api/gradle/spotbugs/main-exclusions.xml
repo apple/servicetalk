@@ -27,4 +27,12 @@
     <Method name="close"/>
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
   </Match>
+
+  <!-- TypeHolder constructor throws exception by design for validation -->
+  <!-- Also, it's a deprecated class that is currently used only by tests -->
+  <Match>
+    <Class name="io.servicetalk.serialization.api.TypeHolder"/>
+    <Method name="&lt;init&gt;"/>
+    <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+  </Match>
 </FindBugsFilter>

@@ -60,4 +60,11 @@
     <Method name="lambda$callOriginalEndpoint$4"/>
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
   </Match>
+
+  <!-- Abstract inner class constructor throws exception by design, subclasses are package-private -->
+  <Match>
+    <Class name="io.servicetalk.http.router.jersey.EndpointEnhancingRequestFilter$AbstractWrappedEndpoint"/>
+    <Method name="&lt;init&gt;"/>
+    <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+  </Match>
 </FindBugsFilter>

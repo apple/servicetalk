@@ -65,7 +65,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-class StreamObserverTest {
+final class StreamObserverTest {
 
     private final TransportObserver clientTransportObserver;
     private final ConnectionObserver clientConnectionObserver;

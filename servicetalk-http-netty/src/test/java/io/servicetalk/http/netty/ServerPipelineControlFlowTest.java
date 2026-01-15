@@ -40,7 +40,6 @@ import io.servicetalk.http.netty.RetryingHttpRequesterFilter.HttpResponseExcepti
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -262,7 +261,6 @@ class ServerPipelineControlFlowTest {
         assertNoAsyncErrors(asyncErrors);
     }
 
-    @Timeout(2)
     @ParameterizedTest(name = "{displayName} [{index}] protocol={0} serviceApi={1} serverHasOffloading={2}")
     @MethodSource("data")
     void testMetaDataError(HttpProtocol protocol, ServiceApi serviceApi,

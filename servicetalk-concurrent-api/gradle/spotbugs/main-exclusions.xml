@@ -88,4 +88,41 @@
     <Method name="mapOnError"/>
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
   </Match>
+
+  <!-- MulticastPublisher uses static factory method, constructor is package-private and only called from factory -->
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.MulticastPublisher"/>
+    <Method name="&lt;init&gt;"/>
+    <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+  </Match>
+
+  <!-- Reactive Streams protocol guarantees sequential access, these fields are protected by protocol semantics -->
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.FirstAndTailToPackedSingle$SplicingSubscriber"/>
+    <Or>
+      <Field name="onSubscribeSent"/>
+      <Field name="firstElementSeenInOnNext"/>
+    </Or>
+    <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.MulticastLeafSubscriber"/>
+    <Field name="cancelled"/>
+    <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.PublisherFlatMapMerge$FlatMapSubscriber"/>
+    <Field name="targetTerminated"/>
+    <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.PublisherFlatMapMerge$FlatMapSubscriber$FlatMapPublisherSubscriber"/>
+    <Field name="signalsQueued"/>
+    <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.SequentialSubscription"/>
+    <Field name="sourceEmitted"/>
+    <Bug pattern="AT_NONATOMIC_OPERATIONS_ON_SHARED_VARIABLE"/>
+  </Match>
 </FindBugsFilter>

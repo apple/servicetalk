@@ -23,4 +23,18 @@
     </Or>
     <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
   </Match>
+
+  <!-- Visibility is guaranteed by Reactive Streams specification, all operations are sequential -->
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.test.InlinePublisherSubscriber"/>
+    <Or>
+      <Field name="currCount"/>
+      <Field name="prevNoSignalsEventIndex"/>
+    </Or>
+    <Or>
+      <Bug pattern="AT_NONATOMIC_64BIT_PRIMITIVE"/>
+      <Bug pattern="AT_NONATOMIC_OPERATIONS_ON_SHARED_VARIABLE"/>
+      <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
+    </Or>
+  </Match>
 </FindBugsFilter>

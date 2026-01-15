@@ -58,7 +58,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static zipkin2.CheckResult.OK;
 
-class HttpReporterTest {
+final class HttpReporterTest {
     private final BlockingQueue<HttpRequest> receivedRequests;
     private final ServerContext context;
     @Nullable
