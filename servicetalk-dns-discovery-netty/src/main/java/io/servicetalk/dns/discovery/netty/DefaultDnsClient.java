@@ -41,6 +41,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.EventLoop;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.dns.DefaultDnsQuestion;
+import io.netty.handler.codec.dns.DnsQuestion;
 import io.netty.handler.codec.dns.DnsRawRecord;
 import io.netty.handler.codec.dns.DnsRecord;
 import io.netty.resolver.ResolvedAddressTypes;
@@ -57,6 +58,7 @@ import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
+import io.netty.util.concurrent.PromiseNotifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,6 +77,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
+import java.util.function.Function;
 import java.util.function.IntFunction;
 import javax.annotation.Nullable;
 
@@ -127,7 +130,7 @@ final class DefaultDnsClient implements DnsClient {
     private static final Cancellable TERMINATED = () -> { };
 
     private final EventLoopAwareNettyIoExecutor nettyIoExecutor;
-    private final DnsNameResolver resolver;
+    private final DnsNameResolverDelegate resolver;
     private final MinTtlCache ttlCache;
     private final long maxTTLNanos;
     private final long ttlJitterNanos;
@@ -160,7 +163,8 @@ final class DefaultDnsClient implements DnsClient {
                      final ServiceDiscovererEvent.Status missingRecordStatus,
                      final boolean nxInvalidation,
                      final boolean tcpFallbackOnTimeout,
-                     final String datagramChannelStrategy) {
+                     final String datagramChannelStrategy,
+                     @Nullable final Integer backupRequestDelay) {
         this.srvConcurrency = srvConcurrency;
         this.srvFilterDuplicateEvents = srvFilterDuplicateEvents;
         // Implementation of this class expects to use only single EventLoop from IoExecutor
@@ -229,7 +233,9 @@ final class DefaultDnsClient implements DnsClient {
         if (dnsServerAddressStreamProvider != null) {
             builder.nameServerProvider(toNettyType(dnsServerAddressStreamProvider));
         }
-        resolver = builder.build();
+        resolver = backupRequestDelay == null || backupRequestDelay <= 0 ? new DefaultResolver(builder.build()) :
+                new BackupRequestResolver(builder.build(), builder.consolidateCacheSize(0).build(),
+                        eventLoop, backupRequestDelay);
         this.resolutionTimeoutMillis = resolutionTimeout != null ? resolutionTimeout.toMillis() :
                 // Default value is chosen based on a combination of default "timeout" and "attempts" options of
                 // /etc/resolv.conf: https://man7.org/linux/man-pages/man5/resolv.conf.5.html
@@ -1147,6 +1153,114 @@ final class DefaultDnsClient implements DnsClient {
 
         static SrvAddressRemovedException newInstance(Class<?> clazz, String method) {
             return unknownStackTrace(new SrvAddressRemovedException(), clazz, method);
+        }
+    }
+
+    interface DnsNameResolverDelegate {
+        void close();
+
+        Future<List<InetAddress>> resolveAll(String name);
+
+        Future<List<DnsRecord>> resolveAll(DnsQuestion name);
+
+        long queryTimeoutMillis();
+    }
+
+    static final class DefaultResolver implements DnsNameResolverDelegate {
+        private final DnsNameResolver nettyResolver;
+
+        DefaultResolver(DnsNameResolver nettyResolver) {
+            this.nettyResolver = nettyResolver;
+        }
+
+        @Override
+        public void close() {
+            nettyResolver.close();
+        }
+
+        @Override
+        public Future<List<InetAddress>> resolveAll(String name) {
+            return nettyResolver.resolveAll(name);
+        }
+
+        @Override
+        public Future<List<DnsRecord>> resolveAll(DnsQuestion question) {
+            return nettyResolver.resolveAll(question);
+        }
+
+        @Override
+        public long queryTimeoutMillis() {
+            return nettyResolver.queryTimeoutMillis();
+        }
+    }
+
+    static final class BackupRequestResolver implements DnsNameResolverDelegate {
+
+        private final DnsNameResolver primaryResolver;
+        private final DnsNameResolver backupResolver;
+        private final EventLoop eventLoop;
+        private final int backupDelayMs;
+
+        BackupRequestResolver(DnsNameResolver primaryResolver, DnsNameResolver backupResolver,
+                              EventLoop eventLoop, int backupDelayMs) {
+            this.primaryResolver = primaryResolver;
+            this.backupResolver = backupResolver;
+            this.eventLoop = eventLoop;
+            this.backupDelayMs = backupDelayMs;
+        }
+
+        @Override
+        public void close() {
+            try {
+                primaryResolver.close();
+            } finally {
+                backupResolver.close();
+            }
+        }
+
+        @Override
+        public Future<List<InetAddress>> resolveAll(String name) {
+            return withBackup(resolver -> resolver.resolveAll(name));
+        }
+
+        @Override
+        public Future<List<DnsRecord>> resolveAll(DnsQuestion name) {
+            return withBackup(resolver -> resolver.resolveAll(name));
+        }
+
+        @Override
+        public long queryTimeoutMillis() {
+            return primaryResolver.queryTimeoutMillis();
+        }
+
+        private <T> Future<T> withBackup(Function<? super DnsNameResolver, ? extends Future<T>> query) {
+            Future<T> primaryQuery = query.apply(primaryResolver);
+            if (primaryQuery.isDone()) {
+                return primaryQuery;
+            }
+            int backupDelay = backupDelayMs();
+            if (backupDelay <= 0) {
+                // no backup for this request
+                return primaryQuery;
+            }
+            Promise<T> result = eventLoop.newPromise();
+            Future<?> timer = eventLoop.schedule(() -> {
+                if (allowBackupRequest()) {
+                    PromiseNotifier.cascade(false, query.apply(backupResolver), result);
+                }
+            }, backupDelay, MILLISECONDS);
+            primaryQuery.addListener(_unused -> timer.cancel(true));
+            PromiseNotifier.cascade(false, primaryQuery, result);
+            return result;
+        }
+
+        private boolean allowBackupRequest() {
+            // In the future we should make this predicated on a token bucket.
+            return true;
+        }
+
+        private int backupDelayMs() {
+            return backupDelayMs;
         }
     }
 }
