@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_NOT_READY_EVENT;
@@ -95,7 +96,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
     // writes are protected by `sequentialExecutor` but the field can be read by any thread.
     private volatile HostSelector<ResolvedAddress, C> hostSelector;
-    // reads and writes are protected by `sequentialExecutor`.
+    // reads and writes are protected by `sequentialExecutor`
     private List<PrioritizedHostImpl<ResolvedAddress, C>> usedHosts = emptyList();
     // reads and writes are protected by `sequentialExecutor`.
     private boolean isClosed;
@@ -510,6 +511,15 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             }
             nextHosts = priorityStrategy.prioritize(nextHosts);
             nextHosts = subsetter.subset(nextHosts);
+
+            // We now mark our active hosts. We use two iterations to avoid needing to build sets.
+            for (PrioritizedHostImpl<?, ?> host : nextHosts) {
+                host.markWithinSubset();
+            }
+            for (PrioritizedHostImpl<?, ?> host : this.usedHosts) {
+                host.activateWithinSubset();
+            }
+
             this.hostSelector = newHostSelector = hostSelector.rebuildWithHosts(nextHosts);
         } else {
             newHostSelector = oldHostSelector;
@@ -583,26 +593,42 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
     @Override
     public List<Entry<ResolvedAddress, List<C>>> usedAddresses() {
+        return usedHosts().stream().map(DefaultHost::asEntry).collect(toList());
+    }
+
+    List<DefaultHost<ResolvedAddress, C>> usedHosts() {
+        return await(() -> {
+            List<PrioritizedHostImpl<ResolvedAddress, C>> usedHosts = this.usedHosts;
+            List<DefaultHost<ResolvedAddress, C>> result = new ArrayList<>(usedHosts.size());
+            for (PrioritizedHostImpl<ResolvedAddress, C> host : usedHosts) {
+                result.add(host.delegate);
+            }
+            return result;
+        });
+    }
+
+    // For testing, compute a value from within the sequential executor to ensure thread safety.
+    private <T> T await(Supplier<T> f) {
         // If we're already in the executor we can't submit a task and wait for it without deadlock but
         // the access is thread safe anyway so just go for it.
         if (sequentialExecutor.isCurrentThreadDraining()) {
-            return sequentialUsedAddresses();
+            return f.get();
         }
-        SingleSource.Processor<List<Entry<ResolvedAddress, List<C>>>, List<Entry<ResolvedAddress, List<C>>>> processor =
+        SingleSource.Processor<T, T> processor =
                 Processors.newSingleProcessor();
-        sequentialExecutor.execute(() -> processor.onSuccess(sequentialUsedAddresses()));
+        sequentialExecutor.execute(() -> {
+            try {
+                processor.onSuccess(f.get());
+            } catch (Throwable ex) {
+                processor.onError(ex);
+            }
+        });
         try {
             // This method is just for testing and our tests have timeouts it's fine to do some awaiting.
-            return SourceAdapters.fromSource(processor).toFuture().get();
+            return fromSource(processor).toFuture().get();
         } catch (Exception ex) {
             throw new AssertionError("Failed to get results", ex);
         }
-    }
-
-    // must be called from within the sequential executor.
-    private List<Entry<ResolvedAddress, List<C>>> sequentialUsedAddresses() {
-        return usedHosts.stream().map(host ->
-                ((DefaultHost<ResolvedAddress, C>) host.delegate()).asEntry()).collect(toList());
     }
 
     private String makeDescription(String id, String targetResource) {
@@ -667,15 +693,18 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     }
 
     static final class PrioritizedHostImpl<ResolvedAddress, C extends LoadBalancedConnection>
-            implements Host<ResolvedAddress, C>, PrioritizedHost, LoadBalancerObserver.Host {
+            implements Host<ResolvedAddress, C>, PrioritizedHost {
 
         private final long randomSeed = ThreadLocalRandom.current().nextLong();
-        private final Host<ResolvedAddress, C> delegate;
+        private final DefaultHost<ResolvedAddress, C> delegate;
         private int priority;
         private double serviceDiscoveryWeight;
         private double loadBalancingWeight;
+        // This field is only used for marking within the `sequentialUpdateUsedHosts`, where single-threaded
+        // behavior is guaranteed.
+        private boolean withinSubsetMark;
 
-        PrioritizedHostImpl(final Host<ResolvedAddress, C> delegate, final double serviceDiscoveryWeight,
+        PrioritizedHostImpl(final DefaultHost<ResolvedAddress, C> delegate, final double serviceDiscoveryWeight,
                             final int priority) {
             this.delegate = delegate;
             this.priority = priority;
@@ -686,10 +715,6 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         @Override
         public long randomSeed() {
             return randomSeed;
-        }
-
-        Host<ResolvedAddress, C> delegate() {
-            return delegate;
         }
 
         @Override
@@ -709,6 +734,18 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
         double serviceDiscoveryWeight() {
             return serviceDiscoveryWeight;
+        }
+
+        // Called to annotate that this particular host is within the subset.
+        void markWithinSubset() {
+            this.withinSubsetMark = true;
+        }
+
+        // On the second pass of marking all hosts have this method called. It sets whether it was marked the first
+        // iteration and also clears the flag for future iterations.
+        void activateWithinSubset() {
+            delegate.isWithinSubset(this.withinSubsetMark);
+            this.withinSubsetMark = false;
         }
 
         // Set the weight to use in load balancing. This includes derived weight information such as prioritization

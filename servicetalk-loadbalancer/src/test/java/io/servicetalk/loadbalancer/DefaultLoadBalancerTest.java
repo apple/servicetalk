@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2023-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -244,7 +245,18 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
             sendServiceDiscoveryEvents(upEvent("address-" + i));
         }
 
-        assertThat(selectConnections(8), hasSize(Math.min(4, subsetSize)));
+        Set<String> activeHosts = selectConnections(8);
+        assertThat(activeHosts, hasSize(Math.min(4, subsetSize)));
+        assertWithinSubset(activeHosts);
+    }
+
+    void assertWithinSubset(Collection<String> activeHosts) {
+        List<DefaultHost<String, TestLoadBalancedConnection>> hosts =
+                ((DefaultLoadBalancer<String, TestLoadBalancedConnection>) lb).usedHosts();
+        for (DefaultHost<String, TestLoadBalancedConnection> host : hosts) {
+            assertEquals(host.isWithinSubset(), activeHosts.contains(host.address()),
+                    "Host with address " + host.address() + " didn't have correct subset status");
+        }
     }
 
     @Test
@@ -256,13 +268,14 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         // rr so we can test that each endpoint gets used deterministically.
         this.loadBalancingPolicy = LoadBalancingPolicies.roundRobin().build();
         lb = newTestLoadBalancer();
-        for (int i = 1; i <= 4; i++) {
-            sendServiceDiscoveryEvents(upEvent("address-" + i));
+        List<String> allAddresses = Arrays.asList("address-1", "address-2", "address-3", "address-4");
+        for (String address : allAddresses) {
+            sendServiceDiscoveryEvents(upEvent(address));
         }
-
         // find out which of our two addresses are in the subset.
         Set<String> selectedAddresses1 = selectConnections(4);
         assertThat(selectedAddresses1, hasSize(2));
+        assertWithinSubset(selectedAddresses1);
 
         // Make both unhealthy.
         for (TestHealthIndicator i : factory.currentOutlierDetector.get().indicatorSet) {
@@ -275,6 +288,8 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         factory.currentOutlierDetector.get().healthStatusChanged.onNext(null);
         Set<String> selectedAddresses2 = selectConnections(4);
         assertThat(selectedAddresses2, hasSize(2));
+        // in this case, the unhealthy hosts are selectable so we should expect all 4 addresses.
+        assertWithinSubset(allAddresses);
         for (String addr2 : selectedAddresses2) {
             assertThat(selectedAddresses1, not(contains(addr2)));
         }
@@ -287,11 +302,13 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
 
         Set<String> selectedAddresses3 = selectConnections(4);
         assertThat(selectedAddresses3, hasSize(4));
+        assertWithinSubset(selectedAddresses3);
 
         // Rebuild and we should now eject the trailing endpoings once more and get back to our normal state.
         factory.currentOutlierDetector.get().healthStatusChanged.onNext(null);
         Set<String> selectedAddresses4 = selectConnections(4);
         assertThat(selectedAddresses4, equalTo(selectedAddresses1));
+        assertWithinSubset(selectedAddresses4);
     }
 
     private Set<String> selectConnections(final int iterations) throws Exception {

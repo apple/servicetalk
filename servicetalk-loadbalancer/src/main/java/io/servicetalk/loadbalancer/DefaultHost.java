@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,6 +92,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     private final ConnectionFactory<Addr, ? extends C> connectionFactory;
     private final int minConnections;
     private final ListenableAsyncCloseable closeable;
+    private volatile boolean isWithinSubset = true;
     private volatile ConnState connState = new ConnState(emptyList(), State.ACTIVE, 0, null);
 
     DefaultHost(final String lbDescription, final Addr address,
@@ -113,6 +114,14 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         this.closeable = toAsyncCloseable(this::doClose);
         // Note that we deliberately don't warm the pool initially to prevent the very common race where a client is
         // created and immediately used, thus triggering a race between warmup and initial connection acquisition.
+    }
+
+    void isWithinSubset(boolean isWithinSubset) {
+        this.isWithinSubset = isWithinSubset;
+    }
+
+    boolean isWithinSubset() {
+        return this.isWithinSubset;
     }
 
     @Override
@@ -494,7 +503,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             return;
         }
         ConnState state = this.connState;
-        if (!state.isActive() || state.connections.size() >= minConnections) {
+        if (!state.isActive() || state.connections.size() >= minConnections || !isWithinSubset()) {
             // nothing to do.
             return;
         }
