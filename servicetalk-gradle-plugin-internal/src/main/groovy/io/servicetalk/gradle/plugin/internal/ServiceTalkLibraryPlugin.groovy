@@ -58,33 +58,15 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       pluginManager.apply("java-library")
 
       java {
+        // Bytecode compatibility (redundant with `options.release` but helpful when JDK8 is used)
         sourceCompatibility = TARGET_VERSION
         targetCompatibility = TARGET_VERSION
       }
 
-      def javaRelease = Integer.parseInt(TARGET_VERSION.getMajorVersion())
-
       if (JavaVersion.current().isJava9Compatible()) {
-        compileJava {
-          options.release = javaRelease
-        }
-        compileTestJava {
-          options.release = javaRelease
-        }
-
-        // Not every project has compileTestFixturesJava task so we have to defer attempting configuration
-        project.afterEvaluate {
-          def compileTasks = project.tasks.withType(JavaCompile)
-          def compileJavaTask = compileTasks?.findByName("compileJava")
-          def compileJavaTestFixturesTask = compileTasks?.findByName("compileTestFixturesJava")
-          if (null != compileJavaTask && null != compileJavaTestFixturesTask) {
-            def useRelease = compileJavaTask?.options?.release?.getOrNull() ?: javaRelease
-            // if another action has set a higher language version, never reduce it.
-            if (compileJavaTestFixturesTask?.options?.release?.getOrNull() == null ||
-                compileJavaTestFixturesTask.options.release.get() < useRelease) {
-              compileJavaTestFixturesTask.options.release = useRelease
-            }
-          }
+        tasks.withType(JavaCompile).configureEach {
+          // Prevents accidental use of newer APIs that are not available in the specified JDK version
+          options.release = Integer.parseInt(TARGET_VERSION.getMajorVersion())
         }
       }
 

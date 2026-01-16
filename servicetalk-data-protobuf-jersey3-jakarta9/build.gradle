@@ -35,12 +35,8 @@ java {
   targetCompatibility = javaLanguageVersion
 }
 
-compileJava {
+tasks.withType(JavaCompile).configureEach {
   options.release = Integer.parseInt(javaLanguageVersion.getMajorVersion())
-}
-
-compileTestJava {
-  options.release = compileJava.options.release
 }
 
 tasks.withType(Checkstyle).all {
