@@ -26,8 +26,10 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.dns.discovery.netty.DnsServiceDiscoverers;
 import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServerContext;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 
 import org.junit.jupiter.api.Test;
@@ -172,12 +174,82 @@ class HttpClientResolvesOnNewConnectionTest {
     }
 
     @Test
-    void attemptToOverrideServiceDiscovererThrows() {
-        ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> otherSd =
-                globalARecordsDnsServiceDiscoverer();
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-                () -> HttpClients.forSingleAddress("servicetalk.io", 80, ON_NEW_CONNECTION).serviceDiscoverer(otherSd));
-        assertThat(e.getMessage(), allOf(containsString(ON_NEW_CONNECTION.name()), containsString(otherSd.toString())));
+    void serviceDiscovererCanBeOverridden() throws Exception {
+        try (HttpServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok())) {
+            CountingServiceDiscoverer firstSd = new CountingServiceDiscoverer();
+            CountingServiceDiscoverer secondSd = new CountingServiceDiscoverer();
+
+            try (BlockingHttpClient client = HttpClients.forSingleAddress(firstSd,
+                    HostAndPort.of("localhost", serverHostAndPort(serverContext).port()), ON_NEW_CONNECTION)
+                    .serviceDiscoverer(secondSd)  // Override the first one
+                    .buildBlocking()) {
+                
+                HttpResponse response = client.request(client.get("/"));
+                assertThat(response.status(), is(OK));
+                
+                // Verify that only the second service discoverer was used
+                assertThat("First service discoverer should not be used", firstSd.getDiscoverCount(), is(0));
+                assertThat("Second service discoverer should be used", secondSd.getDiscoverCount(), is(greaterThan(0)));
+            } finally {
+                firstSd.closeAsync().toFuture().get();
+                secondSd.closeAsync().toFuture().get();
+            }
+        }
+    }
+
+    @Test
+    void sameBuilderDifferentServiceDiscoverersTest() throws Exception {
+        try (HttpServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .listenBlockingAndAwait((ctx, request, responseFactory) ->
+                        responseFactory.ok().addHeader(HttpHeaderNames.CONNECTION, "close"))) {
+            CountingServiceDiscoverer firstSd = new CountingServiceDiscoverer();
+            CountingServiceDiscoverer secondSd = new CountingServiceDiscoverer();
+
+            // Ensure HTTP/1.1 for Connection: close support
+            SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
+                    HttpClients.forSingleAddress(firstSd,
+                            HostAndPort.of("localhost", serverHostAndPort(serverContext).port()), ON_NEW_CONNECTION)
+                            .protocols(HttpProtocolConfigs.h1Default());
+
+            try (BlockingHttpClient client1 = builder.buildBlocking()) {
+                // Test client1 - should use first service discoverer
+                // Server will send Connection: close to ensure connection is closed after each request
+                HttpResponse response1 = client1.request(client1.get("/test1"));
+                assertThat(response1.status(), is(OK));
+                int firstSdCountAfterFirstRequest = firstSd.getDiscoverCount();
+                assertThat("First service discoverer should be used by client1",
+                        firstSdCountAfterFirstRequest, is(greaterThan(0)));
+                
+                // Now change the service discoverer on the same builder
+                builder.serviceDiscoverer(secondSd);
+                
+                // Build client2 with second service discoverer
+                try (BlockingHttpClient client2 = builder.buildBlocking()) {
+                    
+                    // Test client2 - should use second service discoverer
+                    HttpResponse response2 = client2.request(client2.get("/test2"));
+                    assertThat(response2.status(), is(OK));
+                    int secondSdCountAfterFirstRequest = secondSd.getDiscoverCount();
+                    assertThat("Second service discoverer should be used by client2",
+                            secondSdCountAfterFirstRequest, is(greaterThan(0)));
+                    
+                    // Make another request to client1 - it should still use the first service discoverer
+                    // and create a new connection (since previous was closed by server)
+                    HttpResponse response3 = client1.request(client1.get("/test3"));
+                    assertThat(response3.status(), is(OK));
+                    assertThat("First service discoverer should be used again by client1",
+                            firstSd.getDiscoverCount(), is(greaterThan(firstSdCountAfterFirstRequest)));
+                    
+                    // Verify second service discoverer count didn't change
+                    assertThat("Second service discoverer should not be affected by client1 requests",
+                            secondSd.getDiscoverCount(), is(secondSdCountAfterFirstRequest));
+                }
+            } finally {
+                firstSd.closeAsync().toFuture().get();
+                secondSd.closeAsync().toFuture().get();
+            }
+        }
     }
 
     @Test
@@ -314,6 +386,55 @@ class HttpClientResolvesOnNewConnectionTest {
         @Override
         public final String toString() {
             return CustomServiceDiscoverer.class.getSimpleName();
+        }
+    }
+
+    private static final class CountingServiceDiscoverer implements ServiceDiscoverer<HostAndPort,
+            InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> {
+
+        private final AtomicInteger discoverCount = new AtomicInteger();
+        private final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
+                delegate;
+        private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
+
+        CountingServiceDiscoverer() {
+            this.delegate = globalARecordsDnsServiceDiscoverer();
+        }
+
+        @Override
+        public Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> discover(
+                final HostAndPort hostAndPort) {
+            discoverCount.incrementAndGet();
+            return delegate.discover(hostAndPort);
+        }
+
+        int getDiscoverCount() {
+            return discoverCount.get();
+        }
+
+        @Override
+        public final Completable closeAsync() {
+            return closeable.closeAsync();
+        }
+
+        @Override
+        public final Completable closeAsyncGracefully() {
+            return closeable.closeAsyncGracefully();
+        }
+
+        @Override
+        public final Completable onClose() {
+            return closeable.onClose();
+        }
+
+        @Override
+        public final Completable onClosing() {
+            return closeable.onClosing();
+        }
+
+        @Override
+        public final String toString() {
+            return CountingServiceDiscoverer.class.getSimpleName() + "{discoverCount=" + discoverCount.get() + "}";
         }
     }
 }
