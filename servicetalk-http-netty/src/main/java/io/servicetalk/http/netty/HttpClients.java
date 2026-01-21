@@ -54,8 +54,8 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.Publisher.failed;
@@ -303,9 +303,19 @@ public final class HttpClients {
      */
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddress(
             final HostAndPort address, final DiscoveryStrategy discoveryStrategy) {
-        return forSingleAddress(globalARecordsDnsServiceDiscoverer(), address, discoveryStrategy,
-                InternalServiceDiscoverers::unresolvedServiceDiscoverer,
-                ResolvingConnectionFactoryFilter::withGlobalARecordsDnsServiceDiscoverer);
+        switch (discoveryStrategy) {
+            case BACKGROUND:
+                return forSingleAddressBackground(globalARecordsDnsServiceDiscoverer(), address);
+            case ON_NEW_CONNECTION:
+                return forSingleAddressOnNewConnection(
+                        address,
+                        globalARecordsDnsServiceDiscoverer(),
+                        InternalServiceDiscoverers.unresolvedServiceDiscoverer(),
+                        HostAndPort::of);
+            default:
+                throw new IllegalArgumentException("Unsupported strategy: " + discoveryStrategy);
+
+        }
     }
 
     /**
@@ -453,51 +463,67 @@ public final class HttpClients {
             final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer,
             final U address,
             final DiscoveryStrategy discoveryStrategy) {
-        return forSingleAddress(serviceDiscoverer, address, discoveryStrategy,
-                // Because the mapping is unknown, the unchecked cast here is required to fool the compiler but won't
-                // cause issues at runtime because all parametrized types are translated into Object type by javac.
-                () -> mappingServiceDiscoverer(u -> (R) u,
-                        "from " + address.getClass().getSimpleName() + " to an " + Object.class.getSimpleName()),
-                // Propagate unresolved address directly to the CF if we cannot map/unmap U and R.
-                () -> new ResolvingConnectionFactoryFilter<>(__ -> address, serviceDiscoverer));
-    }
-
-    private static <U, R> SingleAddressHttpClientBuilder<U, R> forSingleAddress(
-            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer,
-            final U address,
-            final DiscoveryStrategy discoveryStrategy,
-            final Supplier<ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>>> unresolvedServiceDiscoverer,
-            final Supplier<ResolvingConnectionFactoryFilter<U, R>> resolvingConnectionFactory) {
         switch (discoveryStrategy) {
-            case BACKGROUND:
-                return applyProviders(address, new DefaultSingleAddressHttpClientBuilder<>(address, serviceDiscoverer))
-                        // Apply after providers to let them see these customizations.
-                        .serviceDiscoverer(serviceDiscoverer);
             case ON_NEW_CONNECTION:
-                // Use a special ServiceDiscoverer that will propagate the unresolved address to LB and CF,
-                // then append a ConnectionFactory that will run resolve the address.
-                final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> usd =
-                        unresolvedServiceDiscoverer.get();
-                return applyProviders(address,
-                        withUnmodifiableServiceDiscoverer(new DefaultSingleAddressHttpClientBuilder<>(address, usd),
-                                usd, address + " with " + discoveryStrategy.name() + " discovery strategy"))
-                        // Apply after providers to let them see these customizations.
-                        .serviceDiscoverer(usd)
-                        .retryServiceDiscoveryErrors(NoRetriesStrategy.INSTANCE)
-                        // Disable health-checking:
-                        .loadBalancerFactory(new DefaultHttpLoadBalancerFactory<>(
-                                LoadBalancers.<R, FilterableStreamingHttpLoadBalancedConnection>builder(
-                                        // Use a different ID to let providers distinguish this LB from the default one
-                                        DefaultHttpLoadBalancerFactory.class.getSimpleName() + '-' +
-                                                DiscoveryStrategy.ON_NEW_CONNECTION.name())
-                                                // Disable all outlier detection since we're really using the
-                                                // Host as the load balancer and not the LoadBalancer itself.
-                                                .outlierDetectorConfig(OutlierDetectorConfigs.disabled())
-                                                .build()))
-                        .appendConnectionFactoryFilter(resolvingConnectionFactory.get());
+                    return forSingleAddressOnNewConnection(
+                            address,
+                            serviceDiscoverer,
+                            // Because the mapping is unknown, the unchecked cast here is required to fool the compiler but won't
+                            // cause issues at runtime because all parametrized types are translated into Object type by javac.
+                            mappingServiceDiscoverer(u -> (R) u,
+                                    "from " + address.getClass().getSimpleName() + " to an " + Object.class.getSimpleName()),
+                            __ -> address);
+            case BACKGROUND:
+                return forSingleAddressBackground(serviceDiscoverer, address);
+
             default:
                 throw new IllegalArgumentException("Unsupported strategy: " + discoveryStrategy);
         }
+    }
+
+    private static <U, R> SingleAddressHttpClientBuilder<U, R> forSingleAddressBackground(
+            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer,
+            final U address) {
+        return applyProviders(address, new DefaultSingleAddressHttpClientBuilder<>(address, serviceDiscoverer))
+                // Apply after providers to let them see these customizations.
+                .serviceDiscoverer(serviceDiscoverer);
+    }
+
+    private static <U, R> SingleAddressHttpClientBuilder<U, R> forSingleAddressOnNewConnection(
+            final U address,
+            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer,
+            // Use a special ServiceDiscoverer that will propagate the unresolved address to LB and CF,
+            // then append a ConnectionFactory that will run resolve the address.
+            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> unresolvedServiceDiscoverer,
+            final Function<R, U> toUnresolvedAddressMapper) {
+
+        // The real `ServiceDiscoverer` actually lives in the ResolvingConnectionFactoryFilter that is appended to the
+        // builder. Unfortunately, we cannot prepend that filter to our filter stack on buildStreaming, so we can only
+        // add it once. Because we add it once at the very beginning, the only way we can react to users changing the
+        // `ServiceDiscoverer` is by storing the current discoverer in an atomic ref and on building, snapshot that
+        // ref in ResolvingConnectionFactoryFilter.create. If the builder then gets reused and the ServiceDiscoverer
+        // changed, the new instances can capture the currently set ServiceDiscoverer.
+        final AtomicReference<ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>>> serviceDiscovererRef =
+                new AtomicReference<>(serviceDiscoverer);
+
+        return applyProviders(address,
+                new OnNewConnectionSingleAddressClientBuilder<>(
+                        new DefaultSingleAddressHttpClientBuilder<>(address, unresolvedServiceDiscoverer),
+                        serviceDiscovererRef, unresolvedServiceDiscoverer))
+                // Apply after providers to let them see these customizations.
+                .serviceDiscoverer(unresolvedServiceDiscoverer)
+                .retryServiceDiscoveryErrors(NoRetriesStrategy.INSTANCE)
+                // Disable health-checking:
+                .loadBalancerFactory(new DefaultHttpLoadBalancerFactory<>(
+                        LoadBalancers.<R, FilterableStreamingHttpLoadBalancedConnection>builder(
+                                        // Use a different ID to let providers distinguish this LB from the default one
+                                        DefaultHttpLoadBalancerFactory.class.getSimpleName() + '-' +
+                                                DiscoveryStrategy.ON_NEW_CONNECTION.name())
+                                // Disable all outlier detection since we're really using the
+                                // Host as the load balancer and not the LoadBalancer itself.
+                                .outlierDetectorConfig(OutlierDetectorConfigs.disabled())
+                                .build()))
+                .appendConnectionFactoryFilter(new ResolvingConnectionFactoryFilter<>(toUnresolvedAddressMapper, serviceDiscovererRef));
     }
 
     /**
@@ -575,6 +601,31 @@ public final class HttpClients {
                 return this;
             }
         };
+    }
+
+    private static final class OnNewConnectionSingleAddressClientBuilder<U, R> extends DelegatingSingleAddressHttpClientBuilder<U, R> {
+
+        private final AtomicReference<ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>>>
+                serviceDiscovererRef;
+        private final Object unresolvedDiscovererRef;
+
+        OnNewConnectionSingleAddressClientBuilder(
+                SingleAddressHttpClientBuilder<U, R> delgate,
+                AtomicReference<ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>>> serviceDiscovererRef,
+                Object unresolvedDiscovererRef) {
+            super(delgate);
+            this.serviceDiscovererRef = serviceDiscovererRef;
+            this.unresolvedDiscovererRef = unresolvedDiscovererRef;
+        }
+
+        @Override
+        public SingleAddressHttpClientBuilder<U, R> serviceDiscoverer(
+                ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
+            if (serviceDiscoverer != unresolvedDiscovererRef) {
+                serviceDiscovererRef.set(serviceDiscoverer);
+            }
+            return this;
+        }
     }
 
     /**
