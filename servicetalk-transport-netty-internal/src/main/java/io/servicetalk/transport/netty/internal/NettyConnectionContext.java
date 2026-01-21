@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ConnectionObserver;
 
 import io.netty.channel.Channel;
 
@@ -67,6 +68,8 @@ public interface NettyConnectionContext extends ConnectionContext {
      * @return the Netty {@link Channel} backing this connection.
      */
     Channel nettyChannel();
+
+    void notifyConnectionEstablished(ConnectionObserver connectionObserver);
 
     /**
      * A provider of {@link FlushStrategy} to update the {@link FlushStrategy} for a {@link NettyConnectionContext}.

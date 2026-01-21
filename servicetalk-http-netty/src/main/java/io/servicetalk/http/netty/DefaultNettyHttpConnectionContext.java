@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpProtocolVersion;
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.DelegatingConnectionContext;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
@@ -66,5 +67,10 @@ final class DefaultNettyHttpConnectionContext extends DelegatingConnectionContex
     @Override
     public Channel nettyChannel() {
         return nettyConnectionContext.nettyChannel();
+    }
+
+    @Override
+    public void notifyConnectionEstablished(final ConnectionObserver connectionObserver) {
+        nettyConnectionContext.notifyConnectionEstablished(connectionObserver);
     }
 }

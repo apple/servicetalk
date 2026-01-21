@@ -30,6 +30,7 @@ import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.FlushStrategyHolder;
 import io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
 
 import io.netty.channel.Channel;
@@ -74,6 +75,8 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     @Nullable
     private final SslConfig sslConfig;
     final long idleTimeoutMs;
+    private ConnectionObserver.MultiplexedObserver multiplexedObserver =
+            NoopTransportObserver.NoopMultiplexedObserver.INSTANCE;
     @Nullable
     private SSLSession sslSession;
 
@@ -160,6 +163,11 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     }
 
     @Override
+    public void notifyConnectionEstablished(final ConnectionObserver connectionObserver) {
+        multiplexedObserver = connectionObserver.multiplexedConnectionEstablished(this);
+    }
+
+    @Override
     public final String toString() {
         return channel().toString();
     }
@@ -170,6 +178,10 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
             // no need to notifyOnClosing bcz it's already notified in NettyChannelListenableAsyncCloseable before
             // invoking this method
         }, true);
+    }
+
+    ConnectionObserver.MultiplexedObserver multiplexedObserver() {
+        return multiplexedObserver;
     }
 
     /**

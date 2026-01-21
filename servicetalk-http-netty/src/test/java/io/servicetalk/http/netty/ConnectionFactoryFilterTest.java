@@ -35,6 +35,7 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
@@ -220,6 +221,11 @@ final class ConnectionFactoryFilterTest {
         @Override
         public Single<Throwable> transportError() {
             return delegate.transportError();
+        }
+
+        @Override
+        public void notifyConnectionEstablished(final ConnectionObserver connectionObserver) {
+            delegate.notifyConnectionEstablished(connectionObserver);
         }
     }
 }

@@ -27,7 +27,6 @@ import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.transport.api.ConnectionObserver;
-import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.EarlyConnectionAcceptor;
 import io.servicetalk.transport.api.LateConnectionAcceptor;
@@ -39,7 +38,6 @@ import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopMultiplexedObserver;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -66,6 +64,7 @@ import static java.util.Objects.requireNonNull;
 final class H2ServerParentConnectionContext extends H2ParentConnectionContext implements ServerContext {
     private static final Logger LOGGER = LoggerFactory.getLogger(H2ServerParentConnectionContext.class);
     private final SocketAddress listenAddress;
+
     private H2ServerParentConnectionContext(final Channel channel, final HttpExecutionContext executionContext,
                                             final FlushStrategy flushStrategy,
                                             final long idleTimeoutMs,
@@ -160,7 +159,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                             protected void initChannel(final Http2StreamChannel streamChannel) {
                                 connection.trackActiveStream(streamChannel);
                                 StreamObserver streamObserver =
-                                        parentChannelInitializer.multiplexedObserver.onNewStream();
+                                        connection.multiplexedObserver().onNewStream();
                                 final int streamId = streamChannel.stream().id();
                                 assert streamId > 0;
                                 streamObserver.streamIdAssigned(streamId);
@@ -215,7 +214,6 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
     private static final class DefaultH2ServerParentConnection extends AbstractH2ParentConnection {
         @Nullable
         private Subscriber<? super H2ServerParentConnectionContext> subscriber;
-        private MultiplexedObserver multiplexedObserver = NoopMultiplexedObserver.INSTANCE;
 
         DefaultH2ServerParentConnection(final H2ServerParentConnectionContext parentContext,
                                         final Subscriber<? super H2ServerParentConnectionContext> subscriber,
@@ -231,7 +229,6 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
             if (subscriber != null) {
                 Subscriber<? super H2ServerParentConnectionContext> subscriberCopy = subscriber;
                 subscriber = null;
-                multiplexedObserver = observer.multiplexedConnectionEstablished(parentContext);
                 subscriberCopy.onSuccess((H2ServerParentConnectionContext) parentContext);
             }
         }

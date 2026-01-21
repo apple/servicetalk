@@ -144,6 +144,7 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
                             tcpConfig.flushStrategy(), tcpConfig.idleTimeoutMs(), tcpConfig.sslConfig(),
                             NoopChannelInitializer.INSTANCE, HTTP_1_1, connectionObserver, true, OBJ_EXPECT_CONTINUE),
                         HTTP_1_1, channel)
+                        .whenOnSuccess(conn -> conn.notifyConnectionEstablished(connectionObserver))
                         .map(conn -> new PipelinedStreamingHttpConnection(conn, config.h1Config(),
                                 reqRespFactoryFunc.apply(HTTP_1_1), config.allowDropTrailersReadFromTransport()));
                 break;
@@ -154,7 +155,8 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
                 result = H2ClientParentConnectionContext.initChannel(channel, executionContext, h2Config,
                         reqRespFactoryFunc.apply(HTTP_2_0), tcpConfig.flushStrategy(), tcpConfig.idleTimeoutMs(),
                         tcpConfig.sslConfig(), new H2ClientParentChannelInitializer(h2Config), connectionObserver,
-                        config.allowDropTrailersReadFromTransport());
+                        config.allowDropTrailersReadFromTransport())
+                        .whenOnSuccess(conn -> conn.notifyConnectionEstablished(connectionObserver));
                 break;
             default:
                 result = unknownAlpnProtocol(protocol);

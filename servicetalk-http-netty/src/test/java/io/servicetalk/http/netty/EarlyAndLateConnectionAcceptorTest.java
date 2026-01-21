@@ -29,6 +29,7 @@ import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ConnectionInfo;
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.EarlyConnectionAcceptor;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoThreadFactory;
@@ -36,6 +37,7 @@ import io.servicetalk.transport.api.LateConnectionAcceptor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
+import io.servicetalk.transport.api.TransportObserver;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -47,8 +49,13 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -67,11 +74,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class EarlyAndLateConnectionAcceptorTest {
+final class EarlyAndLateConnectionAcceptorTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] offload={0}")
     @ValueSource(booleans = {false, true})
+    @SuppressWarnings("deprecation")
     void testSingleAcceptorOffloading(boolean offload) throws Exception {
         AtomicReference<Boolean> offloaded = new AtomicReference<>();
 
@@ -346,5 +355,274 @@ class EarlyAndLateConnectionAcceptorTest {
 
     private static HttpServerBuilder serverBuilder() {
         return HttpServers.forAddress(localAddress(0));
+    }
+
+    /**
+     * Verifies that connectionEstablished is called AFTER both early and late acceptors complete.
+     */
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
+    @EnumSource(Protocol.class)
+    void connectionEstablishedCalledAfterAcceptors(final Protocol protocol) throws Exception {
+        final BlockingQueue<String> events = new LinkedBlockingQueue<>();
+        final CountDownLatch closeLatch = new CountDownLatch(1);
+
+        final OrderTrackingTransportObserver transportObserver =
+                new OrderTrackingTransportObserver(events, closeLatch);
+
+        HttpServerBuilder builder = serverBuilder()
+                .transportObserver(transportObserver)
+                .appendEarlyConnectionAcceptor(info -> {
+                    assertTrue(events.offer("earlyAcceptor"));
+                    return Completable.completed();
+                })
+                .appendLateConnectionAcceptor(info -> {
+                    assertTrue(events.offer("lateAcceptor"));
+                    return Completable.completed();
+                });
+
+        configureProtocol(builder, protocol);
+
+        final HttpService service = (ctx, request, responseFactory) ->
+                succeeded(responseFactory.ok().payloadBody("Hello World!", textSerializerUtf8()));
+        try (ServerContext server = builder.listenAndAwait(service);
+             BlockingHttpClient client = buildClient(server, protocol)) {
+            HttpResponse response = client.request(client.get("/sayHello"));
+            assertThat("unexpected status", response.status(), is(HttpResponseStatus.OK));
+        }
+
+        // Verify the order: early -> late -> connectionEstablished
+        assertEquals("onNewConnection", events.poll(1, TimeUnit.SECONDS));
+        assertEquals("earlyAcceptor", events.poll(1, TimeUnit.SECONDS));
+        assertEquals("lateAcceptor", events.poll(1, TimeUnit.SECONDS));
+        assertEquals("connectionEstablished", events.poll(1, TimeUnit.SECONDS));
+    }
+
+    /**
+     * Verifies that when early acceptor rejects, connectionEstablished is NOT called
+     * but connectionClosed IS called.
+     */
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
+    @EnumSource(Protocol.class)
+    void earlyAcceptorRejectsConnectionEstablishedNotCalled(final Protocol protocol) throws Exception {
+        final BlockingQueue<String> events = new LinkedBlockingQueue<>();
+        final CountDownLatch closeLatch = new CountDownLatch(1);
+
+        final OrderTrackingTransportObserver transportObserver =
+                new OrderTrackingTransportObserver(events, closeLatch);
+
+        HttpServerBuilder builder = serverBuilder()
+                .transportObserver(transportObserver)
+                .appendEarlyConnectionAcceptor(info -> {
+                    assertTrue(events.offer("earlyAcceptor"));
+                    return Completable.failed(DELIBERATE_EXCEPTION);
+                })
+                .appendLateConnectionAcceptor(info -> {
+                    assertTrue(events.offer("lateAcceptor"));
+                    return Completable.completed();
+                });
+
+        configureProtocol(builder, protocol);
+
+        final HttpService service = (ctx, request, responseFactory) ->
+                succeeded(responseFactory.ok().payloadBody("Hello World!", textSerializerUtf8()));
+        try (ServerContext server = builder.listenAndAwait(service);
+             BlockingHttpClient client = buildClient(server, protocol)) {
+            assertThrows(IOException.class, () -> client.request(client.get("/sayHello")));
+        }
+
+        // Wait for connection to close
+        assertTrue(closeLatch.await(5, TimeUnit.SECONDS), "Connection was not closed in time");
+
+        // Verify early acceptor was called (late was not since early rejected)
+        assertEquals("onNewConnection", events.poll(1, TimeUnit.SECONDS));
+        assertEquals("earlyAcceptor", events.poll(1, TimeUnit.SECONDS));
+        // connectionClosed should be called when early acceptor rejects
+        assertEquals("connectionClosed", events.poll(1, TimeUnit.SECONDS));
+
+        // Verify that connectionEstablished was NOT called
+        // (lateAcceptor and connectionEstablished should not appear since early rejected)
+        assertThat("connectionEstablished should not be called when early acceptor rejects",
+                events.stream().noneMatch("connectionEstablished"::equals), is(true));
+    }
+
+    /**
+     * Verifies that when late acceptor rejects, connectionEstablished is NOT called
+     * but connectionClosed IS called.
+     */
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
+    @EnumSource(Protocol.class)
+    void lateAcceptorRejectsConnectionEstablishedNotCalled(Protocol protocol) throws Exception {
+        final BlockingQueue<String> events = new LinkedBlockingQueue<>();
+        final CountDownLatch closeLatch = new CountDownLatch(1);
+
+        final OrderTrackingTransportObserver transportObserver =
+                new OrderTrackingTransportObserver(events, closeLatch);
+
+        HttpServerBuilder builder = serverBuilder()
+                .transportObserver(transportObserver)
+                .appendEarlyConnectionAcceptor(info -> {
+                    assertTrue(events.offer("earlyAcceptor"));
+                    return Completable.completed();
+                })
+                .appendLateConnectionAcceptor(info -> {
+                    assertTrue(events.offer("lateAcceptor"));
+                    return Completable.failed(DELIBERATE_EXCEPTION);
+                });
+
+        configureProtocol(builder, protocol);
+
+        final HttpService service = (ctx, request, responseFactory) ->
+                succeeded(responseFactory.ok().payloadBody("Hello World!", textSerializerUtf8()));
+        try (ServerContext server = builder.listenAndAwait(service);
+             BlockingHttpClient client = buildClient(server, protocol)) {
+            assertThrows(IOException.class, () -> client.request(client.get("/sayHello")));
+        }
+
+        // Wait for connection to close
+        assertTrue(closeLatch.await(5, TimeUnit.SECONDS), "Connection was not closed in time");
+
+        // Verify both acceptors were called in order
+        assertEquals("onNewConnection", events.poll(1, TimeUnit.SECONDS));
+        assertEquals("earlyAcceptor", events.poll(1, TimeUnit.SECONDS));
+        assertEquals("lateAcceptor", events.poll(1, TimeUnit.SECONDS));
+        // connectionClosed should be called when late acceptor rejects
+        assertEquals("connectionClosed", events.poll(1, TimeUnit.SECONDS));
+
+        // Verify that connectionEstablished was NOT called (since late acceptor rejected)
+        assertThat("connectionEstablished should not be called when late acceptor rejects",
+                events.stream().noneMatch("connectionEstablished"::equals), is(true));
+    }
+
+    /**
+     * Verifies that when early acceptor rejects, connectionClosed IS called on the observer,
+     * ensuring the connection lifecycle is properly completed even for early failures.
+     */
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
+    @EnumSource(Protocol.class)
+    void earlyAcceptorRejectsConnectionClosedCalledOnObserver(Protocol protocol) throws Exception {
+        final BlockingQueue<String> events = new LinkedBlockingQueue<>();
+        final CountDownLatch closeLatch = new CountDownLatch(1);
+
+        final OrderTrackingTransportObserver transportObserver =
+                new OrderTrackingTransportObserver(events, closeLatch);
+
+        HttpServerBuilder builder = serverBuilder()
+                .transportObserver(transportObserver)
+                .appendEarlyConnectionAcceptor(info -> {
+                    assertTrue(events.offer("earlyAcceptor"));
+                    return Completable.failed(DELIBERATE_EXCEPTION);
+                });
+
+        configureProtocol(builder, protocol);
+
+        final HttpService service = (ctx, request, responseFactory) ->
+                succeeded(responseFactory.ok().payloadBody("Hello World!", textSerializerUtf8()));
+        try (ServerContext server = builder.listenAndAwait(service);
+             BlockingHttpClient client = buildClient(server, protocol)) {
+            assertThrows(IOException.class, () -> client.request(client.get("/sayHello")));
+        }
+
+        // Wait for connection to close
+        assertTrue(closeLatch.await(5, TimeUnit.SECONDS), "connectionClosed was not called in time");
+
+        // Verify the complete lifecycle
+        assertEquals("onNewConnection", events.poll(1, TimeUnit.SECONDS));
+        assertEquals("earlyAcceptor", events.poll(1, TimeUnit.SECONDS));
+        assertEquals("connectionClosed", events.poll(1, TimeUnit.SECONDS));
+    }
+
+    private static void configureProtocol(HttpServerBuilder builder, Protocol protocol) {
+        ServerSslConfig serverSslConfig = new ServerSslConfigBuilder(
+                DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).build();
+
+        if (protocol == Protocol.H1) {
+            builder.protocols(h1Default());
+        } else if (protocol == Protocol.H1_TLS) {
+            builder.protocols(h1Default()).sslConfig(serverSslConfig);
+        } else if (protocol == Protocol.H2) {
+            builder.protocols(h2Default());
+        } else if (protocol == Protocol.H2_TLS) {
+            builder.protocols(h2Default()).sslConfig(serverSslConfig);
+        } else if (protocol == Protocol.H2_ALPN) {
+            builder.protocols(h2Default(), h1Default()).sslConfig(serverSslConfig);
+        }
+    }
+
+    private static BlockingHttpClient buildClient(ServerContext server, Protocol protocol) {
+        ClientSslConfig clientSslConfig = new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                .peerHost(serverPemHostname()).build();
+        final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
+                HttpClients.forSingleAddress(serverHostAndPort(server));
+
+        if (protocol == Protocol.H1) {
+            clientBuilder.protocols(h1Default());
+        } else if (protocol == Protocol.H1_TLS) {
+            clientBuilder.protocols(h1Default()).sslConfig(clientSslConfig);
+        } else if (protocol == Protocol.H2) {
+            clientBuilder.protocols(h2Default());
+        } else if (protocol == Protocol.H2_TLS) {
+            clientBuilder.protocols(h2Default()).sslConfig(clientSslConfig);
+        } else if (protocol == Protocol.H2_ALPN) {
+            clientBuilder.protocols(h2Default(), h1Default()).sslConfig(clientSslConfig);
+        }
+
+        return clientBuilder.buildBlocking();
+    }
+
+    /**
+     * A TransportObserver implementation that tracks events in a queue for verification.
+     */
+    private static final class OrderTrackingTransportObserver implements TransportObserver {
+        private final BlockingQueue<String> events;
+        private final CountDownLatch closeLatch;
+
+        OrderTrackingTransportObserver(BlockingQueue<String> events, CountDownLatch closeLatch) {
+            this.events = events;
+            this.closeLatch = closeLatch;
+        }
+
+        @Override
+        public ConnectionObserver onNewConnection(@Nullable final Object localAddress,
+                                                  final Object remoteAddress) {
+            assertTrue(events.offer("onNewConnection"));
+            return new OrderTrackingConnectionObserver(events, closeLatch);
+        }
+    }
+
+    /**
+     * A ConnectionObserver implementation that tracks events in a queue for verification.
+     */
+    private static final class OrderTrackingConnectionObserver implements ConnectionObserver {
+        private final BlockingQueue<String> events;
+        private final CountDownLatch closeLatch;
+
+        OrderTrackingConnectionObserver(BlockingQueue<String> events, CountDownLatch closeLatch) {
+            this.events = events;
+            this.closeLatch = closeLatch;
+        }
+
+        @Override
+        public DataObserver connectionEstablished(final ConnectionInfo info) {
+            assertTrue(events.offer("connectionEstablished"));
+            return ConnectionObserver.super.connectionEstablished(info);
+        }
+
+        @Override
+        public MultiplexedObserver multiplexedConnectionEstablished(final ConnectionInfo info) {
+            assertTrue(events.offer("connectionEstablished"));
+            return ConnectionObserver.super.multiplexedConnectionEstablished(info);
+        }
+
+        @Override
+        public void connectionClosed(final Throwable error) {
+            assertTrue(events.offer("connectionClosed"));
+            closeLatch.countDown();
+        }
+
+        @Override
+        public void connectionClosed() {
+            assertTrue(events.offer("connectionClosed"));
+            closeLatch.countDown();
+        }
     }
 }

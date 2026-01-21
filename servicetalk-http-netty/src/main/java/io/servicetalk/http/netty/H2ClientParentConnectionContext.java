@@ -207,7 +207,6 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             if (subscriber != null) {
                 Subscriber<? super H2ClientParentConnection> subscriberCopy = subscriber;
                 subscriber = null;
-                multiplexedObserver = observer.multiplexedConnectionEstablished(this);
                 subscriberCopy.onSuccess(this);
             }
         }
@@ -255,6 +254,11 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             } else {
                 return failed(new IllegalArgumentException("Unknown key: " + eventKey));
             }
+        }
+
+        @Override
+        public void notifyConnectionEstablished(final ConnectionObserver connectionObserver) {
+            multiplexedObserver = connectionObserver.multiplexedConnectionEstablished(this);
         }
 
         @Override

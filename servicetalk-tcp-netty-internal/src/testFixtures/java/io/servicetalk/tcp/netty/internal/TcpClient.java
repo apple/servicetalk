@@ -88,17 +88,24 @@ final class TcpClient {
      * @param address to connect.
      * @return New {@link NettyConnection}.
      */
-    @SuppressWarnings("deprecation") // legitimate use of BufferHandler
+    @SuppressWarnings({"deprecation"}) // legitimate use of BufferHandler
     public Single<NettyConnection<Buffer, Buffer>> connect(ExecutionContext<?> executionContext,
                                                            SocketAddress address) {
         return TcpConnector.connect(null, address, config, false, executionContext,
-                (channel, connectionObserver) -> initChannel(channel,
-                        executionContext.bufferAllocator(), executionContext.executor(), executionContext.ioExecutor(),
-                        UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.idleTimeoutMs(),
-                        config.sslConfig(),
-                        new TcpClientChannelInitializer(config, connectionObserver, executionContext, false).andThen(
-                                channel2 -> channel2.pipeline().addLast(BufferHandler.INSTANCE)),
-                        executionContext.executionStrategy(), TCP, connectionObserver, true, __ -> false),
+                (channel, connectionObserver) -> {
+                    Single<? extends NettyConnection<Buffer, Buffer>> single = initChannel(channel,
+                            executionContext.bufferAllocator(), executionContext.executor(),
+                            executionContext.ioExecutor(),
+                            UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.idleTimeoutMs(),
+                            config.sslConfig(),
+                            new TcpClientChannelInitializer(config, connectionObserver, executionContext,
+                                    false).andThen(
+                                    channel2 -> channel2.pipeline().addLast(BufferHandler.INSTANCE)),
+                            executionContext.executionStrategy(), TCP, connectionObserver, true,
+                            __ -> false);
+                    return single.whenOnSuccess(conn ->
+                            conn.notifyConnectionEstablished(connectionObserver));
+                },
                 observer);
     }
 

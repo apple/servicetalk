@@ -87,7 +87,8 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
                             h2Config, reqRespFactoryFunc.apply(HttpProtocolVersion.HTTP_2_0), tcpConfig.flushStrategy(),
                             tcpConfig.idleTimeoutMs(), tcpConfig.sslConfig(),
                             new H2ClientParentChannelInitializer(h2Config),
-                            connectionObserver, config.allowDropTrailersReadFromTransport());
+                            connectionObserver, config.allowDropTrailersReadFromTransport())
+                            .whenOnSuccess(conn -> conn.notifyConnectionEstablished(connectionObserver));
                 default:
                     return unknownAlpnProtocol(protocol);
             }

@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 import io.servicetalk.concurrent.internal.ConcurrentUtils;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.SslConfig;
 
@@ -216,6 +217,11 @@ public final class NettyPipelinedConnection<Req, Resp> implements NettyConnectio
     @Override
     public FlushStrategy defaultFlushStrategy() {
         return connection.defaultFlushStrategy();
+    }
+
+    @Override
+    public void notifyConnectionEstablished(final ConnectionObserver connectionObserver) {
+        connection.notifyConnectionEstablished(connectionObserver);
     }
 
     private void closeConnection(final Subscriber<? super Resp> subscriber, final Throwable cause) {

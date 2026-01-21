@@ -31,6 +31,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.kqueue.KQueue;
+import io.netty.util.AttributeKey;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
@@ -48,6 +49,14 @@ import static java.util.Objects.requireNonNull;
  * A {@link ChannelInitializer} that registers a {@link ConnectionObserver} for all channels.
  */
 public final class ConnectionObserverInitializer implements ChannelInitializer {
+
+    /**
+     * An attribute key that indicates the {@link ConnectionObserverInitializer} has been applied to a channel.
+     * When this attribute is set, the channel has a close listener that will call
+     * {@link ConnectionObserver#connectionClosed(Throwable)} when the channel closes.
+     */
+    public static final AttributeKey<Boolean> CONNECTION_OBSERVER_INITIALIZED =
+            AttributeKey.newInstance("ConnectionObserverInitialized");
 
     private final ConnectionObserver observer;
     private final Function<Channel, ConnectionInfo> connectionInfoFactory;
@@ -111,6 +120,7 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
 
     @Override
     public void init(final Channel channel) {
+        channel.attr(CONNECTION_OBSERVER_INITIALIZED).set(Boolean.TRUE);
         channel.pipeline().addLast(new ConnectionObserverHandler(observer, connectionInfoFactory,
                 sslConfig != null, isFastOpen(channel), sslConfig));
     }

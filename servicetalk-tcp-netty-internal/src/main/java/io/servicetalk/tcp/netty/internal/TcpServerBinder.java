@@ -29,9 +29,11 @@ import io.servicetalk.transport.api.LateConnectionAcceptor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
 import io.servicetalk.transport.netty.internal.ChannelSet;
+import io.servicetalk.transport.netty.internal.ConnectionObserverInitializer;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
 import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import io.servicetalk.transport.netty.internal.NettyServerContext;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -165,15 +167,32 @@ public final class TcpServerBinder {
         bs.childHandler(new io.netty.channel.ChannelInitializer<Channel>() {
             @Override
             protected void initChannel(final Channel channel) {
-                Single<CC> connectionSingle = connectionFunction.apply(channel,
-                        config.transportObserver().onNewConnection(
-                                fromNettyAddress(channel.localAddress()), fromNettyAddress(channel.remoteAddress())));
+                final ConnectionObserver connectionObserver = config.transportObserver().onNewConnection(
+                        fromNettyAddress(channel.localAddress()), fromNettyAddress(channel.remoteAddress()));
+
+                Single<CC> connectionSingle = connectionFunction.apply(channel, connectionObserver);
 
                 connectionSingle = wrapConnectionAcceptors(connectionSingle, channel, executionContext, config,
                         earlyConnectionAcceptor, lateConnectionAcceptor, connectionAcceptor);
 
+                // We signal the connection established after all the acceptors (if any are present) ran and
+                // succeeded.
+                connectionSingle = connectionSingle.whenOnSuccess(conn -> {
+                    if (conn instanceof NettyConnectionContext) {
+                        ((NettyConnectionContext) conn).notifyConnectionEstablished(connectionObserver);
+                    }
+                });
+
                 connectionSingle.subscribe(connectionConsumer, cause -> {
                     LOGGER.debug("{} Failed to create a connection", channel, cause);
+                    // If the connection pipeline wasn't fully initialized (e.g., early acceptor rejection),
+                    // the ConnectionObserverInitializer's close listener won't be in place, so we need to
+                    // notify the observer directly. The CONNECTION_OBSERVER_INITIALIZED attribute is set
+                    // when ConnectionObserverInitializer.init() is called, so if it's null, the close
+                    // listener won't fire.
+                    if (channel.attr(ConnectionObserverInitializer.CONNECTION_OBSERVER_INITIALIZED).get() == null) {
+                        connectionObserver.connectionClosed(cause);
+                    }
                     close(channel, cause);
                 });
             }

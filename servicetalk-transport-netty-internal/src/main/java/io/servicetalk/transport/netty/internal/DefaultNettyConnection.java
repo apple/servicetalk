@@ -820,6 +820,11 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         return fromSource(transportError);
     }
 
+    @Override
+    public void notifyConnectionEstablished(final ConnectionObserver connectionObserver) {
+        dataObserver = connectionObserver.connectionEstablished(this);
+    }
+
     private static final class NoopChannelOutboundListener implements ChannelOutboundListener {
         private static final ChannelOutboundListener INSTANCE = new NoopChannelOutboundListener();
 
@@ -1020,9 +1025,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             assert subscriber != null;
             SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriberCopy = subscriber;
             subscriber = null;
-            // TODO: how can we make sure we have the correct context information here.
-            //  See HttpTransportObserverAsyncContextTest. It has some assertions for 'broken' behavior.
-            connection.dataObserver = observer.connectionEstablished(connection);
             subscriberCopy.onSuccess(connection);
         }
 

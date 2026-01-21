@@ -77,7 +77,8 @@ final class StreamingConnectionFactory {
                 initializer.andThen(new HttpClientChannelInitializer(
                         getByteBufAllocator(builderExecutionContext.bufferAllocator()), h1Config, closeHandler)),
                 HTTP_1_1, connectionObserver, true, OBJ_EXPECT_CONTINUE),
-                HTTP_1_1, channel);
+                HTTP_1_1, channel)
+                .whenOnSuccess(conn -> conn.notifyConnectionEstablished(connectionObserver));
     }
 
     static ReadOnlyTcpClientConfig withSslConfigPeerHost(Object resolvedRemoteAddress,

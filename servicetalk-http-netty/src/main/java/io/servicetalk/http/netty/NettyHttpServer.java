@@ -531,6 +531,11 @@ final class NettyHttpServer {
         }
 
         @Override
+        public void notifyConnectionEstablished(final ConnectionObserver connectionObserver) {
+            connection.notifyConnectionEstablished(connectionObserver);
+        }
+
+        @Override
         public String toString() {
             return connection.toString();
         }

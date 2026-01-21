@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.FlushStrategies;
@@ -278,6 +279,10 @@ public class NettyPipelinedConnectionBenchmark {
             @Override
             public Completable closeAsync() {
                 return Completable.never();
+            }
+
+            @Override
+            public void notifyConnectionEstablished(final ConnectionObserver connectionObserver) {
             }
         };
     }
