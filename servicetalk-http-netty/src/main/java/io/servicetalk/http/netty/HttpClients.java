@@ -463,6 +463,8 @@ public final class HttpClients {
             final U address,
             final DiscoveryStrategy discoveryStrategy) {
         switch (discoveryStrategy) {
+            case BACKGROUND:
+                return forSingleAddressBackground(serviceDiscoverer, address);
             case ON_NEW_CONNECTION:
                     return forSingleAddressOnNewConnection(
                             address,
@@ -474,9 +476,6 @@ public final class HttpClients {
                                     "from " + address.getClass().getSimpleName() + " to an " +
                                             Object.class.getSimpleName()),
                             __ -> address);
-            case BACKGROUND:
-                return forSingleAddressBackground(serviceDiscoverer, address);
-
             default:
                 throw new IllegalArgumentException("Unsupported strategy: " + discoveryStrategy);
         }

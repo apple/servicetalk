@@ -70,8 +70,6 @@ final class ResolvingConnectionFactoryFilter<U, R>
                 this.serviceDiscovererRef.get();
         return new DelegatingConnectionFactory<R, FilterableStreamingHttpConnection>(original) {
 
-            // Basically completely overrides the underlying connection factory behavior other than to keep it around
-            // to close it.
             @Override
             @SuppressWarnings("unchecked")
             public Single<FilterableStreamingHttpConnection> newConnection(final R address,
@@ -105,14 +103,14 @@ final class ResolvingConnectionFactoryFilter<U, R>
                                     .shareContextOnSubscribe();
                         });
             }
-        };
-    }
 
-    private Single<FilterableStreamingHttpConnection> unknownHostException(
-            final U unresolvedAddress, final Collection<? extends ServiceDiscovererEvent<R>> resolvedAddresses) {
-        return Single.<FilterableStreamingHttpConnection>failed(
-                new UnknownHostException(serviceDiscovererRef + " didn't return any available record for "
-                        + unresolvedAddress + ", resolved addresses: " + resolvedAddresses));
+            private Single<FilterableStreamingHttpConnection> unknownHostException(
+                    final U unresolvedAddress, final Collection<?> resolvedAddresses) {
+                return Single.<FilterableStreamingHttpConnection>failed(
+                        new UnknownHostException(serviceDiscoverer + " didn't return any available record for "
+                                + unresolvedAddress + ", resolved addresses: " + resolvedAddresses));
+            }
+        };
     }
 
     @Override
