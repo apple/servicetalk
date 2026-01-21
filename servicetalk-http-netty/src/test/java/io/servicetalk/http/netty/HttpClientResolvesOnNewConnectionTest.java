@@ -64,8 +64,6 @@ import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -184,10 +182,10 @@ class HttpClientResolvesOnNewConnectionTest {
                     HostAndPort.of("localhost", serverHostAndPort(serverContext).port()), ON_NEW_CONNECTION)
                     .serviceDiscoverer(secondSd)  // Override the first one
                     .buildBlocking()) {
-                
+
                 HttpResponse response = client.request(client.get("/"));
                 assertThat(response.status(), is(OK));
-                
+
                 // Verify that only the second service discoverer was used
                 assertThat("First service discoverer should not be used", firstSd.getDiscoverCount(), is(0));
                 assertThat("Second service discoverer should be used", secondSd.getDiscoverCount(), is(greaterThan(0)));
@@ -220,27 +218,27 @@ class HttpClientResolvesOnNewConnectionTest {
                 int firstSdCountAfterFirstRequest = firstSd.getDiscoverCount();
                 assertThat("First service discoverer should be used by client1",
                         firstSdCountAfterFirstRequest, is(greaterThan(0)));
-                
+
                 // Now change the service discoverer on the same builder
                 builder.serviceDiscoverer(secondSd);
-                
+
                 // Build client2 with second service discoverer
                 try (BlockingHttpClient client2 = builder.buildBlocking()) {
-                    
+
                     // Test client2 - should use second service discoverer
                     HttpResponse response2 = client2.request(client2.get("/test2"));
                     assertThat(response2.status(), is(OK));
                     int secondSdCountAfterFirstRequest = secondSd.getDiscoverCount();
                     assertThat("Second service discoverer should be used by client2",
                             secondSdCountAfterFirstRequest, is(greaterThan(0)));
-                    
+
                     // Make another request to client1 - it should still use the first service discoverer
                     // and create a new connection (since previous was closed by server)
                     HttpResponse response3 = client1.request(client1.get("/test3"));
                     assertThat(response3.status(), is(OK));
                     assertThat("First service discoverer should be used again by client1",
                             firstSd.getDiscoverCount(), is(greaterThan(firstSdCountAfterFirstRequest)));
-                    
+
                     // Verify second service discoverer count didn't change
                     assertThat("Second service discoverer should not be affected by client1 requests",
                             secondSd.getDiscoverCount(), is(secondSdCountAfterFirstRequest));
@@ -413,28 +411,23 @@ class HttpClientResolvesOnNewConnectionTest {
         }
 
         @Override
-        public final Completable closeAsync() {
+        public Completable closeAsync() {
             return closeable.closeAsync();
         }
 
         @Override
-        public final Completable closeAsyncGracefully() {
+        public Completable closeAsyncGracefully() {
             return closeable.closeAsyncGracefully();
         }
 
         @Override
-        public final Completable onClose() {
+        public Completable onClose() {
             return closeable.onClose();
         }
 
         @Override
-        public final Completable onClosing() {
+        public Completable onClosing() {
             return closeable.onClosing();
-        }
-
-        @Override
-        public final String toString() {
-            return CountingServiceDiscoverer.class.getSimpleName() + "{discoverCount=" + discoverCount.get() + "}";
         }
     }
 }

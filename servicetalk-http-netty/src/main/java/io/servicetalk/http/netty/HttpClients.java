@@ -314,7 +314,6 @@ public final class HttpClients {
                         HostAndPort::of);
             default:
                 throw new IllegalArgumentException("Unsupported strategy: " + discoveryStrategy);
-
         }
     }
 
@@ -468,10 +467,12 @@ public final class HttpClients {
                     return forSingleAddressOnNewConnection(
                             address,
                             serviceDiscoverer,
-                            // Because the mapping is unknown, the unchecked cast here is required to fool the compiler but won't
-                            // cause issues at runtime because all parametrized types are translated into Object type by javac.
+                            // Because the mapping is unknown, the unchecked cast here is required to fool the compiler
+                            // but won't cause issues at runtime because all parametrized types are translated into
+                            // Object type by javac.
                             mappingServiceDiscoverer(u -> (R) u,
-                                    "from " + address.getClass().getSimpleName() + " to an " + Object.class.getSimpleName()),
+                                    "from " + address.getClass().getSimpleName() + " to an " +
+                                            Object.class.getSimpleName()),
                             __ -> address);
             case BACKGROUND:
                 return forSingleAddressBackground(serviceDiscoverer, address);
@@ -523,7 +524,8 @@ public final class HttpClients {
                                 // Host as the load balancer and not the LoadBalancer itself.
                                 .outlierDetectorConfig(OutlierDetectorConfigs.disabled())
                                 .build()))
-                .appendConnectionFactoryFilter(new ResolvingConnectionFactoryFilter<>(toUnresolvedAddressMapper, serviceDiscovererRef));
+                .appendConnectionFactoryFilter(
+                        new ResolvingConnectionFactoryFilter<>(toUnresolvedAddressMapper, serviceDiscovererRef));
     }
 
     /**
@@ -603,7 +605,8 @@ public final class HttpClients {
         };
     }
 
-    private static final class OnNewConnectionSingleAddressClientBuilder<U, R> extends DelegatingSingleAddressHttpClientBuilder<U, R> {
+    private static final class OnNewConnectionSingleAddressClientBuilder<U, R> extends
+            DelegatingSingleAddressHttpClientBuilder<U, R> {
 
         private final AtomicReference<ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>>>
                 serviceDiscovererRef;

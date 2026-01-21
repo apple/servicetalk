@@ -66,7 +66,8 @@ final class ResolvingConnectionFactoryFilter<U, R>
         // Capture our reference and close over it. This lets our builder override the service discoverer later
         // and not modify the behavior of this discoverer. Note that this requires our `create` call to be rooted in the
         // `SingleAddressHttpClientBuilder.buildStreaming(..)` method call.
-        ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer = this.serviceDiscovererRef.get();
+        final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer =
+                this.serviceDiscovererRef.get();
         return new DelegatingConnectionFactory<R, FilterableStreamingHttpConnection>(original) {
 
             // Basically completely overrides the underlying connection factory behavior other than to keep it around
