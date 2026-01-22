@@ -20,6 +20,7 @@ import io.servicetalk.client.api.DelegatingServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.DelegatingListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -206,8 +207,7 @@ class HttpClientResolvesOnNewConnectionTest {
 
             // Ensure HTTP/1.1 for Connection: close support
             SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
-                    HttpClients.forSingleAddress(firstSd,
-                            HostAndPort.of("localhost", serverHostAndPort(serverContext).port()), ON_NEW_CONNECTION)
+                    HttpClients.forSingleAddress(firstSd, serverHostAndPort(serverContext), ON_NEW_CONNECTION)
                             .protocols(HttpProtocolConfigs.h1Default());
 
             try (BlockingHttpClient client1 = builder.buildBlocking()) {
@@ -387,15 +387,16 @@ class HttpClientResolvesOnNewConnectionTest {
         }
     }
 
-    private static final class CountingServiceDiscoverer implements ServiceDiscoverer<HostAndPort,
-            InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> {
+    private static final class CountingServiceDiscoverer
+            extends DelegatingListenableAsyncCloseable<ListenableAsyncCloseable>
+            implements ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> {
 
         private final AtomicInteger discoverCount = new AtomicInteger();
         private final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
                 delegate;
-        private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
 
         CountingServiceDiscoverer() {
+            super(emptyAsyncCloseable());
             this.delegate = globalARecordsDnsServiceDiscoverer();
         }
 
@@ -408,26 +409,6 @@ class HttpClientResolvesOnNewConnectionTest {
 
         int getDiscoverCount() {
             return discoverCount.get();
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return closeable.closeAsync();
-        }
-
-        @Override
-        public Completable closeAsyncGracefully() {
-            return closeable.closeAsyncGracefully();
-        }
-
-        @Override
-        public Completable onClose() {
-            return closeable.onClose();
-        }
-
-        @Override
-        public Completable onClosing() {
-            return closeable.onClosing();
         }
     }
 }

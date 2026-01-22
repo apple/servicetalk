@@ -64,6 +64,7 @@ import static io.servicetalk.dns.discovery.netty.DnsServiceDiscoverers.globalSrv
 import static io.servicetalk.http.netty.InternalServiceDiscoverers.mappingServiceDiscoverer;
 import static io.servicetalk.http.netty.InternalServiceDiscoverers.resolvedServiceDiscoverer;
 import static io.servicetalk.utils.internal.ServiceLoaderUtils.loadProviders;
+import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
 /**
@@ -509,7 +510,7 @@ public final class HttpClients {
         return applyProviders(address,
                 new OnNewConnectionSingleAddressClientBuilder<>(
                         new DefaultSingleAddressHttpClientBuilder<>(address, unresolvedServiceDiscoverer),
-                        serviceDiscovererRef, unresolvedServiceDiscoverer))
+                        serviceDiscovererRef))
                 // Apply after providers to let them see these customizations.
                 .serviceDiscoverer(unresolvedServiceDiscoverer)
                 .retryServiceDiscoveryErrors(NoRetriesStrategy.INSTANCE)
@@ -609,21 +610,22 @@ public final class HttpClients {
 
         private final AtomicReference<ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>>>
                 serviceDiscovererRef;
-        private final Object unresolvedDiscovererRef;
+        private boolean firstSet;
 
         OnNewConnectionSingleAddressClientBuilder(
-                SingleAddressHttpClientBuilder<U, R> delgate,
-                AtomicReference<ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>>> serviceDiscovererRef,
-                Object unresolvedDiscovererRef) {
-            super(delgate);
+                SingleAddressHttpClientBuilder<U, R> delegate,
+                AtomicReference<ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>>> serviceDiscovererRef) {
+            super(delegate);
             this.serviceDiscovererRef = serviceDiscovererRef;
-            this.unresolvedDiscovererRef = unresolvedDiscovererRef;
         }
 
         @Override
         public SingleAddressHttpClientBuilder<U, R> serviceDiscoverer(
                 ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
-            if (serviceDiscoverer != unresolvedDiscovererRef) {
+            requireNonNull(serviceDiscoverer);
+            if (!firstSet) {
+                firstSet = true;
+            } else {
                 serviceDiscovererRef.set(serviceDiscoverer);
             }
             return this;
@@ -705,11 +707,6 @@ public final class HttpClients {
          *     balancing for every request.</li>
          *     <li>Created clients won't be able to move/shift traffic based on changes observed by a
          *     {@link ServiceDiscoverer} until the remote server closes existing connections.</li>
-         *     <li>The only way to change or customize a {@link ServiceDiscoverer} for this strategy is to use
-         *     {@link #forSingleAddress(ServiceDiscoverer, Object, DiscoveryStrategy)} client factory. Setting a
-         *     different {@link ServiceDiscoverer} instance via
-         *     {@link SingleAddressHttpClientBuilder#serviceDiscoverer(ServiceDiscoverer)} method later will throw an
-         *     exception.</li>
          *     <li>Currently, {@link TransportObserver} won't be able to take {@link ServiceDiscoverer} latency into
          *     account because {@link TransportObserver#onNewConnection(Object, Object) onNewConnection} callback is
          *     invoked later. Users need to use observability features provided by a {@link ServiceDiscoverer}
