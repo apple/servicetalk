@@ -511,7 +511,9 @@ public final class HttpClients {
                 new OnNewConnectionSingleAddressClientBuilder<>(
                         new DefaultSingleAddressHttpClientBuilder<>(address, unresolvedServiceDiscoverer),
                         serviceDiscovererRef))
-                // Apply after providers to let them see these customizations.
+                // Apply after providers to let them see these customizations. Note that
+                // `OnNewConnectionSingleAddressBuilder` will skip the first invocation so if we change this
+                // behavior we need to modify that builder.
                 .serviceDiscoverer(unresolvedServiceDiscoverer)
                 .retryServiceDiscoveryErrors(NoRetriesStrategy.INSTANCE)
                 // Disable health-checking:
@@ -610,6 +612,8 @@ public final class HttpClients {
 
         private final AtomicReference<ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>>>
                 serviceDiscovererRef;
+        // We set the unresolved service discoverer right after building our client so that providers can see the
+        // observer. Because of that, we need to skip the first invocation.
         private boolean firstSet;
 
         OnNewConnectionSingleAddressClientBuilder(
