@@ -140,7 +140,7 @@ class HttpClientResolvesOnNewConnectionTest {
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
              // Use "localhost" to demonstrate that the address will be resolved.
              BlockingHttpClient client = HttpClients.forSingleAddress(spyDnsSd,
-                             HostAndPort.of("localhost", serverHostAndPort(serverContext).port()), ON_NEW_CONNECTION)
+                             serverHostAndPort(serverContext), ON_NEW_CONNECTION)
                      .protocols(protocol.config)
                      .buildBlocking()) {
             HttpResponse response = client.request(client.get("/"));
@@ -180,7 +180,7 @@ class HttpClientResolvesOnNewConnectionTest {
             CountingServiceDiscoverer secondSd = new CountingServiceDiscoverer();
 
             try (BlockingHttpClient client = HttpClients.forSingleAddress(firstSd,
-                    HostAndPort.of("localhost", serverHostAndPort(serverContext).port()), ON_NEW_CONNECTION)
+                    serverHostAndPort(serverContext), ON_NEW_CONNECTION)
                     .serviceDiscoverer(secondSd)  // Override the first one
                     .buildBlocking()) {
 
