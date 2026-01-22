@@ -25,20 +25,18 @@ import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.api.ExecutionStrategy;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.TransportObserver;
 
-import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
-import static io.servicetalk.dns.discovery.netty.DnsServiceDiscoverers.globalARecordsDnsServiceDiscoverer;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -53,18 +51,23 @@ final class ResolvingConnectionFactoryFilter<U, R>
         implements ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> {
 
     private final Function<R, U> toUnresolvedAddressMapper;
-    private final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
+    private final AtomicReference<ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>>> serviceDiscovererRef;
 
     ResolvingConnectionFactoryFilter(
             final Function<R, U> toUnresolvedAddressMapper,
-            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
+            final AtomicReference<ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>>> serviceDiscovererRef) {
         this.toUnresolvedAddressMapper = requireNonNull(toUnresolvedAddressMapper);
-        this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
+        this.serviceDiscovererRef = requireNonNull(serviceDiscovererRef);
     }
 
     @Override
     public ConnectionFactory<R, FilterableStreamingHttpConnection> create(
             final ConnectionFactory<R, FilterableStreamingHttpConnection> original) {
+        // Capture our reference and close over it. This lets our builder override the service discoverer later
+        // and not modify the behavior of this discoverer. Note that this requires our `create` call to be rooted in the
+        // `SingleAddressHttpClientBuilder.buildStreaming(..)` method call.
+        final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer =
+                this.serviceDiscovererRef.get();
         return new DelegatingConnectionFactory<R, FilterableStreamingHttpConnection>(original) {
 
             @Override
@@ -100,14 +103,14 @@ final class ResolvingConnectionFactoryFilter<U, R>
                                     .shareContextOnSubscribe();
                         });
             }
-        };
-    }
 
-    private Single<FilterableStreamingHttpConnection> unknownHostException(
-            final U unresolvedAddress, final Collection<? extends ServiceDiscovererEvent<R>> resolvedAddresses) {
-        return Single.<FilterableStreamingHttpConnection>failed(
-                new UnknownHostException(serviceDiscoverer + " didn't return any available record for "
-                        + unresolvedAddress + ", resolved addresses: " + resolvedAddresses));
+            private Single<FilterableStreamingHttpConnection> unknownHostException(
+                    final U unresolvedAddress, final Collection<?> resolvedAddresses) {
+                return Single.<FilterableStreamingHttpConnection>failed(
+                        new UnknownHostException(serviceDiscoverer + " didn't return any available record for "
+                                + unresolvedAddress + ", resolved addresses: " + resolvedAddresses));
+            }
+        };
     }
 
     @Override
@@ -119,21 +122,7 @@ final class ResolvingConnectionFactoryFilter<U, R>
     public String toString() {
         return getClass().getSimpleName() +
                 "{toUnresolvedAddressMapper=" + toUnresolvedAddressMapper +
-                ", serviceDiscoverer=" + serviceDiscoverer +
+                ", serviceDiscoverer=" + serviceDiscovererRef.get() +
                 '}';
-    }
-
-    static ResolvingConnectionFactoryFilter<HostAndPort, InetSocketAddress> withGlobalARecordsDnsServiceDiscoverer() {
-        return DefaultResolvingConnectionFactoryFilterInitializer.INSTANCE;
-    }
-
-    private static final class DefaultResolvingConnectionFactoryFilterInitializer {
-
-        static final ResolvingConnectionFactoryFilter<HostAndPort, InetSocketAddress> INSTANCE =
-                new ResolvingConnectionFactoryFilter<>(HostAndPort::of, globalARecordsDnsServiceDiscoverer());
-
-        private DefaultResolvingConnectionFactoryFilterInitializer() {
-            // Singleton
-        }
     }
 }
