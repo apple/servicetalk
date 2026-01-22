@@ -31,10 +31,7 @@ import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 import io.servicetalk.utils.internal.DurationUtils;
 
-import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
-import io.netty.resolver.dns.DnsNameResolver;
-import io.netty.util.concurrent.Promise;
 import org.apache.directory.server.dns.messages.RecordType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -59,8 +56,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -99,23 +94,16 @@ import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 class DefaultDnsClientTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultDnsClientTest.class);
     private static final int DEFAULT_TTL = 1;
     private static final Duration DEFAULT_TIMEOUT = ofMillis(CI ? 500 : 100);
-    private static final int BACKUP_DELAY = CI ? 200 : 20;
 
     @RegisterExtension
     static final ExecutorExtension<TestExecutor> timerExecutor = ExecutorExtension.withTestExecutor()
@@ -1241,78 +1229,6 @@ class DefaultDnsClientTest {
     @EnumSource(value = RecordType.class, names = {"A", "AAAA", "SRV"})
     void testResolutionTimeout(RecordType recordType) throws Exception {
         testTimeout(Duration.ZERO, DEFAULT_TIMEOUT, recordType);
-    }
-
-    @Test
-    void backupRequest() throws Exception {
-        DnsNameResolver primaryResolver = mock(DnsNameResolver.class);
-        DnsNameResolver backupResolver = mock(DnsNameResolver.class);
-        EventLoop eventLoop = ioExecutor.executor().eventLoopGroup().next();
-        Promise<List<InetAddress>> primaryPromise = eventLoop.newPromise();
-        when(primaryResolver.resolveAll("foo")).thenReturn(primaryPromise);
-
-        Promise<List<InetAddress>> backupPromise = eventLoop.newPromise();
-        when(backupResolver.resolveAll("foo")).thenReturn(backupPromise);
-
-        DefaultDnsClient.DnsNameResolverDelegate resolver = new DefaultDnsClient.BackupRequestResolver(
-                primaryResolver, backupResolver, eventLoop, BACKUP_DELAY);
-        Future<List<InetAddress>> resolveFuture = resolver.resolveAll("foo");
-        assertFalse(resolveFuture.isDone());
-        verify(primaryResolver, times(1)).resolveAll("foo");
-        verify(backupResolver, times(0)).resolveAll("foo");
-
-        // Wait 20 milliseconds.
-        eventLoop.schedule(() -> { }, BACKUP_DELAY, MILLISECONDS).get();
-
-        verify(primaryResolver, times(1)).resolveAll("foo");
-        verify(backupResolver, times(1)).resolveAll("foo");
-        List<InetAddress> result = new ArrayList<>();
-        backupPromise.setSuccess(result);
-        assertEquals(result, resolveFuture.get());
-    }
-
-    @Test
-    void noBackupRequestIfOriginalSucceeds() throws Exception {
-        DnsNameResolver primaryResolver = mock(DnsNameResolver.class);
-        DnsNameResolver backupResolver = mock(DnsNameResolver.class);
-        EventLoop eventLoop = ioExecutor.executor().eventLoopGroup().next();
-        Promise<List<InetAddress>> primaryPromise = eventLoop.newPromise();
-        when(primaryResolver.resolveAll("foo")).thenReturn(primaryPromise);
-        when(backupResolver.resolveAll("foo")).thenReturn(eventLoop.newPromise());
-
-        DefaultDnsClient.DnsNameResolverDelegate resolver = new DefaultDnsClient.BackupRequestResolver(
-                primaryResolver, backupResolver, eventLoop, BACKUP_DELAY);
-        Future<List<InetAddress>> resolveFuture = resolver.resolveAll("foo");
-        assertFalse(resolveFuture.isDone());
-        List<InetAddress> result = new ArrayList<>();
-        primaryPromise.trySuccess(result);
-        assertEquals(result, resolveFuture.get(BACKUP_DELAY, SECONDS));
-        // Wait for the timeout duration to be sure we only get one call.
-        eventLoop.schedule(() -> { }, BACKUP_DELAY, MILLISECONDS).get();
-        verify(primaryResolver, times(1)).resolveAll("foo");
-        verify(backupResolver, times(0)).resolveAll("foo");
-    }
-
-    @Test
-    void initialFailureWillNotResultInBackup() throws Exception {
-        DnsNameResolver primaryResolver = mock(DnsNameResolver.class);
-        DnsNameResolver backupResolver = mock(DnsNameResolver.class);
-        EventLoop eventLoop = ioExecutor.executor().eventLoopGroup().next();
-        Promise<List<InetAddress>> primaryPromise = eventLoop.newPromise();
-        when(primaryResolver.resolveAll("foo")).thenReturn(primaryPromise);
-        when(backupResolver.resolveAll("foo")).thenReturn(eventLoop.newPromise());
-
-        DefaultDnsClient.DnsNameResolverDelegate resolver = new DefaultDnsClient.BackupRequestResolver(
-                primaryResolver, backupResolver, eventLoop, BACKUP_DELAY);
-        Future<List<InetAddress>> resolveFuture = resolver.resolveAll("foo");
-        assertFalse(resolveFuture.isDone());
-
-        primaryPromise.tryFailure(new Exception("so sad"));
-        assertThrows(ExecutionException.class, resolveFuture::get);
-        // Wait for the timeout duration to be sure we only get one call.
-        eventLoop.schedule(() -> { }, BACKUP_DELAY, MILLISECONDS).get();
-        verify(primaryResolver, times(1)).resolveAll("foo");
-        verify(backupResolver, times(0)).resolveAll("foo");
     }
 
     void testTimeout(Duration queryTimeout, Duration resolutionTimeout, RecordType recordType) throws Exception {

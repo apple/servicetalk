@@ -41,7 +41,6 @@ import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Boolean.getBoolean;
-import static java.lang.Integer.getInteger;
 import static java.lang.Math.min;
 import static java.lang.System.getProperty;
 import static java.time.Duration.ofSeconds;
@@ -59,9 +58,6 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultDnsServiceDiscovererBuilder.class);
 
-    // Backup request static configuration: values > 0 mean allow a backup request with fixed delay, disabled otherwise.
-    private static final String DNS_BACKUP_REQUEST_DELAY_MS_PROPERTY =
-            "io.servicetalk.dns.discovery.netty.experimental.dnsBackupRequestDelayMs";
     // FIXME: 0.43 - consider removing deprecated system properties.
     //  Those were introduced temporarily as a way for us to experiment with new Netty features.
     //  In the next major release, we should promote required features to builder API.
@@ -76,8 +72,6 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     @Deprecated
     private static final String NX_DOMAIN_INVALIDATES_PROPERTY = "io.servicetalk.dns.discovery.nxdomain.invalidation";
 
-    @Nullable
-    private static final Integer DNS_BACKUP_REQUEST_DELAY_MS = getInteger(DNS_BACKUP_REQUEST_DELAY_MS_PROPERTY);
     private static final String DEFAULT_DATAGRAM_CHANNEL_STRATEGY =
             getProperty(DATAGRAM_CHANNEL_STRATEGY_PROPERTY, "ChannelPerResolver");
     private static final boolean DEFAULT_TCP_FALLBACK_ON_TIMEOUT = getBoolean(TCP_FALLBACK_ON_TIMEOUT_PROPERTY);
@@ -415,7 +409,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, maxUdpPayloadSize, ndots, optResourceEnabled,
                 queryTimeout, resolutionTimeout, dnsResolverAddressTypes, localAddress, dnsServerAddressStreamProvider,
                 observer, missingRecordStatus, nxInvalidation,
-                DEFAULT_TCP_FALLBACK_ON_TIMEOUT, DEFAULT_DATAGRAM_CHANNEL_STRATEGY, DNS_BACKUP_REQUEST_DELAY_MS);
+                DEFAULT_TCP_FALLBACK_ON_TIMEOUT, DEFAULT_DATAGRAM_CHANNEL_STRATEGY);
         return filterFactory == null ? rawClient : filterFactory.create(rawClient);
     }
 
