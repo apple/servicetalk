@@ -77,9 +77,10 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
                         final ByteBufAllocator alloc,
                         final HttpHeadersFactory headersFactory, final int maxStartLineLength, int maxHeaderFieldLength,
                         final boolean allowPrematureClosureBeforePayloadBody, final boolean allowLFWithoutCR,
-                        final CloseHandler closeHandler) {
+                        final CloseHandler closeHandler, final int maxTotalHeaderLength,
+                        final boolean totalHeaderLengthWarnOnly) {
         super(alloc, headersFactory, maxStartLineLength, maxHeaderFieldLength, allowPrematureClosureBeforePayloadBody,
-                allowLFWithoutCR, closeHandler);
+                allowLFWithoutCR, closeHandler, maxTotalHeaderLength, totalHeaderLengthWarnOnly);
         this.methodQueue = requireNonNull(methodQueue);
         this.signalsQueue = requireNonNull(signalsQueue);
     }

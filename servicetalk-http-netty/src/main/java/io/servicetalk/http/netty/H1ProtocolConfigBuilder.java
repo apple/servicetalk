@@ -35,6 +35,7 @@ public final class H1ProtocolConfigBuilder {
     private int maxPipelinedRequests = 1;
     private int maxStartLineLength = 4096;
     private int maxHeaderFieldLength = 8192;
+    private int maxTotalHeaderLength = 8192;
     private HttpHeadersFactory headersFactory = DefaultHttpHeadersFactory.INSTANCE;
     private int headersEncodedSizeEstimate = 256;
     private int trailersEncodedSizeEstimate = 256;
@@ -85,6 +86,29 @@ public final class H1ProtocolConfigBuilder {
      */
     public H1ProtocolConfigBuilder maxStartLineLength(final int maxStartLineLength) {
         this.maxStartLineLength = ensurePositive(maxStartLineLength, "maxStartLineLength");
+        return this;
+    }
+
+    /**
+     * Sets the maximum total length of the HTTP
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> and all
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> combined.
+     * <p>
+     * This limit protects against memory exhaustion attacks where an attacker sends many small headers
+     * that individually pass validation but collectively consume excessive memory.
+     * <p>
+     * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the total
+     * header block size exceeds this value. The default matches HTTP/2's
+     * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_MAX_HEADER_LIST_SIZE</a>.
+     * <p>
+     * If property is set to {@code io.servicetalk.http.netty.maxTotalHeaderLengthWarnOnly=true}, then ServiceTalk
+     * will only emit a warning instead of throwing - this is to ease initial rollout of this limit.
+     *
+     * @param maxTotalHeaderLength maximum total length of start line and all header fields combined
+     * @return {@code this}
+     */
+    public H1ProtocolConfigBuilder maxTotalHeaderLength(final int maxTotalHeaderLength) {
+        this.maxTotalHeaderLength = ensurePositive(maxTotalHeaderLength, "maxTotalHeaderLength");
         return this;
     }
 
@@ -153,7 +177,8 @@ public final class H1ProtocolConfigBuilder {
      */
     public H1ProtocolConfig build() {
         return new DefaultH1ProtocolConfig(headersFactory, maxPipelinedRequests, maxStartLineLength,
-                maxHeaderFieldLength, headersEncodedSizeEstimate, trailersEncodedSizeEstimate, specExceptions);
+                maxHeaderFieldLength, headersEncodedSizeEstimate, trailersEncodedSizeEstimate, specExceptions,
+                maxTotalHeaderLength);
     }
 
     private static final class DefaultH1ProtocolConfig implements H1ProtocolConfig {
@@ -162,6 +187,7 @@ public final class H1ProtocolConfigBuilder {
         private final int maxPipelinedRequests;
         private final int maxStartLineLength;
         private final int maxHeaderFieldLength;
+        private final int maxTotalHeaderLength;
         private final int headersEncodedSizeEstimate;
         private final int trailersEncodedSizeEstimate;
         private final H1SpecExceptions specExceptions;
@@ -169,7 +195,7 @@ public final class H1ProtocolConfigBuilder {
         DefaultH1ProtocolConfig(final HttpHeadersFactory headersFactory, final int maxPipelinedRequests,
                                 final int maxStartLineLength, final int maxHeaderFieldLength,
                                 final int headersEncodedSizeEstimate, final int trailersEncodedSizeEstimate,
-                                final H1SpecExceptions specExceptions) {
+                                final H1SpecExceptions specExceptions, final int maxTotalHeaderLength) {
             this.headersFactory = headersFactory;
             this.maxPipelinedRequests = maxPipelinedRequests;
             this.maxStartLineLength = maxStartLineLength;
@@ -177,6 +203,7 @@ public final class H1ProtocolConfigBuilder {
             this.headersEncodedSizeEstimate = headersEncodedSizeEstimate;
             this.trailersEncodedSizeEstimate = trailersEncodedSizeEstimate;
             this.specExceptions = specExceptions;
+            this.maxTotalHeaderLength = maxTotalHeaderLength;
         }
 
         @Override
@@ -197,6 +224,11 @@ public final class H1ProtocolConfigBuilder {
         @Override
         public int maxHeaderFieldLength() {
             return maxHeaderFieldLength;
+        }
+
+        @Override
+        public int maxTotalHeaderLength() {
+            return maxTotalHeaderLength;
         }
 
         @Override
@@ -222,6 +254,7 @@ public final class H1ProtocolConfigBuilder {
                     ", maxPipelinedRequests=" + maxPipelinedRequests +
                     ", maxStartLineLength=" + maxStartLineLength +
                     ", maxHeaderFieldLength=" + maxHeaderFieldLength +
+                    ", maxTotalHeaderLength=" + maxTotalHeaderLength +
                     ", headersEncodedSizeEstimate=" + headersEncodedSizeEstimate +
                     ", trailersEncodedSizeEstimate=" + trailersEncodedSizeEstimate +
                     ", specExceptions=" + specExceptions +

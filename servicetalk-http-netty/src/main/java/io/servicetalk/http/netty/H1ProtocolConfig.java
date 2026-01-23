@@ -55,6 +55,17 @@ public interface H1ProtocolConfig extends HttpProtocolConfig {
     int maxStartLineLength();
 
     /**
+     * Get the maximum total length of the HTTP
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> and all
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> combined.
+     * <p>
+     * This limit protects against memory exhaustion attacks where an attacker sends many small headers.
+     *
+     * @return maximum total length of start line and all header fields combined
+     */
+    int maxTotalHeaderLength();
+
+    /**
      * Maximum length of the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> and
      * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a> to parse.
      * <p>

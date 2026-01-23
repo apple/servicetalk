@@ -94,7 +94,8 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
         signalsQueue.offer(REQUEST_SIGNAL);
         return new EmbeddedChannel(new HttpResponseDecoder(methodQueue, signalsQueue,
                 getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE, 8192, 8192,
-                false, allowLFWithoutCR, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
+                false, allowLFWithoutCR, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, 8192,
+                false));
     }
 
     @Override
@@ -130,6 +131,21 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     @Override
     HttpMetaData assertStartLineForContent(final EmbeddedChannel channel) {
         return assertResponseLine(HTTP_1_1, OK, channel);
+    }
+
+    @Override
+    EmbeddedChannel channelWithMaxTotalHeaderLength(int maxTotalHeaderLength) {
+        final ArrayDeque<Signal> signalsQueue = new PollLikePeakArrayDeque<>();
+        signalsQueue.offer(REQUEST_SIGNAL);
+        return new EmbeddedChannel(new HttpResponseDecoder(methodQueue, signalsQueue,
+                getByteBufAllocator(DEFAULT_ALLOCATOR),
+                DefaultHttpHeadersFactory.INSTANCE,
+                8192,   // maxStartLineLength
+                8192,   // maxHeaderFieldLength
+                false,  // allowPrematureClosureBeforePayloadBody
+                false,  // allowLFWithoutCR
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
+                maxTotalHeaderLength, false));
     }
 
     @Test

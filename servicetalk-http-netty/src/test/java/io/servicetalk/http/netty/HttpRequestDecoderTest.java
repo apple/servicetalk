@@ -57,7 +57,7 @@ class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     private static EmbeddedChannel newChannel(boolean allowLFWithoutCR) {
         return new EmbeddedChannel(new HttpRequestDecoder(new ArrayDeque<>(), getByteBufAllocator(DEFAULT_ALLOCATOR),
                 DefaultHttpHeadersFactory.INSTANCE, 8192, 8192, false, allowLFWithoutCR,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, 8192, false));
     }
 
     @Override
@@ -93,6 +93,19 @@ class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     @Override
     HttpMetaData assertStartLineForContent(final EmbeddedChannel channel) {
         return assertRequestLine(POST, "/some/path", HTTP_1_1, channel);
+    }
+
+    @Override
+    EmbeddedChannel channelWithMaxTotalHeaderLength(int maxTotalHeaderLength) {
+        return new EmbeddedChannel(new HttpRequestDecoder(new ArrayDeque<>(),
+                getByteBufAllocator(DEFAULT_ALLOCATOR),
+                DefaultHttpHeadersFactory.INSTANCE,
+                8192,   // maxStartLineLength
+                8192,   // maxHeaderFieldLength
+                false,  // allowPrematureClosureBeforePayloadBody
+                false,  // allowLFWithoutCR
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
+                maxTotalHeaderLength, false));
     }
 
     @Test
