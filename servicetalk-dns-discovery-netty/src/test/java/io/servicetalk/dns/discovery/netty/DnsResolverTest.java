@@ -50,8 +50,8 @@ import static org.mockito.Mockito.when;
 
 class DnsResolverTest {
 
-    private static final int BACKUP_DELAY = 20;
-    private static final int BACKUP_DELAY_WAIT_TIME = BACKUP_DELAY + (CI ? 200 : 40);
+    private static final int BACKUP_DELAY = CI ? 200 : 20;
+    private static final int BACKUP_DELAY_WAIT_TIME = BACKUP_DELAY * 2;
 
     @RegisterExtension
     static final ExecutorExtension<EventLoopAwareNettyIoExecutor> ioExecutor = ExecutorExtension
