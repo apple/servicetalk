@@ -37,9 +37,7 @@ import io.netty.handler.codec.http2.Http2HeadersFrame;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
-import static io.netty.handler.codec.http.HttpHeaderNames.HOST;
 import static io.netty.handler.codec.http.HttpHeaderValues.ZERO;
-import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.AUTHORITY;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.METHOD;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.PATH;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
@@ -140,10 +138,6 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
                                                    @Nullable final HttpRequestMethod httpMethod,
                                                    final boolean fullRequest,
                                                    final int streamId) throws Http2Exception {
-        CharSequence value = h2Headers.getAndRemove(AUTHORITY.value());
-        if (value != null) {
-            h2Headers.set(HOST, value);
-        }
         h2Headers.remove(Http2Headers.PseudoHeaderName.SCHEME.value());
         h2HeadersSanitizeForH1(h2Headers);
         if (httpMethod != null) {
@@ -157,13 +151,22 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
                         ") header is not expected for " + httpMethod.name() + " request");
             }
         }
-        return new NettyH2HeadersToHttpHeaders(h2Headers, headersFactory.validateCookies(),
-                headersFactory.validateValues());
+
+        if (h2Headers instanceof ServiceTalkHttpHeadersAsHttp2Headers) {
+            ServiceTalkHttpHeadersAsHttp2Headers headers = (ServiceTalkHttpHeadersAsHttp2Headers) h2Headers;
+            return headers.httpHeaders();
+        }
+
+        throw new IllegalStateException("Unexpected headers class: " + h2Headers.getClass().getName());
     }
 
     private HttpHeaders h2TrailersToH1TrailersServer(Http2Headers h2Headers) {
-        return new NettyH2HeadersToHttpHeaders(h2Headers, headersFactory.validateCookies(),
-                headersFactory.validateValues());
+        if (h2Headers instanceof ServiceTalkHttpHeadersAsHttp2Headers) {
+            ServiceTalkHttpHeadersAsHttp2Headers headers = (ServiceTalkHttpHeadersAsHttp2Headers) h2Headers;
+            return headers.httpHeaders();
+        }
+
+        throw new IllegalStateException("Unexpected trailers class: " + h2Headers.getClass().getName());
     }
 
     private static HttpRequestMetaData newRequestMetaData(

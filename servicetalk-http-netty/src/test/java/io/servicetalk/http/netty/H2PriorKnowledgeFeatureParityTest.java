@@ -1014,13 +1014,8 @@ class H2PriorKnowledgeFeatureParityTest {
         headers.addCookie("name1", "value1");
         headers.addCookie("name2", "value2");
         headers.addCookie("name1", "value3");
-        // Netty's value iterator does not preserve insertion order. This is a limitation of Netty's header
-        // data structure and will not be fixed for 4.1.
-        if (h2PriorKnowledge) {
-            assertEquals(new DefaultHttpCookiePair("name1", "value3"), headers.getCookie("name1"));
-        } else {
-            assertEquals(new DefaultHttpCookiePair("name1", "value1"), headers.getCookie("name1"));
-        }
+
+        assertEquals(new DefaultHttpCookiePair("name1", "value1"), headers.getCookie("name1"));
         assertEquals(new DefaultHttpCookiePair("name2", "value2"), headers.getCookie("name2"));
 
         assertIteratorHasItems(headers.getCookiesIterator(), new DefaultHttpCookiePair("name1", "value1"),
@@ -1041,15 +1036,10 @@ class H2PriorKnowledgeFeatureParityTest {
         // Split headers across 2 header entries, with duplicate cookie names.
         headers.add(COOKIE, "name1=value1; name2=value2; name1=value3");
         headers.add(COOKIE, "name2=value4; name1=value5; name3=value6");
-        if (h2PriorKnowledge) {
-            assertEquals(new DefaultHttpCookiePair("name1", "value5"), headers.getCookie("name1"));
-            assertEquals(new DefaultHttpCookiePair("name2", "value4"), headers.getCookie("name2"));
-            assertEquals(new DefaultHttpCookiePair("name3", "value6"), headers.getCookie("name3"));
-        } else {
-            assertEquals(new DefaultHttpCookiePair("name1", "value1"), headers.getCookie("name1"));
-            assertEquals(new DefaultHttpCookiePair("name2", "value2"), headers.getCookie("name2"));
-            assertEquals(new DefaultHttpCookiePair("name3", "value6"), headers.getCookie("name3"));
-        }
+
+        assertEquals(new DefaultHttpCookiePair("name1", "value1"), headers.getCookie("name1"));
+        assertEquals(new DefaultHttpCookiePair("name2", "value2"), headers.getCookie("name2"));
+        assertEquals(new DefaultHttpCookiePair("name3", "value6"), headers.getCookie("name3"));
 
         assertIteratorHasItems(headers.getCookiesIterator(), new DefaultHttpCookiePair("name1", "value1"),
                 new DefaultHttpCookiePair("name2", "value2"), new DefaultHttpCookiePair("name1", "value3"),

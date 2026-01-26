@@ -15,10 +15,9 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
-
-import io.netty.handler.codec.http2.DefaultHttp2Headers;
 
 /**
  * A {@link HttpHeadersFactory} optimized for HTTP/2.
@@ -27,11 +26,7 @@ public final class H2HeadersFactory implements HttpHeadersFactory {
 
     public static final HttpHeadersFactory INSTANCE = new H2HeadersFactory(true, true, false);
 
-    private final boolean validateNames;
-    private final boolean validateCookies;
-    private final boolean validateValues;
-    private final int headersArraySizeHint;
-    private final int trailersArraySizeHint;
+    private final HttpHeadersFactory underlying;
 
     /**
      * Create an instance of the factory with the default array size hint.
@@ -57,54 +52,44 @@ public final class H2HeadersFactory implements HttpHeadersFactory {
     public H2HeadersFactory(final boolean validateNames, final boolean validateCookies,
                             final boolean validateValues,
                             final int headersArraySizeHint, final int trailersArraySizeHint) {
-        this.validateNames = validateNames;
-        this.validateCookies = validateCookies;
-        this.validateValues = validateValues;
-        this.headersArraySizeHint = headersArraySizeHint;
-        this.trailersArraySizeHint = trailersArraySizeHint;
+        this.underlying = new DefaultHttpHeadersFactory(validateNames, validateCookies, validateValues,
+                headersArraySizeHint, trailersArraySizeHint);
     }
 
     @Override
     public HttpHeaders newHeaders() {
-        return new NettyH2HeadersToHttpHeaders(new DefaultHttp2Headers(validateNames, headersArraySizeHint),
-                validateCookies, validateValues);
+        return underlying.newHeaders();
     }
 
     @Override
     public HttpHeaders newTrailers() {
-        return new NettyH2HeadersToHttpHeaders(new DefaultHttp2Headers(validateNames, trailersArraySizeHint),
-                validateCookies, validateValues);
+        return underlying.newTrailers();
     }
 
     @Override
     public HttpHeaders newEmptyTrailers() {
-        return new NettyH2HeadersToHttpHeaders(new DefaultHttp2Headers(validateNames, 0),
-                validateCookies, validateValues);
+        return underlying.newEmptyTrailers();
     }
 
     @Override
     public boolean validateNames() {
-        return validateNames;
+        return underlying.validateNames();
     }
 
     @Override
     public boolean validateCookies() {
-        return validateCookies;
+        return underlying.validateCookies();
     }
 
     @Override
     public boolean validateValues() {
-        return validateValues;
+        return underlying.validateValues();
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() +
-                "{validateNames=" + validateNames +
-                ", validateCookies=" + validateCookies +
-                ", validateValues=" + validateValues +
-                ", headersArraySizeHint=" + headersArraySizeHint +
-                ", trailersArraySizeHint=" + trailersArraySizeHint +
+                "{underlying: " + underlying +
                 '}';
     }
 }

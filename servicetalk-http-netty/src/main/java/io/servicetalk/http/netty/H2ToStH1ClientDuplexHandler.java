@@ -74,15 +74,12 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
             HttpRequestMetaData metaData = (HttpRequestMetaData) msg;
             HttpHeaders h1Headers = metaData.headers();
             waitForContinuation = REQ_EXPECT_CONTINUE.test(metaData);
-            CharSequence host = h1Headers.getAndRemove(HOST);
             Http2Headers h2Headers = h1HeadersToH2Headers(h1Headers);
-            if (host == null) {
-                host = metaData.host();
+            if (!h1Headers.contains(HOST)) {
+                CharSequence host = metaData.host();
                 if (host != null) {
                     h2Headers.authority(host);
                 }
-            } else {
-                h2Headers.authority(host);
             }
             method = metaData.method();
             h2Headers.method(method.name());
@@ -209,8 +206,13 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                         " request");
             }
         }
-        return new NettyH2HeadersToHttpHeaders(h2Headers, headersFactory.validateCookies(),
-                headersFactory.validateValues());
+
+        if (h2Headers instanceof ServiceTalkHttpHeadersAsHttp2Headers) {
+            ServiceTalkHttpHeadersAsHttp2Headers headers = (ServiceTalkHttpHeadersAsHttp2Headers) h2Headers;
+            return headers.httpHeaders();
+        }
+
+        throw new IllegalStateException("Unexpected headers class: " + h2Headers.getClass().getName());
     }
 
     static boolean isInterim(final HttpResponseStatus status) {

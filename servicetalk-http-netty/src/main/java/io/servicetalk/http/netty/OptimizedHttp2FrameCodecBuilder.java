@@ -15,11 +15,21 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
+
 import io.netty.handler.codec.http2.DefaultHttp2Connection;
+import io.netty.handler.codec.http2.DefaultHttp2ConnectionDecoder;
+import io.netty.handler.codec.http2.DefaultHttp2FrameReader;
 import io.netty.handler.codec.http2.DefaultHttp2RemoteFlowController;
+import io.netty.handler.codec.http2.Http2Connection;
+import io.netty.handler.codec.http2.Http2ConnectionDecoder;
+import io.netty.handler.codec.http2.Http2ConnectionEncoder;
 import io.netty.handler.codec.http2.Http2FrameCodec;
 import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
+import io.netty.handler.codec.http2.Http2FrameReader;
+import io.netty.handler.codec.http2.Http2InboundFrameLogger;
 import io.netty.handler.codec.http2.Http2RemoteFlowController;
+import io.netty.handler.codec.http2.Http2Settings;
 import io.netty.handler.codec.http2.UniformStreamByteDistributor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -126,7 +136,29 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
         distributor.minAllocationChunk(flowControlQuantum);
         connection.remote().flowController(new DefaultHttp2RemoteFlowController(connection, distributor));
         connection(connection);
+        // Note that we can't override the `new DefaultHttp2HeadersDecoder` used in `super.build()`.
         return super.build();
+    }
+
+    @Override
+    protected Http2FrameCodec build(Http2ConnectionDecoder ignoredDecoder, Http2ConnectionEncoder encoder,
+                                    Http2Settings initialSettings) {
+        // This is the best way to override the default http2 headers decoder newHeaders() method. :(
+        Http2Connection connection = ignoredDecoder.connection();
+        Long maxHeaderListSize = initialSettings.maxHeaderListSize();
+        Http2FrameReader frameReader = new DefaultHttp2FrameReader(maxHeaderListSize == null ?
+                new STHeadersHttp2HeadersDecoder(DefaultHttpHeadersFactory.INSTANCE, isValidateHeaders()) :
+                new STHeadersHttp2HeadersDecoder(
+                        DefaultHttpHeadersFactory.INSTANCE, isValidateHeaders(), maxHeaderListSize));
+
+        if (frameLogger() != null) {
+            frameReader = new Http2InboundFrameLogger(frameReader, frameLogger());
+        }
+
+        DefaultHttp2ConnectionDecoder decoder = new DefaultHttp2ConnectionDecoder(connection, encoder, frameReader,
+                promisedRequestVerifier(), isAutoAckSettingsFrame(), isAutoAckPingFrame(), isValidateHeaders());
+
+        return super.build(decoder, encoder, initialSettings);
     }
 
     /**
