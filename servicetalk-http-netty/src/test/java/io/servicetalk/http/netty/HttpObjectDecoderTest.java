@@ -882,7 +882,8 @@ abstract class HttpObjectDecoderTest {
 
         TooLongFrameException e = assertThrows(TooLongFrameException.class,
                 () -> testChannel.writeInbound(fromAscii(msg)));
-        assertThat(e.getMessage(), startsWith("HTTP header block is larger than " + maxTotalHeaderLength + " bytes"));
+        assertThat(e.getMessage(), startsWith("HTTP start line and headers exceeded limit " + maxTotalHeaderLength +
+                " bytes"));
     }
 
     @Test
@@ -901,7 +902,8 @@ abstract class HttpObjectDecoderTest {
 
         TooLongFrameException e = assertThrows(TooLongFrameException.class,
                 () -> testChannel.writeInbound(fromAscii(msg.toString())));
-        assertThat(e.getMessage(), startsWith("HTTP header block is larger than " + maxTotalHeaderLength + " bytes"));
+        assertThat(e.getMessage(), startsWith("HTTP start line and headers exceeded limit " + maxTotalHeaderLength +
+                " bytes"));
     }
 
     @Test
@@ -961,7 +963,8 @@ abstract class HttpObjectDecoderTest {
 
         TooLongFrameException e = assertThrows(TooLongFrameException.class,
                 () -> testChannel.writeInbound(fromAscii(lastChunkWithTrailers)));
-        assertThat(e.getMessage(), startsWith("HTTP header block is larger than " + maxTotalHeaderLength + " bytes"));
+        assertThat(e.getMessage(), startsWith("HTTP start line and headers exceeded limit " + maxTotalHeaderLength +
+                " bytes"));
     }
 
     @Test
@@ -975,7 +978,8 @@ abstract class HttpObjectDecoderTest {
 
         TooLongFrameException e = assertThrows(TooLongFrameException.class,
                 () -> testChannel.writeInbound(fromAscii(msg)));
-        assertThat(e.getMessage(), startsWith("HTTP header block is larger than " + maxTotalHeaderLength + " bytes"));
+        assertThat(e.getMessage(), startsWith("HTTP start line and headers exceeded limit " + maxTotalHeaderLength +
+                " bytes"));
     }
 
     /**

@@ -141,7 +141,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             .getProperty(TOTAL_HEADER_LENGTH_WARN_ONLY_PROPERTY, "true"));
 
     static {
-        if (TOTAL_HEADER_LENGTH_WARN_ONLY && LOGGER.isDebugEnabled()) {
+        if (TOTAL_HEADER_LENGTH_WARN_ONLY) {
             LOGGER.debug("Total header length enforcement is in WARN-ONLY mode. " +
                     "Requests exceeding maxTotalHeaderLength will log a warning but not be rejected. " +
                     "Set -D{}=false for production hardening.", TOTAL_HEADER_LENGTH_WARN_ONLY_PROPERTY);
@@ -825,8 +825,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                                     "enforce the limit.", currentHeaderLength, maxTotalHeaderLength,
                             TOTAL_HEADER_LENGTH_WARN_ONLY_PROPERTY);
                 } else {
-                    throw new TooLongFrameException("HTTP header block is larger than " + maxTotalHeaderLength +
-                            " bytes (parsed " + currentHeaderLength + " bytes).");
+                    throw new TooLongFrameException("HTTP start line and headers exceeded limit " +
+                            maxTotalHeaderLength + " bytes (parsed " + currentHeaderLength + " bytes).");
                 }
             }
 

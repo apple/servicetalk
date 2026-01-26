@@ -32,10 +32,12 @@ public final class H1ProtocolConfigBuilder {
 
     private static final H1SpecExceptions DEFAULT_H1_SPEC_EXCEPTIONS = new H1SpecExceptions.Builder().build();
 
+    static final int DEFAULT_MAX_TOTAL_HEADER_LENGTH = 8192;
+
     private int maxPipelinedRequests = 1;
     private int maxStartLineLength = 4096;
     private int maxHeaderFieldLength = 8192;
-    private int maxTotalHeaderLength = 8192;
+    private int maxTotalHeaderLength = DEFAULT_MAX_TOTAL_HEADER_LENGTH;
     private HttpHeadersFactory headersFactory = DefaultHttpHeadersFactory.INSTANCE;
     private int headersEncodedSizeEstimate = 256;
     private int trailersEncodedSizeEstimate = 256;
@@ -101,8 +103,8 @@ public final class H1ProtocolConfigBuilder {
      * header block size exceeds this value. The default matches HTTP/2's
      * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_MAX_HEADER_LIST_SIZE</a>.
      * <p>
-     * If property is set to {@code io.servicetalk.http.netty.maxTotalHeaderLengthWarnOnly=true}, then ServiceTalk
-     * will only emit a warning instead of throwing - this is to ease initial rollout of this limit.
+     * If property is set to {@code io.servicetalk.http.netty.maxTotalHeaderLengthWarnOnly=true} (which is the default),
+     * then ServiceTalk will only emit a warning instead of throwing - this is to ease initial rollout of this limit.
      *
      * @param maxTotalHeaderLength maximum total length of start line and all header fields combined
      * @return {@code this}

@@ -18,6 +18,8 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpProtocolConfig;
 
+import static io.servicetalk.http.netty.H1ProtocolConfigBuilder.DEFAULT_MAX_TOTAL_HEADER_LENGTH;
+
 /**
  * Configuration for <a href="https://tools.ietf.org/html/rfc7230">HTTP/1.1</a> protocol.
  *
@@ -63,7 +65,9 @@ public interface H1ProtocolConfig extends HttpProtocolConfig {
      *
      * @return maximum total length of start line and all header fields combined
      */
-    int maxTotalHeaderLength();
+    default int maxTotalHeaderLength() { // TODO 0.43 - remove default method
+        return DEFAULT_MAX_TOTAL_HEADER_LENGTH;
+    }
 
     /**
      * Maximum length of the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> and
