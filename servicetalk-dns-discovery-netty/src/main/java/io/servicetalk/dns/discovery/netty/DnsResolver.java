@@ -55,7 +55,7 @@ abstract class DnsResolver {
 
     abstract long queryTimeoutMillis();
 
-    static DnsResolver build(EventLoop eventLoop, DnsNameResolverBuilder builder) {
+    static DnsResolver build(String resolverId, EventLoop eventLoop, DnsNameResolverBuilder builder) {
         // If the process started life with an unset delay or a delay of 0 or less, we disable backup requests
         // for the lifetime of the DNS resolver.
         Integer backupRequestDelay = getDelay();
@@ -66,10 +66,11 @@ abstract class DnsResolver {
         } else {
             // The backup resolver is really two resolvers: a primary and a backup. This lets us avoid the
             // consolidation cache in the second resolver so that the backup isn't simply consolidated.
-            // Note that they still share result caches.
+            // Note that they still share result caches and EventLoop thread.
             LOGGER.debug("Configured DNS backup request delay was {}. DNS backup requests enabled.",
                     backupRequestDelay);
-            return new BackupRequestResolver(builder.build(),
+            return new BackupRequestResolver(resolverId,
+                    builder.build(),
                     builder.consolidateCacheSize(0).build(),
                     eventLoop, DnsResolver::getDelay);
         }
@@ -109,13 +110,15 @@ abstract class DnsResolver {
 
     static final class BackupRequestResolver extends DnsResolver {
 
+        private final String resolverId;
         private final DnsNameResolver primaryResolver;
         private final DnsNameResolver backupResolver;
         private final EventLoop eventLoop;
         private final Supplier<Integer> backupDelayMs;
 
-        BackupRequestResolver(DnsNameResolver primaryResolver, DnsNameResolver backupResolver,
+        BackupRequestResolver(String resolverId, DnsNameResolver primaryResolver, DnsNameResolver backupResolver,
                               EventLoop eventLoop, Supplier<Integer> backupDelayMs) {
+            this.resolverId = resolverId;
             this.primaryResolver = primaryResolver;
             this.backupResolver = backupResolver;
             this.eventLoop = eventLoop;
@@ -159,7 +162,7 @@ abstract class DnsResolver {
             Promise<T> result = eventLoop.newPromise();
             Future<?> timer = eventLoop.schedule(() -> {
                 if (allowBackupRequest()) {
-                    LOGGER.debug("Issuing DNS backup request after {} delay.", backupDelay);
+                    LOGGER.debug("{} issuing DNS backup request after {} delay.", resolverId, backupDelay);
                     PromiseNotifier.cascade(false, query.apply(backupResolver), result);
                 }
             }, backupDelay, MILLISECONDS);

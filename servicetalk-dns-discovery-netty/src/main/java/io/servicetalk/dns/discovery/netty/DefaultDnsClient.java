@@ -229,7 +229,7 @@ final class DefaultDnsClient implements DnsClient {
             builder.nameServerProvider(toNettyType(dnsServerAddressStreamProvider));
         }
 
-        resolver = DnsResolver.build(eventLoop, builder);
+        resolver = DnsResolver.build(this.id, eventLoop, builder);
         this.resolutionTimeoutMillis = resolutionTimeout != null ? resolutionTimeout.toMillis() :
                 // Default value is chosen based on a combination of default "timeout" and "attempts" options of
                 // /etc/resolv.conf: https://man7.org/linux/man-pages/man5/resolv.conf.5.html

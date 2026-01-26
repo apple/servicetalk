@@ -51,7 +51,7 @@ import static org.mockito.Mockito.when;
 class DnsResolverTest {
 
     private static final int BACKUP_DELAY = 20;
-    private static final int BACKUP_DELAY_WAIT_TIME = BACKUP_DELAY + (CI ? 200 : 20);
+    private static final int BACKUP_DELAY_WAIT_TIME = BACKUP_DELAY + (CI ? 200 : 40);
 
     @RegisterExtension
     static final ExecutorExtension<EventLoopAwareNettyIoExecutor> ioExecutor = ExecutorExtension
@@ -65,7 +65,7 @@ class DnsResolverTest {
     private final Promise<List<InetAddress>> primaryPromise = eventLoop.newPromise();
     private final Promise<List<InetAddress>> backupPromise = eventLoop.newPromise();
     private final DnsResolver resolver = new DnsResolver.BackupRequestResolver(
-            primaryResolver, backupResolver, eventLoop, () -> BACKUP_DELAY);
+            "TheResolver", primaryResolver, backupResolver, eventLoop, () -> BACKUP_DELAY);
 
     @BeforeEach
     void setup() {
@@ -73,7 +73,7 @@ class DnsResolverTest {
         when(backupResolver.resolveAll("foo")).thenReturn(backupPromise);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}]: firstResolveWins={0}")
     @ValueSource(booleans = {true, false})
     void backupRequest(boolean firstResolveWins) throws Exception {
         Future<List<InetAddress>> resolveFuture = resolver.resolveAll("foo");
@@ -101,14 +101,13 @@ class DnsResolverTest {
         // After the delay plus some grace period, we should have a backup request
         verify(primaryResolver, timeout(BACKUP_DELAY_WAIT_TIME).times(1)).resolveAll("foo");
         verify(backupResolver, timeout(BACKUP_DELAY_WAIT_TIME).times(1)).resolveAll("foo");
-        List<InetAddress> result = new ArrayList<>();
         primaryPromise.setFailure(DELIBERATE_EXCEPTION);
         ExecutionException ex = assertThrows(ExecutionException.class,
                 () -> resolveFuture.get(BACKUP_DELAY_WAIT_TIME, SECONDS));
         assertThat(ex.getCause(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}]: originalIsFailure={0}")
     @ValueSource(booleans = {true, false})
     void noBackupRequestIfOriginalCompletesBeforeTimer(boolean originalIsFailure) throws Exception {
         Future<List<InetAddress>> resolveFuture = resolver.resolveAll("foo");
@@ -122,7 +121,7 @@ class DnsResolverTest {
         } else {
             List<InetAddress> result = new ArrayList<>();
             primaryPromise.trySuccess(result);
-            assertThat(result, equalTo(resolveFuture.get(BACKUP_DELAY, SECONDS)));
+            assertThat(result, sameInstance(resolveFuture.get(BACKUP_DELAY, SECONDS)));
         }
 
         // Wait for the timeout duration to be sure we only get one call.
