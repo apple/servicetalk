@@ -47,7 +47,6 @@ import io.netty.resolver.ResolvedAddressTypes;
 import io.netty.resolver.dns.DefaultAuthoritativeDnsServerCache;
 import io.netty.resolver.dns.DefaultDnsCache;
 import io.netty.resolver.dns.DefaultDnsCnameCache;
-import io.netty.resolver.dns.DnsNameResolver;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
 import io.netty.resolver.dns.NameServerComparator;
 import io.netty.resolver.dns.NoopAuthoritativeDnsServerCache;
@@ -127,7 +126,7 @@ final class DefaultDnsClient implements DnsClient {
     private static final Cancellable TERMINATED = () -> { };
 
     private final EventLoopAwareNettyIoExecutor nettyIoExecutor;
-    private final DnsNameResolver resolver;
+    private final DnsResolver resolver;
     private final MinTtlCache ttlCache;
     private final long maxTTLNanos;
     private final long ttlJitterNanos;
@@ -229,7 +228,8 @@ final class DefaultDnsClient implements DnsClient {
         if (dnsServerAddressStreamProvider != null) {
             builder.nameServerProvider(toNettyType(dnsServerAddressStreamProvider));
         }
-        resolver = builder.build();
+
+        resolver = DnsResolver.build(this.id, eventLoop, builder);
         this.resolutionTimeoutMillis = resolutionTimeout != null ? resolutionTimeout.toMillis() :
                 // Default value is chosen based on a combination of default "timeout" and "attempts" options of
                 // /etc/resolv.conf: https://man7.org/linux/man-pages/man5/resolv.conf.5.html
@@ -439,7 +439,7 @@ final class DefaultDnsClient implements DnsClient {
                     final EventLoop eventLoop = nettyIoExecutor.eventLoopGroup().next();
                     final Promise<DnsAnswer<HostAndPort>> promise = eventLoop.newPromise();
                     final Future<List<DnsRecord>> resolveFuture =
-                            resolver.resolveAll(new DefaultDnsQuestion(name, SRV));
+                            resolver.resolveAll(SrvRecordPublisher.this, new DefaultDnsQuestion(name, SRV));
                     final Future<?> timeoutFuture = resolutionTimeoutMillis == 0L ? null : eventLoop.schedule(() -> {
                         if (!promise.isDone() && promise.tryFailure(DnsNameResolverTimeoutException.newInstance(
                                 name, resolutionTimeoutMillis, SRV.toString(),
@@ -527,7 +527,7 @@ final class DefaultDnsClient implements DnsClient {
                     }
                     final EventLoop eventLoop = nettyIoExecutor.eventLoopGroup().next();
                     final Promise<DnsAnswer<InetAddress>> dnsAnswerPromise = eventLoop.newPromise();
-                    final Future<List<InetAddress>> resolveFuture = resolver.resolveAll(name);
+                    final Future<List<InetAddress>> resolveFuture = resolver.resolveAll(ARecordPublisher.this, name);
                     final Future<?> timeoutFuture = resolutionTimeoutMillis == 0L ? null : eventLoop.schedule(() -> {
                         if (!dnsAnswerPromise.isDone() && dnsAnswerPromise.tryFailure(
                                 DnsNameResolverTimeoutException.newInstance(name, resolutionTimeoutMillis,

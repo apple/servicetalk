@@ -145,9 +145,15 @@ class DefaultDnsClientTest {
 
     @AfterEach
     public void tearDown() throws Exception {
-        client.closeAsync().toFuture().get();
-        dnsServer.stop();
-        dnsServer2.stop();
+        if (client != null) {
+            client.closeAsync().toFuture().get();
+        }
+        if (dnsServer != null) {
+            dnsServer.stop();
+        }
+        if (dnsServer2 != null) {
+            dnsServer2.stop();
+        }
     }
 
     private static void advanceTime() throws Exception {
