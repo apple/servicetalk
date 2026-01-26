@@ -76,7 +76,7 @@ class DnsResolverTest {
     @ParameterizedTest(name = "{displayName} [{index}]: firstResolveWins={0}")
     @ValueSource(booleans = {true, false})
     void backupRequest(boolean firstResolveWins) throws Exception {
-        Future<List<InetAddress>> resolveFuture = resolver.resolveAll("foo");
+        Future<List<InetAddress>> resolveFuture = resolver.resolveAll("ignored", "foo");
         assertThat(resolveFuture.isDone(), equalTo(false));
 
         verify(primaryResolver, times(1)).resolveAll("foo");
@@ -92,7 +92,7 @@ class DnsResolverTest {
 
     @Test
     void originalRequestFailureAfterBackupFires() {
-        Future<List<InetAddress>> resolveFuture = resolver.resolveAll("foo");
+        Future<List<InetAddress>> resolveFuture = resolver.resolveAll("ignored", "foo");
         assertThat(resolveFuture.isDone(), equalTo(false));
 
         verify(primaryResolver, times(1)).resolveAll("foo");
@@ -110,7 +110,7 @@ class DnsResolverTest {
     @ParameterizedTest(name = "{displayName} [{index}]: originalIsFailure={0}")
     @ValueSource(booleans = {true, false})
     void noBackupRequestIfOriginalCompletesBeforeTimer(boolean originalIsFailure) throws Exception {
-        Future<List<InetAddress>> resolveFuture = resolver.resolveAll("foo");
+        Future<List<InetAddress>> resolveFuture = resolver.resolveAll("ignored", "foo");
         verify(primaryResolver, times(1)).resolveAll("foo");
         assertThat(resolveFuture.isDone(), equalTo(false));
         if (originalIsFailure) {

@@ -49,9 +49,9 @@ abstract class DnsResolver {
 
     abstract void close();
 
-    abstract Future<List<InetAddress>> resolveAll(String name);
+    abstract Future<List<InetAddress>> resolveAll(Object publisher, String name);
 
-    abstract Future<List<DnsRecord>> resolveAll(DnsQuestion name);
+    abstract Future<List<DnsRecord>> resolveAll(Object publisher, DnsQuestion name);
 
     abstract long queryTimeoutMillis();
 
@@ -93,12 +93,12 @@ abstract class DnsResolver {
         }
 
         @Override
-        public Future<List<InetAddress>> resolveAll(String name) {
+        public Future<List<InetAddress>> resolveAll(Object publisher, String name) {
             return nettyResolver.resolveAll(name);
         }
 
         @Override
-        public Future<List<DnsRecord>> resolveAll(DnsQuestion question) {
+        public Future<List<DnsRecord>> resolveAll(Object publisher, DnsQuestion question) {
             return nettyResolver.resolveAll(question);
         }
 
@@ -135,13 +135,13 @@ abstract class DnsResolver {
         }
 
         @Override
-        public Future<List<InetAddress>> resolveAll(String name) {
-            return withBackup(resolver -> resolver.resolveAll(name));
+        public Future<List<InetAddress>> resolveAll(Object publisher, String name) {
+            return withBackup(publisher, resolver -> resolver.resolveAll(name));
         }
 
         @Override
-        public Future<List<DnsRecord>> resolveAll(DnsQuestion name) {
-            return withBackup(resolver -> resolver.resolveAll(name));
+        public Future<List<DnsRecord>> resolveAll(Object publisher, DnsQuestion name) {
+            return withBackup(publisher, resolver -> resolver.resolveAll(name));
         }
 
         @Override
@@ -149,7 +149,8 @@ abstract class DnsResolver {
             return primaryResolver.queryTimeoutMillis();
         }
 
-        private <T> Future<T> withBackup(Function<? super DnsNameResolver, ? extends Future<T>> query) {
+        private <T> Future<T> withBackup(Object publisher,
+                                         Function<? super DnsNameResolver, ? extends Future<T>> query) {
             Future<T> primaryQuery = query.apply(primaryResolver);
             if (primaryQuery.isDone()) {
                 return primaryQuery;
@@ -162,7 +163,8 @@ abstract class DnsResolver {
             Promise<T> result = eventLoop.newPromise();
             Future<?> timer = eventLoop.schedule(() -> {
                 if (allowBackupRequest()) {
-                    LOGGER.debug("{} issuing DNS backup request after {} delay.", resolverId, backupDelay);
+                    LOGGER.debug("Publisher {} from resolver {} issuing DNS backup request after {} delay.",
+                            publisher, resolverId, backupDelay);
                     PromiseNotifier.cascade(false, query.apply(backupResolver), result);
                 }
             }, backupDelay, MILLISECONDS);
