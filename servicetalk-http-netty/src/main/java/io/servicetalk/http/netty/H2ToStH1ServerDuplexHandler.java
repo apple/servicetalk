@@ -93,12 +93,12 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
             final String path;
             if (!readHeaders) {
                 closeHandler.protocolPayloadBeginInbound(ctx);
-                CharSequence method = h2Headers.getAndRemove(METHOD.value());
-                CharSequence pathSequence = h2Headers.getAndRemove(PATH.value());
+                CharSequence pathSequence = h2Headers.path();
                 if (pathSequence == null) {
                     throw protocolError(ctx, streamId, false,
                             "Incoming request must have '" + PATH.value() + "' header");
                 }
+                CharSequence method = h2Headers.method();
                 if (method == null) {
                     throw protocolError(ctx, streamId, false,
                             "Incoming request must have '" + METHOD.value() + "' header");

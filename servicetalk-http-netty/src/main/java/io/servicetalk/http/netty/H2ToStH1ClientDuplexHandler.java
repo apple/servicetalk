@@ -116,7 +116,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
             final Http2Headers h2Headers = headersFrame.headers();
             final HttpResponseStatus httpStatus;
             if (!readHeaders) {
-                final CharSequence status = h2Headers.getAndRemove(STATUS.value());
+                final CharSequence status = h2Headers.status();
                 if (status == null) {
                     throw noStatus(ctx, streamId);
                 }

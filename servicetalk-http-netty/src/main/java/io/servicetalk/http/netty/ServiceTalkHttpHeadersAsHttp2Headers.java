@@ -24,7 +24,6 @@ import io.netty.util.AsciiString;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -149,14 +148,14 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
 
     @Override
     public Iterator<CharSequence> valueIterator(CharSequence name) {
-        CharSequence pseudoValue = getPseudoHeaderValue(name);
-        if (pseudoValue != null) {
-            return Collections.singletonList(pseudoValue).iterator();
+        if (isPseudoHeader(name)) {
+            CharSequence pseudoValue = getPseudoHeaderValue(name);
+            return pseudoValue != null ? Collections.singletonList(pseudoValue).iterator() :
+                    Collections.emptyIterator();
+        } else {
+            // Cast to handle wildcard issues
+            return (Iterator<CharSequence>) underlying.valuesIterator(name);
         }
-        // Cast to handle wildcard issues
-        @SuppressWarnings("unchecked")
-        Iterator<CharSequence> result = (Iterator<CharSequence>) underlying.valuesIterator(name);
-        return result;
     }
 
     @Override
@@ -225,21 +224,13 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
 
     @Override
     public boolean contains(CharSequence name, CharSequence value, boolean caseInsensitive) {
-        CharSequence pseudoValue = getPseudoHeaderValue(name);
-        if (pseudoValue != null) {
-            if (caseInsensitive) {
-                return pseudoValue.toString().equalsIgnoreCase(value.toString());
-            } else {
-                return pseudoValue.equals(value);
-            }
-        }
-        return underlying.contains(name, value) || underlying.containsIgnoreCase(name, value);
+        return unsupportedOperation("contains");
     }
 
     @Override
+    @Nullable
     public CharSequence get(CharSequence name) {
-        CharSequence pseudoValue = getPseudoHeaderValue(name);
-        return pseudoValue != null ? pseudoValue : underlying.get(name);
+        return isPseudoHeader(name) ? getPseudoHeaderValue(name) : underlying.get(name);
     }
 
     @Override
@@ -249,13 +240,17 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
     }
 
     @Override
+    @Nullable
     public CharSequence getAndRemove(CharSequence name) {
-        CharSequence pseudoValue = getPseudoHeaderValue(name);
-        if (pseudoValue != null) {
-            setPseudoHeaderValue(name, null);
+        if (isPseudoHeader(name)) {
+            CharSequence pseudoValue = getPseudoHeaderValue(name);
+            if (pseudoValue != null) {
+                setPseudoHeaderValue(name, null);
+            }
             return pseudoValue;
+        } else {
+            return underlying.getAndRemove(name);
         }
-        return underlying.getAndRemove(name);
     }
 
     @Override
@@ -280,17 +275,7 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
 
     @Override
     public List<CharSequence> getAllAndRemove(CharSequence name) {
-        CharSequence pseudoValue = getPseudoHeaderValue(name);
-        if (pseudoValue != null) {
-            setPseudoHeaderValue(name, null);
-            return Collections.singletonList(pseudoValue);
-        }
-        List<CharSequence> values = new ArrayList<>();
-        for (CharSequence value : underlying.values(name)) {
-            values.add(value);
-        }
-        underlying.remove(name);
-        return values;
+        return unsupportedOperation("getAllAndRemove");
     }
 
     @Override
@@ -475,12 +460,12 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
 
     @Override
     public boolean contains(CharSequence name) {
-        return getPseudoHeaderValue(name) != null || underlying.contains(name);
+        return isPseudoHeader(name) ? getPseudoHeaderValue(name) != null : underlying.contains(name);
     }
 
     @Override
     public boolean contains(CharSequence name, CharSequence value) {
-        return contains(name, value, false);
+        return unsupportedOperation("contains(name, value)");
     }
 
     @Override
@@ -545,9 +530,6 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
         if (scheme != null) {
             pseudoHeaderCount++;
         }
-        if (underlying.contains(HOST)) {
-            pseudoHeaderCount++;
-        }
         if (status != null) {
             pseudoHeaderCount++;
         }
@@ -561,23 +543,7 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
 
     @Override
     public Set<CharSequence> names() {
-        Set<CharSequence> allNames = new HashSet<>(underlying.names());
-        if (method != null) {
-            allNames.add(METHOD.value());
-        }
-        if (path != null) {
-            allNames.add(PATH.value());
-        }
-        if (scheme != null) {
-            allNames.add(SCHEME.value());
-        }
-        if (underlying.contains(HOST)) {
-            allNames.add(AUTHORITY.value());
-        }
-        if (status != null) {
-            allNames.add(STATUS.value());
-        }
-        return allNames;
+        return unsupportedOperation("names");
     }
 
     @Override
@@ -593,30 +559,12 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
 
     @Override
     public Http2Headers add(CharSequence name, Iterable<? extends CharSequence> values) {
-        if (isPseudoHeader(name)) {
-            // Take the last value for pseudo-headers as they should be unique
-            CharSequence lastValue = null;
-            for (CharSequence value : values) {
-                lastValue = value;
-            }
-            if (lastValue != null) {
-                setPseudoHeaderValue(name, lastValue);
-            }
-        } else {
-            underlying.add(name, values);
-        }
-        return this;
+        return unsupportedOperation("add(name, Iterable values)");
     }
 
     @Override
     public Http2Headers add(CharSequence name, CharSequence... values) {
-        if (isPseudoHeader(name) && values.length > 0) {
-            // Take the last value for pseudo-headers as they should be unique
-            setPseudoHeaderValue(name, values[values.length - 1]);
-        } else {
-            underlying.add(name, values);
-        }
-        return this;
+        return unsupportedOperation("add(name, values...)");
     }
 
     @Override
@@ -656,8 +604,7 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
 
     @Override
     public Http2Headers addInt(CharSequence name, int value) {
-        underlying.add(name, String.valueOf(value));
-        return this;
+        return unsupportedOperation("addInt");
     }
 
     @Override
@@ -697,28 +644,12 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
 
     @Override
     public Http2Headers set(CharSequence name, Iterable<? extends CharSequence> values) {
-        if (isPseudoHeader(name)) {
-            // Take the last value for pseudo-headers as they should be unique
-            CharSequence lastValue = null;
-            for (CharSequence value : values) {
-                lastValue = value;
-            }
-            setPseudoHeaderValue(name, lastValue);
-        } else {
-            underlying.set(name, values);
-        }
-        return this;
+        return unsupportedOperation("set(name, Iterable values)");
     }
 
     @Override
     public Http2Headers set(CharSequence name, CharSequence... values) {
-        if (isPseudoHeader(name)) {
-            CharSequence valueToSet = values.length > 0 ? values[values.length - 1] : null;
-            setPseudoHeaderValue(name, valueToSet);
-        } else {
-            underlying.set(name, values);
-        }
-        return this;
+        return unsupportedOperation("set(name, values...)");
     }
 
     @Override
@@ -758,12 +689,12 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
 
     @Override
     public Http2Headers setInt(CharSequence name, int value) {
-        underlying.set(name, String.valueOf(value));
-        return this;
+        return unsupportedOperation("setInt");
     }
 
     @Override
     public Http2Headers setLong(CharSequence name, long value) {
+        // This method is used in `DefaultHttp2ConnectionDecoder.onHeadersRead`
         return set(name, String.valueOf(value));
     }
 
@@ -805,12 +736,7 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
 
     @Override
     public Http2Headers clear() {
-        method = null;
-        path = null;
-        scheme = null;
-        status = null;
-        underlying.clear();
-        return this;
+        return unsupportedOperation("clear");
     }
 
     // Helper methods for pseudo-header handling
@@ -849,7 +775,8 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
     }
 
     /**
-     * Get the underlying HttpHeaders without pseudo-headers.
+     * Get the underlying HttpHeaders without pseudo-headers, except the ':authority' header, which
+     * is represented as the 'Host' header.
      */
     HttpHeaders httpHeaders() {
         return underlying;

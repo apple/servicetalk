@@ -29,12 +29,12 @@ final class STHeadersHttp2HeadersDecoder extends DefaultHttp2HeadersDecoder {
     STHeadersHttp2HeadersDecoder(HttpHeadersFactory headersFactory,
                                  boolean validateHeaders, long maxHeadersListSize) {
         super(validateHeaders, maxHeadersListSize);
-        this.headersFactory = requireNonNull(headersFactory);
+        this.headersFactory = requireNonNull(headersFactory, "headersFactory");
     }
 
     STHeadersHttp2HeadersDecoder(HttpHeadersFactory headersFactory, boolean validateHeaders) {
         super(validateHeaders);
-        this.headersFactory = headersFactory;
+        this.headersFactory = requireNonNull(headersFactory, "headersFactory");
     }
 
     @Override

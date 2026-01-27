@@ -170,7 +170,7 @@ class AbstractH2DuplexHandlerTest {
             default:
                 throw new Error();
         }
-        headers.setInt(CONTENT_LENGTH, 1);
+        headers.set(CONTENT_LENGTH, valueOf(1));
 
         Http2Exception e = assertThrows(Http2Exception.class,
                 () -> channel.writeInbound(headersFrame(headers, endStream)));
@@ -233,7 +233,7 @@ class AbstractH2DuplexHandlerTest {
         // Prepare server response with content-length header:
         Http2Headers headers = newTestHeaders();
         headers.status(OK.codeAsText());
-        headers.setInt(CONTENT_LENGTH, contentLength);
+        headers.set(CONTENT_LENGTH, valueOf(contentLength));
         channel.writeInbound(headersFrame(headers, endStream));
 
         HttpMetaData metaData = channel.readInbound();
@@ -301,7 +301,7 @@ class AbstractH2DuplexHandlerTest {
         String content = "hello";
 
         Http2Headers headers = variant.setHeaders(newTestHeaders());
-        headers.setInt(CONTENT_LENGTH, content.length());
+        headers.set(CONTENT_LENGTH, String.valueOf(content.length()));
         channel.writeInbound(headersFrame(headers, false));
 
         HttpMetaData metaData = channel.readInbound();
@@ -329,7 +329,7 @@ class AbstractH2DuplexHandlerTest {
         variant.writeOutbound(channel);
 
         Http2Headers headers = variant.setHeaders(newTestHeaders());
-        headers.setInt(CONTENT_LENGTH, 0);
+        headers.set(CONTENT_LENGTH, valueOf(0));
         channel.writeInbound(headersFrame(headers, true));
 
         HttpMetaData metaData = channel.readInbound();

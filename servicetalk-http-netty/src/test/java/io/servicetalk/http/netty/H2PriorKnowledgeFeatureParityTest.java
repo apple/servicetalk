@@ -2090,7 +2090,9 @@ class H2PriorKnowledgeFeatureParityTest {
                 if (contentType != null) {
                     outHeaders.add(CONTENT_TYPE, contentType);
                 }
-                outHeaders.add(HttpHeaderNames.COOKIE, headers.headers().getAll(HttpHeaderNames.COOKIE));
+                for (CharSequence cookie : headers.headers().getAll(HttpHeaderNames.COOKIE)) {
+                    outHeaders.add(HttpHeaderNames.COOKIE, cookie);
+                }
                 ctx.write(new DefaultHttp2HeadersFrame(outHeaders, headers.isEndStream()));
                 sentHeaders = true;
             }
