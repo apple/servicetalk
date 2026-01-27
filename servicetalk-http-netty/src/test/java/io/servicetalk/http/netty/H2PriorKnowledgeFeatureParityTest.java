@@ -239,6 +239,14 @@ class H2PriorKnowledgeFeatureParityTest {
                          Arguments.of(DEFAULT, false));
     }
 
+    private static Stream<Arguments> clientExecutorsHeaderKeyCase() {
+        return Stream.of(NO_OFFLOAD, DEFAULT).flatMap(executionStrategy ->
+            TRUE_FALSE.stream().flatMap(h2PriorKnowledge ->
+                TRUE_FALSE.stream().map(upperCaseHeaderKeys ->
+                    Arguments.of(executionStrategy, h2PriorKnowledge, upperCaseHeaderKeys)))
+        );
+    }
+
     @SuppressWarnings("unused")
     private static Collection<Arguments> clientExecutorsCookies() {
         Collection<Arguments> data = new ArrayList<>();
@@ -1703,22 +1711,24 @@ class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
-    @MethodSource("clientExecutors")
-    void trailersWithContentLength(HttpTestExecutionStrategy strategy,
-                                   boolean h2PriorKnowledge) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] strategy={0}, h2PriorKnowledge={1}, upperCasedKeys={2}")
+    @MethodSource("clientExecutorsHeaderKeyCase")
+    void trailersAndHeadersWithContentLength(HttpTestExecutionStrategy strategy,
+                                             boolean h2PriorKnowledge, boolean upperCasedKeys) throws Exception {
         setUp(strategy, h2PriorKnowledge);
         final String expectedPayload = "Hello World!";
         final String expectedPayloadLength = valueOf(expectedPayload.length());
-        final String expectedTrailer = "foo";
-        final String expectedTrailerValue = "bar";
+        final String expectedHeaderKey = upperCasedKeys ? "Foo" : "foo";
+        final String expectedHeaderValue = "header";
+        final String expectedTrailerValue = "trailer";
         final AtomicReference<HttpRequest> requestReceived = new AtomicReference<>();
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     requestReceived.set(request);
                     return responseFactory.ok()
-                            .addTrailer(expectedTrailer, expectedTrailerValue)
+                            .addHeader(expectedHeaderKey, expectedHeaderValue)
+                            .addTrailer(expectedHeaderKey, expectedTrailerValue)
                             .addHeader(CONTENT_LENGTH, expectedPayloadLength)
                             .payloadBody(expectedPayload, textSerializerUtf8());
                 });
@@ -1728,19 +1738,22 @@ class H2PriorKnowledgeFeatureParityTest {
                      .executionStrategy(clientExecutionStrategy).buildBlocking()) {
 
             HttpResponse response = client.request(client.post("/")
-                    .addTrailer(expectedTrailer, expectedTrailerValue)
+                    .addHeader(expectedHeaderKey, expectedHeaderValue)
+                    .addTrailer(expectedHeaderKey, expectedTrailerValue)
                     .addHeader(CONTENT_LENGTH, expectedPayloadLength)
                     .payloadBody(expectedPayload, textSerializerUtf8()));
             assertThat(response.status(), is(OK));
             assertThat(response.payloadBody(textSerializerUtf8()), equalTo(expectedPayload));
             assertHeaders(h2PriorKnowledge, response.headers(), expectedPayloadLength);
-            assertTrailers(response.trailers(), expectedTrailer, expectedTrailerValue);
+            assertThat(response.headers().get(expectedHeaderKey).toString(), equalTo(expectedHeaderValue));
+            assertTrailers(response.trailers(), expectedHeaderKey, expectedTrailerValue);
 
             // Verify what server received:
             HttpRequest request = requestReceived.get();
             assertThat(request.payloadBody(textSerializerUtf8()), equalTo(expectedPayload));
             assertHeaders(h2PriorKnowledge, request.headers(), expectedPayloadLength);
-            assertTrailers(request.trailers(), expectedTrailer, expectedTrailerValue);
+            assertThat(request.headers().get(expectedHeaderKey).toString(), equalTo(expectedHeaderValue));
+            assertTrailers(request.trailers(), expectedHeaderKey, expectedTrailerValue);
         }
     }
 
