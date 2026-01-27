@@ -105,10 +105,10 @@ abstract class HttpObjectDecoderTest {
     /**
      * Creates a new channel with a custom maxTotalHeaderLength for testing header size limits.
      *
-     * @param maxTotalHeaderLength the maximum total header length to enforce
+     * @param maxTotalHeaderFieldsLength the maximum total header length to enforce
      * @return a new EmbeddedChannel configured with the specified limit
      */
-    abstract EmbeddedChannel channelWithMaxTotalHeaderLength(int maxTotalHeaderLength);
+    abstract EmbeddedChannel channelWithMaxTotalHeaderFieldsLength(int maxTotalHeaderFieldsLength);
 
     final HttpMetaData assertStartLineForContent() {
         return assertStartLineForContent(channel());
@@ -822,7 +822,7 @@ abstract class HttpObjectDecoderTest {
 
     @Test
     void trailerLineTooLong() {
-        EmbeddedChannel testChannel = channelWithMaxTotalHeaderLength(Integer.MAX_VALUE);  // No total limit
+        EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(Integer.MAX_VALUE);  // No total limit
 
         String headers = startLineForContent() + "\r\n" +
                 "Host: x\r\n" +
@@ -847,19 +847,17 @@ abstract class HttpObjectDecoderTest {
     @Test
     void totalHeaderLengthAtExactLimit() {
         int maxTotalHeaderLength = 100;
-        EmbeddedChannel testChannel = channelWithMaxTotalHeaderLength(maxTotalHeaderLength);
+        EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(maxTotalHeaderLength);
 
-        String startLine = startLine();
-        int startLineSize = startLine.length();
         int hostHeaderSize = 7;  // "Host: x"
-        int remainingBytes = maxTotalHeaderLength - startLineSize - hostHeaderSize;
+        int remainingBytes = maxTotalHeaderLength - hostHeaderSize;
 
         // Create a padding header that fills exactly to the limit
         // "X-Pad: " = 7 bytes, so value needs to be (remainingBytes - 7) chars
         int paddingValueLength = Math.max(0, remainingBytes - 7);
         String paddingHeader = "X-Pad: " + repeatChar('a', paddingValueLength);
 
-        String msg = startLine + "\r\n" +
+        String msg = startLine() + "\r\n" +
                 "Host: x\r\n" +
                 paddingHeader + "\r\n\r\n";
 
@@ -872,24 +870,23 @@ abstract class HttpObjectDecoderTest {
 
     @Test
     void totalHeaderLengthExceedsLimit() {
-        final int maxTotalHeaderLength = 50;
-        final EmbeddedChannel testChannel = channelWithMaxTotalHeaderLength(maxTotalHeaderLength);
+        final int maxTotalHeaderLength = 30;
+        final EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(maxTotalHeaderLength);
 
-        // This message is definitely over 50 bytes
         String msg = startLine() + "\r\n" +
                 "Host: servicetalk.io\r\n" +
                 "X-Test: some-value-here\r\n\r\n";
 
         TooLongFrameException e = assertThrows(TooLongFrameException.class,
                 () -> testChannel.writeInbound(fromAscii(msg)));
-        assertThat(e.getMessage(), startsWith("HTTP start line and headers exceeded limit " + maxTotalHeaderLength +
+        assertThat(e.getMessage(), startsWith("HTTP headers exceeded limit " + maxTotalHeaderLength +
                 " bytes"));
     }
 
     @Test
     void totalHeaderLengthExceedsLimitWithManySmallHeaders() {
         int maxTotalHeaderLength = 100;
-        EmbeddedChannel testChannel = channelWithMaxTotalHeaderLength(maxTotalHeaderLength);
+        EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(maxTotalHeaderLength);
 
         // Start line + many small headers that together exceed the limit
         StringBuilder msg = new StringBuilder(startLine()).append("\r\n");
@@ -902,14 +899,14 @@ abstract class HttpObjectDecoderTest {
 
         TooLongFrameException e = assertThrows(TooLongFrameException.class,
                 () -> testChannel.writeInbound(fromAscii(msg.toString())));
-        assertThat(e.getMessage(), startsWith("HTTP start line and headers exceeded limit " + maxTotalHeaderLength +
+        assertThat(e.getMessage(), startsWith("HTTP headers exceeded limit " + maxTotalHeaderLength +
                 " bytes"));
     }
 
     @Test
     void totalHeaderLengthResetsAfterCompleteMessage() {
         int maxTotalHeaderLength = 80;
-        EmbeddedChannel testChannel = channelWithMaxTotalHeaderLength(maxTotalHeaderLength);
+        EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(maxTotalHeaderLength);
 
         // First message: should be under the limit
         String msg1 = startLine() + "\r\n" +
@@ -935,15 +932,14 @@ abstract class HttpObjectDecoderTest {
 
     @Test
     void totalHeaderLengthIncludesTrailers() {
-        int maxTotalHeaderLength = 80;
-        EmbeddedChannel testChannel = channelWithMaxTotalHeaderLength(maxTotalHeaderLength);
+        int maxTotalHeaderLength = 70;
+        EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(maxTotalHeaderLength);
 
         // Headers (roughly 50-60 bytes depending on request/response)
         String headers = startLineForContent() + "\r\n" +
                 "Host: x\r\n" +
                 "Transfer-Encoding: chunked\r\n\r\n";
 
-        // This should succeed (headers only, under 80 bytes)
         assertThat(testChannel.writeInbound(fromAscii(headers)), is(true));
         HttpMetaData meta = testChannel.readInbound();
         assertThat(meta, is(not(nullValue())));
@@ -963,23 +959,34 @@ abstract class HttpObjectDecoderTest {
 
         TooLongFrameException e = assertThrows(TooLongFrameException.class,
                 () -> testChannel.writeInbound(fromAscii(lastChunkWithTrailers)));
-        assertThat(e.getMessage(), startsWith("HTTP start line and headers exceeded limit " + maxTotalHeaderLength +
+        assertThat(e.getMessage(), startsWith("HTTP headers exceeded limit " + maxTotalHeaderLength +
                 " bytes"));
     }
 
     @Test
     void totalHeaderLengthVerySmallLimit() {
-        int maxTotalHeaderLength = 10;
-        EmbeddedChannel testChannel = channelWithMaxTotalHeaderLength(maxTotalHeaderLength);
+        int maxTotalHeaderLength = 5;
+        EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(maxTotalHeaderLength);
 
-        // Start line is definitely > 10 bytes, so first header should trigger the error
-        String msg = startLine() + "\r\n" +
-                "Host: x\r\n\r\n";
-
+        String msg = startLine() + "\r\nHost: x\r\n\r\n";
         TooLongFrameException e = assertThrows(TooLongFrameException.class,
                 () -> testChannel.writeInbound(fromAscii(msg)));
-        assertThat(e.getMessage(), startsWith("HTTP start line and headers exceeded limit " + maxTotalHeaderLength +
+        assertThat(e.getMessage(), startsWith("HTTP headers exceeded limit " + maxTotalHeaderLength +
                 " bytes"));
+    }
+
+    @Test
+    void totalHeaderLengthDoesNotIncludeStartLine() {
+        int maxTotalHeaderLength = 20;         // Limit that would fail if start line were counted
+        EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(maxTotalHeaderLength);
+
+        String msg = startLine() + "\r\nHost: x\r\n\r\n";
+
+        assertThat("Start line should not count toward header limit",
+                testChannel.writeInbound(fromAscii(msg)), is(true));
+
+        HttpMetaData meta = testChannel.readInbound();
+        assertThat(meta, is(not(nullValue())));
     }
 
     /**

@@ -96,7 +96,7 @@ class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Override
-    EmbeddedChannel channelWithMaxTotalHeaderLength(int maxTotalHeaderLength) {
+    EmbeddedChannel channelWithMaxTotalHeaderFieldsLength(int maxTotalHeaderFieldsLength) {
         return new EmbeddedChannel(new HttpRequestDecoder(new ArrayDeque<>(),
                 getByteBufAllocator(DEFAULT_ALLOCATOR),
                 DefaultHttpHeadersFactory.INSTANCE,
@@ -105,7 +105,7 @@ class HttpRequestDecoderTest extends HttpObjectDecoderTest {
                 false,  // allowPrematureClosureBeforePayloadBody
                 false,  // allowLFWithoutCR
                 UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
-                maxTotalHeaderLength, false));
+                maxTotalHeaderFieldsLength, false));
     }
 
     @Test

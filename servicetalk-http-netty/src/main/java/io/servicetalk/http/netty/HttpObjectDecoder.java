@@ -133,24 +133,27 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
     // FIXME: 0.43 - remove this system property after validation in production
     // This property allows to enable a "warn-only" mode for the new total header size limit.
-    // When enabled, exceeding maxTotalHeaderLength logs a warning instead of throwing TooLongFrameException.
+    // When enabled, exceeding maxTotalHeaderFieldsLength logs a warning instead of throwing TooLongFrameException.
     // This is useful for gradual rollout to identify legitimate traffic that exceeds the limit.
     private static final String TOTAL_HEADER_LENGTH_WARN_ONLY_PROPERTY =
-            "io.servicetalk.http.netty.maxTotalHeaderLengthWarnOnly";
+            "io.servicetalk.http.netty.maxTotalHeaderFieldsLengthWarnOnly";
+    // FIXME 0.43 - flip default value
     protected static final boolean TOTAL_HEADER_LENGTH_WARN_ONLY = Boolean.parseBoolean(System
             .getProperty(TOTAL_HEADER_LENGTH_WARN_ONLY_PROPERTY, "true"));
 
     static {
         if (TOTAL_HEADER_LENGTH_WARN_ONLY) {
-            LOGGER.debug("Total header length enforcement is in WARN-ONLY mode. " +
-                    "Requests exceeding maxTotalHeaderLength will log a warning but not be rejected. " +
-                    "Set -D{}=false for production hardening.", TOTAL_HEADER_LENGTH_WARN_ONLY_PROPERTY);
+            LOGGER.warn("-D{}: {}. Requests exceeding the limit won't be rejected. Users should flip this property " +
+                            "to false and adjust their limit as necessary.",
+                    TOTAL_HEADER_LENGTH_WARN_ONLY_PROPERTY, TOTAL_HEADER_LENGTH_WARN_ONLY);
+        } else {
+            LOGGER.debug("-D{}: {}", TOTAL_HEADER_LENGTH_WARN_ONLY_PROPERTY, TOTAL_HEADER_LENGTH_WARN_ONLY);
         }
     }
 
     private final int maxStartLineLength;
     private final int maxHeaderFieldLength;
-    private final int maxTotalHeaderLength;
+    private final int maxTotalHeaderFieldsLength;
     private final boolean totalHeaderLengthWarnOnly;
 
     private final HttpHeadersFactory headersFactory;
@@ -179,6 +182,11 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     private int currentHeaderLength;
 
     /**
+     * Use this boolean to only warn once per connection (== once per decoder instance).
+     */
+    private boolean totalHeaderLengthLimitWarned;
+
+    /**
      * The internal state of {@link HttpObjectDecoder}.
      */
     private enum State {
@@ -203,14 +211,14 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     HttpObjectDecoder(final ByteBufAllocator alloc, final HttpHeadersFactory headersFactory,
                       final int maxStartLineLength, final int maxHeaderFieldLength,
                       final boolean allowPrematureClosureBeforePayloadBody, final boolean allowLFWithoutCR,
-                      final CloseHandler closeHandler, final int maxTotalHeaderLength,
+                      final CloseHandler closeHandler, final int maxTotalHeaderFieldsLength,
                       final boolean totalHeaderLengthWarnOnly) {
         super(alloc);
         this.closeHandler = requireNonNull(closeHandler);
         this.headersFactory = requireNonNull(headersFactory);
         this.maxStartLineLength = ensurePositive(maxStartLineLength, "maxStartLineLength");
         this.maxHeaderFieldLength = ensurePositive(maxHeaderFieldLength, "maxHeaderFieldLength");
-        this.maxTotalHeaderLength = ensurePositive(maxTotalHeaderLength, "maxTotalHeaderLength");
+        this.maxTotalHeaderFieldsLength = ensurePositive(maxTotalHeaderFieldsLength, "maxTotalHeaderFieldsLength");
         this.allowPrematureClosureBeforePayloadBody = allowPrematureClosureBeforePayloadBody;
         this.allowLFWithoutCR = allowLFWithoutCR;
         this.totalHeaderLengthWarnOnly = totalHeaderLengthWarnOnly;
@@ -313,7 +321,6 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
                 // Consume the initial line bytes from the buffer.
                 consumeCRLF(buffer, lfIndex);
-                currentHeaderLength = nonControlIndex - aStart + 1;
 
                 message = createMessage(buffer, aStart, aEnd - aStart, bStart, bEnd - bStart, cStart, cLength);
                 currentState = State.READ_HEADER;
@@ -818,15 +825,18 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
             final int headerLineSize = nonControlIndex - buffer.readerIndex() + 1;
             currentHeaderLength += headerLineSize;
-            if (currentHeaderLength > maxTotalHeaderLength) {
+            if (currentHeaderLength > maxTotalHeaderFieldsLength) {
                 if (totalHeaderLengthWarnOnly) {
-                    LOGGER.warn("HTTP headers exceed maxTotalHeaderLength limit: {} > {} bytes. This request " +
-                                    "would be rejected when warn-only mode is disabled. Disable -D{}=true to " +
-                                    "enforce the limit.", currentHeaderLength, maxTotalHeaderLength,
-                            TOTAL_HEADER_LENGTH_WARN_ONLY_PROPERTY);
+                    if (!totalHeaderLengthLimitWarned) {
+                        totalHeaderLengthLimitWarned = true;
+                        LOGGER.warn("HTTP headers exceed maxTotalHeaderFieldsLength limit: {} > {} bytes. " +
+                                        "This request would be rejected when warn-only mode is disabled. Set " +
+                                        "-D{}=false to enforce the limit.", currentHeaderLength,
+                                maxTotalHeaderFieldsLength, TOTAL_HEADER_LENGTH_WARN_ONLY_PROPERTY);
+                    }
                 } else {
-                    throw new TooLongFrameException("HTTP start line and headers exceeded limit " +
-                            maxTotalHeaderLength + " bytes (parsed " + currentHeaderLength + " bytes).");
+                    throw new TooLongFrameException("HTTP headers exceeded limit " + maxTotalHeaderFieldsLength +
+                            " bytes (parsed " + currentHeaderLength + " bytes).");
                 }
             }
 

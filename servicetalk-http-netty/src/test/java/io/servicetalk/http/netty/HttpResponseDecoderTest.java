@@ -134,7 +134,7 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Override
-    EmbeddedChannel channelWithMaxTotalHeaderLength(int maxTotalHeaderLength) {
+    EmbeddedChannel channelWithMaxTotalHeaderFieldsLength(int maxTotalHeaderFieldsLength) {
         final ArrayDeque<Signal> signalsQueue = new PollLikePeakArrayDeque<>();
         signalsQueue.offer(REQUEST_SIGNAL);
         return new EmbeddedChannel(new HttpResponseDecoder(methodQueue, signalsQueue,
@@ -145,7 +145,7 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
                 false,  // allowPrematureClosureBeforePayloadBody
                 false,  // allowLFWithoutCR
                 UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
-                maxTotalHeaderLength, false));
+                maxTotalHeaderFieldsLength, false));
     }
 
     @Test
