@@ -229,18 +229,21 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
 
     @Override
     public Http2Headers method(@Nullable CharSequence value) {
+        maybeValidateValue(value);
         this.method = value;
         return this;
     }
 
     @Override
     public Http2Headers scheme(@Nullable CharSequence value) {
+        maybeValidateValue(value);
         this.scheme = value;
         return this;
     }
 
     @Override
     public Http2Headers authority(@Nullable CharSequence value) {
+        maybeValidateValue(value);
         if (value != null) {
             underlying.set(HOST, value);
         } else {
@@ -251,12 +254,14 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
 
     @Override
     public Http2Headers path(@Nullable CharSequence value) {
+        maybeValidateValue(value);
         this.path = value;
         return this;
     }
 
     @Override
     public Http2Headers status(@Nullable CharSequence value) {
+        maybeValidateValue(value);
         this.status = value;
         return this;
     }
@@ -818,6 +823,12 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
     @Override
     public Http2Headers clear() {
         return unsupportedOperation("clear");
+    }
+
+    private void maybeValidateValue(@Nullable CharSequence value) {
+        if (validateValues && value != null) {
+            HTTP2_VALUE_VALIDATOR.validate(value);
+        }
     }
 
     // Helper methods for pseudo-header handling
