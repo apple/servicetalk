@@ -16,8 +16,10 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.NoAvailableHostException;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestCompletable;
+import io.servicetalk.concurrent.api.TestExecutor;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
@@ -78,6 +80,7 @@ class LoadBalancerReadyHttpClientTest {
             DEFAULT_ALLOCATOR, INSTANCE, HTTP_1_1);
 
 
+    private final TestExecutor testExecutor = new TestExecutor();
     private final TestPublisher<Object> loadBalancerPublisher = new TestPublisher<>();
     private final TestCompletable sdStatusCompletable = new TestCompletable();
 
@@ -115,6 +118,8 @@ class LoadBalancerReadyHttpClientTest {
                 .when(mockReservedConnection).httpResponseFactory();
         doAnswer((Answer<HttpExecutionStrategy>) invocation -> offloadAll())
                 .when(mockExecutionCtx).executionStrategy();
+        doAnswer((Answer<Executor>) invocation -> testExecutor)
+                .when(mockExecutionCtx).executor();
     }
 
     @Test
@@ -216,6 +221,7 @@ class LoadBalancerReadyHttpClientTest {
 
     private static StreamingHttpClientFilterFactory newAutomaticRetryFilterFactory(
             TestPublisher<Object> loadBalancerPublisher, TestCompletable sdStatusCompletable) {
+        // TODO: we should add a test for the delay, and configure the delay here.
         final RetryingHttpRequesterFilter filter = new RetryingHttpRequesterFilter.Builder().maxTotalRetries(1).build();
         return client -> {
             final ContextAwareRetryingHttpClientFilter f = (ContextAwareRetryingHttpClientFilter) filter.create(client);
