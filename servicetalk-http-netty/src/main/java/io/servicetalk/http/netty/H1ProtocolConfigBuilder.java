@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
+import io.servicetalk.http.api.Http2Settings;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
@@ -32,9 +33,12 @@ public final class H1ProtocolConfigBuilder {
 
     private static final H1SpecExceptions DEFAULT_H1_SPEC_EXCEPTIONS = new H1SpecExceptions.Builder().build();
 
+    static final int DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH = 8192;
+
     private int maxPipelinedRequests = 1;
     private int maxStartLineLength = 4096;
     private int maxHeaderFieldLength = 8192;
+    private int maxTotalHeaderFieldsLength = DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH;
     private HttpHeadersFactory headersFactory = DefaultHttpHeadersFactory.INSTANCE;
     private int headersEncodedSizeEstimate = 256;
     private int trailersEncodedSizeEstimate = 256;
@@ -85,6 +89,31 @@ public final class H1ProtocolConfigBuilder {
      */
     public H1ProtocolConfigBuilder maxStartLineLength(final int maxStartLineLength) {
         this.maxStartLineLength = ensurePositive(maxStartLineLength, "maxStartLineLength");
+        return this;
+    }
+
+    /**
+     * Sets the maximum total allowed length of all HTTP
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> combined.
+     * <p>
+     * This limit protects against memory exhaustion attacks where an attacker sends many small headers
+     * that individually pass validation but collectively consume excessive memory.
+     * <p>
+     * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the total
+     * header block size exceeds this value. The default matches HTTP/2's
+     * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_MAX_HEADER_LIST_SIZE</a>.
+     * <p>
+     * If property is set to {@code io.servicetalk.http.netty.maxTotalHeaderFieldsLengthWarnOnly=true} (which is
+     * the current default), then ServiceTalk will only emit a warning instead of throwing - this is to ease initial
+     * rollout of this limit. A future release will enforce it by default, so we recommend adjusting the code to not
+     * see any warnings in preparation for the change.
+     *
+     * @param maxTotalHeaderFieldsLength maximum total allowed length of all header fields combined
+     * @return {@code this}
+     * @see H2ProtocolConfigBuilder#initialSettings(Http2Settings) how to configure it for H2
+     */
+    public H1ProtocolConfigBuilder maxTotalHeaderFieldsLength(final int maxTotalHeaderFieldsLength) {
+        this.maxTotalHeaderFieldsLength = ensurePositive(maxTotalHeaderFieldsLength, "maxTotalHeaderFieldsLength");
         return this;
     }
 
@@ -153,7 +182,8 @@ public final class H1ProtocolConfigBuilder {
      */
     public H1ProtocolConfig build() {
         return new DefaultH1ProtocolConfig(headersFactory, maxPipelinedRequests, maxStartLineLength,
-                maxHeaderFieldLength, headersEncodedSizeEstimate, trailersEncodedSizeEstimate, specExceptions);
+                maxHeaderFieldLength, headersEncodedSizeEstimate, trailersEncodedSizeEstimate, specExceptions,
+                maxTotalHeaderFieldsLength);
     }
 
     private static final class DefaultH1ProtocolConfig implements H1ProtocolConfig {
@@ -162,6 +192,7 @@ public final class H1ProtocolConfigBuilder {
         private final int maxPipelinedRequests;
         private final int maxStartLineLength;
         private final int maxHeaderFieldLength;
+        private final int maxTotalHeaderFieldsLength;
         private final int headersEncodedSizeEstimate;
         private final int trailersEncodedSizeEstimate;
         private final H1SpecExceptions specExceptions;
@@ -169,7 +200,7 @@ public final class H1ProtocolConfigBuilder {
         DefaultH1ProtocolConfig(final HttpHeadersFactory headersFactory, final int maxPipelinedRequests,
                                 final int maxStartLineLength, final int maxHeaderFieldLength,
                                 final int headersEncodedSizeEstimate, final int trailersEncodedSizeEstimate,
-                                final H1SpecExceptions specExceptions) {
+                                final H1SpecExceptions specExceptions, final int maxTotalHeaderFieldsLength) {
             this.headersFactory = headersFactory;
             this.maxPipelinedRequests = maxPipelinedRequests;
             this.maxStartLineLength = maxStartLineLength;
@@ -177,6 +208,7 @@ public final class H1ProtocolConfigBuilder {
             this.headersEncodedSizeEstimate = headersEncodedSizeEstimate;
             this.trailersEncodedSizeEstimate = trailersEncodedSizeEstimate;
             this.specExceptions = specExceptions;
+            this.maxTotalHeaderFieldsLength = maxTotalHeaderFieldsLength;
         }
 
         @Override
@@ -197,6 +229,11 @@ public final class H1ProtocolConfigBuilder {
         @Override
         public int maxHeaderFieldLength() {
             return maxHeaderFieldLength;
+        }
+
+        @Override
+        public int maxTotalHeaderFieldsLength() {
+            return maxTotalHeaderFieldsLength;
         }
 
         @Override
@@ -222,6 +259,7 @@ public final class H1ProtocolConfigBuilder {
                     ", maxPipelinedRequests=" + maxPipelinedRequests +
                     ", maxStartLineLength=" + maxStartLineLength +
                     ", maxHeaderFieldLength=" + maxHeaderFieldLength +
+                    ", maxTotalHeaderFieldsLength=" + maxTotalHeaderFieldsLength +
                     ", headersEncodedSizeEstimate=" + headersEncodedSizeEstimate +
                     ", trailersEncodedSizeEstimate=" + trailersEncodedSizeEstimate +
                     ", specExceptions=" + specExceptions +
