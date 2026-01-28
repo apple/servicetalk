@@ -239,6 +239,14 @@ class H2PriorKnowledgeFeatureParityTest {
                          Arguments.of(DEFAULT, false));
     }
 
+    private static Stream<Arguments> clientExecutorsHeaderKeyCase() {
+        return Stream.of(NO_OFFLOAD, DEFAULT).flatMap(executionStrategy ->
+            TRUE_FALSE.stream().flatMap(h2PriorKnowledge ->
+                TRUE_FALSE.stream().map(upperCaseHeaderKeys ->
+                    Arguments.of(executionStrategy, h2PriorKnowledge, upperCaseHeaderKeys)))
+        );
+    }
+
     @SuppressWarnings("unused")
     private static Collection<Arguments> clientExecutorsCookies() {
         Collection<Arguments> data = new ArrayList<>();
@@ -1014,13 +1022,8 @@ class H2PriorKnowledgeFeatureParityTest {
         headers.addCookie("name1", "value1");
         headers.addCookie("name2", "value2");
         headers.addCookie("name1", "value3");
-        // Netty's value iterator does not preserve insertion order. This is a limitation of Netty's header
-        // data structure and will not be fixed for 4.1.
-        if (h2PriorKnowledge) {
-            assertEquals(new DefaultHttpCookiePair("name1", "value3"), headers.getCookie("name1"));
-        } else {
-            assertEquals(new DefaultHttpCookiePair("name1", "value1"), headers.getCookie("name1"));
-        }
+
+        assertEquals(new DefaultHttpCookiePair("name1", "value1"), headers.getCookie("name1"));
         assertEquals(new DefaultHttpCookiePair("name2", "value2"), headers.getCookie("name2"));
 
         assertIteratorHasItems(headers.getCookiesIterator(), new DefaultHttpCookiePair("name1", "value1"),
@@ -1041,15 +1044,10 @@ class H2PriorKnowledgeFeatureParityTest {
         // Split headers across 2 header entries, with duplicate cookie names.
         headers.add(COOKIE, "name1=value1; name2=value2; name1=value3");
         headers.add(COOKIE, "name2=value4; name1=value5; name3=value6");
-        if (h2PriorKnowledge) {
-            assertEquals(new DefaultHttpCookiePair("name1", "value5"), headers.getCookie("name1"));
-            assertEquals(new DefaultHttpCookiePair("name2", "value4"), headers.getCookie("name2"));
-            assertEquals(new DefaultHttpCookiePair("name3", "value6"), headers.getCookie("name3"));
-        } else {
-            assertEquals(new DefaultHttpCookiePair("name1", "value1"), headers.getCookie("name1"));
-            assertEquals(new DefaultHttpCookiePair("name2", "value2"), headers.getCookie("name2"));
-            assertEquals(new DefaultHttpCookiePair("name3", "value6"), headers.getCookie("name3"));
-        }
+
+        assertEquals(new DefaultHttpCookiePair("name1", "value1"), headers.getCookie("name1"));
+        assertEquals(new DefaultHttpCookiePair("name2", "value2"), headers.getCookie("name2"));
+        assertEquals(new DefaultHttpCookiePair("name3", "value6"), headers.getCookie("name3"));
 
         assertIteratorHasItems(headers.getCookiesIterator(), new DefaultHttpCookiePair("name1", "value1"),
                 new DefaultHttpCookiePair("name2", "value2"), new DefaultHttpCookiePair("name1", "value3"),
@@ -1713,22 +1711,24 @@ class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
-    @MethodSource("clientExecutors")
-    void trailersWithContentLength(HttpTestExecutionStrategy strategy,
-                                   boolean h2PriorKnowledge) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] strategy={0}, h2PriorKnowledge={1}, upperCasedKeys={2}")
+    @MethodSource("clientExecutorsHeaderKeyCase")
+    void trailersAndHeadersWithContentLength(HttpTestExecutionStrategy strategy,
+                                             boolean h2PriorKnowledge, boolean upperCasedKeys) throws Exception {
         setUp(strategy, h2PriorKnowledge);
         final String expectedPayload = "Hello World!";
         final String expectedPayloadLength = valueOf(expectedPayload.length());
-        final String expectedTrailer = "foo";
-        final String expectedTrailerValue = "bar";
+        final String expectedHeaderKey = upperCasedKeys ? "Foo" : "foo";
+        final String expectedHeaderValue = "header";
+        final String expectedTrailerValue = "trailer";
         final AtomicReference<HttpRequest> requestReceived = new AtomicReference<>();
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     requestReceived.set(request);
                     return responseFactory.ok()
-                            .addTrailer(expectedTrailer, expectedTrailerValue)
+                            .addHeader(expectedHeaderKey, expectedHeaderValue)
+                            .addTrailer(expectedHeaderKey, expectedTrailerValue)
                             .addHeader(CONTENT_LENGTH, expectedPayloadLength)
                             .payloadBody(expectedPayload, textSerializerUtf8());
                 });
@@ -1738,19 +1738,22 @@ class H2PriorKnowledgeFeatureParityTest {
                      .executionStrategy(clientExecutionStrategy).buildBlocking()) {
 
             HttpResponse response = client.request(client.post("/")
-                    .addTrailer(expectedTrailer, expectedTrailerValue)
+                    .addHeader(expectedHeaderKey, expectedHeaderValue)
+                    .addTrailer(expectedHeaderKey, expectedTrailerValue)
                     .addHeader(CONTENT_LENGTH, expectedPayloadLength)
                     .payloadBody(expectedPayload, textSerializerUtf8()));
             assertThat(response.status(), is(OK));
             assertThat(response.payloadBody(textSerializerUtf8()), equalTo(expectedPayload));
             assertHeaders(h2PriorKnowledge, response.headers(), expectedPayloadLength);
-            assertTrailers(response.trailers(), expectedTrailer, expectedTrailerValue);
+            assertThat(response.headers().get(expectedHeaderKey).toString(), equalTo(expectedHeaderValue));
+            assertTrailers(response.trailers(), expectedHeaderKey, expectedTrailerValue);
 
             // Verify what server received:
             HttpRequest request = requestReceived.get();
             assertThat(request.payloadBody(textSerializerUtf8()), equalTo(expectedPayload));
             assertHeaders(h2PriorKnowledge, request.headers(), expectedPayloadLength);
-            assertTrailers(request.trailers(), expectedTrailer, expectedTrailerValue);
+            assertThat(request.headers().get(expectedHeaderKey).toString(), equalTo(expectedHeaderValue));
+            assertTrailers(request.trailers(), expectedHeaderKey, expectedTrailerValue);
         }
     }
 
@@ -2100,7 +2103,9 @@ class H2PriorKnowledgeFeatureParityTest {
                 if (contentType != null) {
                     outHeaders.add(CONTENT_TYPE, contentType);
                 }
-                outHeaders.add(HttpHeaderNames.COOKIE, headers.headers().getAll(HttpHeaderNames.COOKIE));
+                for (CharSequence cookie : headers.headers().getAll(HttpHeaderNames.COOKIE)) {
+                    outHeaders.add(HttpHeaderNames.COOKIE, cookie);
+                }
                 ctx.write(new DefaultHttp2HeadersFrame(outHeaders, headers.isEndStream()));
                 sentHeaders = true;
             }
