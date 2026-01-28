@@ -22,6 +22,7 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.RequestRejectedException;
+import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.AsyncContext;
@@ -70,7 +71,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Collection;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -80,6 +83,7 @@ import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
+import static io.servicetalk.http.netty.HttpClients.DiscoveryStrategy.BACKGROUND;
 import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
@@ -382,6 +386,22 @@ final class RetryingHttpRequesterFilterTest {
         }
     }
 
+    @Test
+    void sdAvailableStatusCanResultInTimeout() {
+        failingClient = forSingleAddress(new ForeverServiceDiscoverer(), HostAndPort.of("foo", 80), BACKGROUND)
+                .appendClientFilter(
+                        new Builder()
+                                .waitForLoadBalancerTimeout(Duration.ofMillis(100))
+                        .build())
+                .buildBlocking();
+        Exception e = assertThrows(Exception.class, () -> failingClient.request(failingClient.get("/")));
+        assertThat(e, instanceOf(TimeoutException.class));
+        // Note that this message is very specific and subject to change
+        assertThat(e.getMessage(), equalTo("Load balancer unavailable"));
+        assertThat(e.getCause(), instanceOf(TimeoutException.class));
+        assertThat("Unexpected calls to select.", lbSelectInvoked.get(), is(equalTo(0)));
+    }
+
     @ParameterizedTest(name = "{displayName} [{index}]: returnOriginalResponses={0}, thrower={1}")
     @MethodSource("lambdaExceptions")
     void lambdaExceptions(final boolean returnOriginalResponses, final ExceptionSource thrower) {
@@ -532,6 +552,24 @@ final class RetryingHttpRequesterFilterTest {
             HttpResponse response = client.request(client.post("/").payloadBody(
                     client.executionContext().bufferAllocator().wrap("hello".getBytes(UTF_8))));
             assertThat(response.status(), equalTo(HttpResponseStatus.OK));
+        }
+    }
+
+    private static final class ForeverServiceDiscoverer implements ServiceDiscoverer<HostAndPort, InetSocketAddress,
+            ServiceDiscovererEvent<InetSocketAddress>> {
+        @Override
+        public Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> discover(HostAndPort s) {
+            return Publisher.never();
+        }
+
+        @Override
+        public Completable onClose() {
+            return Completable.completed();
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return onClose();
         }
     }
 
