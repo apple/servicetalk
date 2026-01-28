@@ -232,6 +232,7 @@ final class H2ToStH1Utils {
         }
 
         // These will be used by the netty encoder so we need to make sure when we give it keys they're lower cased.
-        return new ServiceTalkHttpHeadersAsHttp2Headers(h1Headers, true);
+        // We also don't need to worry about validation at this point.
+        return new ServiceTalkHttpHeadersAsHttp2Headers(h1Headers, true, false, false);
     }
 }

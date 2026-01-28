@@ -21,7 +21,10 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 
 /**
  * A {@link HttpHeadersFactory} optimized for HTTP/2.
+ *
+ * @deprecated Use {@link DefaultHttpHeadersFactory} instead
  */
+@Deprecated // FIXME: 0.43 - remove deprecated class
 public final class H2HeadersFactory implements HttpHeadersFactory {
 
     public static final HttpHeadersFactory INSTANCE = new H2HeadersFactory(true, true, false);

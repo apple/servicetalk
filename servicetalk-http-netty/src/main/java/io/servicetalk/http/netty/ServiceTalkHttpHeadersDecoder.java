@@ -22,23 +22,24 @@ import io.netty.handler.codec.http2.Http2Headers;
 
 import static java.util.Objects.requireNonNull;
 
-final class STHeadersHttp2HeadersDecoder extends DefaultHttp2HeadersDecoder {
+final class ServiceTalkHttpHeadersDecoder extends DefaultHttp2HeadersDecoder {
 
     private final HttpHeadersFactory headersFactory;
 
-    STHeadersHttp2HeadersDecoder(HttpHeadersFactory headersFactory,
-                                 boolean validateHeaders, long maxHeadersListSize) {
+    ServiceTalkHttpHeadersDecoder(HttpHeadersFactory headersFactory,
+                                  boolean validateHeaders, long maxHeadersListSize) {
         super(validateHeaders, maxHeadersListSize);
         this.headersFactory = requireNonNull(headersFactory, "headersFactory");
     }
 
-    STHeadersHttp2HeadersDecoder(HttpHeadersFactory headersFactory, boolean validateHeaders) {
+    ServiceTalkHttpHeadersDecoder(HttpHeadersFactory headersFactory, boolean validateHeaders) {
         super(validateHeaders);
         this.headersFactory = requireNonNull(headersFactory, "headersFactory");
     }
 
     @Override
     protected Http2Headers newHeaders() {
-        return new ServiceTalkHttpHeadersAsHttp2Headers(headersFactory.newHeaders(), false);
+        return new ServiceTalkHttpHeadersAsHttp2Headers(headersFactory.newHeaders(),
+                false, validateHeaders(), validateHeaderValues());
     }
 }

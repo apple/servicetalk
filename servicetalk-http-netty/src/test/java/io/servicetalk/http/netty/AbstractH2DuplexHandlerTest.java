@@ -420,7 +420,7 @@ class AbstractH2DuplexHandlerTest {
     }
 
     private static Http2Headers newTestHeaders() {
-        return new ServiceTalkHttpHeadersAsHttp2Headers(HEADERS_FACTORY.newHeaders(), false);
+        return new ServiceTalkHttpHeadersAsHttp2Headers(HEADERS_FACTORY.newHeaders(), false, true, true);
     }
 
     private static Http2HeadersFrame headersFrame(Http2Headers headers, boolean endStream) {
