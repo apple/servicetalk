@@ -17,8 +17,10 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpHeaders;
 
+import io.netty.handler.codec.CharSequenceValueConverter;
 import io.netty.handler.codec.DefaultHeaders;
 import io.netty.handler.codec.Headers;
+import io.netty.handler.codec.ValueConverter;
 import io.netty.handler.codec.http.HttpHeaderValidationUtil;
 import io.netty.handler.codec.http2.Http2Exception;
 import io.netty.handler.codec.http2.Http2Headers;
@@ -29,11 +31,13 @@ import io.netty.util.internal.PlatformDependent;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.HOST;
@@ -50,6 +54,8 @@ import static io.netty.util.AsciiString.isUpperCase;
 import static java.util.Objects.requireNonNull;
 
 final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
+
+    private static final ValueConverter<CharSequence> VALUE_CONVERTER = CharSequenceValueConverter.INSTANCE;
 
     // TODO: use the validators from Netty once they're made public
     private static final ByteProcessor HTTP2_NAME_VALIDATOR_PROCESSOR = (c) -> !isUpperCase(c);
@@ -298,7 +304,12 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
 
     @Override
     public boolean contains(CharSequence name, CharSequence value, boolean caseInsensitive) {
-        return unsupportedOperation("contains");
+        CharSequence storedValue = get(name);
+        if (storedValue == null) {
+            return false;
+        }
+        return caseInsensitive ? AsciiString.contentEqualsIgnoreCase(storedValue, value) :
+                AsciiString.contentEquals(storedValue, value);
     }
 
     @Override
@@ -349,187 +360,227 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
 
     @Override
     public List<CharSequence> getAllAndRemove(CharSequence name) {
-        return unsupportedOperation("getAllAndRemove");
+        List<CharSequence> result = getAll(name);
+        if (!result.isEmpty()) {
+            remove(name);
+        }
+        return result;
     }
 
     @Override
+    @Nullable
     public Boolean getBoolean(CharSequence name) {
-        return unsupportedOperation("getBoolean");
+        return convert(name, VALUE_CONVERTER::convertToBoolean);
     }
 
     @Override
     public boolean getBoolean(CharSequence name, boolean defaultValue) {
-        return unsupportedOperation("getBoolean");
+        Boolean result = getBoolean(name);
+        return result == null ? defaultValue : result;
     }
 
     @Override
+    @Nullable
     public Byte getByte(CharSequence name) {
-        return unsupportedOperation("getByte");
+        return convert(name, VALUE_CONVERTER::convertToByte);
     }
 
     @Override
     public byte getByte(CharSequence name, byte defaultValue) {
-        return unsupportedOperation("getByte");
+        Byte result = getByte(name);
+        return result == null ? defaultValue : result;
     }
 
     @Override
+    @Nullable
     public Character getChar(CharSequence name) {
-        return unsupportedOperation("getChar");
+        return convert(name, VALUE_CONVERTER::convertToChar);
     }
 
     @Override
     public char getChar(CharSequence name, char defaultValue) {
-        return unsupportedOperation("getChar");
+        Character result = getChar(name);
+        return result == null ? defaultValue : result;
     }
 
     @Override
+    @Nullable
     public Short getShort(CharSequence name) {
-        return unsupportedOperation("getShort");
+        return convert(name, VALUE_CONVERTER::convertToShort);
     }
 
     @Override
     public short getShort(CharSequence name, short defaultValue) {
-        return unsupportedOperation("getShort");
+        Short result = getShort(name);
+        return result == null ? defaultValue : result;
     }
 
     @Override
+    @Nullable
     public Integer getInt(CharSequence name) {
-        return unsupportedOperation("getInt");
+        return convert(name, VALUE_CONVERTER::convertToInt);
     }
 
     @Override
     public int getInt(CharSequence name, int defaultValue) {
-        return unsupportedOperation("getInt");
+        Integer result = getInt(name);
+        return result == null ? defaultValue : result;
     }
 
     @Override
+    @Nullable
     public Long getLong(CharSequence name) {
-        return unsupportedOperation("getLong");
+        return convert(name, VALUE_CONVERTER::convertToLong);
     }
 
     @Override
     public long getLong(CharSequence name, long defaultValue) {
-        return unsupportedOperation("getLong");
+        Long result = getLong(name);
+        return result == null ? defaultValue : result;
     }
 
     @Override
+    @Nullable
     public Float getFloat(CharSequence name) {
-        return unsupportedOperation("getFloat");
+        return convert(name, VALUE_CONVERTER::convertToFloat);
     }
 
     @Override
     public float getFloat(CharSequence name, float defaultValue) {
-        return unsupportedOperation("getFloat");
+        Float result = getFloat(name);
+        return result == null ? defaultValue : result;
     }
 
     @Override
+    @Nullable
     public Double getDouble(CharSequence name) {
-        return unsupportedOperation("getDouble");
+        return convert(name, VALUE_CONVERTER::convertToDouble);
     }
 
     @Override
     public double getDouble(CharSequence name, double defaultValue) {
-        return unsupportedOperation("getDouble");
+        Double result = getDouble(name);
+        return result == null ? defaultValue : result;
     }
 
     @Override
+    @Nullable
     public Long getTimeMillis(CharSequence name) {
-        return unsupportedOperation("getTimeMillis");
+        return convert(name, VALUE_CONVERTER::convertToTimeMillis);
     }
 
     @Override
     public long getTimeMillis(CharSequence name, long defaultValue) {
-        return unsupportedOperation("getTimeMillis");
+        Long result = getTimeMillis(name);
+        return result == null ? defaultValue : result;
     }
 
     @Override
+    @Nullable
     public Boolean getBooleanAndRemove(CharSequence name) {
-        return unsupportedOperation("getBooleanAndRemove");
+        return convertValue(getAndRemove(name), VALUE_CONVERTER::convertToBoolean);
     }
 
     @Override
     public boolean getBooleanAndRemove(CharSequence name, boolean defaultValue) {
-        return unsupportedOperation("getBooleanAndRemove");
+        Boolean result = getBooleanAndRemove(name);
+        return result == null ? defaultValue : result;
     }
 
     @Override
+    @Nullable
     public Byte getByteAndRemove(CharSequence name) {
-        return unsupportedOperation("getByteAndRemove");
+        return convertValue(getAndRemove(name), VALUE_CONVERTER::convertToByte);
     }
 
     @Override
     public byte getByteAndRemove(CharSequence name, byte defaultValue) {
-        return unsupportedOperation("getByteAndRemove");
+        Byte result = getByteAndRemove(name);
+        return result == null ? defaultValue : result;
     }
 
     @Override
+    @Nullable
     public Character getCharAndRemove(CharSequence name) {
-        return unsupportedOperation("getCharAndRemove");
+        return convertValue(getAndRemove(name), VALUE_CONVERTER::convertToChar);
     }
 
     @Override
     public char getCharAndRemove(CharSequence name, char defaultValue) {
-        return unsupportedOperation("getCharAndRemove");
+        Character result = getCharAndRemove(name);
+        return result == null ? defaultValue : result;
     }
 
     @Override
+    @Nullable
     public Short getShortAndRemove(CharSequence name) {
-        return unsupportedOperation("getShortAndRemove");
+        return convertValue(getAndRemove(name), VALUE_CONVERTER::convertToShort);
     }
 
     @Override
     public short getShortAndRemove(CharSequence name, short defaultValue) {
-        return unsupportedOperation("getShortAndRemove");
+        Short result = getShortAndRemove(name);
+        return result == null ? defaultValue : result;
     }
 
     @Override
+    @Nullable
     public Integer getIntAndRemove(CharSequence name) {
-        return unsupportedOperation("getIntAndRemove");
+        return convertValue(getAndRemove(name), VALUE_CONVERTER::convertToInt);
     }
 
     @Override
     public int getIntAndRemove(CharSequence name, int defaultValue) {
-        return unsupportedOperation("getIntAndRemove");
+        Integer result = getIntAndRemove(name);
+        return result == null ? defaultValue : result;
     }
 
     @Override
+    @Nullable
     public Long getLongAndRemove(CharSequence name) {
-        return unsupportedOperation("getLongAndRemove");
+        return convertValue(getAndRemove(name), VALUE_CONVERTER::convertToLong);
     }
 
     @Override
     public long getLongAndRemove(CharSequence name, long defaultValue) {
-        return unsupportedOperation("getLongAndRemove");
+        Long result = getLongAndRemove(name);
+        return result == null ? defaultValue : result;
     }
 
     @Override
+    @Nullable
     public Float getFloatAndRemove(CharSequence name) {
-        return unsupportedOperation("getFloatAndRemove");
+        return convertValue(getAndRemove(name), VALUE_CONVERTER::convertToFloat);
     }
 
     @Override
     public float getFloatAndRemove(CharSequence name, float defaultValue) {
-        return unsupportedOperation("getFloatAndRemove");
+        Float result = getFloatAndRemove(name);
+        return result == null ? defaultValue : result;
     }
 
     @Override
+    @Nullable
     public Double getDoubleAndRemove(CharSequence name) {
-        return unsupportedOperation("getDoubleAndRemove");
+        return convertValue(getAndRemove(name), VALUE_CONVERTER::convertToDouble);
     }
 
     @Override
     public double getDoubleAndRemove(CharSequence name, double defaultValue) {
-        return unsupportedOperation("getDoubleAndRemove");
+        Double result = getDoubleAndRemove(name);
+        return result == null ? defaultValue : result;
     }
 
     @Override
+    @Nullable
     public Long getTimeMillisAndRemove(CharSequence name) {
-        return unsupportedOperation("getTimeMillisAndRemove");
+        return convertValue(getAndRemove(name), VALUE_CONVERTER::convertToTimeMillis);
     }
 
     @Override
     public long getTimeMillisAndRemove(CharSequence name, long defaultValue) {
-        return unsupportedOperation("getTimeMillisAndRemove");
+        Long result = getTimeMillisAndRemove(name);
+        return result == null ? defaultValue : result;
     }
 
     @Override
@@ -539,57 +590,57 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
 
     @Override
     public boolean contains(CharSequence name, CharSequence value) {
-        return unsupportedOperation("contains(name, value)");
+        return contains(name, value, true);
     }
 
     @Override
     public boolean containsObject(CharSequence name, Object value) {
-        return unsupportedOperation("containsObject");
+        return contains(name, VALUE_CONVERTER.convertObject(value));
     }
 
     @Override
     public boolean containsBoolean(CharSequence name, boolean value) {
-        return unsupportedOperation("containsBoolean");
+        return contains(name, VALUE_CONVERTER.convertBoolean(value));
     }
 
     @Override
     public boolean containsByte(CharSequence name, byte value) {
-        return unsupportedOperation("containsByte");
+        return contains(name, VALUE_CONVERTER.convertByte(value));
     }
 
     @Override
     public boolean containsChar(CharSequence name, char value) {
-        return unsupportedOperation("containsChar");
+        return contains(name, VALUE_CONVERTER.convertChar(value));
     }
 
     @Override
     public boolean containsShort(CharSequence name, short value) {
-        return unsupportedOperation("containsShort");
+        return contains(name, VALUE_CONVERTER.convertShort(value));
     }
 
     @Override
     public boolean containsInt(CharSequence name, int value) {
-        return unsupportedOperation("containsInt");
+        return contains(name, VALUE_CONVERTER.convertInt(value));
     }
 
     @Override
     public boolean containsLong(CharSequence name, long value) {
-        return unsupportedOperation("containsLong");
+        return contains(name, VALUE_CONVERTER.convertLong(value));
     }
 
     @Override
     public boolean containsFloat(CharSequence name, float value) {
-        return unsupportedOperation("containsFloat");
+        return contains(name, VALUE_CONVERTER.convertFloat(value));
     }
 
     @Override
     public boolean containsDouble(CharSequence name, double value) {
-        return unsupportedOperation("containsDouble");
+        return contains(name, VALUE_CONVERTER.convertDouble(value));
     }
 
     @Override
     public boolean containsTimeMillis(CharSequence name, long value) {
-        return unsupportedOperation("containsTimeMillis");
+        return contains(name, VALUE_CONVERTER.convertTimeMillis(value));
     }
 
     @Override
@@ -617,7 +668,28 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
 
     @Override
     public Set<CharSequence> names() {
-        return unsupportedOperation("names");
+        Set<CharSequence> result = new HashSet<>();
+        if (method != null) {
+            result.add(METHOD.value());
+        }
+        if (path != null) {
+            result.add(PATH.value());
+        }
+        if (scheme != null) {
+            result.add(SCHEME.value());
+        }
+        if (status != null) {
+            result.add(STATUS.value());
+        }
+        for (Map.Entry<CharSequence, ?> entry : underlying) {
+            // We need to convert the 'Host' header to the ':authority' pseudo-header, if it exists.
+            if (AsciiString.contentEquals(HOST, entry.getKey())) {
+                result.add(AUTHORITY.value());
+            } else {
+                result.add(entry.getKey());
+            }
+        }
+        return result;
     }
 
     @Override
@@ -639,77 +711,95 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
 
     @Override
     public Http2Headers add(CharSequence name, Iterable<? extends CharSequence> values) {
-        return unsupportedOperation("add(name, Iterable values)");
+        for (CharSequence value : values) {
+            add(name, value);
+        }
+        return this;
     }
 
     @Override
     public Http2Headers add(CharSequence name, CharSequence... values) {
-        return unsupportedOperation("add(name, values...)");
+        for (CharSequence value : values) {
+            add(name, value);
+        }
+        return this;
     }
 
     @Override
     public Http2Headers addObject(CharSequence name, Object value) {
-        return unsupportedOperation("addObject");
+        return add(name, VALUE_CONVERTER.convertObject(value));
     }
 
     @Override
     public Http2Headers addObject(CharSequence name, Iterable<?> values) {
-        return unsupportedOperation("addObject");
+        for (Object value : values) {
+            addObject(name, value);
+        }
+        return this;
     }
 
     @Override
     public Http2Headers addObject(CharSequence name, Object... values) {
-        return unsupportedOperation("addObject");
+        for (Object value : values) {
+            addObject(name, value);
+        }
+        return this;
     }
 
     @Override
     public Http2Headers addBoolean(CharSequence name, boolean value) {
-        return unsupportedOperation("addBoolean");
+        return add(name, VALUE_CONVERTER.convertBoolean(value));
     }
 
     @Override
     public Http2Headers addByte(CharSequence name, byte value) {
-        return unsupportedOperation("addByte");
+        return add(name, VALUE_CONVERTER.convertByte(value));
     }
 
     @Override
     public Http2Headers addChar(CharSequence name, char value) {
-        return unsupportedOperation("addChar");
+        return add(name, VALUE_CONVERTER.convertChar(value));
     }
 
     @Override
     public Http2Headers addShort(CharSequence name, short value) {
-        return unsupportedOperation("addShort");
+        return add(name, VALUE_CONVERTER.convertShort(value));
     }
 
     @Override
     public Http2Headers addInt(CharSequence name, int value) {
-        return unsupportedOperation("addInt");
+        return add(name, VALUE_CONVERTER.convertInt(value));
     }
 
     @Override
     public Http2Headers addLong(CharSequence name, long value) {
-        return unsupportedOperation("addLong");
+        return add(name, VALUE_CONVERTER.convertLong(value));
     }
 
     @Override
     public Http2Headers addFloat(CharSequence name, float value) {
-        return unsupportedOperation("addFloat");
+        return add(name, VALUE_CONVERTER.convertFloat(value));
     }
 
     @Override
     public Http2Headers addDouble(CharSequence name, double value) {
-        return unsupportedOperation("addDouble");
+        return add(name, VALUE_CONVERTER.convertDouble(value));
     }
 
     @Override
     public Http2Headers addTimeMillis(CharSequence name, long value) {
-        return unsupportedOperation("addTimeMillis");
+        return add(name, VALUE_CONVERTER.convertTimeMillis(value));
     }
 
     @Override
     public Http2Headers add(Headers<? extends CharSequence, ? extends CharSequence, ?> headers) {
-        return unsupportedOperation("add(Headers)");
+        if (headers == this) {
+            throw new IllegalArgumentException("can't add to itself.");
+        }
+        for (Map.Entry<? extends CharSequence, ? extends CharSequence> entry : headers) {
+            add(entry.getKey(), entry.getValue());
+        }
+        return this;
     }
 
     @Override
@@ -730,83 +820,102 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
 
     @Override
     public Http2Headers set(CharSequence name, Iterable<? extends CharSequence> values) {
-        return unsupportedOperation("set(name, Iterable values)");
+        remove(name);
+        return add(name, values);
     }
 
     @Override
     public Http2Headers set(CharSequence name, CharSequence... values) {
-        return unsupportedOperation("set(name, values...)");
+        remove(name);
+        return add(name, values);
     }
 
     @Override
     public Http2Headers setObject(CharSequence name, Object value) {
-        return unsupportedOperation("setObject");
+        return set(name, VALUE_CONVERTER.convertObject(value));
     }
 
     @Override
     public Http2Headers setObject(CharSequence name, Iterable<?> values) {
-        return unsupportedOperation("setObject");
+        remove(name);
+        for (Object o : values) {
+            addObject(name, o);
+        }
+        return this;
     }
 
     @Override
     public Http2Headers setObject(CharSequence name, Object... values) {
-        return unsupportedOperation("setObject");
+        remove(name);
+        for (Object o : values) {
+            addObject(name, o);
+        }
+        return this;
     }
 
     @Override
     public Http2Headers setBoolean(CharSequence name, boolean value) {
-        return unsupportedOperation("setBoolean");
+        return set(name, VALUE_CONVERTER.convertBoolean(value));
     }
 
     @Override
     public Http2Headers setByte(CharSequence name, byte value) {
-        return unsupportedOperation("setByte");
+        return set(name, VALUE_CONVERTER.convertByte(value));
     }
 
     @Override
     public Http2Headers setChar(CharSequence name, char value) {
-        return unsupportedOperation("setChar");
+        return set(name, VALUE_CONVERTER.convertChar(value));
     }
 
     @Override
     public Http2Headers setShort(CharSequence name, short value) {
-        return unsupportedOperation("setShort");
+        return set(name, VALUE_CONVERTER.convertShort(value));
     }
 
     @Override
     public Http2Headers setInt(CharSequence name, int value) {
-        return unsupportedOperation("setInt");
+        return set(name, VALUE_CONVERTER.convertInt(value));
     }
 
     @Override
     public Http2Headers setLong(CharSequence name, long value) {
-        // This method is used in `DefaultHttp2ConnectionDecoder.onHeadersRead`
-        return set(name, String.valueOf(value));
+        return set(name, VALUE_CONVERTER.convertLong(value));
     }
 
     @Override
     public Http2Headers setFloat(CharSequence name, float value) {
-        return unsupportedOperation("setFloat");
+        return set(name, VALUE_CONVERTER.convertFloat(value));
     }
 
     @Override
     public Http2Headers setDouble(CharSequence name, double value) {
-        return unsupportedOperation("setDouble");
+        return set(name, VALUE_CONVERTER.convertDouble(value));
     }
 
     @Override
     public Http2Headers setTimeMillis(CharSequence name, long value) {
-        return unsupportedOperation("setTimeMillis");
+        return set(name, VALUE_CONVERTER.convertTimeMillis(value));
     }
 
     @Override
     public Http2Headers set(Headers<? extends CharSequence, ? extends CharSequence, ?> headers) {
-        return unsupportedOperation("set(Headers)");
+        if (this != headers) {
+            clear();
+            add(headers);
+        }
+        return this;
     }
 
     @Override
     public Http2Headers setAll(Headers<? extends CharSequence, ? extends CharSequence, ?> headers) {
-        return unsupportedOperation("setAll");
+        if (headers == this) {
+            throw new IllegalArgumentException("can't add to itself.");
+        }
+        for (Map.Entry<? extends CharSequence, ? extends CharSequence> entry : headers) {
+            remove(entry.getKey());
+        }
+        return add(headers);
     }
 
     @Override
@@ -822,7 +931,20 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
 
     @Override
     public Http2Headers clear() {
-        return unsupportedOperation("clear");
+        method = null;
+        path = null;
+        scheme = null;
+        status = null;
+        underlying.clear();
+        return this;
+    }
+
+    /**
+     * Get the underlying HttpHeaders without pseudo-headers, except the ':authority' header, which
+     * is represented as the 'Host' header.
+     */
+    HttpHeaders httpHeaders() {
+        return underlying;
     }
 
     private void maybeValidateValue(@Nullable CharSequence value) {
@@ -872,16 +994,21 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
         }
     }
 
-    /**
-     * Get the underlying HttpHeaders without pseudo-headers, except the ':authority' header, which
-     * is represented as the 'Host' header.
-     */
-    HttpHeaders httpHeaders() {
-        return underlying;
+    @Nullable
+    private <T> T convert(CharSequence name, Function<CharSequence, T> converter) {
+        return convertValue(get(name), converter);
     }
 
-    private <T> T unsupportedOperation(String methodName) {
-        throw new UnsupportedOperationException(methodName + " is not supported by " + getClass().getSimpleName());
+    @Nullable
+    private static <T> T convertValue(@Nullable CharSequence value, Function<? super CharSequence, T> converter) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return converter.apply(value);
+        } catch (RuntimeException ex) {
+            return null;
+        }
     }
 
     private static boolean hasPseudoHeaderFormat(CharSequence name) {
