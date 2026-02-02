@@ -20,26 +20,24 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.netty.handler.codec.http2.DefaultHttp2HeadersDecoder;
 import io.netty.handler.codec.http2.Http2Headers;
 
-import static java.util.Objects.requireNonNull;
-
-final class ServiceTalkHttpHeadersDecoder extends DefaultHttp2HeadersDecoder {
+final class ServiceTalkHttp2HeadersDecoder extends DefaultHttp2HeadersDecoder {
 
     private final HttpHeadersFactory headersFactory;
 
-    ServiceTalkHttpHeadersDecoder(HttpHeadersFactory headersFactory,
-                                  boolean validateHeaders, long maxHeadersListSize) {
+    ServiceTalkHttp2HeadersDecoder(HttpHeadersFactory headersFactory,
+                                   boolean validateHeaders, long maxHeadersListSize) {
         super(validateHeaders, maxHeadersListSize);
-        this.headersFactory = requireNonNull(headersFactory, "headersFactory");
+        this.headersFactory = headersFactory;
     }
 
-    ServiceTalkHttpHeadersDecoder(HttpHeadersFactory headersFactory, boolean validateHeaders) {
+    ServiceTalkHttp2HeadersDecoder(HttpHeadersFactory headersFactory, boolean validateHeaders) {
         super(validateHeaders);
-        this.headersFactory = requireNonNull(headersFactory, "headersFactory");
+        this.headersFactory = headersFactory;
     }
 
     @Override
     protected Http2Headers newHeaders() {
-        return new ServiceTalkHttpHeadersAsHttp2Headers(headersFactory.newHeaders(),
+        return new ServiceTalkHttp2Headers(headersFactory.newHeaders(),
                 false, validateHeaders(), validateHeaderValues());
     }
 }

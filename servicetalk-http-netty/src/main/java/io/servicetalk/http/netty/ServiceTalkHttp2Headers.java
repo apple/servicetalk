@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.http.api.HttpHeaders;
 
 import io.netty.handler.codec.CharSequenceValueConverter;
@@ -51,9 +52,10 @@ import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.SCHEME;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.STATUS;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.isPseudoHeader;
 import static io.netty.util.AsciiString.isUpperCase;
+import static io.servicetalk.http.api.HeaderUtils.DEFAULT_HEADER_FILTER;
 import static java.util.Objects.requireNonNull;
 
-final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
+final class ServiceTalkHttp2Headers implements Http2Headers {
 
     private static final ValueConverter<CharSequence> VALUE_CONVERTER = CharSequenceValueConverter.INSTANCE;
 
@@ -126,8 +128,8 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
     @Nullable
     private CharSequence status;
 
-    ServiceTalkHttpHeadersAsHttp2Headers(HttpHeaders underlying, boolean lowercaseKeys,
-                                         boolean validateNames, boolean validateValues) {
+    ServiceTalkHttp2Headers(HttpHeaders underlying, boolean lowercaseKeys,
+                            boolean validateNames, boolean validateValues) {
         this.underlying = requireNonNull(underlying);
         this.lowercaseKeys = lowercaseKeys;
         this.validateNames = validateNames;
@@ -235,21 +237,21 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
 
     @Override
     public Http2Headers method(@Nullable CharSequence value) {
-        maybeValidateValue(value);
+        maybeValidatePseudoHeaderValue(value);
         this.method = value;
         return this;
     }
 
     @Override
     public Http2Headers scheme(@Nullable CharSequence value) {
-        maybeValidateValue(value);
+        maybeValidatePseudoHeaderValue(value);
         this.scheme = value;
         return this;
     }
 
     @Override
     public Http2Headers authority(@Nullable CharSequence value) {
-        maybeValidateValue(value);
+        maybeValidatePseudoHeaderValue(value);
         if (value != null) {
             underlying.set(HOST, value);
         } else {
@@ -260,14 +262,14 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
 
     @Override
     public Http2Headers path(@Nullable CharSequence value) {
-        maybeValidateValue(value);
+        maybeValidatePseudoHeaderValue(value);
         this.path = value;
         return this;
     }
 
     @Override
     public Http2Headers status(@Nullable CharSequence value) {
-        maybeValidateValue(value);
+        maybeValidatePseudoHeaderValue(value);
         this.status = value;
         return this;
     }
@@ -330,7 +332,7 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
         if (hasPseudoHeaderFormat(name)) {
             CharSequence pseudoValue = getPseudoHeaderValue(name);
             if (pseudoValue != null) {
-                setPseudoHeaderValue(name, null);
+                setPseudoHeaderValue(name, null, false);
             }
             return pseudoValue;
         } else {
@@ -683,7 +685,7 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
         }
         for (Map.Entry<CharSequence, ?> entry : underlying) {
             // We need to convert the 'Host' header to the ':authority' pseudo-header, if it exists.
-            if (AsciiString.contentEquals(HOST, entry.getKey())) {
+            if (CharSequences.contentEquals(HOST, entry.getKey())) {
                 result.add(AUTHORITY.value());
             } else {
                 result.add(entry.getKey());
@@ -697,12 +699,9 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
         if (validateNames) {
             HTTP2_NAME_VALIDATOR.validateName(name);
         }
-        if (validateValues) {
-            HTTP2_VALUE_VALIDATOR.validate(value);
-        }
         if (hasPseudoHeaderFormat(name)) {
             // For pseudo-headers, we set (replace) rather than add, as they should be unique
-            setPseudoHeaderValue(name, value);
+            setPseudoHeaderValue(name, value, true);
         } else {
             underlying.add(name, value);
         }
@@ -807,11 +806,8 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
         if (validateNames) {
             HTTP2_NAME_VALIDATOR.validateName(name);
         }
-        if (validateValues) {
-            HTTP2_VALUE_VALIDATOR.validate(value);
-        }
         if (hasPseudoHeaderFormat(name)) {
-            setPseudoHeaderValue(name, value);
+            setPseudoHeaderValue(name, value, false);
         } else {
             underlying.set(name, value);
         }
@@ -909,20 +905,20 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
 
     @Override
     public Http2Headers setAll(Headers<? extends CharSequence, ? extends CharSequence, ?> headers) {
-        if (headers == this) {
-            throw new IllegalArgumentException("can't add to itself.");
+        if (headers != this) {
+            for (Map.Entry<? extends CharSequence, ? extends CharSequence> entry : headers) {
+                remove(entry.getKey());
+            }
+            add(headers);
         }
-        for (Map.Entry<? extends CharSequence, ? extends CharSequence> entry : headers) {
-            remove(entry.getKey());
-        }
-        return add(headers);
+        return this;
     }
 
     @Override
     public boolean remove(CharSequence name) {
         if (hasPseudoHeaderFormat(name)) {
             boolean hadValue = getPseudoHeaderValue(name) != null;
-            setPseudoHeaderValue(name, null);
+            setPseudoHeaderValue(name, null, false);
             return hadValue;
         } else {
             return underlying.remove(name);
@@ -939,6 +935,40 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
         return this;
     }
 
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(getClass().getSimpleName())
+                .append("{ pseudo-headers: [");
+
+        boolean firstPseudo = true;
+
+        // Add pseudo-headers in HTTP/2 order: method, scheme, authority, path, status
+        firstPseudo = appendPseudoHeader(sb, METHOD.value(), method, firstPseudo);
+        firstPseudo = appendPseudoHeader(sb, SCHEME.value(), scheme, firstPseudo);
+        firstPseudo = appendPseudoHeader(sb, AUTHORITY.value(), underlying.get(HOST), firstPseudo);
+        firstPseudo = appendPseudoHeader(sb, PATH.value(), path, firstPseudo);
+        appendPseudoHeader(sb, STATUS.value(), status, firstPseudo);
+
+        sb.append("], standard-headers: ")
+                .append(underlying)
+                .append('}');
+        return sb.toString();
+    }
+
+    private static boolean appendPseudoHeader(StringBuilder sb, CharSequence key,
+                                              @Nullable CharSequence value, boolean firstPseudoHeader) {
+        if (value != null) {
+            if (!firstPseudoHeader) {
+                sb.append(", ");
+            }
+            sb.append(key).append(": ")
+                    .append(DEFAULT_HEADER_FILTER.apply(key, value));
+            return false;
+        }
+        return firstPseudoHeader;
+    }
+
     /**
      * Get the underlying HttpHeaders without pseudo-headers, except the ':authority' header, which
      * is represented as the 'Host' header.
@@ -947,7 +977,7 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
         return underlying;
     }
 
-    private void maybeValidateValue(@Nullable CharSequence value) {
+    private void maybeValidatePseudoHeaderValue(@Nullable CharSequence value) {
         if (validateValues && value != null) {
             HTTP2_VALUE_VALIDATOR.validate(value);
         }
@@ -970,21 +1000,28 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
         return null;
     }
 
-    private void setPseudoHeaderValue(CharSequence name, @Nullable CharSequence value) {
+    private void setPseudoHeaderValue(CharSequence name, @Nullable CharSequence value, boolean forAdd) {
         if (METHOD.value().contentEquals(name)) {
-            this.method = value;
+            checkNotDuplicate(name, value, this.method, forAdd);
+            method(value);
         } else if (PATH.value().contentEquals(name)) {
-            this.path = value;
+            checkNotDuplicate(name, value, this.path, forAdd);
+            path(value);
         } else if (SCHEME.value().contentEquals(name)) {
-            this.scheme = value;
+            checkNotDuplicate(name, value, this.scheme, forAdd);
+            scheme(value);
         } else if (AUTHORITY.value().contentEquals(name)) {
             if (value != null) {
+                if (forAdd && validateNames && underlying.contains(HOST)) {
+                    throwDuplicateHeader(name);
+                }
                 underlying.set(HOST, value);
             } else {
                 underlying.remove(HOST);
             }
         } else if (STATUS.value().contentEquals(name)) {
-            this.status = value;
+            checkNotDuplicate(name, value, this.status, forAdd);
+            status(value);
         } else if (PROTOCOL.value().contentEquals(name)) {
             // Defined in https://httpwg.org/specs/rfc8441.html but we don't use it, so we ignore it.
         } else {
@@ -992,6 +1029,18 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
             PlatformDependent.throwException(
                 connectionError(PROTOCOL_ERROR, "invalid header name [%s]", name));
         }
+    }
+
+    private void checkNotDuplicate(CharSequence name, @Nullable CharSequence value,
+                                   @Nullable CharSequence existingValue, boolean forAdd) {
+        if (forAdd && value != null && existingValue != null && validateNames) {
+            throwDuplicateHeader(name);
+        }
+    }
+
+    private static void throwDuplicateHeader(CharSequence name) {
+        PlatformDependent.throwException(connectionError(
+                PROTOCOL_ERROR, "Duplicate HTTP/2 pseudo-header '%s' encountered.", name));
     }
 
     @Nullable
@@ -1031,7 +1080,7 @@ final class ServiceTalkHttpHeadersAsHttp2Headers implements Http2Headers {
     private static CharSequence toLowerCase(CharSequence value) {
         int len = value.length();
         for (int i = 0; i < len; i++) {
-            if (AsciiString.isUpperCase(value.charAt(i))) {
+            if (isUpperCase(value.charAt(i))) {
                 return new LowerCaseCharSequence(value);
             }
         }

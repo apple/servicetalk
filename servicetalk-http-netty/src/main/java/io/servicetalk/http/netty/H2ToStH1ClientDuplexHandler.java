@@ -207,8 +207,8 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
             }
         }
 
-        if (h2Headers instanceof ServiceTalkHttpHeadersAsHttp2Headers) {
-            ServiceTalkHttpHeadersAsHttp2Headers headers = (ServiceTalkHttpHeadersAsHttp2Headers) h2Headers;
+        if (h2Headers instanceof ServiceTalkHttp2Headers) {
+            ServiceTalkHttp2Headers headers = (ServiceTalkHttp2Headers) h2Headers;
             return headers.httpHeaders();
         }
 

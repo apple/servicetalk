@@ -142,8 +142,8 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
         Http2Connection connection = ignoredDecoder.connection();
         Long maxHeaderListSize = initialSettings.maxHeaderListSize();
         Http2FrameReader frameReader = new DefaultHttp2FrameReader(maxHeaderListSize == null ?
-                new ServiceTalkHttpHeadersDecoder(headersFactory, isValidateHeaders()) :
-                new ServiceTalkHttpHeadersDecoder(headersFactory, isValidateHeaders(), maxHeaderListSize));
+                new ServiceTalkHttp2HeadersDecoder(headersFactory, isValidateHeaders()) :
+                new ServiceTalkHttp2HeadersDecoder(headersFactory, isValidateHeaders(), maxHeaderListSize));
 
         if (frameLogger() != null) {
             frameReader = new Http2InboundFrameLogger(frameReader, frameLogger());
@@ -172,9 +172,11 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
                 // We do not want close to trigger graceful closure (go away), instead when user triggers a graceful
                 // close, we do the appropriate go away handling.
                 .decoupleCloseAndGoAway(true)
-                // H2ServerParentConnectionContext.ackSettings(...) expects Netty to ack settings frame.
+                //  For the client, the max concurrent streams is made available via a publisher and may be consumed
+                //  asynchronously e.g. when offloading is enabled), so we manually control the SETTINGS ACK frames.
+                // For the server, H2ServerParentConnectionContext.ackSettings(...) expects Netty to ack settings frame.
                 // While the default value is `true`, set this explicitly to avoid any unexpected changes.
-                .autoAckSettingsFrame(true)
+                .autoAckSettingsFrame(server)
                 // We ack PING frames in KeepAliveManager#pingReceived.
                 .autoAckPingFrame(false)
                 // Inherit headers validation setting from the HttpHeadersFactory.

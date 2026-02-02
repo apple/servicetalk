@@ -152,8 +152,8 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
             }
         }
 
-        if (h2Headers instanceof ServiceTalkHttpHeadersAsHttp2Headers) {
-            ServiceTalkHttpHeadersAsHttp2Headers headers = (ServiceTalkHttpHeadersAsHttp2Headers) h2Headers;
+        if (h2Headers instanceof ServiceTalkHttp2Headers) {
+            ServiceTalkHttp2Headers headers = (ServiceTalkHttp2Headers) h2Headers;
             return headers.httpHeaders();
         }
 
@@ -161,8 +161,8 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
     }
 
     private HttpHeaders h2TrailersToH1TrailersServer(Http2Headers h2Headers) {
-        if (h2Headers instanceof ServiceTalkHttpHeadersAsHttp2Headers) {
-            ServiceTalkHttpHeadersAsHttp2Headers headers = (ServiceTalkHttpHeadersAsHttp2Headers) h2Headers;
+        if (h2Headers instanceof ServiceTalkHttp2Headers) {
+            ServiceTalkHttp2Headers headers = (ServiceTalkHttp2Headers) h2Headers;
             return headers.httpHeaders();
         }
 
