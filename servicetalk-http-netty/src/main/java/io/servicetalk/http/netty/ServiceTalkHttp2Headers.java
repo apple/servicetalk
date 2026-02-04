@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.http.api.HttpHeaders;
 
 import io.netty.handler.codec.CharSequenceValueConverter;
@@ -50,8 +49,11 @@ import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.PATH;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.PROTOCOL;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.SCHEME;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.STATUS;
+import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.hasPseudoHeaderFormat;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.isPseudoHeader;
 import static io.netty.util.AsciiString.isUpperCase;
+import static io.servicetalk.buffer.api.CharSequences.contentEquals;
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.HeaderUtils.DEFAULT_HEADER_FILTER;
 import static java.util.Objects.requireNonNull;
 
@@ -306,12 +308,18 @@ final class ServiceTalkHttp2Headers implements Http2Headers {
 
     @Override
     public boolean contains(CharSequence name, CharSequence value, boolean caseInsensitive) {
-        CharSequence storedValue = get(name);
-        if (storedValue == null) {
-            return false;
+        if (hasPseudoHeaderFormat(name)) {
+            if (contentEquals(AUTHORITY.value(), name)) {
+                // Authority is stored in the underlying map as the Host header.
+                return caseInsensitive ? underlying.containsIgnoreCase(HOST, value) : underlying.contains(HOST, value);
+            } else {
+                CharSequence pseudoHeaderValue = get(name);
+                return caseInsensitive ? contentEqualsIgnoreCase(pseudoHeaderValue, value) :
+                        contentEquals(pseudoHeaderValue, value);
+            }
+        } else {
+            return caseInsensitive ? underlying.containsIgnoreCase(name, value) : underlying.contains(name, value);
         }
-        return caseInsensitive ? AsciiString.contentEqualsIgnoreCase(storedValue, value) :
-                AsciiString.contentEquals(storedValue, value);
     }
 
     @Override
@@ -592,7 +600,7 @@ final class ServiceTalkHttp2Headers implements Http2Headers {
 
     @Override
     public boolean contains(CharSequence name, CharSequence value) {
-        return contains(name, value, true);
+        return contains(name, value, false);
     }
 
     @Override
@@ -685,7 +693,7 @@ final class ServiceTalkHttp2Headers implements Http2Headers {
         }
         for (Map.Entry<CharSequence, ?> entry : underlying) {
             // We need to convert the 'Host' header to the ':authority' pseudo-header, if it exists.
-            if (CharSequences.contentEquals(HOST, entry.getKey())) {
+            if (contentEquals(HOST, entry.getKey())) {
                 result.add(AUTHORITY.value());
             } else {
                 result.add(entry.getKey());
@@ -1058,10 +1066,6 @@ final class ServiceTalkHttp2Headers implements Http2Headers {
         } catch (RuntimeException ex) {
             return null;
         }
-    }
-
-    private static boolean hasPseudoHeaderFormat(CharSequence name) {
-        return name.length() > 0 && name.charAt(0) == ':';
     }
 
     private static Map.Entry<CharSequence, CharSequence> entry(CharSequence key, CharSequence value) {
