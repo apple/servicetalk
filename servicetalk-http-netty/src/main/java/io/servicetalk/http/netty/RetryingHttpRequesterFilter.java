@@ -844,7 +844,7 @@ public final class RetryingHttpRequesterFilter
         /**
          * By default, automatic retries will wait for the {@link LoadBalancer} to be
          * {@link LoadBalancerReadyEvent ready} or for the {@link ServiceDiscoverer} to report an error, whichever
-         * happens first. This method allows us to modify the behavior such that automatic retries will give the
+         * happens first. This method allows users to modify the behavior such that automatic retries will give the
          * load balancer a grace period over which to be ready, after which the service discovery error (or a
          * timeout if there is no error) will be propagated. This allows users to prevent situations such as spurious
          * DNS failures from causing their client to be unhealthy while also not causing the client to lock up
@@ -855,7 +855,7 @@ public final class RetryingHttpRequesterFilter
          * @return {@code this}.
          */
         public Builder waitForLoadBalancerTimeout(@Nullable Duration timeout) {
-            this.lbAvailableTimeout = timeout;
+            this.lbAvailableTimeout = ensurePositive(timeout, "timeout");;
             return this;
         }
 
