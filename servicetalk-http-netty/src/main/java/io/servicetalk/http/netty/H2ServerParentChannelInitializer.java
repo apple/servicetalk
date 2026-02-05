@@ -49,22 +49,8 @@ final class H2ServerParentChannelInitializer implements ChannelInitializer {
     @Override
     public void init(final Channel channel) {
         final Http2FrameCodecBuilder multiplexCodecBuilder =
-                new OptimizedHttp2FrameCodecBuilder(true, config.flowControlQuantum())
-                // We do not want close to trigger graceful closure (go away), instead when user triggers a graceful
-                // close, we do the appropriate go away handling.
-                .decoupleCloseAndGoAway(true)
-                // H2ServerParentConnectionContext.ackSettings(...) expects Netty to ack settings frame.
-                // While the default value is `true`, set this explicitly to avoid any unexpected changes.
-                .autoAckSettingsFrame(true)
-                // We ack PING frames in KeepAliveManager#pingReceived.
-                .autoAckPingFrame(false)
-                // We don't want to rely upon Netty to manage the graceful close timeout, because we expect
-                // the user to apply their own timeout at the call site.
-                .gracefulShutdownTimeoutMillis(-1)
-                .initialSettings(nettySettings)
-                // Inherit headers validation setting from the HttpHeadersFactory.
-                .validateHeaders(config.headersFactory().validateNames())
-                .headerSensitivityDetector(config.headersSensitivityDetector()::test);
+                OptimizedHttp2FrameCodecBuilder.newBuilder(true, config)
+                .initialSettings(nettySettings);
 
         initFrameLogger(multiplexCodecBuilder, config.frameLoggerConfig());
 

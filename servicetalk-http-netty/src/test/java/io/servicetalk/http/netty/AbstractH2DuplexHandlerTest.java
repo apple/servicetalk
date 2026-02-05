@@ -32,7 +32,6 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http2.DefaultHttp2DataFrame;
-import io.netty.handler.codec.http2.DefaultHttp2Headers;
 import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
 import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2FrameStream;
@@ -160,7 +159,7 @@ class AbstractH2DuplexHandlerTest {
     private void unexpectedContentLength(Variant variant, boolean endStream) {
         variant.writeOutbound(channel);
 
-        Http2Headers headers = new DefaultHttp2Headers();
+        Http2Headers headers = newTestHeaders();
         switch (variant) {
             case CLIENT_HANDLER:
                 headers.status(NO_CONTENT.codeAsText());
@@ -171,7 +170,7 @@ class AbstractH2DuplexHandlerTest {
             default:
                 throw new Error();
         }
-        headers.setInt(CONTENT_LENGTH, 1);
+        headers.set(CONTENT_LENGTH, valueOf(1));
 
         Http2Exception e = assertThrows(Http2Exception.class,
                 () -> channel.writeInbound(headersFrame(headers, endStream)));
@@ -195,7 +194,7 @@ class AbstractH2DuplexHandlerTest {
     private void nullContentLengthWhenContentIsNotExpected(Variant variant, boolean endStream) {
         variant.writeOutbound(channel);
 
-        Http2Headers headers = new DefaultHttp2Headers();
+        Http2Headers headers = newTestHeaders();
         switch (variant) {
             case CLIENT_HANDLER:
                 headers.status(NO_CONTENT.codeAsText());
@@ -232,9 +231,9 @@ class AbstractH2DuplexHandlerTest {
         channel.writeOutbound(newRequest(HEAD, "/", HTTP_2_0, HEADERS_FACTORY.newHeaders(),
                 DEFAULT_ALLOCATOR, HEADERS_FACTORY), true);
         // Prepare server response with content-length header:
-        Http2Headers headers = new DefaultHttp2Headers();
+        Http2Headers headers = newTestHeaders();
         headers.status(OK.codeAsText());
-        headers.setInt(CONTENT_LENGTH, contentLength);
+        headers.set(CONTENT_LENGTH, valueOf(contentLength));
         channel.writeInbound(headersFrame(headers, endStream));
 
         HttpMetaData metaData = channel.readInbound();
@@ -247,7 +246,7 @@ class AbstractH2DuplexHandlerTest {
         } else {
             // No more items at this moment:
             assertThat(channel.inboundMessages(), is(empty()));
-            channel.writeInbound(headersFrame(new DefaultHttp2Headers(), true));
+            channel.writeInbound(headersFrame(newTestHeaders(), true));
             HttpHeaders trailers = channel.readInbound();
             assertThat(trailers.isEmpty(), is(true));
         }
@@ -271,7 +270,7 @@ class AbstractH2DuplexHandlerTest {
     private void noContentLength(Variant variant, boolean endStream) {
         variant.writeOutbound(channel);
 
-        Http2Headers headers = variant.setHeaders(new DefaultHttp2Headers());
+        Http2Headers headers = variant.setHeaders(newTestHeaders());
         channel.writeInbound(headersFrame(headers, endStream));
 
         HttpMetaData metaData = channel.readInbound();
@@ -301,8 +300,8 @@ class AbstractH2DuplexHandlerTest {
         variant.writeOutbound(channel);
         String content = "hello";
 
-        Http2Headers headers = variant.setHeaders(new DefaultHttp2Headers());
-        headers.setInt(CONTENT_LENGTH, content.length());
+        Http2Headers headers = variant.setHeaders(newTestHeaders());
+        headers.set(CONTENT_LENGTH, String.valueOf(content.length()));
         channel.writeInbound(headersFrame(headers, false));
 
         HttpMetaData metaData = channel.readInbound();
@@ -314,7 +313,7 @@ class AbstractH2DuplexHandlerTest {
         assertThat(buffer, is(equalTo(DEFAULT_ALLOCATOR.fromAscii(content))));
 
         if (addTrailers) {
-            channel.writeInbound(headersFrame(new DefaultHttp2Headers().set("trailer", "value"), true));
+            channel.writeInbound(headersFrame(newTestHeaders().set("trailer", "value"), true));
         }
         HttpHeaders trailers = channel.readInbound();
         if (trailers != null) {
@@ -329,8 +328,8 @@ class AbstractH2DuplexHandlerTest {
         setUp(variant);
         variant.writeOutbound(channel);
 
-        Http2Headers headers = variant.setHeaders(new DefaultHttp2Headers());
-        headers.setInt(CONTENT_LENGTH, 0);
+        Http2Headers headers = variant.setHeaders(newTestHeaders());
+        headers.set(CONTENT_LENGTH, valueOf(0));
         channel.writeInbound(headersFrame(headers, true));
 
         HttpMetaData metaData = channel.readInbound();
@@ -418,6 +417,10 @@ class AbstractH2DuplexHandlerTest {
         Http2DataFrame dataFrame = channel.readOutbound();
         assertThat(dataFrame.content().readableBytes(), is(0));
         dataFrame.release();
+    }
+
+    private static Http2Headers newTestHeaders() {
+        return new ServiceTalkHttp2Headers(HEADERS_FACTORY.newHeaders(), false, true, true);
     }
 
     private static Http2HeadersFrame headersFrame(Http2Headers headers, boolean endStream) {
