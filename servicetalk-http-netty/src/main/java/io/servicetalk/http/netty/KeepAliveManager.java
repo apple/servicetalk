@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.internal.ThrowableUtils;
 import io.servicetalk.http.netty.H2ProtocolConfig.KeepAlivePolicy;
 import io.servicetalk.transport.netty.internal.ChannelCloseUtils;
 
@@ -492,23 +491,5 @@ final class KeepAliveManager {
         ByteBuf buf = UnpooledByteBufAllocator.DEFAULT.directBuffer(str.length());
         writeAscii(buf, str);
         return unreleasableBuffer(buf.asReadOnly());
-    }
-
-    private static final class StacklessTimeoutException extends TimeoutException {
-        private static final long serialVersionUID = -8647261218787418981L;
-
-        private StacklessTimeoutException(final String message) {
-            super(message);
-        }
-
-        @Override
-        public Throwable fillInStackTrace() {
-            // Don't fill in the stacktrace to reduce performance overhead
-            return this;
-        }
-
-        static StacklessTimeoutException newInstance(final String message, final Class<?> clazz, final String method) {
-            return ThrowableUtils.unknownStackTrace(new StacklessTimeoutException(message), clazz, method);
-        }
     }
 }
