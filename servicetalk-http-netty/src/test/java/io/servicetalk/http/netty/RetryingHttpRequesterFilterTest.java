@@ -391,13 +391,13 @@ final class RetryingHttpRequesterFilterTest {
         failingClient = forSingleAddress(new ForeverServiceDiscoverer(), HostAndPort.of("foo", 80), BACKGROUND)
                 .appendClientFilter(
                         new Builder()
-                                .waitForLoadBalancerTimeout(Duration.ofMillis(100))
+                                .waitForLoadBalancer(Duration.ofMillis(100))
                         .build())
                 .buildBlocking();
         Exception e = assertThrows(Exception.class, () -> failingClient.request(failingClient.get("/")));
         assertThat(e, instanceOf(TimeoutException.class));
         // Note that this message is very specific and subject to change
-        assertThat(e.getMessage(), equalTo("Load balancer unavailable"));
+        assertThat(e.getMessage(), equalTo("Load balancer availability timeout: 100 ms"));
         assertThat(e.getCause(), instanceOf(TimeoutException.class));
         assertThat("Unexpected calls to select.", lbSelectInvoked.get(), is(equalTo(0)));
     }
