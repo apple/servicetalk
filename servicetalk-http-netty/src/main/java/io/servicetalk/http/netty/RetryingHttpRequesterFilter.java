@@ -188,24 +188,29 @@ public final class RetryingHttpRequesterFilter
                 this.retryCallbacks = retryCallbacks;
             }
 
-            private Exception enrichTimeoutException(TimeoutException underlying) {
+            private Exception enrichTimeoutException(NoAvailableHostException ex, TimeoutException underlying) {
                 Exception result = StacklessTimeoutException.newInstance(
                         "Load balancer availability timeout: " + lbAvailableTimeout.toMillis() + " ms",
                         RetryingHttpRequesterFilter.class, "awaitSdStatus()");
                 result.initCause(underlying);
+                result.addSuppressed(ex);
                 return result;
             }
 
-            private Completable computeLbAvailableDelay(Completable injectedStatus) {
+            private Completable computeLbAvailableDelay(NoAvailableHostException cause, Completable injectedStatus) {
                 if (lbAvailableTimeout == null) {
                     // We are not using the `loadBalancerTimeout(Duration)` pathway, so we don't add delays
                     // to the injected status
-                    return injectedStatus;
+                    return injectedStatus
+                            .onErrorMap(ex -> {
+                                ex.addSuppressed(cause);
+                                return ex;
+                            });
                 } else if (injectedStatus == null || ignoreSdErrors) {
                     // If we don't have or don't care about service discovery errors we just need a completable that
                     // will result in a timeout.
                     return Completable.never().timeout(lbAvailableTimeout, executor)
-                            .onErrorMap(TimeoutException.class, this::enrichTimeoutException);
+                            .onErrorMap(TimeoutException.class, ex -> enrichTimeoutException(cause, ex));
                 } else {
                     // The behavior is as follows:
                     // 1. The injected status will resolve either by error or timeout, whichever happens first.
@@ -214,7 +219,7 @@ public final class RetryingHttpRequesterFilter
                     //    expected timeout.
                     return executor.timer(lbAvailableTimeout)
                             .mergeDelayError(injectedStatus.timeout(lbAvailableTimeout, executor)
-                                    .onErrorMap(TimeoutException.class, this::enrichTimeoutException));
+                                    .onErrorMap(TimeoutException.class, ex -> enrichTimeoutException(cause, ex)));
                 }
             }
 
@@ -236,7 +241,8 @@ public final class RetryingHttpRequesterFilter
                                             ((LoadBalancerReadyEvent) lbEvent).isReady()))
                             .ignoreElements();
                     return applyRetryCallbacks(sdStatus == null ? onHostsAvailable :
-                            onHostsAvailable.ambWith(computeLbAvailableDelay(sdStatus)), count, t);
+                            onHostsAvailable.ambWith(
+                                    computeLbAvailableDelay((NoAvailableHostException) t, sdStatus)), count, t);
                 }
 
                 try {
