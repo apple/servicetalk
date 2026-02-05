@@ -24,8 +24,6 @@ import io.netty.handler.codec.http2.Http2Headers;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.TE;
 import static io.netty.handler.codec.http.HttpHeaderValues.TRAILERS;
@@ -156,12 +154,6 @@ final class H2ToStH1Utils {
     }
 
     static Http2Headers h1HeadersToH2Headers(HttpHeaders h1Headers) {
-        if (h1Headers.isEmpty()) {
-            if (h1Headers instanceof NettyH2HeadersToHttpHeaders) {
-                return ((NettyH2HeadersToHttpHeaders) h1Headers).nettyHeaders();
-            }
-            return new DefaultHttp2Headers(false, 0);
-        }
 
         // H2 doesn't support connection headers, so remove each one, and the headers corresponding to the
         // connection value.
@@ -235,23 +227,12 @@ final class H2ToStH1Utils {
         }
 
         h1HeadersSplitCookieCrumbs(h1Headers);
-
-        if (h1Headers instanceof NettyH2HeadersToHttpHeaders) {
-            // Assume header field names are already lowercase if they reside in the Http2Headers. We may want to be
-            // more strict in the future, but that would require iteration.
-            return ((NettyH2HeadersToHttpHeaders) h1Headers).nettyHeaders();
-        }
-
         if (h1Headers.isEmpty()) {
             return new DefaultHttp2Headers(false, 0);
         }
 
-        DefaultHttp2Headers http2Headers = new DefaultHttp2Headers(false);
-        for (Map.Entry<CharSequence, CharSequence> h1Entry : h1Headers) {
-            // header field names MUST be converted to lowercase prior to their encoding in HTTP/2
-            // https://tools.ietf.org/html/rfc7540#section-8.1.2
-            http2Headers.add(h1Entry.getKey().toString().toLowerCase(Locale.ENGLISH), h1Entry.getValue());
-        }
-        return http2Headers;
+        // These will be used by the netty encoder so we need to make sure when we give it keys they're lower cased.
+        // We also don't need to worry about validation at this point.
+        return new ServiceTalkHttp2Headers(h1Headers, true, false, false);
     }
 }

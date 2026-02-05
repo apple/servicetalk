@@ -15,11 +15,21 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.HttpHeadersFactory;
+
 import io.netty.handler.codec.http2.DefaultHttp2Connection;
+import io.netty.handler.codec.http2.DefaultHttp2ConnectionDecoder;
+import io.netty.handler.codec.http2.DefaultHttp2FrameReader;
 import io.netty.handler.codec.http2.DefaultHttp2RemoteFlowController;
+import io.netty.handler.codec.http2.Http2Connection;
+import io.netty.handler.codec.http2.Http2ConnectionDecoder;
+import io.netty.handler.codec.http2.Http2ConnectionEncoder;
 import io.netty.handler.codec.http2.Http2FrameCodec;
 import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
+import io.netty.handler.codec.http2.Http2FrameReader;
+import io.netty.handler.codec.http2.Http2InboundFrameLogger;
 import io.netty.handler.codec.http2.Http2RemoteFlowController;
+import io.netty.handler.codec.http2.Http2Settings;
 import io.netty.handler.codec.http2.UniformStreamByteDistributor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +72,7 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
     private static final MethodHandle DECODER_ENFORCE_MAX_RST_FRAMES_PER_WINDOW;
 
     static {
-        final Http2FrameCodecBuilder builder = Http2FrameCodecBuilder.forServer();
+        final Http2FrameCodecBuilder builder = forServer();
 
         MethodHandle flushPreface;
         try {
@@ -98,17 +108,13 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
     }
 
     private final boolean server;
+    private final HttpHeadersFactory headersFactory;
     private final int flowControlQuantum;
 
-    /**
-     * Creates a new instance.
-     *
-     * @param server {@code true} if for server, {@code false} otherwise
-     * @param flowControlQuantum a hint on the number of bytes that the flow controller will attempt to give to a
-     * stream for each allocation.
-     */
-    OptimizedHttp2FrameCodecBuilder(final boolean server, final int flowControlQuantum) {
+    private OptimizedHttp2FrameCodecBuilder(final boolean server,
+                                    HttpHeadersFactory headersFactory, int flowControlQuantum) {
         this.server = server;
+        this.headersFactory = headersFactory;
         this.flowControlQuantum = flowControlQuantum;
         disableFlushPreface(FLUSH_PREFACE, this);
         decoderEnforceMaxRstFramesPerWindow(DECODER_ENFORCE_MAX_RST_FRAMES_PER_WINDOW, this, server);
@@ -127,6 +133,55 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
         connection.remote().flowController(new DefaultHttp2RemoteFlowController(connection, distributor));
         connection(connection);
         return super.build();
+    }
+
+    @Override
+    protected Http2FrameCodec build(Http2ConnectionDecoder ignoredDecoder, Http2ConnectionEncoder encoder,
+                                    Http2Settings initialSettings) {
+        // This is the best way to override the default http2 headers decoder newHeaders() method.
+        Http2Connection connection = ignoredDecoder.connection();
+        Long maxHeaderListSize = initialSettings.maxHeaderListSize();
+        Http2FrameReader frameReader = new DefaultHttp2FrameReader(maxHeaderListSize == null ?
+                new ServiceTalkHttp2HeadersDecoder(headersFactory, isValidateHeaders()) :
+                new ServiceTalkHttp2HeadersDecoder(headersFactory, isValidateHeaders(), maxHeaderListSize));
+
+        if (frameLogger() != null) {
+            frameReader = new Http2InboundFrameLogger(frameReader, frameLogger());
+        }
+
+        Http2ConnectionDecoder decoder = new DefaultHttp2ConnectionDecoder(connection, encoder, frameReader,
+                promisedRequestVerifier(), isAutoAckSettingsFrame(), isAutoAckPingFrame(), isValidateHeaders());
+
+        return super.build(decoder, encoder, initialSettings);
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param server {@code true} if for server, {@code false} otherwise
+     * @param config the HTTP/2 protocol configuration.
+     */
+
+    static Http2FrameCodecBuilder newBuilder(final boolean server, H2ProtocolConfig config) {
+        // We do not want close to trigger graceful closure (go away), instead when user triggers a graceful
+        // close, we do the appropriate go away handling.
+        return new OptimizedHttp2FrameCodecBuilder(server, config.headersFactory(), config.flowControlQuantum())
+                // We don't want to rely upon Netty to manage the graceful close timeout, because we expect
+                // the user to apply their own timeout at the call site.
+                .gracefulShutdownTimeoutMillis(-1)
+                // We do not want close to trigger graceful closure (go away), instead when user triggers a graceful
+                // close, we do the appropriate go away handling.
+                .decoupleCloseAndGoAway(true)
+                //  For the client, the max concurrent streams is made available via a publisher and may be consumed
+                //  asynchronously e.g. when offloading is enabled), so we manually control the SETTINGS ACK frames.
+                // For the server, H2ServerParentConnectionContext.ackSettings(...) expects Netty to ack settings frame.
+                // While the default value is `true`, set this explicitly to avoid any unexpected changes.
+                .autoAckSettingsFrame(server)
+                // We ack PING frames in KeepAliveManager#pingReceived.
+                .autoAckPingFrame(false)
+                // Inherit headers validation setting from the HttpHeadersFactory.
+                .validateHeaders(config.headersFactory().validateNames())
+                .headerSensitivityDetector(config.headersSensitivityDetector()::test);
     }
 
     /**
