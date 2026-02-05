@@ -219,7 +219,14 @@ public final class RetryingHttpRequesterFilter
                     //    expected timeout.
                     return executor.timer(lbAvailableTimeout)
                             .mergeDelayError(injectedStatus.timeout(lbAvailableTimeout, executor)
-                                    .onErrorMap(TimeoutException.class, ex -> enrichTimeoutException(cause, ex)));
+                            .onErrorMap(ex -> {
+                                if (ex instanceof TimeoutException) {
+                                    return enrichTimeoutException(cause, (TimeoutException) ex);
+                                } else {
+                                    ex.addSuppressed(cause);
+                                    return ex;
+                                }
+                            }));
                 }
             }
 
