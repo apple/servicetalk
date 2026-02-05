@@ -38,7 +38,6 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponses;
 import io.servicetalk.http.api.TestStreamingHttpClient;
 import io.servicetalk.http.netty.RetryingHttpRequesterFilter.ContextAwareRetryingHttpClientFilter;
-import io.servicetalk.transport.api.IoExecutor;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -125,8 +124,6 @@ class LoadBalancerReadyHttpClientTest {
                 .when(mockExecutionCtx).executionStrategy();
         doAnswer((Answer<Executor>) invocation -> testExecutor)
                 .when(mockExecutionCtx).executor();
-        doAnswer((Answer<IoExecutor>) invocation -> TestIoExecutor.INSTANCE)
-                .when(mockExecutionCtx).ioExecutor();
     }
 
     @Test
@@ -192,12 +189,7 @@ class LoadBalancerReadyHttpClientTest {
 
     private void verifyOnServiceDiscovererErrorFailsAction(
             Function<StreamingHttpClient, Single<?>> action) throws InterruptedException {
-        Consumer<Throwable> errorHandler = error -> {
-            sdStatusCompletable.onError(error);
-            // Technically the timeout is 0, but we have to advance the time to make the test executor fire.
-            testExecutor.advanceTimeBy(1, TimeUnit.NANOSECONDS);
-        };
-        verifyFailsAction(action, errorHandler, UNKNOWN_HOST_EXCEPTION);
+        verifyFailsAction(action, sdStatusCompletable::onError, UNKNOWN_HOST_EXCEPTION);
     }
 
     private void verifyLbCompleteFailedFailsAction(
@@ -232,7 +224,6 @@ class LoadBalancerReadyHttpClientTest {
 
         // When a failure occurs that should also fail the action!
         errorConsumer.accept(error);
-        // TODO: the timer for the SD status failure is hanging out in the test executor.
         latch.await();
         return causeRef.get();
     }
@@ -260,10 +251,11 @@ class LoadBalancerReadyHttpClientTest {
 
     private static StreamingHttpClientFilterFactory newAutomaticRetryFilterFactory(boolean timeoutLbReady,
             TestPublisher<Object> loadBalancerPublisher, TestCompletable sdStatusCompletable) {
-        final RetryingHttpRequesterFilter filter = new RetryingHttpRequesterFilter.Builder()
-                .maxTotalRetries(1)
-                .waitForLoadBalancer(timeoutLbReady ? Duration.ofSeconds(TIMEOUT_DURATION_SECONDS) :
-                        Duration.ZERO)
+                RetryingHttpRequesterFilter.Builder builder = new RetryingHttpRequesterFilter.Builder();
+                if (timeoutLbReady) {
+                    builder.waitForLoadBalancer(Duration.ofSeconds(TIMEOUT_DURATION_SECONDS));
+                }
+        final RetryingHttpRequesterFilter filter = builder.maxTotalRetries(1)
                 .build();
         return client -> {
             final ContextAwareRetryingHttpClientFilter f = (ContextAwareRetryingHttpClientFilter) filter.create(client);

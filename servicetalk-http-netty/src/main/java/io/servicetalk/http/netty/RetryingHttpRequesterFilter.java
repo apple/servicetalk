@@ -96,16 +96,18 @@ public final class RetryingHttpRequesterFilter
 
     static final int DEFAULT_MAX_TOTAL_RETRIES = 4;
 
-    // This is the largest positive duration possible
-    private static final Duration DURATION_MAX_VALUE = Duration.ofNanos(Long.MAX_VALUE);
+    @Nullable
+    private static final Duration DEFAULT_LB_TIMEOUT = null;
 
     private static final RetryingHttpRequesterFilter DISABLE_AUTO_RETRIES =
-            new RetryingHttpRequesterFilter(DURATION_MAX_VALUE, false, false, false, 1, null,
+            new RetryingHttpRequesterFilter(true, DEFAULT_LB_TIMEOUT, false, false, false, 1, null,
                     (__, ___) -> NO_RETRIES, null);
     private static final RetryingHttpRequesterFilter DISABLE_ALL_RETRIES =
-            new RetryingHttpRequesterFilter(DURATION_MAX_VALUE, true, false, false, 0, null,
+            new RetryingHttpRequesterFilter(false, DEFAULT_LB_TIMEOUT, true, false, false, 0, null,
                     (__, ___) -> NO_RETRIES, null);
 
+    private final boolean waitForLb;
+    @Nullable
     private final Duration lbAvailableTimeout;
     private final boolean ignoreSdErrors;
     private final boolean mayReplayRequestPayload;
@@ -118,12 +120,13 @@ public final class RetryingHttpRequesterFilter
     private final RetryCallbacks onRequestRetry;
 
     RetryingHttpRequesterFilter(
-            final Duration lbAvailableTimeout,
+            boolean waitForLb, @Nullable final Duration lbAvailableTimeout,
             final boolean ignoreSdErrors, final boolean mayReplayRequestPayload,
             final boolean returnOriginalResponses, final int maxTotalRetries,
             @Nullable final Function<HttpResponseMetaData, HttpResponseException> responseMapper,
             final BiFunction<HttpRequestMetaData, Throwable, BackOffPolicy> retryFor,
             @Nullable final RetryCallbacks onRequestRetry) {
+        this.waitForLb = waitForLb;
         this.lbAvailableTimeout = lbAvailableTimeout;
         this.ignoreSdErrors = ignoreSdErrors;
         this.mayReplayRequestPayload = mayReplayRequestPayload;
@@ -163,7 +166,7 @@ public final class RetryingHttpRequesterFilter
         void inject(@Nullable final Publisher<Object> lbEventStream,
                     @Nullable final Completable sdStatus) {
             this.sdStatus = ignoreSdErrors ? null : requireNonNull(sdStatus);
-            this.lbEventStream = lbAvailableTimeout.isZero() ? null : requireNonNull(lbEventStream);
+            this.lbEventStream = waitForLb ? requireNonNull(lbEventStream) : null;
         }
 
         private final class OuterRetryStrategy implements BiIntFunction<Throwable, Completable> {
@@ -193,8 +196,12 @@ public final class RetryingHttpRequesterFilter
                 return result;
             }
 
-            private Completable computeLbAvailableDelay(@Nullable Completable injectedStatus) {
-                if (injectedStatus == null || ignoreSdErrors) {
+            private Completable computeLbAvailableDelay(Completable injectedStatus) {
+                if (lbAvailableTimeout == null) {
+                    // We are not using the `loadBalancerTimeout(Duration)` pathway, so we don't add delays
+                    // to the injected status
+                    return injectedStatus;
+                } else if (injectedStatus == null || ignoreSdErrors) {
                     // If we don't have or don't care about service discovery errors we just need a completable that
                     // will result in a timeout.
                     return Completable.never().timeout(lbAvailableTimeout, executor)
@@ -228,7 +235,8 @@ public final class RetryingHttpRequesterFilter
                                     !(lbEvent instanceof LoadBalancerReadyEvent &&
                                             ((LoadBalancerReadyEvent) lbEvent).isReady()))
                             .ignoreElements();
-                    return applyRetryCallbacks(onHostsAvailable.ambWith(computeLbAvailableDelay(sdStatus)), count, t);
+                    return applyRetryCallbacks(sdStatus == null ? onHostsAvailable :
+                            onHostsAvailable.ambWith(computeLbAvailableDelay(sdStatus)), count, t);
                 }
 
                 try {
@@ -791,9 +799,10 @@ public final class RetryingHttpRequesterFilter
                 metaData -> EXPECTATION_FAILED.equals(metaData.status()) ?
                         new ExpectationFailedException("Expectation failed", metaData) : null;
 
+        private boolean waitForLb = true;
         private boolean ignoreSdErrors;
         @Nullable
-        private Duration lbAvailableTimeout = DURATION_MAX_VALUE;
+        private Duration lbAvailableTimeout = DEFAULT_LB_TIMEOUT;
 
         private int maxTotalRetries = DEFAULT_MAX_TOTAL_RETRIES;
         private boolean retryExpectationFailed;
@@ -836,7 +845,9 @@ public final class RetryingHttpRequesterFilter
          */
         @Deprecated
         public Builder waitForLoadBalancer(final boolean waitForLb) {
-            return waitForLoadBalancer(waitForLb ? DURATION_MAX_VALUE : Duration.ZERO);
+            this.waitForLb = waitForLb;
+            this.lbAvailableTimeout = null;
+            return this;
         }
 
         /**
@@ -854,6 +865,7 @@ public final class RetryingHttpRequesterFilter
          */
         public Builder waitForLoadBalancer(Duration timeout) {
             this.lbAvailableTimeout = ensureNonNegative(timeout, "timeout");
+            this.waitForLb = !timeout.isZero();
             return this;
         }
 
@@ -1182,7 +1194,7 @@ public final class RetryingHttpRequesterFilter
 
                         return NO_RETRIES;
                     };
-            return new RetryingHttpRequesterFilter(lbAvailableTimeout,
+            return new RetryingHttpRequesterFilter(waitForLb, lbAvailableTimeout,
                     ignoreSdErrors, mayReplayRequestPayload,
                     returnOriginalResponses, maxTotalRetries, responseMapper, allPredicate, onRequestRetry);
         }

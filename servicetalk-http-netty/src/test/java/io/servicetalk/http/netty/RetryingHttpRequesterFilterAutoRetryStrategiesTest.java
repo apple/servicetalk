@@ -18,9 +18,9 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.NoActiveHostException;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.RetryableConnectException;
+import io.servicetalk.concurrent.Executor;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
@@ -30,7 +30,6 @@ import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.netty.RetryingHttpRequesterFilter.ContextAwareRetryingHttpClientFilter;
-import io.servicetalk.transport.api.IoExecutor;
 
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -310,7 +309,6 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
         final HttpExecutionContext executionContext = mock(HttpExecutionContext.class);
         when(executionContext.executionStrategy()).thenReturn(strategy);
         when(executionContext.executor()).then((Answer<Executor>) invocation -> immediate());
-        when(executionContext.ioExecutor()).then((Answer<IoExecutor>) invocation -> TestIoExecutor.INSTANCE);
         when(client.executionContext()).then(__ -> executionContext);
         final ContextAwareRetryingHttpClientFilter f =
                 (ContextAwareRetryingHttpClientFilter) filter.create(client);

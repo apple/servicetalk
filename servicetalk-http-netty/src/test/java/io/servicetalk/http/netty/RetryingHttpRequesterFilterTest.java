@@ -392,7 +392,7 @@ final class RetryingHttpRequesterFilterTest {
                 .appendClientFilter(
                         new Builder()
                                 .waitForLoadBalancer(Duration.ofMillis(100))
-                        .build())
+                                .build())
                 .buildBlocking();
         Exception e = assertThrows(Exception.class, () -> failingClient.request(failingClient.get("/")));
         assertThat(e, instanceOf(TimeoutException.class));
@@ -555,24 +555,6 @@ final class RetryingHttpRequesterFilterTest {
         }
     }
 
-    private static final class ForeverServiceDiscoverer implements ServiceDiscoverer<HostAndPort, InetSocketAddress,
-            ServiceDiscovererEvent<InetSocketAddress>> {
-        @Override
-        public Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> discover(HostAndPort s) {
-            return Publisher.never();
-        }
-
-        @Override
-        public Completable onClose() {
-            return Completable.completed();
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return onClose();
-        }
-    }
-
     private final class InspectingLoadBalancerFactory<C extends LoadBalancedConnection>
             implements LoadBalancerFactory<InetSocketAddress, C> {
 
@@ -643,6 +625,24 @@ final class RetryingHttpRequesterFilterTest {
         @Override
         public Completable closeAsyncGracefully() {
             return delegate.closeAsyncGracefully();
+        }
+    }
+
+    private static final class ForeverServiceDiscoverer implements ServiceDiscoverer<HostAndPort, InetSocketAddress,
+                ServiceDiscovererEvent<InetSocketAddress>> {
+        @Override
+        public Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> discover(HostAndPort s) {
+            return Publisher.never();
+        }
+
+        @Override
+        public Completable onClose() {
+            return Completable.completed();
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return onClose();
         }
     }
 
