@@ -46,6 +46,8 @@ import org.mockito.stubbing.Answer;
 
 import java.net.UnknownHostException;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -69,8 +71,10 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -165,9 +169,13 @@ class LoadBalancerReadyHttpClientTest {
     void serviceDiscoveryErrorTimeout() throws InterruptedException {
         Consumer<Throwable> errorConsumer = ex -> testExecutor.advanceTimeBy(
                 TIMEOUT_DURATION_SECONDS, TimeUnit.SECONDS);
-        assertThat(verifyFailsAction0(true, filter ->
-                filter.reserveConnection(filter.get("/noop")), errorConsumer, DELIBERATE_EXCEPTION),
-                instanceOf(TimeoutException.class));
+        Throwable result = verifyFailsAction0(true, filter ->
+                filter.reserveConnection(filter.get("/noop")), errorConsumer, DELIBERATE_EXCEPTION);
+        assertThat(result, instanceOf(TimeoutException.class));
+        // We never propagate the exception to the sd status so we should _not_ see it in the suppressed exceptions.
+        List<Throwable> suppressed = Arrays.asList(result.getSuppressed());
+        assertThat(suppressed, not(hasItem(DELIBERATE_EXCEPTION)));
+        assertThat(suppressed, hasItem(instanceOf(NoAvailableHostException.class)));
     }
 
     @Test
@@ -177,9 +185,12 @@ class LoadBalancerReadyHttpClientTest {
             testExecutor.advanceTimeBy(
                     TIMEOUT_DURATION_SECONDS, TimeUnit.SECONDS);
         };
-        assertThat(verifyFailsAction0(true, filter ->
-                        filter.reserveConnection(filter.get("/noop")), errorConsumer, DELIBERATE_EXCEPTION),
-                is(DELIBERATE_EXCEPTION));
+        Throwable result = verifyFailsAction0(true, filter ->
+                        filter.reserveConnection(filter.get("/noop")), errorConsumer, DELIBERATE_EXCEPTION);
+        assertThat(result, instanceOf(TimeoutException.class));
+        List<Throwable> suppressed = Arrays.asList(result.getSuppressed());
+        assertThat(suppressed, hasItem(DELIBERATE_EXCEPTION));
+        assertThat(suppressed, hasItem(instanceOf(NoAvailableHostException.class)));
     }
 
     private void verifyOnInitializedFailedFailsAction(

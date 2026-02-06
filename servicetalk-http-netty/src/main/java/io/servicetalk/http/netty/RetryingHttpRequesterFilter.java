@@ -108,7 +108,7 @@ public final class RetryingHttpRequesterFilter
 
     private final boolean waitForLb;
     @Nullable
-    private final Duration lbAvailableTimeout;
+    private final Duration waitForLbTimeout;
     private final boolean ignoreSdErrors;
     private final boolean mayReplayRequestPayload;
     private final boolean returnOriginalResponses;
@@ -120,14 +120,14 @@ public final class RetryingHttpRequesterFilter
     private final RetryCallbacks onRequestRetry;
 
     RetryingHttpRequesterFilter(
-            boolean waitForLb, @Nullable final Duration lbAvailableTimeout,
+            boolean waitForLb, @Nullable final Duration waitForLbTimeout,
             final boolean ignoreSdErrors, final boolean mayReplayRequestPayload,
             final boolean returnOriginalResponses, final int maxTotalRetries,
             @Nullable final Function<HttpResponseMetaData, HttpResponseException> responseMapper,
             final BiFunction<HttpRequestMetaData, Throwable, BackOffPolicy> retryFor,
             @Nullable final RetryCallbacks onRequestRetry) {
         this.waitForLb = waitForLb;
-        this.lbAvailableTimeout = lbAvailableTimeout;
+        this.waitForLbTimeout = waitForLbTimeout;
         this.ignoreSdErrors = ignoreSdErrors;
         this.mayReplayRequestPayload = mayReplayRequestPayload;
         this.returnOriginalResponses = returnOriginalResponses;
@@ -188,17 +188,21 @@ public final class RetryingHttpRequesterFilter
                 this.retryCallbacks = retryCallbacks;
             }
 
-            private Exception enrichTimeoutException(NoAvailableHostException ex, TimeoutException underlying) {
+            private Exception toTimeoutException(NoAvailableHostException ex,
+                                                 Throwable underlying) {
                 Exception result = StacklessTimeoutException.newInstance(
-                        "Load balancer availability timeout: " + lbAvailableTimeout.toMillis() + " ms",
-                        RetryingHttpRequesterFilter.class, "awaitSdStatus()");
-                result.initCause(underlying);
+                        "Load balancer availability timeout: " + waitForLbTimeout.toMillis() + " ms",
+                        RetryingHttpRequesterFilter.class, "awaitLbAvailable()");
                 result.addSuppressed(ex);
+                // No need to add a redundant TimeoutException.
+                if (!(underlying instanceof TimeoutException)) {
+                    result.addSuppressed(underlying);
+                }
                 return result;
             }
 
-            private Completable computeLbAvailableDelay(NoAvailableHostException cause, Completable injectedStatus) {
-                if (lbAvailableTimeout == null) {
+            private Completable lbAvailableDelay(NoAvailableHostException cause, Completable injectedStatus) {
+                if (waitForLbTimeout == null) {
                     // We are not using the `loadBalancerTimeout(Duration)` pathway, so we don't add delays
                     // to the injected status
                     return injectedStatus
@@ -206,27 +210,15 @@ public final class RetryingHttpRequesterFilter
                                 ex.addSuppressed(cause);
                                 return ex;
                             });
-                } else if (injectedStatus == null || ignoreSdErrors) {
-                    // If we don't have or don't care about service discovery errors we just need a completable that
-                    // will result in a timeout.
-                    return Completable.never().timeout(lbAvailableTimeout, executor)
-                            .onErrorMap(TimeoutException.class, ex -> enrichTimeoutException(cause, ex));
                 } else {
                     // The behavior is as follows:
                     // 1. The injected status will resolve either by error or timeout, whichever happens first.
                     //    This means it will always result in either an SD error or a timeout error.
                     // 2. The timer and the .mergeDelayError call will result in delaying the result of 1 for the
                     //    expected timeout.
-                    return executor.timer(lbAvailableTimeout)
-                            .mergeDelayError(injectedStatus.timeout(lbAvailableTimeout, executor)
-                            .onErrorMap(ex -> {
-                                if (ex instanceof TimeoutException) {
-                                    return enrichTimeoutException(cause, (TimeoutException) ex);
-                                } else {
-                                    ex.addSuppressed(cause);
-                                    return ex;
-                                }
-                            }));
+                    return (waitForLbTimeout.isZero() ? completed() : executor.timer(waitForLbTimeout))
+                            .mergeDelayError(injectedStatus.timeout(waitForLbTimeout, executor))
+                            .onErrorMap(ex -> toTimeoutException(cause, ex));
                 }
             }
 
@@ -247,9 +239,10 @@ public final class RetryingHttpRequesterFilter
                                     !(lbEvent instanceof LoadBalancerReadyEvent &&
                                             ((LoadBalancerReadyEvent) lbEvent).isReady()))
                             .ignoreElements();
-                    return applyRetryCallbacks(sdStatus == null ? onHostsAvailable :
-                            onHostsAvailable.ambWith(
-                                    computeLbAvailableDelay((NoAvailableHostException) t, sdStatus)), count, t);
+
+                    return applyRetryCallbacks(onHostsAvailable.ambWith(lbAvailableDelay(
+                            (NoAvailableHostException) t,
+                            sdStatus == null ? Completable.never() : sdStatus)), count, t);
                 }
 
                 try {
@@ -815,7 +808,7 @@ public final class RetryingHttpRequesterFilter
         private boolean waitForLb = true;
         private boolean ignoreSdErrors;
         @Nullable
-        private Duration lbAvailableTimeout = DEFAULT_LB_TIMEOUT;
+        private Duration waitForLbTimeout = DEFAULT_LB_TIMEOUT;
 
         private int maxTotalRetries = DEFAULT_MAX_TOTAL_RETRIES;
         private boolean retryExpectationFailed;
@@ -859,7 +852,7 @@ public final class RetryingHttpRequesterFilter
         @Deprecated
         public Builder waitForLoadBalancer(final boolean waitForLb) {
             this.waitForLb = waitForLb;
-            this.lbAvailableTimeout = null;
+            this.waitForLbTimeout = null;
             return this;
         }
 
@@ -877,7 +870,7 @@ public final class RetryingHttpRequesterFilter
          * @return {@code this}.
          */
         public Builder waitForLoadBalancer(Duration timeout) {
-            this.lbAvailableTimeout = ensureNonNegative(timeout, "timeout");
+            this.waitForLbTimeout = ensureNonNegative(timeout, "timeout");
             this.waitForLb = !timeout.isZero();
             return this;
         }
@@ -1207,7 +1200,7 @@ public final class RetryingHttpRequesterFilter
 
                         return NO_RETRIES;
                     };
-            return new RetryingHttpRequesterFilter(waitForLb, lbAvailableTimeout,
+            return new RetryingHttpRequesterFilter(waitForLb, waitForLbTimeout,
                     ignoreSdErrors, mayReplayRequestPayload,
                     returnOriginalResponses, maxTotalRetries, responseMapper, allPredicate, onRequestRetry);
         }

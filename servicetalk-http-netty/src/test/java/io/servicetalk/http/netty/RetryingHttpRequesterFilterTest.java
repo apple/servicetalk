@@ -21,6 +21,7 @@ import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
+import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.RequestRejectedException;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
@@ -72,6 +73,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -105,6 +107,7 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
@@ -386,20 +389,21 @@ final class RetryingHttpRequesterFilterTest {
         }
     }
 
-    @Test
-    void sdAvailableStatusCanResultInTimeout() {
+    @ParameterizedTest(name = "{displayName} [{index}]: ignoreSdErrors={0}")
+    @ValueSource(booleans = {true, false})
+    void sdAvailableStatusCanResultInTimeout(boolean ignoreSdErrors) {
         failingClient = forSingleAddress(new ForeverServiceDiscoverer(), HostAndPort.of("foo", 80), BACKGROUND)
                 .appendClientFilter(
                         new Builder()
                                 .waitForLoadBalancer(Duration.ofMillis(100))
+                                .ignoreServiceDiscovererErrors(ignoreSdErrors)
                                 .build())
                 .buildBlocking();
-        Exception e = assertThrows(Exception.class, () -> failingClient.request(failingClient.get("/")));
-        assertThat(e, instanceOf(TimeoutException.class));
+        TimeoutException e = assertThrows(TimeoutException.class, () -> failingClient.request(failingClient.get("/")));
         // Note that this message is very specific and subject to change
         assertThat(e.getMessage(), equalTo("Load balancer availability timeout: 100 ms"));
-        assertThat(e.getCause(), instanceOf(TimeoutException.class));
         assertThat("Unexpected calls to select.", lbSelectInvoked.get(), is(equalTo(0)));
+        assertThat(Arrays.asList(e.getSuppressed()), hasItem(instanceOf(NoAvailableHostException.class)));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}]: returnOriginalResponses={0}, thrower={1}")
