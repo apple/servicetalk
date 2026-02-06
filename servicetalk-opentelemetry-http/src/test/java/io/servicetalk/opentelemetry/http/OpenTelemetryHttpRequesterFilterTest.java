@@ -121,6 +121,9 @@ class OpenTelemetryHttpRequesterFilterTest {
                 HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
 
+                // Allow span export to complete before assertions to avoid flakiness, especially on HTTP/2.
+                sleep();
+
                 verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), requestUrl,
                     serverSpanState.getTraceId(), serverSpanState.getSpanId(),
                     TRACING_TEST_LOG_LINE_PREFIX);
