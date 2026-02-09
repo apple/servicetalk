@@ -16,8 +16,10 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.NoAvailableHostException;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestCompletable;
+import io.servicetalk.concurrent.api.TestExecutor;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
@@ -43,7 +45,12 @@ import org.mockito.Mock;
 import org.mockito.stubbing.Answer;
 
 import java.net.UnknownHostException;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -64,13 +71,16 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 class LoadBalancerReadyHttpClientTest {
+    private static final long TIMEOUT_DURATION_SECONDS = 5;
     private static final ContextMap.Key<Integer> REQUEST_COUNT_KEY = newKey("request-count", Integer.class);
     private static final UnknownHostException UNKNOWN_HOST_EXCEPTION =
             new UnknownHostException("deliberate exception");
@@ -78,6 +88,7 @@ class LoadBalancerReadyHttpClientTest {
             DEFAULT_ALLOCATOR, INSTANCE, HTTP_1_1);
 
 
+    private final TestExecutor testExecutor = new TestExecutor();
     private final TestPublisher<Object> loadBalancerPublisher = new TestPublisher<>();
     private final TestCompletable sdStatusCompletable = new TestCompletable();
 
@@ -115,6 +126,8 @@ class LoadBalancerReadyHttpClientTest {
                 .when(mockReservedConnection).httpResponseFactory();
         doAnswer((Answer<HttpExecutionStrategy>) invocation -> offloadAll())
                 .when(mockExecutionCtx).executionStrategy();
+        doAnswer((Answer<Executor>) invocation -> testExecutor)
+                .when(mockExecutionCtx).executor();
     }
 
     @Test
@@ -152,6 +165,34 @@ class LoadBalancerReadyHttpClientTest {
         verifyOnServiceDiscovererErrorFailsAction(filter -> filter.reserveConnection(filter.get("/noop")));
     }
 
+    @Test
+    void serviceDiscoveryErrorTimeout() throws InterruptedException {
+        Consumer<Throwable> errorConsumer = ex -> testExecutor.advanceTimeBy(
+                TIMEOUT_DURATION_SECONDS, TimeUnit.SECONDS);
+        Throwable result = verifyFailsAction0(true, filter ->
+                filter.reserveConnection(filter.get("/noop")), errorConsumer, DELIBERATE_EXCEPTION);
+        assertThat(result, instanceOf(TimeoutException.class));
+        // We never propagate the exception to the sd status so we should _not_ see it in the suppressed exceptions.
+        List<Throwable> suppressed = Arrays.asList(result.getSuppressed());
+        assertThat(suppressed, not(hasItem(DELIBERATE_EXCEPTION)));
+        assertThat(suppressed, hasItem(instanceOf(NoAvailableHostException.class)));
+    }
+
+    @Test
+    void serviceDiscoveryErrorTimeoutWithError() throws InterruptedException {
+        Consumer<Throwable> errorConsumer = ex -> {
+            sdStatusCompletable.onError(ex);
+            testExecutor.advanceTimeBy(
+                    TIMEOUT_DURATION_SECONDS, TimeUnit.SECONDS);
+        };
+        Throwable result = verifyFailsAction0(true, filter ->
+                        filter.reserveConnection(filter.get("/noop")), errorConsumer, DELIBERATE_EXCEPTION);
+        assertThat(result, instanceOf(TimeoutException.class));
+        List<Throwable> suppressed = Arrays.asList(result.getSuppressed());
+        assertThat(suppressed, hasItem(DELIBERATE_EXCEPTION));
+        assertThat(suppressed, hasItem(instanceOf(NoAvailableHostException.class)));
+    }
+
     private void verifyOnInitializedFailedFailsAction(
             Function<StreamingHttpClient, Single<?>> action) throws InterruptedException {
         verifyFailsAction(action, loadBalancerPublisher::onError, DELIBERATE_EXCEPTION);
@@ -164,21 +205,21 @@ class LoadBalancerReadyHttpClientTest {
 
     private void verifyLbCompleteFailedFailsAction(
             Function<StreamingHttpClient, Single<?>> action) throws InterruptedException {
-        assertThat(verifyFailsAction0(action, ignored -> loadBalancerPublisher.onComplete(), DELIBERATE_EXCEPTION),
-                instanceOf(IllegalStateException.class));
+        assertThat(verifyFailsAction0(false, action, ignored -> loadBalancerPublisher.onComplete(),
+                        DELIBERATE_EXCEPTION), instanceOf(IllegalStateException.class));
     }
 
     private void verifyFailsAction(Function<StreamingHttpClient, Single<?>> action, Consumer<Throwable> errorConsumer,
                                    Throwable error) throws InterruptedException {
-        assertThat(verifyFailsAction0(action, errorConsumer, error), is(error));
+        assertThat(verifyFailsAction0(false, action, errorConsumer, error), is(error));
     }
 
-    private Throwable verifyFailsAction0(Function<StreamingHttpClient, Single<?>> action,
+    private Throwable verifyFailsAction0(boolean sdStatusTimeout, Function<StreamingHttpClient, Single<?>> action,
                                          Consumer<Throwable> errorConsumer, Throwable error)
             throws InterruptedException {
         StreamingHttpClient client = TestStreamingHttpClient.from(reqRespFactory, mockExecutionCtx,
-                appendClientFilterFactory(newAutomaticRetryFilterFactory(loadBalancerPublisher, sdStatusCompletable),
-                        testHandler));
+                appendClientFilterFactory(newAutomaticRetryFilterFactory(sdStatusTimeout, loadBalancerPublisher,
+                                sdStatusCompletable), testHandler));
 
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
@@ -216,7 +257,17 @@ class LoadBalancerReadyHttpClientTest {
 
     private static StreamingHttpClientFilterFactory newAutomaticRetryFilterFactory(
             TestPublisher<Object> loadBalancerPublisher, TestCompletable sdStatusCompletable) {
-        final RetryingHttpRequesterFilter filter = new RetryingHttpRequesterFilter.Builder().maxTotalRetries(1).build();
+        return newAutomaticRetryFilterFactory(false, loadBalancerPublisher, sdStatusCompletable);
+    }
+
+    private static StreamingHttpClientFilterFactory newAutomaticRetryFilterFactory(boolean timeoutLbReady,
+            TestPublisher<Object> loadBalancerPublisher, TestCompletable sdStatusCompletable) {
+                RetryingHttpRequesterFilter.Builder builder = new RetryingHttpRequesterFilter.Builder();
+                if (timeoutLbReady) {
+                    builder.waitForLoadBalancer(Duration.ofSeconds(TIMEOUT_DURATION_SECONDS));
+                }
+        final RetryingHttpRequesterFilter filter = builder.maxTotalRetries(1)
+                .build();
         return client -> {
             final ContextAwareRetryingHttpClientFilter f = (ContextAwareRetryingHttpClientFilter) filter.create(client);
             f.inject(loadBalancerPublisher, sdStatusCompletable);

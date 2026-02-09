@@ -21,7 +21,9 @@ import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
+import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.RequestRejectedException;
+import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.AsyncContext;
@@ -70,7 +72,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -80,6 +85,7 @@ import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
+import static io.servicetalk.http.netty.HttpClients.DiscoveryStrategy.BACKGROUND;
 import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
@@ -101,6 +107,7 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
@@ -382,6 +389,23 @@ final class RetryingHttpRequesterFilterTest {
         }
     }
 
+    @ParameterizedTest(name = "{displayName} [{index}]: ignoreSdErrors={0}")
+    @ValueSource(booleans = {true, false})
+    void sdAvailableStatusCanResultInTimeout(boolean ignoreSdErrors) {
+        failingClient = forSingleAddress(new ForeverServiceDiscoverer(), HostAndPort.of("foo", 80), BACKGROUND)
+                .appendClientFilter(
+                        new Builder()
+                                .waitForLoadBalancer(Duration.ofMillis(100))
+                                .ignoreServiceDiscovererErrors(ignoreSdErrors)
+                                .build())
+                .buildBlocking();
+        TimeoutException e = assertThrows(TimeoutException.class, () -> failingClient.request(failingClient.get("/")));
+        // Note that this message is very specific and subject to change
+        assertThat(e.getMessage(), equalTo("Load balancer availability timeout: 100 ms"));
+        assertThat("Unexpected calls to select.", lbSelectInvoked.get(), is(equalTo(0)));
+        assertThat(Arrays.asList(e.getSuppressed()), hasItem(instanceOf(NoAvailableHostException.class)));
+    }
+
     @ParameterizedTest(name = "{displayName} [{index}]: returnOriginalResponses={0}, thrower={1}")
     @MethodSource("lambdaExceptions")
     void lambdaExceptions(final boolean returnOriginalResponses, final ExceptionSource thrower) {
@@ -605,6 +629,24 @@ final class RetryingHttpRequesterFilterTest {
         @Override
         public Completable closeAsyncGracefully() {
             return delegate.closeAsyncGracefully();
+        }
+    }
+
+    private static final class ForeverServiceDiscoverer implements ServiceDiscoverer<HostAndPort, InetSocketAddress,
+                ServiceDiscovererEvent<InetSocketAddress>> {
+        @Override
+        public Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> discover(HostAndPort s) {
+            return Publisher.never();
+        }
+
+        @Override
+        public Completable onClose() {
+            return Completable.completed();
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return onClose();
         }
     }
 

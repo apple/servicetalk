@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -94,14 +95,20 @@ public final class RetryingHttpRequesterFilter
     private static final Logger LOGGER = LoggerFactory.getLogger(RetryingHttpRequesterFilter.class);
 
     static final int DEFAULT_MAX_TOTAL_RETRIES = 4;
+
+    @Nullable
+    private static final Duration DEFAULT_LB_TIMEOUT = null;
+
     private static final RetryingHttpRequesterFilter DISABLE_AUTO_RETRIES =
-            new RetryingHttpRequesterFilter(true, false, false, false, 1, null,
+            new RetryingHttpRequesterFilter(true, DEFAULT_LB_TIMEOUT, false, false, false, 1, null,
                     (__, ___) -> NO_RETRIES, null);
     private static final RetryingHttpRequesterFilter DISABLE_ALL_RETRIES =
-            new RetryingHttpRequesterFilter(false, true, false, false, 0, null,
+            new RetryingHttpRequesterFilter(false, DEFAULT_LB_TIMEOUT, true, false, false, 0, null,
                     (__, ___) -> NO_RETRIES, null);
 
     private final boolean waitForLb;
+    @Nullable
+    private final Duration waitForLbTimeout;
     private final boolean ignoreSdErrors;
     private final boolean mayReplayRequestPayload;
     private final boolean returnOriginalResponses;
@@ -113,12 +120,14 @@ public final class RetryingHttpRequesterFilter
     private final RetryCallbacks onRequestRetry;
 
     RetryingHttpRequesterFilter(
-            final boolean waitForLb, final boolean ignoreSdErrors, final boolean mayReplayRequestPayload,
+            boolean waitForLb, @Nullable final Duration waitForLbTimeout,
+            final boolean ignoreSdErrors, final boolean mayReplayRequestPayload,
             final boolean returnOriginalResponses, final int maxTotalRetries,
             @Nullable final Function<HttpResponseMetaData, HttpResponseException> responseMapper,
             final BiFunction<HttpRequestMetaData, Throwable, BackOffPolicy> retryFor,
             @Nullable final RetryCallbacks onRequestRetry) {
         this.waitForLb = waitForLb;
+        this.waitForLbTimeout = waitForLbTimeout;
         this.ignoreSdErrors = ignoreSdErrors;
         this.mayReplayRequestPayload = mayReplayRequestPayload;
         this.returnOriginalResponses = returnOriginalResponses;
@@ -179,6 +188,40 @@ public final class RetryingHttpRequesterFilter
                 this.retryCallbacks = retryCallbacks;
             }
 
+            private Exception toTimeoutException(NoAvailableHostException ex,
+                                                 Throwable underlying) {
+                Exception result = StacklessTimeoutException.newInstance(
+                        "Load balancer availability timeout: " + waitForLbTimeout.toMillis() + " ms",
+                        RetryingHttpRequesterFilter.class, "awaitLbAvailable()");
+                result.addSuppressed(ex);
+                // No need to add a redundant TimeoutException.
+                if (!(underlying instanceof TimeoutException)) {
+                    result.addSuppressed(underlying);
+                }
+                return result;
+            }
+
+            private Completable lbAvailableDelay(NoAvailableHostException cause, Completable injectedStatus) {
+                if (waitForLbTimeout == null) {
+                    // We are not using the `loadBalancerTimeout(Duration)` pathway, so we don't add delays
+                    // to the injected status
+                    return injectedStatus
+                            .onErrorMap(ex -> {
+                                ex.addSuppressed(cause);
+                                return ex;
+                            });
+                } else {
+                    // The behavior is as follows:
+                    // 1. The injected status will resolve either by error or timeout, whichever happens first.
+                    //    This means it will always result in either an SD error or a timeout error.
+                    // 2. The timer and the .mergeDelayError call will result in delaying the result of 1 for the
+                    //    expected timeout.
+                    return executor.timer(waitForLbTimeout)
+                            .mergeDelayError(injectedStatus.timeout(waitForLbTimeout, executor))
+                            .onErrorMap(ex -> toTimeoutException(cause, ex));
+                }
+            }
+
             @Override
             public Completable apply(final int count, final Throwable t) {
                 if (count > maxTotalRetries) {
@@ -196,8 +239,10 @@ public final class RetryingHttpRequesterFilter
                                     !(lbEvent instanceof LoadBalancerReadyEvent &&
                                             ((LoadBalancerReadyEvent) lbEvent).isReady()))
                             .ignoreElements();
-                    return applyRetryCallbacks(
-                            sdStatus == null ? onHostsAvailable : onHostsAvailable.ambWith(sdStatus), count, t);
+
+                    return applyRetryCallbacks(onHostsAvailable.ambWith(lbAvailableDelay(
+                            (NoAvailableHostException) t,
+                            sdStatus == null ? Completable.never() : sdStatus)), count, t);
                 }
 
                 try {
@@ -762,6 +807,8 @@ public final class RetryingHttpRequesterFilter
 
         private boolean waitForLb = true;
         private boolean ignoreSdErrors;
+        @Nullable
+        private Duration waitForLbTimeout = DEFAULT_LB_TIMEOUT;
 
         private int maxTotalRetries = DEFAULT_MAX_TOTAL_RETRIES;
         private boolean retryExpectationFailed;
@@ -800,9 +847,31 @@ public final class RetryingHttpRequesterFilter
          *
          * @param waitForLb Whether to wait for the {@link LoadBalancer} to be ready before retrying requests.
          * @return {@code this}.
+         * @deprecated use {@link #waitForLoadBalancer(Duration)} instead.
          */
+        @Deprecated
         public Builder waitForLoadBalancer(final boolean waitForLb) {
             this.waitForLb = waitForLb;
+            this.waitForLbTimeout = null;
+            return this;
+        }
+
+        /**
+         * By default, automatic retries will wait for the {@link LoadBalancer} to be
+         * {@link LoadBalancerReadyEvent ready} or for the {@link ServiceDiscoverer} to report an error, whichever
+         * happens first. This method allows users to modify the behavior such that automatic retries will give the
+         * load balancer a grace period over which to be ready, after which the service discovery error (or a
+         * timeout if there is no error) will be propagated. This allows users to prevent situations such as spurious
+         * DNS failures from causing their client to be unhealthy while also not causing the client to lock up
+         * indefinitely for real problems such as an invalid DNS name.
+         *
+         * @param timeout the time to wait for the load balancer to be ready before returning an error. A value of
+         * {@link Duration#ZERO} disables waiting for the load balancer.
+         * @return {@code this}.
+         */
+        public Builder waitForLoadBalancer(Duration timeout) {
+            this.waitForLbTimeout = ensureNonNegative(timeout, "timeout");
+            this.waitForLb = !timeout.isZero();
             return this;
         }
 
@@ -1131,7 +1200,8 @@ public final class RetryingHttpRequesterFilter
 
                         return NO_RETRIES;
                     };
-            return new RetryingHttpRequesterFilter(waitForLb, ignoreSdErrors, mayReplayRequestPayload,
+            return new RetryingHttpRequesterFilter(waitForLb, waitForLbTimeout,
+                    ignoreSdErrors, mayReplayRequestPayload,
                     returnOriginalResponses, maxTotalRetries, responseMapper, allPredicate, onRequestRetry);
         }
     }
