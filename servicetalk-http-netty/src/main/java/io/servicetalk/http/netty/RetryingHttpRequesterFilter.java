@@ -216,7 +216,7 @@ public final class RetryingHttpRequesterFilter
                     //    This means it will always result in either an SD error or a timeout error.
                     // 2. The timer and the .mergeDelayError call will result in delaying the result of 1 for the
                     //    expected timeout.
-                    return (waitForLbTimeout.isZero() ? completed() : executor.timer(waitForLbTimeout))
+                    return executor.timer(waitForLbTimeout)
                             .mergeDelayError(injectedStatus.timeout(waitForLbTimeout, executor))
                             .onErrorMap(ex -> toTimeoutException(cause, ex));
                 }
