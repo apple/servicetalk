@@ -31,14 +31,15 @@ import static java.util.Objects.requireNonNull;
  */
 public final class H1ProtocolConfigBuilder {
 
+    private static final int DEFAULT_MAX_START_LINE_LENGTH = 4096;
+    private static final int DEFAULT_MAX_HEADER_FIELD_LENGTH = 8192;
+    private static final int DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH = DEFAULT_MAX_HEADER_FIELD_LENGTH;
     private static final H1SpecExceptions DEFAULT_H1_SPEC_EXCEPTIONS = new H1SpecExceptions.Builder().build();
 
-    static final int DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH = 8192;
-
     private int maxPipelinedRequests = 1;
-    private int maxStartLineLength = 4096;
-    private int maxHeaderFieldLength = 8192;
-    private int maxTotalHeaderFieldsLength = DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH;
+    private int maxStartLineLength = DEFAULT_MAX_START_LINE_LENGTH;
+    private int maxHeaderFieldLength = DEFAULT_MAX_HEADER_FIELD_LENGTH;
+    private int maxTotalHeaderFieldsLength = 0;
     private HttpHeadersFactory headersFactory = DefaultHttpHeadersFactory.INSTANCE;
     private int headersEncodedSizeEstimate = 256;
     private int trailersEncodedSizeEstimate = 256;
@@ -77,13 +78,13 @@ public final class H1ProtocolConfigBuilder {
     }
 
     /**
-     * Sets the maximum length of the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> for
-     * an HTTP message.
+     * Sets the maximum length (size in bytes) of the HTTP
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> for an HTTP message.
      * <p>
      * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the start line exceeds
      * this value.
      *
-     * @param maxStartLineLength maximum size of the HTTP
+     * @param maxStartLineLength maximum length (size in bytes) of the HTTP
      * <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> for an HTTP message
      * @return {@code this}
      */
@@ -93,24 +94,32 @@ public final class H1ProtocolConfigBuilder {
     }
 
     /**
-     * Sets the maximum total allowed length of all HTTP
-     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> combined.
+     * Sets the maximum total allowed length (size in bytes) of all HTTP
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> or
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a> combined.
      * <p>
-     * This limit protects against memory exhaustion attacks where an attacker sends many small headers
-     * that individually pass validation but collectively consume excessive memory.
+     * This limit protects against memory exhaustion attacks where an attacker sends many small headers or trailers
+     * that individually pass {@link #maxHeaderFieldLength(int) field validation} but collectively consume excessive
+     * memory.
      * <p>
-     * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the total
-     * header block size exceeds this value. The default matches HTTP/2's
+     * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the total headers or
+     * trailers block size exceeds this value.
+     * <p>
+     * This is an HTTP/1.x equivalent of HTTP/2's
      * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_MAX_HEADER_LIST_SIZE</a>.
      * <p>
-     * If property is set to {@code io.servicetalk.http.netty.maxTotalHeaderFieldsLengthWarnOnly=true} (which is
-     * the current default), then ServiceTalk will only emit a warning instead of throwing - this is to ease initial
-     * rollout of this limit. A future release will enforce it by default, so we recommend adjusting the code to not
-     * see any warnings in preparation for the change.
+     * The default value is the configured {@link #maxHeaderFieldLength(int)} value multiplied by 2, and not less than
+     * HTTP/2's <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_MAX_HEADER_LIST_SIZE</a> default.
+     * <p>
+     * Users who unexpectedly hit the default limit can temporarily (until they can adjust the limit) set
+     * {@code io.servicetalk.http.netty.maxTotalHeaderFieldsLengthWarnOnly=true}, then ServiceTalk will only emit a
+     * warning instead of throwing an exception.
      *
-     * @param maxTotalHeaderFieldsLength maximum total allowed length of all header fields combined
+     * @param maxTotalHeaderFieldsLength maximum total allowed length (size in bytes) of all headers or trailers
+     * combined
      * @return {@code this}
-     * @see H2ProtocolConfigBuilder#initialSettings(Http2Settings) how to configure it for H2
+     * @see #maxHeaderFieldLength(int)
+     * @see H2ProtocolConfigBuilder#initialSettings(Http2Settings) how to configure it for HTTP/2
      */
     public H1ProtocolConfigBuilder maxTotalHeaderFieldsLength(final int maxTotalHeaderFieldsLength) {
         this.maxTotalHeaderFieldsLength = ensurePositive(maxTotalHeaderFieldsLength, "maxTotalHeaderFieldsLength");
@@ -118,16 +127,18 @@ public final class H1ProtocolConfigBuilder {
     }
 
     /**
-     * Sets the maximum length of the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a>
-     * and <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a> to parse.
+     * Sets the maximum length (size in bytes) of an individual HTTP
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> or
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a> to parse.
      * <p>
      * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the length of a header or
      * trailer field exceeds this value.
      *
-     * @param maxHeaderFieldLength maximum length of HTTP
-     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> and
-     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a> to parse
+     * @param maxHeaderFieldLength maximum length (size in bytes) of HTTP
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> or
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a> to parse
      * @return {@code this}
+     * @see #maxTotalHeaderFieldsLength(int)
      */
     public H1ProtocolConfigBuilder maxHeaderFieldLength(final int maxHeaderFieldLength) {
         this.maxHeaderFieldLength = ensurePositive(maxHeaderFieldLength, "maxHeaderFieldLength");
@@ -152,11 +163,11 @@ public final class H1ProtocolConfigBuilder {
 
     /**
      * Sets the value used to calculate an exponential moving average of the encoded size of the HTTP
-     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a> for a guess for future
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a> for a guess for future
      * buffer allocations.
      *
      * @param trailersEncodedSizeEstimate value used to calculate an exponential moving average of the encoded size of
-     * the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a>
+     * the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a>
      * @return {@code this}
      */
     public H1ProtocolConfigBuilder trailersEncodedSizeEstimate(final int trailersEncodedSizeEstimate) {
@@ -186,6 +197,10 @@ public final class H1ProtocolConfigBuilder {
                 maxTotalHeaderFieldsLength);
     }
 
+    static int defaultMaxTotalHeaderFieldsLength(final int maxHeaderFieldLength) {
+        return Math.max(DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH, maxHeaderFieldLength * 2);
+    }
+
     private static final class DefaultH1ProtocolConfig implements H1ProtocolConfig {
 
         private final HttpHeadersFactory headersFactory;
@@ -208,7 +223,8 @@ public final class H1ProtocolConfigBuilder {
             this.headersEncodedSizeEstimate = headersEncodedSizeEstimate;
             this.trailersEncodedSizeEstimate = trailersEncodedSizeEstimate;
             this.specExceptions = specExceptions;
-            this.maxTotalHeaderFieldsLength = maxTotalHeaderFieldsLength;
+            this.maxTotalHeaderFieldsLength = maxTotalHeaderFieldsLength > 0 ? maxTotalHeaderFieldsLength :
+                    defaultMaxTotalHeaderFieldsLength(maxHeaderFieldLength);
         }
 
         @Override
