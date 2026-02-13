@@ -82,6 +82,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.netty.HeaderUtils.removeTransferEncodingChunked;
 import static io.servicetalk.http.netty.HttpKeepAlive.shouldClose;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
+import static java.lang.Boolean.getBoolean;
 import static java.lang.Character.isISOControl;
 import static java.lang.Character.isWhitespace;
 import static java.lang.Long.parseUnsignedLong;
@@ -137,9 +138,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     // This is useful for gradual rollout to identify legitimate traffic that exceeds the limit.
     private static final String TOTAL_HEADER_LENGTH_WARN_ONLY_PROPERTY =
             "io.servicetalk.http.netty.maxTotalHeaderFieldsLengthWarnOnly";
-    // FIXME 0.43 - flip default value
-    protected static final boolean TOTAL_HEADER_LENGTH_WARN_ONLY = Boolean.parseBoolean(System
-            .getProperty(TOTAL_HEADER_LENGTH_WARN_ONLY_PROPERTY, "true"));
+    static final boolean TOTAL_HEADER_LENGTH_WARN_ONLY = getBoolean(TOTAL_HEADER_LENGTH_WARN_ONLY_PROPERTY);
 
     static {
         if (TOTAL_HEADER_LENGTH_WARN_ONLY) {
