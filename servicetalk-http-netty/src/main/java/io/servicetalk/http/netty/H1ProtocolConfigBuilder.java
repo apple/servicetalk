@@ -100,7 +100,7 @@ public final class H1ProtocolConfigBuilder {
      * <p>
      * This limit protects against memory exhaustion attacks where an attacker sends many small headers or trailers
      * that individually pass {@link #maxHeaderFieldLength(int) field validation} but collectively consume excessive
-     * memory.
+     * memory. This value should not be less than the value configured for {@link #maxHeaderFieldLength(int)}.
      * <p>
      * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the total headers or
      * trailers block size exceeds this value.
@@ -192,6 +192,12 @@ public final class H1ProtocolConfigBuilder {
      * @return a new {@link H1ProtocolConfig}
      */
     public H1ProtocolConfig build() {
+        final int maxTotalHeaderFieldsLength = this.maxTotalHeaderFieldsLength > 0 ? this.maxTotalHeaderFieldsLength :
+                defaultMaxTotalHeaderFieldsLength(maxHeaderFieldLength);
+        if (maxTotalHeaderFieldsLength < maxHeaderFieldLength) {
+            throw new IllegalArgumentException("maxTotalHeaderFieldsLength (" + maxTotalHeaderFieldsLength +
+                    ") should not be less than maxHeaderFieldLength (" + maxHeaderFieldLength + ")");
+        }
         return new DefaultH1ProtocolConfig(headersFactory, maxPipelinedRequests, maxStartLineLength,
                 maxHeaderFieldLength, headersEncodedSizeEstimate, trailersEncodedSizeEstimate, specExceptions,
                 maxTotalHeaderFieldsLength);
@@ -223,8 +229,7 @@ public final class H1ProtocolConfigBuilder {
             this.headersEncodedSizeEstimate = headersEncodedSizeEstimate;
             this.trailersEncodedSizeEstimate = trailersEncodedSizeEstimate;
             this.specExceptions = specExceptions;
-            this.maxTotalHeaderFieldsLength = maxTotalHeaderFieldsLength > 0 ? maxTotalHeaderFieldsLength :
-                    defaultMaxTotalHeaderFieldsLength(maxHeaderFieldLength);
+            this.maxTotalHeaderFieldsLength = maxTotalHeaderFieldsLength;
         }
 
         @Override

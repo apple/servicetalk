@@ -64,7 +64,7 @@ public interface H1ProtocolConfig extends HttpProtocolConfig {
      * <p>
      * This limit protects against memory exhaustion attacks where an attacker sends many small headers or trailers
      * that individually pass {@link #maxHeaderFieldLength() field validation} but collectively consume excessive
-     * memory.
+     * memory. This value should not be less than the value configured for {@link #maxHeaderFieldLength()}.
      * <p>
      * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the total headers or
      * trailers block size exceeds this value.
