@@ -77,13 +77,13 @@ public final class H1ProtocolConfigBuilder {
     }
 
     /**
-     * Sets the maximum length of the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> for
-     * an HTTP message.
+     * Sets the maximum length (size in bytes) of the HTTP
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> for an HTTP message.
      * <p>
      * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the start line exceeds
      * this value.
      *
-     * @param maxStartLineLength maximum size of the HTTP
+     * @param maxStartLineLength maximum length (size in bytes) of the HTTP
      * <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> for an HTTP message
      * @return {@code this}
      */
@@ -93,24 +93,32 @@ public final class H1ProtocolConfigBuilder {
     }
 
     /**
-     * Sets the maximum total allowed length of all HTTP
-     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> combined.
+     * Sets the maximum total allowed length (size in bytes) of all HTTP
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> or
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a> combined.
      * <p>
-     * This limit protects against memory exhaustion attacks where an attacker sends many small headers
-     * that individually pass validation but collectively consume excessive memory.
+     * This limit protects against memory exhaustion attacks where an attacker sends many small headers or trailers
+     * that individually pass {@link #maxHeaderFieldLength(int) field validation} but collectively consume excessive
+     * memory. This value should not be less than the value configured for {@link #maxHeaderFieldLength(int)}.
      * <p>
-     * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the total
-     * header block size exceeds this value. The default matches HTTP/2's
-     * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_MAX_HEADER_LIST_SIZE</a>.
+     * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the total headers or
+     * trailers block size exceeds this value.
+     * <p>
+     * This is an HTTP/1.x equivalent of HTTP/2's
+     * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_MAX_HEADER_LIST_SIZE</a> that can be
+     * configured via {@link Http2Settings#maxHeaderListSize()} for
+     * {@link H2ProtocolConfigBuilder#initialSettings(Http2Settings)}.
      * <p>
      * If property is set to {@code io.servicetalk.http.netty.maxTotalHeaderFieldsLengthWarnOnly=true} (which is
      * the current default), then ServiceTalk will only emit a warning instead of throwing - this is to ease initial
      * rollout of this limit. A future release will enforce it by default, so we recommend adjusting the code to not
      * see any warnings in preparation for the change.
      *
-     * @param maxTotalHeaderFieldsLength maximum total allowed length of all header fields combined
+     * @param maxTotalHeaderFieldsLength maximum total allowed length (size in bytes) of all headers or trailers
+     * combined
      * @return {@code this}
-     * @see H2ProtocolConfigBuilder#initialSettings(Http2Settings) how to configure it for H2
+     * @see #maxHeaderFieldLength(int)
+     * @see H2ProtocolConfigBuilder#initialSettings(Http2Settings)
      */
     public H1ProtocolConfigBuilder maxTotalHeaderFieldsLength(final int maxTotalHeaderFieldsLength) {
         this.maxTotalHeaderFieldsLength = ensurePositive(maxTotalHeaderFieldsLength, "maxTotalHeaderFieldsLength");
@@ -118,16 +126,18 @@ public final class H1ProtocolConfigBuilder {
     }
 
     /**
-     * Sets the maximum length of the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a>
-     * and <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a> to parse.
+     * Sets the maximum length (size in bytes) of an individual HTTP
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> or
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a> to parse.
      * <p>
      * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the length of a header or
      * trailer field exceeds this value.
      *
-     * @param maxHeaderFieldLength maximum length of HTTP
-     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> and
-     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a> to parse
+     * @param maxHeaderFieldLength maximum length (size in bytes) of HTTP
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> or
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a> to parse
      * @return {@code this}
+     * @see #maxTotalHeaderFieldsLength(int)
      */
     public H1ProtocolConfigBuilder maxHeaderFieldLength(final int maxHeaderFieldLength) {
         this.maxHeaderFieldLength = ensurePositive(maxHeaderFieldLength, "maxHeaderFieldLength");
@@ -152,11 +162,11 @@ public final class H1ProtocolConfigBuilder {
 
     /**
      * Sets the value used to calculate an exponential moving average of the encoded size of the HTTP
-     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a> for a guess for future
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a> for a guess for future
      * buffer allocations.
      *
      * @param trailersEncodedSizeEstimate value used to calculate an exponential moving average of the encoded size of
-     * the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a>
+     * the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a>
      * @return {@code this}
      */
     public H1ProtocolConfigBuilder trailersEncodedSizeEstimate(final int trailersEncodedSizeEstimate) {
