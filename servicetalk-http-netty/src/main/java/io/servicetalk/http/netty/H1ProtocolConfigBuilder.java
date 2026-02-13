@@ -39,7 +39,7 @@ public final class H1ProtocolConfigBuilder {
     private int maxPipelinedRequests = 1;
     private int maxStartLineLength = DEFAULT_MAX_START_LINE_LENGTH;
     private int maxHeaderFieldLength = DEFAULT_MAX_HEADER_FIELD_LENGTH;
-    private int maxTotalHeaderFieldsLength = 0;
+    private int maxTotalHeaderFieldsLength;
     private HttpHeadersFactory headersFactory = DefaultHttpHeadersFactory.INSTANCE;
     private int headersEncodedSizeEstimate = 256;
     private int trailersEncodedSizeEstimate = 256;
