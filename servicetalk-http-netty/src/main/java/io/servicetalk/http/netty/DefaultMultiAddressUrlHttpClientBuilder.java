@@ -58,6 +58,7 @@ import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.util.Locale;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpScheme.HTTP;
@@ -74,6 +75,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.setExecutionContext;
+import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalClientFilterFactory;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -110,6 +112,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     private int defaultHttpsPort = HTTPS.port();
     @Nullable
     private SingleAddressInitializer<HostAndPort, InetSocketAddress> singleAddressInitializer;
+    @Nullable
+    private StreamingHttpClientFilterFactory clientFilterFactory;
 
     DefaultMultiAddressUrlHttpClientBuilder(
             final Function<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>> bFactory) {
@@ -135,7 +139,12 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             urlClient = redirectConfig == null ? urlClient :
                     new RedirectingHttpRequesterFilter(redirectConfig).create(urlClient);
 
-            // Detect leaks that can be caused by unexpected exceptions
+            // TODO: is this the right position to add the filters?
+            if (clientFilterFactory != null) {
+                urlClient = clientFilterFactory.create(urlClient);
+            }
+
+            // Detect leaks that can be caused by unexpected exceptions. Must be the last filter.
             urlClient = HttpMessageDiscardWatchdogClientFilter.CLIENT_CLEANER.create(urlClient);
 
             LOGGER.debug("Multi-address client created with base strategy {}", executionContext.executionStrategy());
@@ -473,6 +482,21 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         return this;
     }
 
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendClientFilter(
+            StreamingHttpClientFilterFactory factory) {
+        doAppendClientFilter(requireNonNull(factory, "factory"));
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendClientFilter(
+            Predicate<StreamingHttpRequest> predicate, StreamingHttpClientFilterFactory factory) {
+        requireNonNull(predicate, "predicate");
+        requireNonNull(factory, "factory");
+        return appendClientFilter(toConditionalClientFilterFactory(predicate, factory));
+    }
+
     /**
      * Verifies that the given port number is within the allowed range.
      *
@@ -484,5 +508,14 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             throw new IllegalArgumentException("Provided port number is out of range (between 1 and 65535): " + port);
         }
         return port;
+    }
+
+    private void doAppendClientFilter(StreamingHttpClientFilterFactory filter) {
+        if (clientFilterFactory == null) {
+            clientFilterFactory = filter;
+        } else {
+            StreamingHttpClientFilterFactory oldFactory = clientFilterFactory;
+            clientFilterFactory = (client) -> oldFactory.create(filter.create(client));
+        }
     }
 }

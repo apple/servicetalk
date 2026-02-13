@@ -19,6 +19,8 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.IoExecutor;
 
+import java.util.function.Predicate;
+
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -126,5 +128,18 @@ public class DelegatingMultiAddressHttpClientBuilder<U, R> implements MultiAddre
     @Override
     public BlockingStreamingHttpClient buildBlockingStreaming() {
         return delegate.buildBlockingStreaming();
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<U, R> appendClientFilter(StreamingHttpClientFilterFactory factory) {
+        delegate = delegate.appendClientFilter(factory);
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
+                                                                  StreamingHttpClientFilterFactory factory) {
+        delegate = delegate.appendClientFilter(predicate, factory);
+        return this;
     }
 }

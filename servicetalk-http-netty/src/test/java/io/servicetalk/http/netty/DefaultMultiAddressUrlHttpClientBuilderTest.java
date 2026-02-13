@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpRequester;
 import io.servicetalk.http.api.BlockingStreamingHttpRequester;
@@ -28,7 +29,9 @@ import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequester;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
+import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
@@ -38,8 +41,12 @@ import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -47,6 +54,7 @@ import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_DIRECT_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_HEAP_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
@@ -56,6 +64,8 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.cached;
 import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.immediate;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
@@ -253,6 +263,108 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
             assertThat(client.request(client.get("HTTPS://LOCALHOST:" + serverPort + '/')).status(), is(OK));
             assertThat(client.request(client.get("hTTpS://LocalHost:" + serverPort + '/')).status(), is(OK));
             assertThat(internalClientCounter.get(), is(2));
+        }
+    }
+
+    @Test
+    void appendClientFilterOrdering() throws Exception {
+        List<String> filterExecutions = new CopyOnWriteArrayList<>();
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
+             BlockingHttpClient client = HttpClients.forMultiAddressUrl(getClass().getSimpleName())
+                     .ioExecutor(CTX.ioExecutor())
+                     .executor(CTX.executor())
+                     .appendClientFilter(c -> new StreamingHttpClientFilter(c) {
+                         @Override
+                         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                                        final StreamingHttpRequest request) {
+                             filterExecutions.add("filter1");
+                             return delegate.request(request);
+                         }
+                     })
+                     .appendClientFilter(c -> new StreamingHttpClientFilter(c) {
+                         @Override
+                         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                                        final StreamingHttpRequest request) {
+                             filterExecutions.add("filter2");
+                             return delegate.request(request);
+                         }
+                     })
+                     .appendClientFilter(c -> new StreamingHttpClientFilter(c) {
+                         @Override
+                         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                                        final StreamingHttpRequest request) {
+                             filterExecutions.add("filter3");
+                             return delegate.request(request);
+                         }
+                     })
+                     .buildBlocking()) {
+
+            HttpResponse response = client.request(
+                    client.get("http://" + serverHostAndPort(serverContext) + "/"));
+            assertThat(response.status(), is(OK));
+            assertThat(filterExecutions, hasSize(3));
+            assertThat(filterExecutions, contains("filter1", "filter2", "filter3"));
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] predicate={0}")
+    @ValueSource(booleans = {true, false})
+    void appendClientFilterWithPredicate(boolean predicate) throws Exception {
+        List<String> filterExecutions = new CopyOnWriteArrayList<>();
+
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
+             BlockingHttpClient client = HttpClients.forMultiAddressUrl(getClass().getSimpleName())
+                     .ioExecutor(CTX.ioExecutor())
+                     .executor(CTX.executor())
+                     .appendClientFilter(request -> predicate, c -> new StreamingHttpClientFilter(c) {
+                         @Override
+                         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                                        final StreamingHttpRequest request) {
+                             filterExecutions.add("predicate-filter");
+                             return delegate.request(request);
+                         }
+                     })
+                     .buildBlocking()) {
+
+            HttpResponse response = client.request(
+                    client.get("http://" + serverHostAndPort(serverContext) + "/"));
+            assertThat(response.status(), is(OK));
+            assertThat(filterExecutions, hasSize(predicate ? 1 : 0));
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] throwError={0}")
+    @ValueSource(booleans = {true, false})
+    void appendClientFilterWithException(boolean throwError) throws Exception {
+        Throwable capturedThrowable = null;
+
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
+             BlockingHttpClient client = HttpClients.forMultiAddressUrl(getClass().getSimpleName())
+                     .ioExecutor(CTX.ioExecutor())
+                     .executor(CTX.executor())
+                     .appendClientFilter(c -> new StreamingHttpClientFilter(c) {
+                         @Override
+                         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                                        final StreamingHttpRequest request) {
+                             if (throwError) {
+                                 throw DELIBERATE_EXCEPTION;
+                             }
+                             return Single.failed(DELIBERATE_EXCEPTION);
+                         }
+                     })
+                     .buildBlocking()) {
+
+            try {
+                client.request(client.get("http://" + serverHostAndPort(serverContext) + "/error"));
+            } catch (Exception e) {
+                capturedThrowable = e;
+            }
+
+            assertThat(capturedThrowable, is(notNullValue()));
+            assertThat(capturedThrowable, is(sameInstance(DELIBERATE_EXCEPTION)));
         }
     }
 
