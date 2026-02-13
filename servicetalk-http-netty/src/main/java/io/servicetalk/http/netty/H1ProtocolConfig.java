@@ -59,20 +59,20 @@ public interface H1ProtocolConfig extends HttpProtocolConfig {
 
     /**
      * Get the maximum total allowed length (size in bytes) of all HTTP
-     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> or
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> and
      * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a> combined.
      * <p>
-     * This limit protects against memory exhaustion attacks where an attacker sends many small headers or trailers
+     * This limit protects against memory exhaustion attacks where an attacker sends many small headers and trailers
      * that individually pass {@link #maxHeaderFieldLength() field validation} but collectively consume excessive
      * memory. This value should not be less than the value configured for {@link #maxHeaderFieldLength()}.
      * <p>
-     * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the total headers or
+     * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the total headers and
      * trailers block size exceeds this value.
      * <p>
      * This is an HTTP/1.x equivalent of HTTP/2's
      * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_MAX_HEADER_LIST_SIZE</a>.
      *
-     * @return maximum total allowed length (size in bytes) of all headers or trailers combined
+     * @return maximum total allowed length (size in bytes) of all headers and trailers combined
      * @see #maxHeaderFieldLength()
      * @see Http2Settings#maxHeaderListSize() how to configure it for HTTP/2
      */

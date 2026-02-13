@@ -95,14 +95,14 @@ public final class H1ProtocolConfigBuilder {
 
     /**
      * Sets the maximum total allowed length (size in bytes) of all HTTP
-     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> or
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> and
      * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a> combined.
      * <p>
-     * This limit protects against memory exhaustion attacks where an attacker sends many small headers or trailers
+     * This limit protects against memory exhaustion attacks where an attacker sends many small headers and trailers
      * that individually pass {@link #maxHeaderFieldLength(int) field validation} but collectively consume excessive
      * memory. This value should not be less than the value configured for {@link #maxHeaderFieldLength(int)}.
      * <p>
-     * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the total headers or
+     * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the total headers and
      * trailers block size exceeds this value.
      * <p>
      * This is an HTTP/1.x equivalent of HTTP/2's
@@ -115,7 +115,7 @@ public final class H1ProtocolConfigBuilder {
      * {@code io.servicetalk.http.netty.maxTotalHeaderFieldsLengthWarnOnly=true}, then ServiceTalk will only emit a
      * warning instead of throwing an exception.
      *
-     * @param maxTotalHeaderFieldsLength maximum total allowed length (size in bytes) of all headers or trailers
+     * @param maxTotalHeaderFieldsLength maximum total allowed length (size in bytes) of all headers and trailers
      * combined
      * @return {@code this}
      * @see #maxHeaderFieldLength(int)
