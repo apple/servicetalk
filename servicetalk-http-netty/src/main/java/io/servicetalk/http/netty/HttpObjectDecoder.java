@@ -179,7 +179,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
      * Line being parsed. Used for reporting location in exceptions
      */
     private int parsingLine;
-    private int currentHeaderLength;
+    private int currentHeadersBlockLength;
 
     /**
      * Use this boolean to only warn once per connection (== once per decoder instance).
@@ -630,7 +630,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         contentLength = Long.MIN_VALUE;
         parsingLine = 0;
         cumulationIndex = -1;
-        currentHeaderLength = 0;
+        currentHeadersBlockLength = 0;
         if (!isDecodingRequest()) {
             HttpResponseMetaData res = (HttpResponseMetaData) message;
             if (res != null && isSwitchingToNonHttp1Protocol(res)) {
@@ -753,7 +753,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         }
         final T message = this.message;
         assert message != null;
-        if (!parseAllHeaders(buffer, message.headers(), longLFIndex)) {
+        if (!parseAllHeaders("headers", buffer, message.headers(), longLFIndex)) {
             return null;
         }
 
@@ -797,7 +797,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 trailer = this.trailer = headersFactory.newTrailers();
             }
 
-            return parseAllHeaders(buffer, trailer, longLFIndex) ? trailer : null;
+            return parseAllHeaders("trailers", buffer, trailer, longLFIndex) ? trailer : null;
         }
 
         consumeCRLF(buffer, crlfIndex(longLFIndex));
@@ -809,34 +809,43 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     /**
      * Parse the HTTP headers from a buffer
      *
+     * @param name name of the block to parse
      * @param buffer source of the headers
      * @param headers destination for parsed headers
      * @param longLFIndex result of {@link #findCRLF(ByteBuf, int, int, int, boolean)}
      * @return true if complete headers were processed otherwise false indicates incomplete parsing or error.
      */
-    private boolean parseAllHeaders(final ByteBuf buffer, final HttpHeaders headers, long longLFIndex) {
+    private boolean parseAllHeaders(final String name, final ByteBuf buffer, final HttpHeaders headers,
+                                    long longLFIndex) {
         for (;;) {
             final int lfIndex = crlfIndex(longLFIndex);
             final int nonControlIndex = crlfBeforeIndex(longLFIndex);
             if (nonControlIndex < buffer.readerIndex()) {
+                // We intentionally do not check maxTotalHeaderFieldsLength limit for the last CRLF to avoid failing the
+                // whole HTTP message because of an extra new line separator. Counting per line makes it simpler for
+                // users to estimate the required limit size.
                 consumeCRLF(buffer, lfIndex);
+                // Reset the counter to start from 0 if we encounter trailers
+                currentHeadersBlockLength = 0;
                 return true;
             }
 
-            final int headerLineSize = nonControlIndex - buffer.readerIndex() + 1;
-            currentHeaderLength += headerLineSize;
-            if (currentHeaderLength > maxTotalHeaderFieldsLength) {
+            final int headerLineLength = lfIndex - buffer.readerIndex() + 1;  // Include CRLF into account
+            currentHeadersBlockLength += headerLineLength;
+            if (currentHeadersBlockLength > maxTotalHeaderFieldsLength) {
                 if (totalHeaderLengthWarnOnly) {
                     if (!totalHeaderLengthLimitWarned) {
                         totalHeaderLengthLimitWarned = true;
-                        LOGGER.warn("HTTP headers exceed maxTotalHeaderFieldsLength limit: {} > {} bytes. " +
-                                        "This request would be rejected when warn-only mode is disabled. Set " +
-                                        "-D{}=false to enforce the limit.", currentHeaderLength,
-                                maxTotalHeaderFieldsLength, TOTAL_HEADER_LENGTH_WARN_ONLY_PROPERTY);
+                        LOGGER.warn("HTTP {} exceeded the total limit of {} bytes after parsing line #{} of {} bytes " +
+                                        "(parsed {} bytes). This request would be rejected when warn-only mode is " +
+                                        "disabled. Set -D{}=false to enforce the limit.",
+                                name, maxTotalHeaderFieldsLength, parsingLine, headerLineLength,
+                                currentHeadersBlockLength, TOTAL_HEADER_LENGTH_WARN_ONLY_PROPERTY);
                     }
                 } else {
-                    throw new TooLongFrameException("HTTP headers exceeded limit " + maxTotalHeaderFieldsLength +
-                            " bytes (parsed " + currentHeaderLength + " bytes).");
+                    throw new TooLongFrameException("HTTP " + name + " exceeded the total limit of " +
+                            maxTotalHeaderFieldsLength + " bytes after parsing line #" + parsingLine + " of " +
+                            headerLineLength + " bytes (parsed " + currentHeadersBlockLength + " bytes)");
                 }
             }
 
@@ -931,7 +940,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             if (lfIndex == -1) {
                 if (toIndex - startIndex == maxLineSize) {
                     throw new DecoderException("Could not find CRLF (0x0d0a) within " + maxLineSize +
-                            " bytes, while parsing line " + parsingLine);
+                            " bytes, while parsing line #" + parsingLine);
                 }
                 return -2;
             } else if (lfIndex == buffer.readerIndex()) {
@@ -943,7 +952,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             } else if ((foundCR = buffer.getByte(lfIndex - 1) == CR) || allowLFWithoutCR) {
                 return foundCR ? ((long) lfIndex - 1) << 32 | lfIndex : ((long) lfIndex) << 32 | lfIndex;
             } else if (lfIndex != maxToIndex) {
-                throw new DecoderException("Found LF (0x0a) but no CR (0x0d) before, while parsing line " +
+                throw new DecoderException("Found LF (0x0a) but no CR (0x0d) before, while parsing line #" +
                         parsingLine);
             } else {
                 throw new TooLongFrameException("An HTTP line " + parsingLine + " is larger than " + maxLineSize +
