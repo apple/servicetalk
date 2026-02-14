@@ -94,12 +94,12 @@ public final class H1ProtocolConfigBuilder {
 
     /**
      * Sets the maximum total allowed length (size in bytes) of all HTTP
-     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> or
-     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a> combined.
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> or all
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a>.
      * <p>
      * This limit protects against memory exhaustion attacks where an attacker sends many small headers or trailers
      * that individually pass {@link #maxHeaderFieldLength(int) field validation} but collectively consume excessive
-     * memory. This value should not be less than the value configured for {@link #maxHeaderFieldLength(int)}.
+     * memory.
      * <p>
      * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the total headers or
      * trailers block size exceeds this value.
@@ -114,8 +114,7 @@ public final class H1ProtocolConfigBuilder {
      * rollout of this limit. A future release will enforce it by default, so we recommend adjusting the code to not
      * see any warnings in preparation for the change.
      *
-     * @param maxTotalHeaderFieldsLength maximum total allowed length (size in bytes) of all headers or trailers
-     * combined
+     * @param maxTotalHeaderFieldsLength maximum total allowed length (size in bytes) of all headers or all trailers
      * @return {@code this}
      * @see #maxHeaderFieldLength(int)
      * @see H2ProtocolConfigBuilder#initialSettings(Http2Settings)
@@ -127,15 +126,15 @@ public final class H1ProtocolConfigBuilder {
 
     /**
      * Sets the maximum length (size in bytes) of an individual HTTP
-     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> or
-     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a> to parse.
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header field</a> or
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer field</a> to parse.
      * <p>
      * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the length of a header or
      * trailer field exceeds this value.
      *
-     * @param maxHeaderFieldLength maximum length (size in bytes) of HTTP
-     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> or
-     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a> to parse
+     * @param maxHeaderFieldLength maximum length (size in bytes) of an individual HTTP
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header field</a> or
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer field</a> to parse
      * @return {@code this}
      * @see #maxTotalHeaderFieldsLength(int)
      */
