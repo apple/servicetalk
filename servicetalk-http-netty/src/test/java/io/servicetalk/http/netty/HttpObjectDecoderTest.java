@@ -927,6 +927,7 @@ abstract class HttpObjectDecoderTest {
         }
     }
 
+    @SuppressWarnings("PMD.ConsecutiveLiteralAppends")
     @ParameterizedTest(name = "{displayName} [{index}] exceed={0}")
     @ValueSource(booleans = {false, true})
     void totalHeadersLimitForTrailersWithManyShortLines(boolean exceed) {
@@ -934,11 +935,11 @@ abstract class HttpObjectDecoderTest {
         EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(limit);
 
         // Start line + headers + empty chunk + many short trailer lines that together may exceed the limit
-        StringBuilder msg = new StringBuilder(startLineForContent() + "\r\n" +
-                "Host: servicetalk.io\r\n" + // 22 bytes
-                "Transfer-Encoding: chunked\r\n" + // 28 bytes
-                "\r\n" +
-                "0\r\n"); // empty chunk
+        StringBuilder msg = new StringBuilder(startLineForContent()).append("\r\n")
+                .append("Host: servicetalk.io\r\n") // 22 bytes
+                .append("Transfer-Encoding: chunked\r\n") // 28 bytes
+                .append("\r\n")
+                .append("0\r\n"); // empty chunk
         final int n = limit / 10 + (exceed ? 1 : 0);
         for (int i = 0; i < n; i++) {
             msg.append("X-").append(String.format("%02d", i)).append(": aa\r\n");   // 10 bytes
