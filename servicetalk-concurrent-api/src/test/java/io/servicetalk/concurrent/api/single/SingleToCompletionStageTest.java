@@ -15,9 +15,12 @@
  */
 package io.servicetalk.concurrent.api.single;
 
+import io.servicetalk.concurrent.NonBlockingThread.IllegalBlockingOperationException;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorExtension;
+import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
+import io.servicetalk.concurrent.api.NonBlockingThreadFactory;
 import io.servicetalk.concurrent.api.Single;
 
 import org.junit.jupiter.api.AfterAll;
@@ -25,14 +28,22 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,12 +56,16 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.lang.Thread.currentThread;
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -61,6 +76,11 @@ class SingleToCompletionStageTest {
     private static final String ST_THREAD_PREFIX_NAME = "st-exec-thread";
     @RegisterExtension
     static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor(ST_THREAD_PREFIX_NAME)
+            .setClassLevel(true);
+
+    @RegisterExtension
+    static final ExecutorExtension<Executor> NON_BLOCKING_EXEC = ExecutorExtension
+            .withExecutor(() -> Executors.newFixedSizeExecutor(1, new NonBlockingThreadFactory()))
             .setClassLevel(true);
 
     private LegacyTestSingle testSingle;
@@ -1002,6 +1022,114 @@ class SingleToCompletionStageTest {
         assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 
+    private static List<Arguments> operationWithBoolean() {
+        List<Arguments> result = new ArrayList<>();
+        for (Operation operation : Operation.values()) {
+            for (boolean b : asList(false, true)) {
+                result.add(Arguments.of(operation, b));
+            }
+        }
+        return result;
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] operation={0} withWhenComplete={1}")
+    @MethodSource("operationWithBoolean")
+    void testThrowsIfHasToBlockOnNonBlockingThread(Operation operation, boolean withWhenComplete) throws Exception {
+        BlockingQueue<Object> result = new LinkedBlockingQueue<>();
+        CompletableFuture<String> f = source.toCompletionStage().toCompletableFuture();
+        if (withWhenComplete) {
+            f = f.whenComplete((r, t) -> { /* noop */ });
+        }
+        CompletableFuture<String> future = f;
+        assertThat(future.isDone(), is(false));
+        NON_BLOCKING_EXEC.executor().submit(() -> {
+                    switch (operation) {
+                        case GET:
+                            return future.get();
+                        case GET_WITH_TIMEOUT:
+                            return future.get(3, SECONDS);
+                        case JOIN:
+                            return future.join();
+                        default:
+                            throw new IllegalArgumentException("Unknown Operation: " + operation);
+                    }
+                })
+                .subscribe(result::add, result::add);
+        assertThat(result.take(), is(instanceOf(IllegalBlockingOperationException.class)));
+        assertThat(future.isDone(), is(false));
+    }
+
+    private static List<Arguments> terminalAndOperationWithBoolean() {
+        List<Arguments> result = new ArrayList<>();
+        for (FutureTerminal terminal : FutureTerminal.values()) {
+            for (Operation operation : Operation.values()) {
+                for (boolean b : asList(false, true)) {
+                    result.add(Arguments.of(terminal, operation, b));
+                }
+            }
+        }
+        return result;
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] terminal={0} operation={1} withWhenComplete={2}")
+    @MethodSource("terminalAndOperationWithBoolean")
+    void testDoesNotThrowOnNonBlockingThreadIfAlreadyComplete(FutureTerminal terminal, Operation operation,
+                                                              boolean withWhenComplete) throws Exception {
+        BlockingQueue<Object> result = new LinkedBlockingQueue<>();
+        CompletableFuture<String> f = testSingle.toCompletionStage().toCompletableFuture();
+        if (withWhenComplete) {
+            f = f.whenComplete((r, t) -> { /* noop */ });
+        }
+        CompletableFuture<String> future = f;
+        switch (terminal) {
+            case COMPLETED:
+                testSingle.onSuccess("foo");
+                break;
+            case FAILED:
+                testSingle.onError(DELIBERATE_EXCEPTION);
+                break;
+            case CANCELLED:
+                future.cancel(true);
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown FutureTerminal: " + terminal);
+        }
+        assertThat(future.isDone(), is(true));
+        NON_BLOCKING_EXEC.executor().submit(() -> {
+                    switch (operation) {
+                        case GET:
+                            return future.get();
+                        case GET_WITH_TIMEOUT:
+                            return future.get(3, SECONDS);
+                        case JOIN:
+                            return future.join();
+                        default:
+                            throw new IllegalArgumentException("Unknown Operation: " + operation);
+                    }
+                })
+                .subscribe(result::add, result::add);
+        switch (terminal) {
+            case COMPLETED:
+                assertThat(result.take(), is("foo"));
+                break;
+            case FAILED:
+                final Object error = result.take();
+                if (operation == Operation.JOIN) {
+                    assertThat(error, is(instanceOf(CompletionException.class)));
+                } else {
+                    assertThat(error, is(instanceOf(ExecutionException.class)));
+                }
+                assertThat(((Throwable) error).getCause(), is(sameInstance(DELIBERATE_EXCEPTION)));
+                break;
+            case CANCELLED:
+                assertThat(result.take(), is(instanceOf(CancellationException.class)));
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown FutureTerminal: " + terminal);
+        }
+        assertThat(result, is(empty()));
+    }
+
     private static <X> void verifyListenerInvokedInJdkThread(CompletionStage<X> stage)
             throws ExecutionException, InterruptedException {
         // Derived stages from thenApplyAsync with a jdkExecutor should invoke listeners on the same jdkExecutor too!
@@ -1171,5 +1299,17 @@ class SingleToCompletionStageTest {
             verifyInJdkForkJoinThread();
             return (int) (strLen(str) + dbl);
         };
+    }
+
+    private enum Operation {
+        GET,
+        GET_WITH_TIMEOUT,
+        JOIN
+    }
+
+    private enum FutureTerminal {
+        COMPLETED,
+        FAILED,
+        CANCELLED
     }
 }

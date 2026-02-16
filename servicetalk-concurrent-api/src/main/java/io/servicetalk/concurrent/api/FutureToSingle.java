@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Future;
 
+import static io.servicetalk.concurrent.api.NonBlockingThreadUtils.checkNonBlockingThread;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static java.util.Objects.requireNonNull;
 
@@ -44,6 +45,7 @@ final class FutureToSingle<T> extends SubscribableSingle<T> {
 
         final T value;
         try {
+            checkNonBlockingThread(future.isDone());
             value = future.get();
         } catch (Throwable cause) {
             subscriber.onError(cause);

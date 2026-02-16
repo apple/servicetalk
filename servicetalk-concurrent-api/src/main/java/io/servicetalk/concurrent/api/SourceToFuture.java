@@ -29,6 +29,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.NonBlockingThreadUtils.checkNonBlockingThread;
 import static io.servicetalk.concurrent.api.ThrowableWrapper.isThrowableWrapper;
 import static java.util.Objects.requireNonNull;
 
@@ -94,6 +95,7 @@ abstract class SourceToFuture<T> implements Future<T> {
     public final T get() throws InterruptedException, ExecutionException {
         final Object value = this.value;
         if (value == null) {
+            checkNonBlockingThread(false);
             lastGetTimestampMs = System.currentTimeMillis();
             try {
                 latch.await();
@@ -112,6 +114,7 @@ abstract class SourceToFuture<T> implements Future<T> {
             throws InterruptedException, ExecutionException, TimeoutException {
         final Object value = this.value;
         if (value == null) {
+            checkNonBlockingThread(false);
             if (latch.await(timeout, unit)) {
                 return reportGet(this.value);
             } else {

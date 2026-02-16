@@ -15,6 +15,7 @@
  */
 package io.servicetalk.transport.api;
 
+import io.servicetalk.concurrent.NonBlockingThread;
 import io.servicetalk.context.api.ContextMapHolder;
 import io.servicetalk.transport.api.IoThreadFactory.IoThread;
 
@@ -32,7 +33,7 @@ public interface IoThreadFactory<T extends Thread & IoThread> extends ThreadFact
      * Marker interface for IO Threads. All threads created by a {@link IoThreadFactory} are expected to implement this
      * interface.
      */
-    interface IoThread extends ContextMapHolder {
+    interface IoThread extends NonBlockingThread, ContextMapHolder {
         /**
          * Returns {@code true} if the current thread is an {@link IoThread} otherwise {code false}.
          *

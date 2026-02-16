@@ -30,6 +30,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.NonBlockingThreadUtils.checkNonBlockingThread;
+
 final class CancelPropagatingCompletableFuture<T> extends CompletableFuture<T> {
     private final Cancellable cancellable;
     private final CompletableFuture<T> delegate;
@@ -311,6 +313,7 @@ final class CancelPropagatingCompletableFuture<T> extends CompletableFuture<T> {
     @Nullable
     @Override
     public T get() throws InterruptedException, ExecutionException {
+        checkNonBlockingThread(isDone());
         return delegate.get();
     }
 
@@ -318,12 +321,14 @@ final class CancelPropagatingCompletableFuture<T> extends CompletableFuture<T> {
     @Override
     public T get(long timeout, TimeUnit unit)
             throws InterruptedException, ExecutionException, TimeoutException {
+        checkNonBlockingThread(isDone());
         return delegate.get(timeout, unit);
     }
 
     @Nullable
     @Override
     public T join() {
+        checkNonBlockingThread(isDone());
         return delegate.join();
     }
 
