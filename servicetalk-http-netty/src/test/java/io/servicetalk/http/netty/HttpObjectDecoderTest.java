@@ -56,9 +56,11 @@ import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.emptyString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -844,143 +846,202 @@ abstract class HttpObjectDecoderTest {
         assertThat(e.getMessage(), startsWith("Could not find CRLF"));
     }
 
-    @Test
-    void totalHeaderLengthAtExactLimit() {
-        int maxTotalHeaderLength = 100;
-        EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(maxTotalHeaderLength);
+    @ParameterizedTest(name = "{displayName} [{index}] exceed={0}")
+    @ValueSource(booleans = {false, true})
+    void totalHeadersLimitForHeaders(boolean exceed) {
+        final int limit = 50;
+        final EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(limit);
 
-        int hostHeaderSize = 7;  // "Host: x"
-        int remainingBytes = maxTotalHeaderLength - hostHeaderSize;
-
-        // Create a padding header that fills exactly to the limit
-        // "X-Pad: " = 7 bytes, so value needs to be (remainingBytes - 7) chars
-        int paddingValueLength = Math.max(0, remainingBytes - 7);
-        String paddingHeader = "X-Pad: " + repeatChar('a', paddingValueLength);
-
+        final int n = limit - 22 - 10 + (exceed ? 1 : 0);
         String msg = startLine() + "\r\n" +
-                "Host: x\r\n" +
-                paddingHeader + "\r\n\r\n";
+                "Host: servicetalk.io\r\n" + // 22 bytes
+                "X-Test: " + repeatChar('x', n) + "\r\n" + // 10 + n bytes
+                "\r\n";
 
-        assertThat("Should accept message at exact limit",
-                testChannel.writeInbound(fromAscii(msg)), is(true));
-
-        HttpMetaData meta = testChannel.readInbound();
-        assertThat(meta, is(not(nullValue())));
+        if (exceed) {
+            TooLongFrameException e = assertThrows(TooLongFrameException.class, () -> writeMsg(msg, testChannel));
+            assertThat(e.getMessage(), startsWith("HTTP headers exceeded the total limit of " + limit +
+                    " bytes after parsing line #3"));
+        } else {
+            writeMsg(msg, testChannel);
+            HttpMetaData meta = assertStartLine(testChannel);
+            CharSequence value = meta.headers().get("X-Test");
+            assertThat(value, is(notNullValue()));
+            assertThat(value.length(), is(n));
+        }
     }
 
-    @Test
-    void totalHeaderLengthExceedsLimit() {
-        final int maxTotalHeaderLength = 30;
-        final EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(maxTotalHeaderLength);
+    @ParameterizedTest(name = "{displayName} [{index}] exceed={0}")
+    @ValueSource(booleans = {false, true})
+    void totalHeadersLimitForTrailers(boolean exceed) {
+        final int limit = 50;
+        final EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(limit);
 
-        String msg = startLine() + "\r\n" +
-                "Host: servicetalk.io\r\n" +
-                "X-Test: some-value-here\r\n\r\n";
+        final int n = limit - 13 + (exceed ? 1 : 0);
+        String msg = startLineForContent() + "\r\n" +
+                "Host: servicetalk.io\r\n" + // 22 bytes
+                "Transfer-Encoding: chunked\r\n" + // 28 bytes
+                "\r\n" +
+                "0\r\n" +   // empty chunk
+                "X-Trailer: " + repeatChar('x', n) + "\r\n" + // 13 + n bytes
+                "\r\n";
 
-        TooLongFrameException e = assertThrows(TooLongFrameException.class,
-                () -> testChannel.writeInbound(fromAscii(msg)));
-        assertThat(e.getMessage(), startsWith("HTTP headers exceeded limit " + maxTotalHeaderLength +
-                " bytes"));
+        if (exceed) {
+            TooLongFrameException e = assertThrows(TooLongFrameException.class, () -> writeMsg(msg, testChannel));
+            assertThat(e.getMessage(), startsWith("HTTP trailers exceeded the total limit of " + limit +
+                    " bytes after parsing line #6 of " + (limit + 1) + " bytes"));
+        } else {
+            writeMsg(msg, testChannel);
+            HttpMetaData metaData = assertStartLineForContent(testChannel);
+            assertSingleHeaderValue(metaData.headers(), TRANSFER_ENCODING, CHUNKED);
+            HttpHeaders trailers = testChannel.readInbound();
+            CharSequence value = trailers.get("X-Trailer");
+            assertThat(value, is(notNullValue()));
+            assertThat(value.length(), is(n));
+        }
     }
 
-    @Test
-    void totalHeaderLengthExceedsLimitWithManySmallHeaders() {
-        int maxTotalHeaderLength = 100;
-        EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(maxTotalHeaderLength);
+    @ParameterizedTest(name = "{displayName} [{index}] exceed={0}")
+    @ValueSource(booleans = {false, true})
+    void totalHeadersLimitForHeadersWithManyShortLines(boolean exceed) {
+        final int limit = 100;
+        EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(limit);
 
-        // Start line + many small headers that together exceed the limit
+        // Start line + many short header lines that together may exceed the limit
         StringBuilder msg = new StringBuilder(startLine()).append("\r\n");
-        // Add enough small headers to exceed the limit
-        // Each "X-N: v" is about 6-7 bytes
-        for (int i = 0; i < 20; i++) {
-            msg.append("X-").append(i).append(": v\r\n");
+        final int n = limit / 10 + (exceed ? 1 : 0);
+        for (int i = 0; i < n; i++) {
+            msg.append("X-").append(String.format("%02d", i)).append(": aa\r\n");   // 10 bytes
         }
         msg.append("\r\n");
 
-        TooLongFrameException e = assertThrows(TooLongFrameException.class,
-                () -> testChannel.writeInbound(fromAscii(msg.toString())));
-        assertThat(e.getMessage(), startsWith("HTTP headers exceeded limit " + maxTotalHeaderLength +
-                " bytes"));
+        if (exceed) {
+            TooLongFrameException e = assertThrows(TooLongFrameException.class,
+                    () -> writeMsg(msg.toString(), testChannel));
+            assertThat(e.getMessage(), startsWith("HTTP headers exceeded the total limit of " + limit +
+                    " bytes after parsing line #12"));
+        } else {
+            writeMsg(msg.toString(), testChannel);
+            HttpMetaData meta = assertStartLine(testChannel);
+            assertThat(meta.headers().size(), is(n));
+        }
+    }
+
+    @SuppressWarnings("PMD.ConsecutiveLiteralAppends")
+    @ParameterizedTest(name = "{displayName} [{index}] exceed={0}")
+    @ValueSource(booleans = {false, true})
+    void totalHeadersLimitForTrailersWithManyShortLines(boolean exceed) {
+        final int limit = 100;
+        EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(limit);
+
+        // Start line + headers + empty chunk + many short trailer lines that together may exceed the limit
+        StringBuilder msg = new StringBuilder(startLineForContent()).append("\r\n")
+                .append("Host: servicetalk.io\r\n") // 22 bytes
+                .append("Transfer-Encoding: chunked\r\n") // 28 bytes
+                .append("\r\n")
+                .append("0\r\n"); // empty chunk
+        final int n = limit / 10 + (exceed ? 1 : 0);
+        for (int i = 0; i < n; i++) {
+            msg.append("X-").append(String.format("%02d", i)).append(": aa\r\n");   // 10 bytes
+        }
+        msg.append("\r\n");
+
+        if (exceed) {
+            TooLongFrameException e = assertThrows(TooLongFrameException.class,
+                    () -> writeMsg(msg.toString(), testChannel));
+            assertThat(e.getMessage(), startsWith("HTTP trailers exceeded the total limit of " + limit +
+                    " bytes after parsing line #16"));
+        } else {
+            writeMsg(msg.toString(), testChannel);
+            HttpMetaData metaData = assertStartLineForContent(testChannel);
+            assertSingleHeaderValue(metaData.headers(), TRANSFER_ENCODING, CHUNKED);
+            HttpHeaders trailers = testChannel.readInbound();
+            assertThat(trailers.size(), is(n));
+        }
     }
 
     @Test
-    void totalHeaderLengthResetsAfterCompleteMessage() {
-        int maxTotalHeaderLength = 80;
-        EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(maxTotalHeaderLength);
+    void totalHeadersLimitResetsAfterCompleteMessage() {
+        final int limit = 11;
+        EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(limit);
 
         // First message: should be under the limit
         String msg1 = startLine() + "\r\n" +
-                "Host: a\r\n\r\n";
+                "Host: foo\r\n" + // 11 bytes
+                "\r\n";
 
-        assertThat(testChannel.writeInbound(fromAscii(msg1)), is(true));
-        HttpMetaData meta1 = testChannel.readInbound();
-        assertThat(meta1, is(not(nullValue())));
+        writeMsg(msg1, testChannel);
+        HttpMetaData meta1 = assertStartLine(testChannel);
+        assertSingleHeaderValue(meta1.headers(), "Host", "foo");
 
         // Drain any trailers or other items
         while (testChannel.readInbound() != null) {
             // drain
         }
 
-        // Second message: should also succeed if counter was reset
+        // Second message: should succeed only if counter was reset
         String msg2 = startLine() + "\r\n" +
-                "Host: b\r\n\r\n";
+                "Host: bar\r\n" + // 11 bytes
+                "\r\n";
 
-        assertThat(testChannel.writeInbound(fromAscii(msg2)), is(true));
-        HttpMetaData meta2 = testChannel.readInbound();
-        assertThat(meta2, is(not(nullValue())));
+        writeMsg(msg2, testChannel);
+        HttpMetaData meta2 = assertStartLine(testChannel);
+        assertSingleHeaderValue(meta2.headers(), "Host", "bar");
     }
 
     @Test
-    void totalHeaderLengthIncludesTrailers() {
-        int maxTotalHeaderLength = 70;
-        EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(maxTotalHeaderLength);
+    void totalHeadersLimitForHeadersIsSeparateFromTrailers() {  // checks both fit within exact limit
+        final int limit = 50;
+        EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(limit);
 
-        // Headers (roughly 50-60 bytes depending on request/response)
-        String headers = startLineForContent() + "\r\n" +
-                "Host: x\r\n" +
-                "Transfer-Encoding: chunked\r\n\r\n";
+        // Headers length is 50 bytes
+        String msg = startLineForContent() + "\r\n" +
+                "Host: servicetalk.io\r\n" + // 22 bytes
+                "Transfer-Encoding: chunked\r\n" + // 28 bytes
+                "\r\n";
 
-        assertThat(testChannel.writeInbound(fromAscii(headers)), is(true));
-        HttpMetaData meta = testChannel.readInbound();
-        assertThat(meta, is(not(nullValue())));
+        writeMsg(msg, testChannel);
+        HttpMetaData metaData = assertStartLineForContent(testChannel);
+        assertSingleHeaderValue(metaData.headers(), TRANSFER_ENCODING, CHUNKED);
 
-        // Send a chunk
-        assertThat(testChannel.writeInbound(fromAscii("5\r\nhello\r\n")), is(true));
-
+        // Send payload
+        writeMsg("5\r\nhello\r\n0\r\n", testChannel);
         // Drain the chunk content
         while (testChannel.readInbound() != null) {
             // drain buffers
         }
 
-        // Send last chunk with trailers that push us over the 80 byte limit
-        // "X-Trailer: " + 30 chars = 41 bytes, total > 80
-        String lastChunkWithTrailers = "0\r\n" +
-                "X-Trailer: " + repeatChar('t', 30) + "\r\n\r\n";
-
-        TooLongFrameException e = assertThrows(TooLongFrameException.class,
-                () -> testChannel.writeInbound(fromAscii(lastChunkWithTrailers)));
-        assertThat(e.getMessage(), startsWith("HTTP headers exceeded limit " + maxTotalHeaderLength +
-                " bytes"));
+        // Send trailers that fit under the same limit:
+        final int n = limit - 11 - 2;
+        String trailersMsg =
+                "X-Trailer: " + repeatChar('t', n) + "\r\n" +  // 11 + n + 2
+                "\r\n";
+        writeMsg(trailersMsg, testChannel);
+        HttpHeaders trailers = testChannel.readInbound();
+        CharSequence value = trailers.get("X-Trailer");
+        assertThat(value, is(notNullValue()));
+        assertThat(value.length(), is(n));
     }
 
     @Test
-    void totalHeaderLengthVerySmallLimit() {
+    void totalHeadersLimitWithVerySmallValue() {
         int maxTotalHeaderLength = 5;
         EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(maxTotalHeaderLength);
 
         String msg = startLine() + "\r\nHost: x\r\n\r\n";
         TooLongFrameException e = assertThrows(TooLongFrameException.class,
                 () -> testChannel.writeInbound(fromAscii(msg)));
-        assertThat(e.getMessage(), startsWith("HTTP headers exceeded limit " + maxTotalHeaderLength +
-                " bytes"));
+        assertThat(e.getMessage(), startsWith("HTTP headers exceeded the total limit of " + maxTotalHeaderLength +
+                " bytes after parsing line #2"));
     }
 
     @Test
-    void totalHeaderLengthDoesNotIncludeStartLine() {
+    void totalHeadersLimitDoesNotIncludeStartLine() {
         int maxTotalHeaderLength = 20;         // Limit that would fail if start line were counted
         EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(maxTotalHeaderLength);
 
         String msg = startLine() + "\r\nHost: x\r\n\r\n";
+        assertThat(msg.length(), is(greaterThan(maxTotalHeaderLength)));
 
         assertThat("Start line should not count toward header limit",
                 testChannel.writeInbound(fromAscii(msg)), is(true));

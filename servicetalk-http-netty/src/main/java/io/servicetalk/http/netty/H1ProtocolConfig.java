@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.Http2Settings;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpProtocolConfig;
 
@@ -45,8 +46,8 @@ public interface H1ProtocolConfig extends HttpProtocolConfig {
     int maxPipelinedRequests();
 
     /**
-     * Maximum length of the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> for an HTTP
-     * message.
+     * Maximum length (size in bytes) of the HTTP
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> for an HTTP message.
      * <p>
      * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the start line exceeds
      * this value.
@@ -57,27 +58,41 @@ public interface H1ProtocolConfig extends HttpProtocolConfig {
     int maxStartLineLength();
 
     /**
-     * Get the maximum total allowed length of all HTTP
-     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> combined.
+     * Get the maximum total allowed length (size in bytes) of all HTTP
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> or all
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a>.
      * <p>
-     * This limit protects against memory exhaustion attacks where an attacker sends many small headers which
-     * individually are below the {@link #maxHeaderFieldLength()} limit.
+     * This limit protects against memory exhaustion attacks where an attacker sends many small headers or trailers
+     * that individually pass {@link #maxHeaderFieldLength() field validation} but collectively consume excessive
+     * memory.
+     * <p>
+     * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the total headers or
+     * trailers block size exceeds this value.
+     * <p>
+     * This is an HTTP/1.x equivalent of HTTP/2's
+     * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_MAX_HEADER_LIST_SIZE</a> that can be
+     * configured via {@link Http2Settings#maxHeaderListSize()} for {@link H2ProtocolConfig#initialSettings()}.
      *
-     * @return maximum total allowed length of all header fields combined
+     * @return maximum total allowed length (size in bytes) of all headers or all trailers
+     * @see #maxHeaderFieldLength()
+     * @see Http2Settings#maxHeaderListSize()
      */
     default int maxTotalHeaderFieldsLength() { // TODO 0.43 - remove default method
         return DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH;
     }
 
     /**
-     * Maximum length of the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> and
-     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a> to parse.
+     * Maximum length (size in bytes) of an individual HTTP
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header field</a> or
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer field</a> to parse.
      * <p>
      * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the length of a header or
      * trailer field exceeds this value.
      *
-     * @return maximum length of HTTP <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> and
-     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a> to parse
+     * @return maximum length (size in bytes) of an individual HTTP
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header field</a> or
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer field</a> to parse
+     * @see #maxTotalHeaderFieldsLength()
      */
     int maxHeaderFieldLength();
 
@@ -95,11 +110,11 @@ public interface H1ProtocolConfig extends HttpProtocolConfig {
 
     /**
      * Value used to calculate an exponential moving average of the encoded size of the HTTP
-     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a> for a guess for future
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a> for a guess for future
      * buffer allocations.
      *
      * @return value used to calculate an exponential moving average of the encoded size of the HTTP
-     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a>
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a>
      */
     int trailersEncodedSizeEstimate();
 
