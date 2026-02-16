@@ -87,8 +87,8 @@ public class HttpResponseDecoderBenchmark {
         responseByteBuf = toByteBuf(responseBuffer.slice());
 
         channel = new EmbeddedChannel(new HttpResponseDecoder(new ArrayDeque<>(), new PollLikePeakArrayDeque<>(),
-                getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE, 8192, 8192,
-                false, false, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, 8192, false));
+                getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE, 8192, 8192, 8192,
+                false, false, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
     }
 
     @Benchmark
