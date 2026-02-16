@@ -56,10 +56,9 @@ final class HttpClientChannelInitializer implements ChannelInitializer {
             final ArrayDeque<Signal> signalsQueue = new ArrayDeque<>(minPipelinedRequests);
             final ChannelPipeline pipeline = channel.pipeline();
             pipeline.addLast(new HttpResponseDecoder(methodQueue, signalsQueue, alloc, config.headersFactory(),
-                    config.maxStartLineLength(), config.maxHeaderFieldLength(),
+                    config.maxStartLineLength(), config.maxHeaderFieldLength(), config.maxTotalHeaderFieldsLength(),
                     config.specExceptions().allowPrematureClosureBeforePayloadBody(),
-                    config.specExceptions().allowLFWithoutCR(), closeHandler, config.maxTotalHeaderFieldsLength(),
-                    HttpObjectDecoder.TOTAL_HEADER_LENGTH_WARN_ONLY));
+                    config.specExceptions().allowLFWithoutCR(), closeHandler));
             pipeline.addLast(new HttpRequestEncoder(methodQueue, signalsQueue,
                     config.headersEncodedSizeEstimate(), config.trailersEncodedSizeEstimate(), closeHandler));
         });

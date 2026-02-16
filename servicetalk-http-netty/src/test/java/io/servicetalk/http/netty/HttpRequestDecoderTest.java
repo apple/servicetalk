@@ -38,6 +38,9 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
+import static io.servicetalk.http.netty.H1ProtocolConfigBuilder.DEFAULT_MAX_HEADER_FIELD_LENGTH;
+import static io.servicetalk.http.netty.H1ProtocolConfigBuilder.DEFAULT_MAX_START_LINE_LENGTH;
+import static io.servicetalk.http.netty.H1ProtocolConfigBuilder.DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.lang.Integer.toHexString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -56,8 +59,8 @@ class HttpRequestDecoderTest extends HttpObjectDecoderTest {
 
     private static EmbeddedChannel newChannel(boolean allowLFWithoutCR) {
         return new EmbeddedChannel(new HttpRequestDecoder(new ArrayDeque<>(), getByteBufAllocator(DEFAULT_ALLOCATOR),
-                DefaultHttpHeadersFactory.INSTANCE, 8192, 8192, false, allowLFWithoutCR,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, 8192, false));
+                DefaultHttpHeadersFactory.INSTANCE, DEFAULT_MAX_START_LINE_LENGTH, DEFAULT_MAX_HEADER_FIELD_LENGTH,
+                DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH, false, allowLFWithoutCR, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
     }
 
     @Override
@@ -100,12 +103,12 @@ class HttpRequestDecoderTest extends HttpObjectDecoderTest {
         return new EmbeddedChannel(new HttpRequestDecoder(new ArrayDeque<>(),
                 getByteBufAllocator(DEFAULT_ALLOCATOR),
                 DefaultHttpHeadersFactory.INSTANCE,
-                8192,   // maxStartLineLength
-                8192,   // maxHeaderFieldLength
+                DEFAULT_MAX_START_LINE_LENGTH,
+                DEFAULT_MAX_HEADER_FIELD_LENGTH,
+                maxTotalHeaderFieldsLength,
                 false,  // allowPrematureClosureBeforePayloadBody
                 false,  // allowLFWithoutCR
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
-                maxTotalHeaderFieldsLength, false));
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
     }
 
     @Test
