@@ -18,7 +18,28 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.NonBlockingThread;
 import io.servicetalk.concurrent.NonBlockingThread.IllegalBlockingOperationException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static java.lang.Boolean.getBoolean;
+
 final class NonBlockingThreadUtils {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(NonBlockingThreadUtils.class);
+
+    private static final String WARN_ON_NON_BLOCKING_THREAD_PROPERTY =
+            "io.servicetalk.concurrent.api.warnOnNonBlockingThread";
+    private static final boolean WARN_ON_NON_BLOCKING_THREAD = getBoolean(WARN_ON_NON_BLOCKING_THREAD_PROPERTY);
+
+    static {
+        if (WARN_ON_NON_BLOCKING_THREAD) {
+            LOGGER.warn("-D{}: {}. Setting this property to 'true' may be used temporarily to unblock deployment but " +
+                            "it still opens the risk for a deadlock or I/O latencies.",
+                    WARN_ON_NON_BLOCKING_THREAD_PROPERTY, WARN_ON_NON_BLOCKING_THREAD);
+        } else {
+            LOGGER.debug("-D{}: {}", WARN_ON_NON_BLOCKING_THREAD_PROPERTY, WARN_ON_NON_BLOCKING_THREAD);
+        }
+    }
 
     private NonBlockingThreadUtils() {
         // No instances
@@ -30,7 +51,13 @@ final class NonBlockingThreadUtils {
         }
         final Thread thread = Thread.currentThread();
         if (thread instanceof NonBlockingThread) {
-            throw new IllegalBlockingOperationException("Not allowed to block a NonBlockingThread: " + thread);
+            final IllegalBlockingOperationException e = new IllegalBlockingOperationException(
+                    "Not allowed to block a NonBlockingThread: " + thread);
+            if (WARN_ON_NON_BLOCKING_THREAD) {
+                LOGGER.warn("Not allowed to block a NonBlockingThread: {}", thread, e);
+            } else {
+                throw e;
+            }
         }
     }
 }
