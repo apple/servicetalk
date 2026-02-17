@@ -137,6 +137,11 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Override
+    String startLine(final String extra) {
+        return "HTTP/1.1 204 No Content " + extra;
+    }
+
+    @Override
     EmbeddedChannel channelWithMaxTotalHeaderFieldsLength(int maxTotalHeaderFieldsLength) {
         final ArrayDeque<Signal> signalsQueue = new PollLikePeakArrayDeque<>();
         signalsQueue.offer(REQUEST_SIGNAL);

@@ -50,12 +50,15 @@ import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
+import static io.servicetalk.http.netty.H1ProtocolConfigBuilder.DEFAULT_MAX_HEADER_FIELD_LENGTH;
+import static io.servicetalk.http.netty.H1ProtocolConfigBuilder.DEFAULT_MAX_START_LINE_LENGTH;
 import static java.lang.Integer.toHexString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.emptyString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -103,6 +106,8 @@ abstract class HttpObjectDecoderTest {
     abstract String startLineForContent();
 
     abstract HttpMetaData assertStartLineForContent(EmbeddedChannel channel);
+
+    abstract String startLine(String extra);
 
     /**
      * Creates a new channel with a custom maxTotalHeaderLength for testing header size limits.
@@ -292,6 +297,15 @@ abstract class HttpObjectDecoderTest {
         assertStartLine(channelSpecException());
         assertEmptyTrailers(channelSpecException());
         assertFalse(channelSpecException().finishAndReleaseAll());
+    }
+
+    @Test
+    void startLineLimitExceeded() {
+        String msg = startLine(repeatChar('x', DEFAULT_MAX_START_LINE_LENGTH));
+        TooLongFrameException e = assertThrows(TooLongFrameException.class, () -> writeMsg(msg));
+        assertThat(e.getMessage(),
+                is(equalTo("Could not find CRLF (0x0d0a) within 4096 bytes, while parsing line #0")));
+        assertThat(channel().inboundMessages(), is(empty()));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
@@ -822,28 +836,21 @@ abstract class HttpObjectDecoderTest {
         return arguments;
     }
 
-    @Test
-    void trailerLineTooLong() {
-        EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(Integer.MAX_VALUE);  // No total limit
+    @ParameterizedTest(name = "{displayName} [{index}] inHeader={0}")
+    @ValueSource(booleans = {false, true})
+    void singleHeaderLineLimit(boolean inHeader) {
+        String msg = startLineForContent() + "\r\n" +
+                "Host: servicetalk.io\r\n" + // 22 bytes
+                (inHeader ? ("X-Header: " + repeatChar('x', DEFAULT_MAX_HEADER_FIELD_LENGTH) + "\r\n") : "") +
+                "Transfer-Encoding: chunked\r\n" + // 28 bytes
+                "\r\n" +
+                "0\r\n" +   // empty chunk
+                (inHeader ? "" : ("X-Trailer: " + repeatChar('x', DEFAULT_MAX_HEADER_FIELD_LENGTH) + "\r\n")) +
+                "\r\n";
 
-        String headers = startLineForContent() + "\r\n" +
-                "Host: x\r\n" +
-                "Transfer-Encoding: chunked\r\n\r\n";
-
-        assertThat(testChannel.writeInbound(fromAscii(headers)), is(true));
-        testChannel.readInbound();
-
-        // Send chunk
-        assertThat(testChannel.writeInbound(fromAscii("5\r\nhello\r\n")), is(true));
-
-        // Send last chunk with a trailer line > 8192 bytes (default maxHeaderFieldLength)
-        String hugeTrailer = "X-Huge: " + repeatChar('x', 8200) + "\r\n\r\n";
-        String lastChunk = "0\r\n" + hugeTrailer;
-
-        // This should throw because the individual trailer line exceeds maxHeaderFieldLength
-        DecoderException e = assertThrows(DecoderException.class,
-                () -> testChannel.writeInbound(fromAscii(lastChunk)));
-        assertThat(e.getMessage(), startsWith("Could not find CRLF"));
+        TooLongFrameException e = assertThrows(TooLongFrameException.class, () -> writeMsg(msg));
+        assertThat(e.getMessage(), is(equalTo("Could not find CRLF (0x0d0a) within 8192 bytes, while parsing line #" +
+                (inHeader ? "2" : "5"))));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] exceed={0}")

@@ -99,6 +99,11 @@ class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Override
+    String startLine(final String extra) {
+        return "GET /" + extra + " HTTP/1.1";
+    }
+
+    @Override
     EmbeddedChannel channelWithMaxTotalHeaderFieldsLength(int maxTotalHeaderFieldsLength) {
         return new EmbeddedChannel(new HttpRequestDecoder(new ArrayDeque<>(),
                 getByteBufAllocator(DEFAULT_ALLOCATOR),

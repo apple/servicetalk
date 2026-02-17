@@ -902,7 +902,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             final boolean foundCR;
             if (lfIndex == -1) {
                 if (toIndex - startIndex == maxLineSize) {
-                    throw new DecoderException("Could not find CRLF (0x0d0a) within " + maxLineSize +
+                    throw new TooLongFrameException("Could not find CRLF (0x0d0a) within " + maxLineSize +
                             " bytes, while parsing line #" + parsingLine);
                 }
                 return -2;
