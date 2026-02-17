@@ -16,12 +16,12 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
-import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -29,7 +29,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.Collection;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -100,22 +99,20 @@ class DefaultHttpExecutionStrategyTest {
                                  .payloadBody(analyzer.instrumentedRequestPayloadForServer(request.payloadBody())));
         });
         StreamingHttpRequest req = analyzer.createNewRequest();
-        DefaultStreamingHttpRequestResponseFactory respFactory =
+        StreamingHttpRequestResponseFactory respFactory =
             new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, INSTANCE, HTTP_1_1);
         TestHttpServiceContext ctx =
                 new TestHttpServiceContext(INSTANCE, respFactory,
                         // Use offloadNone() for the ctx to indicate that there was no offloading before.
                         // So, the difference function inside #offloadService will return the tested strategy.
                         new ExecutionContextToHttpExecutionContext(contextRule, offloadNone()));
-        Callable<?> runHandle = () ->
+        Single<HttpResponse> deferred = Single.defer(() ->
                 analyzer.instrumentedResponseForServer(svc.handle(ctx, req, ctx.streamingResponseFactory()))
-                    .flatMapPublisher(StreamingHttpResponse::payloadBody)
-                    .toFuture().get();
+                        .flatMap(StreamingHttpResponse::toResponse));
         if (strategy.isRequestResponseOffloaded()) {
-            NettyIoExecutor ioExecutor = (NettyIoExecutor) contextRule.ioExecutor();
-            ioExecutor.submit(runHandle).toFuture().get();
+            deferred.subscribeOn(AsyncContext.wrapExecutor(contextRule.ioExecutor())).toFuture().get();
         } else {
-            runHandle.call();
+            deferred.toFuture().get();
         }
         analyzer.verify();
     }

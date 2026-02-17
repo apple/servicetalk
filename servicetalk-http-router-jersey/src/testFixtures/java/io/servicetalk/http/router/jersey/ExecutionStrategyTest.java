@@ -47,6 +47,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest.RouterApi.BLOCKING_AGGREGATED;
 import static io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest.RouterApi.BLOCKING_STREAMING;
 import static io.servicetalk.http.router.jersey.ExecutionStrategyTest.TestExecutorStrategy.DEFAULT;
 import static io.servicetalk.http.router.jersey.ExecutionStrategyTest.TestExecutorStrategy.EXEC;
@@ -196,6 +197,10 @@ final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest
         this.testMode = testMode;
         this.path = path;
         assumeFalse(routerExecutionStrategy == NO_OFFLOADS && api == BLOCKING_STREAMING, "Don't deadlock");
+        assumeFalse(routerExecutionStrategy == NO_OFFLOADS && api == BLOCKING_AGGREGATED &&
+                        (methodExecutionStrategy == EXEC ||
+                                (methodExecutionStrategy == DEFAULT && classExecutionStrategy != NO_OFFLOADS)),
+                "Avoid blocking an I/O thread");
         assertDoesNotThrow(() -> super.setUp(api));
     }
 

@@ -17,19 +17,18 @@ package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.Single;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
@@ -45,19 +44,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class AbstractFutureToSingleTest {
-    protected ExecutorService jdkExecutor;
 
-    @BeforeAll
-    void beforeClass() {
-        jdkExecutor = Executors.newCachedThreadPool();
-    }
-
-    @AfterAll
-    void afterClass() {
-        if (jdkExecutor != null) {
-            jdkExecutor.shutdown();
-        }
-    }
+    @RegisterExtension
+    static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor().setClassLevel(true);
 
     abstract Single<String> from(CompletableFuture<String> future);
 
@@ -65,7 +54,7 @@ abstract class AbstractFutureToSingleTest {
     void completion() throws Exception {
         CompletableFuture<String> future = new CompletableFuture<>();
         Single<String> single = from(future);
-        jdkExecutor.execute(() -> future.complete("foo"));
+        EXEC.executor().execute(() -> future.complete("foo"));
         assertEquals("foo", single.toFuture().get());
     }
 

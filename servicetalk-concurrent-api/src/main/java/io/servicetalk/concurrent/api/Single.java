@@ -16,6 +16,8 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.NonBlockingThread;
+import io.servicetalk.concurrent.NonBlockingThread.IllegalBlockingOperationException;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.SourceToFuture.SingleToFuture;
@@ -2008,7 +2010,8 @@ public abstract class Single<T> {
      * <p>
      * Note that because {@link Future} only presents blocking APIs to extract the result, so the process of getting the
      * results will block. The caller of subscribe is responsible for offloading if necessary, and also offloading if
-     * {@link Cancellable#cancel()} will be called and this operation may block.
+     * {@link Cancellable#cancel()} will be called and this operation may block. If a blocking operation is performed on
+     * a {@link NonBlockingThread}, the {@link IllegalBlockingOperationException} will be thrown.
      * <p>
      * To apply a timeout see {@link #timeout(long, TimeUnit)} and related methods.
      * @param future The {@link Future} to convert.

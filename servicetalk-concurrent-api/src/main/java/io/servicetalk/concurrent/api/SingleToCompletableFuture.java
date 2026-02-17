@@ -21,7 +21,10 @@ import io.servicetalk.concurrent.internal.SequentialCancellable;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -30,6 +33,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.CancelPropagatingCompletableFuture.newCancelPropagatingFuture;
+import static io.servicetalk.concurrent.api.NonBlockingThreadUtils.checkNonBlockingThread;
 
 final class SingleToCompletableFuture<T> extends CompletableFuture<T> implements Subscriber<T> {
     private final SequentialCancellable cancellable;
@@ -320,6 +324,28 @@ final class SingleToCompletableFuture<T> extends CompletableFuture<T> implements
         } finally {
             cancellable.cancel();
         }
+    }
+
+    @Nullable
+    @Override
+    public T get() throws InterruptedException, ExecutionException {
+        checkNonBlockingThread(isDone());
+        return super.get();
+    }
+
+    @Nullable
+    @Override
+    public T get(final long timeout, final TimeUnit unit)
+            throws InterruptedException, ExecutionException, TimeoutException {
+        checkNonBlockingThread(isDone());
+        return super.get(timeout, unit);
+    }
+
+    @Nullable
+    @Override
+    public T join() {
+        checkNonBlockingThread(isDone());
+        return super.join();
     }
     // CompletableFuture end
 }

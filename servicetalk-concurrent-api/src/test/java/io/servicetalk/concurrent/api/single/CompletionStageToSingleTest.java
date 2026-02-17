@@ -38,7 +38,7 @@ class CompletionStageToSingleTest extends AbstractFutureToSingleTest {
     void failure() {
         CompletableFuture<String> future = new CompletableFuture<>();
         Single<String> single = from(future);
-        jdkExecutor.execute(() -> future.completeExceptionally(DELIBERATE_EXCEPTION));
+        EXEC.executor().execute(() -> future.completeExceptionally(DELIBERATE_EXCEPTION));
         Exception e = assertThrows(ExecutionException.class, () -> single.toFuture().get());
         assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
     }
