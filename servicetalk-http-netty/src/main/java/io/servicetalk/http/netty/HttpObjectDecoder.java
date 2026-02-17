@@ -289,6 +289,9 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 // Other checks will be done later by request/response decoder
                 final int cLength = cStart > nonControlIndex ? 0 : nonControlIndex - cStart + 1;
 
+                // Account for the start line in the total header fields limit
+                ensureTotalHeaderFieldsLimit("headers", lfIndex - aStart + 1);  // Include CRLF into account
+
                 // Consume the initial line bytes from the buffer.
                 consumeCRLF(buffer, lfIndex);
 

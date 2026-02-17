@@ -59,7 +59,6 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -856,11 +855,13 @@ abstract class HttpObjectDecoderTest {
     @ParameterizedTest(name = "{displayName} [{index}] exceed={0}")
     @ValueSource(booleans = {false, true})
     void totalHeadersLimitForHeaders(boolean exceed) {
-        final int limit = 50;
+        final String startLine = startLine();
+        final int startLineLength = startLine.length() + 2;  // startLine + CRLF
+        final int limit = startLineLength + 50;  // Increase limit to accommodate start line + headers
         final EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(limit);
 
-        final int n = limit - 22 - 10 + (exceed ? 1 : 0);
-        String msg = startLine() + "\r\n" +
+        final int n = limit - startLineLength - 22 - 10 + (exceed ? 1 : 0); // Length of X-Test value
+        String msg = startLine + "\r\n" +
                 "Host: servicetalk.io\r\n" + // 22 bytes
                 "X-Test: " + repeatChar('x', n) + "\r\n" + // 10 + n bytes
                 "\r\n";
@@ -881,7 +882,7 @@ abstract class HttpObjectDecoderTest {
     @ParameterizedTest(name = "{displayName} [{index}] exceed={0}")
     @ValueSource(booleans = {false, true})
     void totalHeadersLimitForTrailers(boolean exceed) {
-        final int limit = 50;
+        final int limit = 100;
         final EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(limit);
 
         final int n = limit - 13 + (exceed ? 1 : 0);
@@ -911,12 +912,14 @@ abstract class HttpObjectDecoderTest {
     @ParameterizedTest(name = "{displayName} [{index}] exceed={0}")
     @ValueSource(booleans = {false, true})
     void totalHeadersLimitForHeadersWithManyShortLines(boolean exceed) {
-        final int limit = 100;
+        final String startLine = startLine();
+        final int startLineLength = startLine.length() + 2;  // startLine + CRLF
+        final int limit = startLineLength + 100;
         EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(limit);
 
         // Start line + many short header lines that together may exceed the limit
-        StringBuilder msg = new StringBuilder(startLine()).append("\r\n");
-        final int n = limit / 10 + (exceed ? 1 : 0);
+        StringBuilder msg = new StringBuilder(startLine).append("\r\n");
+        final int n = (limit - startLineLength) / 10 + (exceed ? 1 : 0);
         for (int i = 0; i < n; i++) {
             msg.append("X-").append(String.format("%02d", i)).append(": aa\r\n");   // 10 bytes
         }
@@ -969,11 +972,13 @@ abstract class HttpObjectDecoderTest {
 
     @Test
     void totalHeadersLimitResetsAfterCompleteMessage() {
-        final int limit = 11;
+        final String startLine = startLine();
+        final int startLineLength = startLine.length() + 2;  // startLine + CRLF
+        final int limit = startLineLength + 11;  // Just enough for start line + one header
         EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(limit);
 
-        // First message: should be under the limit
-        String msg1 = startLine() + "\r\n" +
+        // First message: should be under the limit (start line + headers)
+        String msg1 = startLine + "\r\n" +
                 "Host: foo\r\n" + // 11 bytes
                 "\r\n";
 
@@ -987,7 +992,7 @@ abstract class HttpObjectDecoderTest {
         }
 
         // Second message: should succeed only if counter was reset
-        String msg2 = startLine() + "\r\n" +
+        String msg2 = startLine + "\r\n" +
                 "Host: bar\r\n" + // 11 bytes
                 "\r\n";
 
@@ -998,11 +1003,13 @@ abstract class HttpObjectDecoderTest {
 
     @Test
     void totalHeadersLimitForHeadersIsSeparateFromTrailers() {  // checks both fit within exact limit
-        final int limit = 50;
+        final String startLine = startLineForContent();
+        final int startLineLength = startLine.length() + 2;  // startLine + CRLF
+        final int limit = startLineLength + 50;  // start line + headers
         EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(limit);
 
         // Headers length is 50 bytes
-        String msg = startLineForContent() + "\r\n" +
+        String msg = startLine + "\r\n" +
                 "Host: servicetalk.io\r\n" + // 22 bytes
                 "Transfer-Encoding: chunked\r\n" + // 28 bytes
                 "\r\n";
@@ -1032,29 +1039,28 @@ abstract class HttpObjectDecoderTest {
 
     @Test
     void totalHeadersLimitWithVerySmallValue() {
-        int maxTotalHeaderLength = 5;
+        final String startLine = startLine();
+        final int startLineLength = startLine.length() + 2;  // startLine + CRLF
+        int maxTotalHeaderLength = startLineLength + 5;  // Just enough for start line + minimal header
         EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(maxTotalHeaderLength);
 
-        String msg = startLine() + "\r\nHost: x\r\n\r\n";
-        TooLongFrameException e = assertThrows(TooLongFrameException.class,
-                () -> testChannel.writeInbound(fromAscii(msg)));
+        String msg = startLine + "\r\nHost: x\r\n\r\n";
+        TooLongFrameException e = assertThrows(TooLongFrameException.class, () -> writeMsg(msg, testChannel));
         assertThat(e.getMessage(), startsWith("HTTP headers exceeded the total limit of " + maxTotalHeaderLength +
                 " bytes after parsing line #2"));
     }
 
     @Test
-    void totalHeadersLimitDoesNotIncludeStartLine() {
-        int maxTotalHeaderLength = 20;         // Limit that would fail if start line were counted
+    void totalHeadersLimitIncludesStartLine() {
+        final String startLine = startLine();
+        int maxTotalHeaderLength = startLine.length(); // Smaller than the startLine with CRLF and its default limit
+
         EmbeddedChannel testChannel = channelWithMaxTotalHeaderFieldsLength(maxTotalHeaderLength);
 
-        String msg = startLine() + "\r\nHost: x\r\n\r\n";
-        assertThat(msg.length(), is(greaterThan(maxTotalHeaderLength)));
-
-        assertThat("Start line should not count toward header limit",
-                testChannel.writeInbound(fromAscii(msg)), is(true));
-
-        HttpMetaData meta = testChannel.readInbound();
-        assertThat(meta, is(not(nullValue())));
+        String msg = startLine + "\r\nHost: x\r\n\r\n";
+        TooLongFrameException e = assertThrows(TooLongFrameException.class, () -> writeMsg(msg, testChannel));
+        assertThat(e.getMessage(), startsWith("HTTP headers exceeded the total limit of " + maxTotalHeaderLength +
+                " bytes after parsing line #1"));
     }
 
     /**

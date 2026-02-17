@@ -112,8 +112,9 @@ public final class H1ProtocolConfigBuilder {
     }
 
     /**
-     * Sets the maximum total allowed length (size in bytes) of all HTTP
-     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> or all
+     * Sets the maximum total allowed length (size in bytes) of the HTTP
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> and all
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a>, or all
      * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a>.
      * <p>
      * This limit protects against memory exhaustion attacks where an attacker sends many small headers or trailers
@@ -133,7 +134,8 @@ public final class H1ProtocolConfigBuilder {
      * {@code io.servicetalk.http.netty.temporarilyDefaultMaxTotalHeaderFieldsLength} to a new value. However, this
      * is a temporary property that will be removed in the future releases.
      *
-     * @param maxTotalHeaderFieldsLength maximum total allowed length (size in bytes) of all headers or all trailers
+     * @param maxTotalHeaderFieldsLength maximum total allowed length (size in bytes) of the start line and all headers,
+     * or all trailers
      * @return {@code this}
      * @see #maxHeaderFieldLength(int)
      * @see H2ProtocolConfigBuilder#initialSettings(Http2Settings)

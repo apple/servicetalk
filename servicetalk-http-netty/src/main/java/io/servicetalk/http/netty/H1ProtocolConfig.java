@@ -58,8 +58,9 @@ public interface H1ProtocolConfig extends HttpProtocolConfig {
     int maxStartLineLength();
 
     /**
-     * Get the maximum total allowed length (size in bytes) of all HTTP
-     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> or all
+     * Get the maximum total allowed length (size in bytes) of the HTTP
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> and all
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a>, or all
      * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a>.
      * <p>
      * This limit protects against memory exhaustion attacks where an attacker sends many small headers or trailers
@@ -73,7 +74,7 @@ public interface H1ProtocolConfig extends HttpProtocolConfig {
      * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_MAX_HEADER_LIST_SIZE</a> that can be
      * configured via {@link Http2Settings#maxHeaderListSize()} for {@link H2ProtocolConfig#initialSettings()}.
      *
-     * @return maximum total allowed length (size in bytes) of all headers or all trailers
+     * @return maximum total allowed length (size in bytes) of the start line and all headers, or all trailers
      * @see #maxHeaderFieldLength()
      * @see Http2Settings#maxHeaderListSize()
      */
