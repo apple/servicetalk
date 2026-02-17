@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.DelegatingHttpExecutionContext;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
@@ -112,6 +113,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     private int defaultHttpsPort = HTTPS.port();
     @Nullable
     private SingleAddressInitializer<HostAndPort, InetSocketAddress> singleAddressInitializer;
+    private final ClientStrategyInfluencerChainBuilder influencerChainBuilder =
+            new ClientStrategyInfluencerChainBuilder();
     // Detect leaks that can be caused by unexpected exceptions. Must be the first filter in the chain.
     private StreamingHttpClientFilterFactory clientFilterFactory =
             HttpMessageDiscardWatchdogClientFilter.CLIENT_CLEANER;
@@ -125,7 +128,29 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     public StreamingHttpClient buildStreaming() {
         final CompositeCloseable closeables = newCompositeCloseable();
         try {
-            final HttpExecutionContext executionContext = executionContextBuilder.build();
+            StreamingHttpClientFilterFactory clientFilterFactory = this.clientFilterFactory;
+            ClientStrategyInfluencerChainBuilder influencerChainBuilder = this.influencerChainBuilder;
+
+            if (redirectConfig != null) {
+                StreamingHttpClientFilterFactory redirectFilter = new RedirectingHttpRequesterFilter(redirectConfig);
+                // Technically this is not necessary since the redirect filter doesn't offload but we add the check
+                // to future-proof it.
+                influencerChainBuilder = influencerChainBuilder.copy();
+                influencerChainBuilder.add(redirectFilter);
+                // Need to wrap the top level client (group) in order for non-relative redirects to work
+                clientFilterFactory = appendFilter(clientFilterFactory, redirectFilter);
+            }
+
+            final HttpExecutionContext builderExecutionContext = executionContextBuilder.build();
+            final HttpExecutionStrategy computedStrategy =
+                    influencerChainBuilder.buildForClient(builderExecutionContext.executionStrategy());
+            final HttpExecutionContext executionContext = new DelegatingHttpExecutionContext(builderExecutionContext) {
+                @Override
+                public HttpExecutionStrategy executionStrategy() {
+                    return computedStrategy;
+                }
+            };
+
             final ClientFactory clientFactory =
                     new ClientFactory(builderFactory, executionContext, singleAddressInitializer);
             final UrlKeyFactory keyFactory = new UrlKeyFactory(defaultHttpPort, defaultHttpsPort);
@@ -136,13 +161,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                                     headersFactory != null ? headersFactory : DefaultHttpHeadersFactory.INSTANCE,
                                     HTTP_1_1)));
 
-            StreamingHttpClientFilterFactory clientFilterFactory = this.clientFilterFactory;
-            // TODO: document how people can set the redirect filter themselves
-            if (redirectConfig != null) {
-                // Need to wrap the top level client (group) in order for non-relative redirects to work
-                clientFilterFactory = appendFilter(clientFilterFactory,
-                        new RedirectingHttpRequesterFilter(redirectConfig));
-            }
             urlClient = clientFilterFactory.create(urlClient);
 
             LOGGER.debug("Multi-address client created with base strategy {}", executionContext.executionStrategy());
@@ -483,7 +501,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendClientFilter(
             StreamingHttpClientFilterFactory factory) {
-        clientFilterFactory = appendFilter(clientFilterFactory, requireNonNull(factory, "factory"));
+        requireNonNull(factory, "factory");
+        influencerChainBuilder.add(factory);
+        clientFilterFactory = appendFilter(clientFilterFactory, factory);
         return this;
     }
 

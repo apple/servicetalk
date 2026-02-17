@@ -22,13 +22,16 @@ import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpRequester;
 import io.servicetalk.http.api.BlockingStreamingHttpRequester;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
+import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequester;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -55,6 +58,8 @@ import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_DIRECT_ALLOCAT
 import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_HEAP_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
@@ -365,6 +370,49 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
 
             assertThat(capturedThrowable, is(notNullValue()));
             assertThat(capturedThrowable, is(sameInstance(DELIBERATE_EXCEPTION)));
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] offloadSend={0}")
+    @ValueSource(booleans = {true, false})
+    void filterRequiringOffloadingMergesStrategy(boolean offloadSend) throws Exception {
+        AtomicReference<HttpExecutionStrategy> capturedStrategy = new AtomicReference<>();
+
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .executionStrategy(offloadNone())
+                .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
+             BlockingHttpClient client = HttpClients.forMultiAddressUrl(getClass().getSimpleName())
+                     .ioExecutor(INTERNAL_CLIENT_CTX.ioExecutor())
+                     .executor(INTERNAL_CLIENT_CTX.executor())
+                     // Use default strategy so filter requirements are merged
+                     .executionStrategy(defaultStrategy())
+                     .appendClientFilter(new StreamingHttpClientFilterFactory() {
+                         @Override
+                         public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
+                             return new StreamingHttpClientFilter(client) {
+                                 @Override
+                                 protected Single<StreamingHttpResponse> request(StreamingHttpRequester delegate,
+                                                                                 StreamingHttpRequest request) {
+                                     capturedStrategy.set(request.context().get(HTTP_EXECUTION_STRATEGY_KEY));
+                                     return super.request(delegate, request);
+                                 }
+                             };
+                         }
+
+                         @Override
+                         public HttpExecutionStrategy requiredOffloads() {
+                             return offloadSend ? customStrategyBuilder().offloadSend().build() : offloadNone();
+                         }
+                     })
+                     .buildBlocking()) {
+
+            HttpResponse response = client.request(client.get("http://" + serverHostAndPort(serverContext) + "/"));
+            assertThat(response.status(), is(OK));
+
+            // Verify the execution strategy was computed to include the required offloads
+            HttpExecutionStrategy strategy = capturedStrategy.get();
+            assertThat(strategy, notNullValue());
+            assertThat(strategy.isSendOffloaded(), is(offloadSend));
         }
     }
 
