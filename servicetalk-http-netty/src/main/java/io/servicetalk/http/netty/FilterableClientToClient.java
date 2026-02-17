@@ -40,6 +40,9 @@ import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.api.HttpApiConversions.toBlockingClient;
 import static io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingClient;
@@ -51,12 +54,15 @@ import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KE
 import static java.lang.Boolean.getBoolean;
 
 final class FilterableClientToClient implements StreamingHttpClient {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FilterableClientToClient.class);
 
     // FIXME: 0.43 - remove this temporary system property
     private static final boolean SKIP_CONCURRENT_REQUEST_CHECK =
             getBoolean("io.servicetalk.http.netty.skipConcurrentRequestCheck");
     private static final ContextMap.Key<Object> HTTP_IN_FLIGHT_REQUEST =
             newKey("HTTP_IN_FLIGHT_REQUEST", Object.class);
+    private static final ContextMap.Key<Throwable> HTTP_IN_FLIGHT_REQUEST_STACK_TRACE =
+            newKey("HTTP_IN_FLIGHT_REQUEST_STACK_TRACE", Throwable.class);
 
     private final Object lock = new Object();
     private final FilterableStreamingHttpClient client;
@@ -219,6 +225,7 @@ final class FilterableClientToClient implements StreamingHttpClient {
             // chain and accidentally subscribed to the same request concurrently. This protection helps them avoid
             // ambiguous runtime behavior caused by a corrupted mutable request state.
             final Object inFlight;
+            final boolean debugEnabled = LOGGER.isDebugEnabled();
             // Note that because request.context() may lazily allocate a new ContextMap, there is a risk that
             // synchronization will happen on two different contexts. However, this is acceptable compromise because:
             //  - Most likely users subscribe 2+ times to the same request from the same thread.
@@ -228,13 +235,23 @@ final class FilterableClientToClient implements StreamingHttpClient {
             synchronized (context) {
                 // We do not override lock because other layers may already set their own one.
                 inFlight = context.putIfAbsent(HTTP_IN_FLIGHT_REQUEST, lock);
+                // Only capture stack trace if we were the first to set the lock and debug logging is enabled
+                if (inFlight == null && debugEnabled) {
+                    context.put(HTTP_IN_FLIGHT_REQUEST_STACK_TRACE, new Throwable("First subscribe stack trace"));
+                }
             }
             if (lock.equals(inFlight)) {
+                // Concurrent execution detected - get first subscribe location if available
+                Throwable cause = null;
+                if (debugEnabled) {
+                    cause = context.get(HTTP_IN_FLIGHT_REQUEST_STACK_TRACE);
+                }
+
                 return Single.<StreamingHttpResponse>failed(new RejectedSubscribeException(
                         "Concurrent execution is detected for the same mutable request. Only a single execution is " +
                                 "allowed at any point of time. Otherwise, request data structures can be corrupted. " +
                                 "To avoid this error, create a new request for every execution or wrap every request " +
-                                "creation with Single.defer() operator."))
+                                "creation with Single.defer() operator.", cause))
                         .shareContextOnSubscribe();
             }
 
@@ -245,6 +262,9 @@ final class FilterableClientToClient implements StreamingHttpClient {
                     synchronized (context) {
                         final Object removedLock = context.remove(HTTP_IN_FLIGHT_REQUEST);
                         assert removedLock == lock;
+                        if (debugEnabled) {
+                            context.remove(HTTP_IN_FLIGHT_REQUEST_STACK_TRACE);
+                        }
                     }
                 });
             }
