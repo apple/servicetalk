@@ -39,4 +39,14 @@ public class RejectedSubscribeException extends RuntimeException implements Reje
     public RejectedSubscribeException(final Throwable cause) {
         super(cause);
     }
+
+    /**
+     * Create a new instance.
+     *
+     * @param message The exception message.
+     * @param cause The cause of the exception.
+     */
+    public RejectedSubscribeException(final String message, final Throwable cause) {
+        super(message, cause);
+    }
 }
