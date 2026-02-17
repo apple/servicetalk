@@ -68,7 +68,7 @@ public final class Http2SettingsBuilder {
      * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">unlimited</a>.
      * However, in practice we don't want to allow our peers to use unlimited memory by default.
      */
-    private static final long DEFAULT_MAX_HEADER_LIST_SIZE = 8192;
+    private static final long DEFAULT_MAX_HEADER_LIST_SIZE = 32 * 1024;
 
     private final Map<Character, Long> settings;
 

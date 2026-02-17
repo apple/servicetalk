@@ -36,16 +36,17 @@ import static java.util.Objects.requireNonNull;
 public final class H1ProtocolConfigBuilder {
     private static final Logger LOGGER = LoggerFactory.getLogger(H1ProtocolConfigBuilder.class);
     private static final H1SpecExceptions DEFAULT_H1_SPEC_EXCEPTIONS = new H1SpecExceptions.Builder().build();
-    static final int DEFAULT_MAX_START_LINE_LENGTH = 4 * 1024;
-    static final int DEFAULT_MAX_HEADER_FIELD_LENGTH = 8 * 1024;
+    private static final int DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH_VALUE = 32 * 1024;
+    static final int DEFAULT_MAX_START_LINE_LENGTH = 8 * 1024;
+    static final int DEFAULT_MAX_HEADER_FIELD_LENGTH = 16 * 1024;
     // FIXME: 0.43 - remove this temporary property
     static final String DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH_PROPERTY =
             "io.servicetalk.http.netty.temporaryDefaultMaxTotalHeaderFieldsLength";
     static final int DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH =
-            getInteger(DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH_PROPERTY, DEFAULT_MAX_HEADER_FIELD_LENGTH);
+            getInteger(DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH_PROPERTY, DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH_VALUE);
 
     static {
-        if (DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH != DEFAULT_MAX_HEADER_FIELD_LENGTH) {
+        if (DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH != DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH_VALUE) {
             LOGGER.warn("-D{}: {}. This property will be removed in the future releases. " +
                             "Configure this value via H1ProtocolConfigBuilder#maxTotalHeaderFieldsLength(int) instead.",
                     DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH_PROPERTY, DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH);
@@ -128,10 +129,10 @@ public final class H1ProtocolConfigBuilder {
      * configured via {@link Http2Settings#maxHeaderListSize()} for
      * {@link H2ProtocolConfigBuilder#initialSettings(Http2Settings)}.
      * <p>
-     * The default value is {@value #DEFAULT_MAX_HEADER_FIELD_LENGTH} bytes. Users who unexpectedly hit the default
-     * limit can temporarily (until they can adjust the limit via this method) set
-     * {@code io.servicetalk.http.netty.temporarilyDefaultMaxTotalHeaderFieldsLength} to a new value. However, this
-     * is a temporary property that will be removed in the future releases.
+     * The default value is {@value #DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH_VALUE} bytes. Users who unexpectedly hit the
+     * default limit can temporary (until they can adjust the limit via this method) set
+     * {@code io.servicetalk.http.netty.temporaryDefaultMaxTotalHeaderFieldsLength} to a new value. However, this is a
+     * temporary property that will be removed in the future releases.
      *
      * @param maxTotalHeaderFieldsLength maximum total allowed length (size in bytes) of all headers or all trailers
      * @return {@code this}

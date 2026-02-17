@@ -304,7 +304,7 @@ abstract class HttpObjectDecoderTest {
         String msg = startLine(repeatChar('x', DEFAULT_MAX_START_LINE_LENGTH));
         TooLongFrameException e = assertThrows(TooLongFrameException.class, () -> writeMsg(msg));
         assertThat(e.getMessage(),
-                is(equalTo("Could not find CRLF (0x0d0a) within 4096 bytes, while parsing line #0")));
+                is(equalTo("Could not find CRLF (0x0d0a) within 8192 bytes, while parsing line #0")));
         assertThat(channel().inboundMessages(), is(empty()));
     }
 
@@ -849,7 +849,7 @@ abstract class HttpObjectDecoderTest {
                 "\r\n";
 
         TooLongFrameException e = assertThrows(TooLongFrameException.class, () -> writeMsg(msg));
-        assertThat(e.getMessage(), is(equalTo("Could not find CRLF (0x0d0a) within 8192 bytes, while parsing line #" +
+        assertThat(e.getMessage(), is(equalTo("Could not find CRLF (0x0d0a) within 16384 bytes, while parsing line #" +
                 (inHeader ? "2" : "5"))));
     }
 
