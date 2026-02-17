@@ -112,8 +112,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     private int defaultHttpsPort = HTTPS.port();
     @Nullable
     private SingleAddressInitializer<HostAndPort, InetSocketAddress> singleAddressInitializer;
-    @Nullable
-    private StreamingHttpClientFilterFactory clientFilterFactory;
+    // Detect leaks that can be caused by unexpected exceptions. Must be the first filter in the chain.
+    private StreamingHttpClientFilterFactory clientFilterFactory =
+            HttpMessageDiscardWatchdogClientFilter.CLIENT_CLEANER;
 
     DefaultMultiAddressUrlHttpClientBuilder(
             final Function<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>> bFactory) {
@@ -135,17 +136,14 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                                     headersFactory != null ? headersFactory : DefaultHttpHeadersFactory.INSTANCE,
                                     HTTP_1_1)));
 
-            // Need to wrap the top level client (group) in order for non-relative redirects to work
-            urlClient = redirectConfig == null ? urlClient :
-                    new RedirectingHttpRequesterFilter(redirectConfig).create(urlClient);
-
-            // TODO: is this the right position to add the filters?
-            if (clientFilterFactory != null) {
-                urlClient = clientFilterFactory.create(urlClient);
+            StreamingHttpClientFilterFactory clientFilterFactory = this.clientFilterFactory;
+            // TODO: document how people can set the redirect filter themselves
+            if (redirectConfig != null) {
+                // Need to wrap the top level client (group) in order for non-relative redirects to work
+                clientFilterFactory = appendFilter(clientFilterFactory,
+                        new RedirectingHttpRequesterFilter(redirectConfig));
             }
-
-            // Detect leaks that can be caused by unexpected exceptions. Must be the last filter.
-            urlClient = HttpMessageDiscardWatchdogClientFilter.CLIENT_CLEANER.create(urlClient);
+            urlClient = clientFilterFactory.create(urlClient);
 
             LOGGER.debug("Multi-address client created with base strategy {}", executionContext.executionStrategy());
             return new FilterableClientToClient(urlClient, executionContext);
@@ -485,7 +483,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendClientFilter(
             StreamingHttpClientFilterFactory factory) {
-        doAppendClientFilter(requireNonNull(factory, "factory"));
+        clientFilterFactory = appendFilter(clientFilterFactory, requireNonNull(factory, "factory"));
         return this;
     }
 
@@ -510,12 +508,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         return port;
     }
 
-    private void doAppendClientFilter(StreamingHttpClientFilterFactory filter) {
-        if (clientFilterFactory == null) {
-            clientFilterFactory = filter;
-        } else {
-            StreamingHttpClientFilterFactory oldFactory = clientFilterFactory;
-            clientFilterFactory = (client) -> oldFactory.create(filter.create(client));
-        }
+    private static StreamingHttpClientFilterFactory appendFilter(StreamingHttpClientFilterFactory filter1,
+                                                                 StreamingHttpClientFilterFactory filter2) {
+        return client -> filter1.create(filter2.create(client));
     }
 }

@@ -144,6 +144,11 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
      * @param config {@link RedirectConfig} to configure redirection behavior. It can be used to tune what requests
      * should follow redirects and which parts of the original request (headers/payload body/trailers) should be
      * redirected to non-relative locations. Use {@code null} to disable redirects.
+     * <p>
+     * Note that this filters location is last, or as if it had been appended right before building the client. If that
+     * is not the desired position you can disable redirects and use
+     * {@link #appendClientFilter(StreamingHttpClientFilterFactory)} to place the {@code RedirectingHttpRequesterFilter}
+     * in the position of your choice.
      * @return {@code this}.
      * @see RedirectConfigBuilder
      */
@@ -192,6 +197,7 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
      * @param factory {@link StreamingHttpClientFilterFactory} to decorate a {@link HttpClient} for the purpose of
      * filtering.
      * @return {@code this}
+     * @see #initializer(SingleAddressInitializer) for adding filters to the underlying clients.
      */
     default MultiAddressHttpClientBuilder<U, R> appendClientFilter(StreamingHttpClientFilterFactory factory) {
         throw new UnsupportedOperationException("Setting client filters is not yet supported by "
@@ -219,6 +225,7 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
      * @param factory {@link StreamingHttpClientFilterFactory} to decorate a {@link HttpClient} for the purpose of
      * filtering.
      * @return {@code this}
+     * @see #initializer(SingleAddressInitializer) for adding filters to the underlying clients.
      */
     default MultiAddressHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
                                                             StreamingHttpClientFilterFactory factory) {
