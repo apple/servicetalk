@@ -38,9 +38,9 @@ public final class H1ProtocolConfigBuilder {
     private static final H1SpecExceptions DEFAULT_H1_SPEC_EXCEPTIONS = new H1SpecExceptions.Builder().build();
     static final int DEFAULT_MAX_START_LINE_LENGTH = 4 * 1024;
     static final int DEFAULT_MAX_HEADER_FIELD_LENGTH = 8 * 1024;
-    // FIXME: 0.43 - remove this temporarily property
+    // FIXME: 0.43 - remove this temporary property
     static final String DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH_PROPERTY =
-            "io.servicetalk.http.netty.temporarilyDefaultMaxTotalHeaderFieldsLength";
+            "io.servicetalk.http.netty.temporaryDefaultMaxTotalHeaderFieldsLength";
     static final int DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH =
             getInteger(DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH_PROPERTY, DEFAULT_MAX_HEADER_FIELD_LENGTH);
 
