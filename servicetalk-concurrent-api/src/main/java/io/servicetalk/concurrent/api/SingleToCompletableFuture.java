@@ -326,12 +326,14 @@ final class SingleToCompletableFuture<T> extends CompletableFuture<T> implements
         }
     }
 
+    @Nullable
     @Override
     public T get() throws InterruptedException, ExecutionException {
         checkNonBlockingThread(isDone());
         return super.get();
     }
 
+    @Nullable
     @Override
     public T get(final long timeout, final TimeUnit unit)
             throws InterruptedException, ExecutionException, TimeoutException {
@@ -339,6 +341,7 @@ final class SingleToCompletableFuture<T> extends CompletableFuture<T> implements
         return super.get(timeout, unit);
     }
 
+    @Nullable
     @Override
     public T join() {
         checkNonBlockingThread(isDone());

@@ -16,7 +16,8 @@
 package io.servicetalk.concurrent;
 
 /**
- * Marker interface for {@link Thread}s that must never block (blocking operations not permitted), like I/O threads.
+ * Marker interface for {@link Thread}s that must never be blocked (blocking operations not permitted),
+ * like I/O threads.
  * <p>
  * Blocking operations known to ServiceTalk may throw {@link IllegalBlockingOperationException} if they are invoked on a
  * {@link Thread} that implements this interface.
