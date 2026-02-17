@@ -53,8 +53,6 @@ import io.netty.handler.codec.TooLongFrameException;
 import io.netty.handler.codec.http.HttpExpectationFailedEvent;
 import io.netty.util.AsciiString;
 import io.netty.util.ByteProcessor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
@@ -79,6 +77,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
+import static io.servicetalk.http.netty.H1ProtocolConfigBuilder.DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH_PROPERTY;
 import static io.servicetalk.http.netty.HeaderUtils.removeTransferEncodingChunked;
 import static io.servicetalk.http.netty.HttpKeepAlive.shouldClose;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
@@ -90,8 +89,6 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
 abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDecoder {
-    private static final Logger LOGGER = LoggerFactory.getLogger(HttpObjectDecoder.class);
-
     private static final long HTTP_VERSION_FORMAT = 0x485454502f312e00L;    // HEX representation of "HTTP/1.x"
     private static final long HTTP_VERSION_MASK = 0xffffffffffffff00L;
     private static final ByteProcessor SKIP_PREFACING_CRLF = value -> {
@@ -131,30 +128,9 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     private static final int MAX_ALLOWED_CHARS_TO_SKIP = CHUNK_DELIMETER_SIZE * 2; // Max allowed prefacing CRLF to skip
     private static final int MAX_ALLOWED_CHARS_TO_SKIP_PLUS_ONE = MAX_ALLOWED_CHARS_TO_SKIP + 1;
 
-    // FIXME: 0.43 - remove this system property after validation in production
-    // This property allows to enable a "warn-only" mode for the new total header size limit.
-    // When enabled, exceeding maxTotalHeaderFieldsLength logs a warning instead of throwing TooLongFrameException.
-    // This is useful for gradual rollout to identify legitimate traffic that exceeds the limit.
-    private static final String TOTAL_HEADER_LENGTH_WARN_ONLY_PROPERTY =
-            "io.servicetalk.http.netty.maxTotalHeaderFieldsLengthWarnOnly";
-    // FIXME 0.43 - flip default value
-    protected static final boolean TOTAL_HEADER_LENGTH_WARN_ONLY = Boolean.parseBoolean(System
-            .getProperty(TOTAL_HEADER_LENGTH_WARN_ONLY_PROPERTY, "true"));
-
-    static {
-        if (TOTAL_HEADER_LENGTH_WARN_ONLY) {
-            LOGGER.warn("-D{}: {}. Requests exceeding the limit won't be rejected. Users should flip this property " +
-                            "to false and adjust their limit as necessary.",
-                    TOTAL_HEADER_LENGTH_WARN_ONLY_PROPERTY, TOTAL_HEADER_LENGTH_WARN_ONLY);
-        } else {
-            LOGGER.debug("-D{}: {}", TOTAL_HEADER_LENGTH_WARN_ONLY_PROPERTY, TOTAL_HEADER_LENGTH_WARN_ONLY);
-        }
-    }
-
     private final int maxStartLineLength;
     private final int maxHeaderFieldLength;
     private final int maxTotalHeaderFieldsLength;
-    private final boolean totalHeaderLengthWarnOnly;
 
     private final HttpHeadersFactory headersFactory;
     private final CloseHandler closeHandler;
@@ -182,11 +158,6 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     private int currentHeadersBlockLength;
 
     /**
-     * Use this boolean to only warn once per connection (== once per decoder instance).
-     */
-    private boolean totalHeaderLengthLimitWarned;
-
-    /**
      * The internal state of {@link HttpObjectDecoder}.
      */
     private enum State {
@@ -210,9 +181,9 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
      */
     HttpObjectDecoder(final ByteBufAllocator alloc, final HttpHeadersFactory headersFactory,
                       final int maxStartLineLength, final int maxHeaderFieldLength,
+                      final int maxTotalHeaderFieldsLength,
                       final boolean allowPrematureClosureBeforePayloadBody, final boolean allowLFWithoutCR,
-                      final CloseHandler closeHandler, final int maxTotalHeaderFieldsLength,
-                      final boolean totalHeaderLengthWarnOnly) {
+                      final CloseHandler closeHandler) {
         super(alloc);
         this.closeHandler = requireNonNull(closeHandler);
         this.headersFactory = requireNonNull(headersFactory);
@@ -221,7 +192,6 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         this.maxTotalHeaderFieldsLength = ensurePositive(maxTotalHeaderFieldsLength, "maxTotalHeaderFieldsLength");
         this.allowPrematureClosureBeforePayloadBody = allowPrematureClosureBeforePayloadBody;
         this.allowLFWithoutCR = allowLFWithoutCR;
-        this.totalHeaderLengthWarnOnly = totalHeaderLengthWarnOnly;
     }
 
     final HttpHeadersFactory headersFactory() {
@@ -830,31 +800,24 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 return true;
             }
 
-            final int headerLineLength = lfIndex - buffer.readerIndex() + 1;  // Include CRLF into account
-            currentHeadersBlockLength += headerLineLength;
-            if (currentHeadersBlockLength > maxTotalHeaderFieldsLength) {
-                if (totalHeaderLengthWarnOnly) {
-                    if (!totalHeaderLengthLimitWarned) {
-                        totalHeaderLengthLimitWarned = true;
-                        LOGGER.warn("HTTP {} exceeded the total limit of {} bytes after parsing line #{} of {} bytes " +
-                                        "(parsed {} bytes). This request would be rejected when warn-only mode is " +
-                                        "disabled. Set -D{}=false to enforce the limit.",
-                                name, maxTotalHeaderFieldsLength, parsingLine, headerLineLength,
-                                currentHeadersBlockLength, TOTAL_HEADER_LENGTH_WARN_ONLY_PROPERTY);
-                    }
-                } else {
-                    throw new TooLongFrameException("HTTP " + name + " exceeded the total limit of " +
-                            maxTotalHeaderFieldsLength + " bytes after parsing line #" + parsingLine + " of " +
-                            headerLineLength + " bytes (parsed " + currentHeadersBlockLength + " bytes)");
-                }
-            }
-
-            longLFIndex = findCRLF(buffer, lfIndex + 1, maxHeaderFieldLength, parsingLine, allowLFWithoutCR);
+            ensureTotalHeaderFieldsLimit(name, lfIndex - buffer.readerIndex() + 1); // Include CRLF into account
             parseHeaderLine(headers, buffer, lfIndex, nonControlIndex);
+            longLFIndex = findCRLF(buffer, lfIndex + 1, maxHeaderFieldLength, parsingLine, allowLFWithoutCR);
             if (longLFIndex < 0) {
                 return false;
             }
             ++parsingLine;
+        }
+    }
+
+    private void ensureTotalHeaderFieldsLimit(final String name, final int headerLineLength) {
+        currentHeadersBlockLength += headerLineLength;
+        if (currentHeadersBlockLength > maxTotalHeaderFieldsLength) {
+            throw new TooLongFrameException("HTTP " + name + " exceeded the total limit of " +
+                    maxTotalHeaderFieldsLength + " bytes after parsing line #" + parsingLine + " of " +
+                    headerLineLength + " bytes (parsed " + currentHeadersBlockLength + " bytes in total). " +
+                    "Users can use '" + DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH_PROPERTY + "' system property to " +
+                    "increase the limit until they can configure new value via H1ProtocolConfigBuilder API.");
         }
     }
 

@@ -74,13 +74,12 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     private final Deque<Signal> signalsQueue;
 
     HttpResponseDecoder(final Queue<HttpRequestMethod> methodQueue, final Deque<Signal> signalsQueue,
-                        final ByteBufAllocator alloc,
-                        final HttpHeadersFactory headersFactory, final int maxStartLineLength, int maxHeaderFieldLength,
+                        final ByteBufAllocator alloc, final HttpHeadersFactory headersFactory,
+                        final int maxStartLineLength, int maxHeaderFieldLength, final int maxTotalHeaderLength,
                         final boolean allowPrematureClosureBeforePayloadBody, final boolean allowLFWithoutCR,
-                        final CloseHandler closeHandler, final int maxTotalHeaderLength,
-                        final boolean totalHeaderLengthWarnOnly) {
-        super(alloc, headersFactory, maxStartLineLength, maxHeaderFieldLength, allowPrematureClosureBeforePayloadBody,
-                allowLFWithoutCR, closeHandler, maxTotalHeaderLength, totalHeaderLengthWarnOnly);
+                        final CloseHandler closeHandler) {
+        super(alloc, headersFactory, maxStartLineLength, maxHeaderFieldLength, maxTotalHeaderLength,
+                allowPrematureClosureBeforePayloadBody, allowLFWithoutCR, closeHandler);
         this.methodQueue = requireNonNull(methodQueue);
         this.signalsQueue = requireNonNull(signalsQueue);
     }

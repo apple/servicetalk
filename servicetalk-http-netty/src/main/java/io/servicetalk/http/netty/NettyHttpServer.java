@@ -200,10 +200,9 @@ final class NettyHttpServer {
             Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(2);
             final ChannelPipeline pipeline = channel.pipeline();
             final HttpRequestDecoder decoder = new HttpRequestDecoder(methodQueue, alloc, config.headersFactory(),
-                    config.maxStartLineLength(), config.maxHeaderFieldLength(),
+                    config.maxStartLineLength(), config.maxHeaderFieldLength(), config.maxTotalHeaderFieldsLength(),
                     config.specExceptions().allowPrematureClosureBeforePayloadBody(),
-                    config.specExceptions().allowLFWithoutCR(), closeHandler, config.maxTotalHeaderFieldsLength(),
-                    HttpObjectDecoder.TOTAL_HEADER_LENGTH_WARN_ONLY);
+                    config.specExceptions().allowLFWithoutCR(), closeHandler);
             pipeline.addLast(decoder);
             pipeline.addLast(new HttpResponseEncoder(methodQueue, config.headersEncodedSizeEstimate(),
                     config.trailersEncodedSizeEstimate(), closeHandler, decoder));

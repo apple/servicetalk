@@ -21,7 +21,11 @@ import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
+import static java.lang.Integer.getInteger;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -30,14 +34,27 @@ import static java.util.Objects.requireNonNull;
  * @see HttpProtocolConfigs#h1()
  */
 public final class H1ProtocolConfigBuilder {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(H1ProtocolConfigBuilder.class);
     private static final H1SpecExceptions DEFAULT_H1_SPEC_EXCEPTIONS = new H1SpecExceptions.Builder().build();
+    static final int DEFAULT_MAX_START_LINE_LENGTH = 4 * 1024;
+    static final int DEFAULT_MAX_HEADER_FIELD_LENGTH = 8 * 1024;
+    // FIXME: 0.43 - remove this temporary property
+    static final String DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH_PROPERTY =
+            "io.servicetalk.http.netty.temporaryDefaultMaxTotalHeaderFieldsLength";
+    static final int DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH =
+            getInteger(DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH_PROPERTY, DEFAULT_MAX_HEADER_FIELD_LENGTH);
 
-    static final int DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH = 8192;
+    static {
+        if (DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH != DEFAULT_MAX_HEADER_FIELD_LENGTH) {
+            LOGGER.warn("-D{}: {}. This property will be removed in the future releases. " +
+                            "Configure this value via H1ProtocolConfigBuilder#maxTotalHeaderFieldsLength(int) instead.",
+                    DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH_PROPERTY, DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH);
+        }
+    }
 
     private int maxPipelinedRequests = 1;
-    private int maxStartLineLength = 4096;
-    private int maxHeaderFieldLength = 8192;
+    private int maxStartLineLength = DEFAULT_MAX_START_LINE_LENGTH;
+    private int maxHeaderFieldLength = DEFAULT_MAX_HEADER_FIELD_LENGTH;
     private int maxTotalHeaderFieldsLength = DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH;
     private HttpHeadersFactory headersFactory = DefaultHttpHeadersFactory.INSTANCE;
     private int headersEncodedSizeEstimate = 256;
@@ -64,7 +81,7 @@ public final class H1ProtocolConfigBuilder {
      * HTTP requests to queue up.
      * <p>
      * Anything above this value will be rejected, {@code 1} means pipelining is disabled and requests/responses are
-     * processed sequentially.
+     * processed sequentially. Default value is {@code 1}.
      * <p>
      * <b>Note:</b> {@link HttpClient#reserveConnection reserved connections} will not be restricted by this setting.
      *
@@ -79,6 +96,8 @@ public final class H1ProtocolConfigBuilder {
     /**
      * Sets the maximum length (size in bytes) of the HTTP
      * <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> for an HTTP message.
+     * <p>
+     * Default value is {@value #DEFAULT_MAX_START_LINE_LENGTH} bytes.
      * <p>
      * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the start line exceeds
      * this value.
@@ -109,10 +128,10 @@ public final class H1ProtocolConfigBuilder {
      * configured via {@link Http2Settings#maxHeaderListSize()} for
      * {@link H2ProtocolConfigBuilder#initialSettings(Http2Settings)}.
      * <p>
-     * If property is set to {@code io.servicetalk.http.netty.maxTotalHeaderFieldsLengthWarnOnly=true} (which is
-     * the current default), then ServiceTalk will only emit a warning instead of throwing - this is to ease initial
-     * rollout of this limit. A future release will enforce it by default, so we recommend adjusting the code to not
-     * see any warnings in preparation for the change.
+     * The default value is {@value #DEFAULT_MAX_HEADER_FIELD_LENGTH} bytes. Users who unexpectedly hit the default
+     * limit can temporarily (until they can adjust the limit via this method) set
+     * {@code io.servicetalk.http.netty.temporarilyDefaultMaxTotalHeaderFieldsLength} to a new value. However, this
+     * is a temporary property that will be removed in the future releases.
      *
      * @param maxTotalHeaderFieldsLength maximum total allowed length (size in bytes) of all headers or all trailers
      * @return {@code this}
@@ -128,6 +147,8 @@ public final class H1ProtocolConfigBuilder {
      * Sets the maximum length (size in bytes) of an individual HTTP
      * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header field</a> or
      * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer field</a> to parse.
+     * <p>
+     * Default value is {@value #DEFAULT_MAX_HEADER_FIELD_LENGTH} bytes.
      * <p>
      * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the length of a header or
      * trailer field exceeds this value.
