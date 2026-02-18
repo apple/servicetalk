@@ -56,13 +56,23 @@ import static java.lang.Boolean.getBoolean;
 final class FilterableClientToClient implements StreamingHttpClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(FilterableClientToClient.class);
 
-    // FIXME: 0.43 - remove this temporary system property
-    private static final boolean SKIP_CONCURRENT_REQUEST_CHECK =
-            getBoolean("io.servicetalk.http.netty.skipConcurrentRequestCheck");
+    private static final String SKIP_CONCURRENT_REQUEST_CHECK_PROPERTY =
+            "io.servicetalk.http.netty.skipConcurrentRequestCheck";
+    private static final boolean SKIP_CONCURRENT_REQUEST_CHECK = getBoolean(SKIP_CONCURRENT_REQUEST_CHECK_PROPERTY);
     private static final ContextMap.Key<Object> HTTP_IN_FLIGHT_REQUEST =
             newKey("HTTP_IN_FLIGHT_REQUEST", Object.class);
     private static final ContextMap.Key<Throwable> HTTP_IN_FLIGHT_REQUEST_STACK_TRACE =
             newKey("HTTP_IN_FLIGHT_REQUEST_STACK_TRACE", Throwable.class);
+
+    static {
+        if (SKIP_CONCURRENT_REQUEST_CHECK) {
+            LOGGER.warn("-D{}: {}. DANGEROUS_CONFIG_WARNING: Skipping this check may lead to corrupted request " +
+                    "meta-data and issues that are hard to debug. Address business logic that causes " +
+                    "RejectedSubscribeException and remove property that disables it. Enable DEBUG level logging for " +
+                    "this class to enhance RejectedSubscribeException with additional diagnostics data.",
+                    SKIP_CONCURRENT_REQUEST_CHECK_PROPERTY, SKIP_CONCURRENT_REQUEST_CHECK);
+        }
+    }
 
     private final Object lock = new Object();
     private final FilterableStreamingHttpClient client;
