@@ -21,6 +21,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
@@ -32,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -113,18 +116,20 @@ class CompletableToCompletionStageTest {
         assertSame(DELIBERATE_EXCEPTION, causeRef.get());
     }
 
-    @Test
-    void futureComplete() throws Exception {
-        Future<Void> f = source.toFuture();
+    @ParameterizedTest(name = "{displayName} [{index}] viaCompletionStage={0}")
+    @ValueSource(booleans = {false, true})
+    void futureComplete(boolean viaCompletionStage) {
+        Future<Void> f = viaCompletionStage ? source.toCompletionStage().toCompletableFuture() : source.toFuture();
         jdkExecutor.execute(source::onComplete);
-        f.get();
+        assertDoesNotThrow(() -> f.get());
     }
 
-    @Test
-    void futureFail() {
-        Future<Void> f = source.toFuture();
+    @ParameterizedTest(name = "{displayName} [{index}] viaCompletionStage={0}")
+    @ValueSource(booleans = {false, true})
+    void futureFail(boolean viaCompletionStage) {
+        Future<Void> f = viaCompletionStage ? source.toCompletionStage().toCompletableFuture() : source.toFuture();
         jdkExecutor.execute(() -> source.onError(DELIBERATE_EXCEPTION));
-        Exception e = assertThrows(ExecutionException.class, () -> f.get());
+        Exception e = assertThrows(ExecutionException.class, f::get);
         assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 }
