@@ -50,7 +50,7 @@ public interface H1ProtocolConfig extends HttpProtocolConfig {
      * <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> for an HTTP message.
      * <p>
      * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the start line exceeds
-     * this value.
+     * this value, including CRLF delimiter at the end.
      *
      * @return maximum size of the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> for an
      * HTTP message
@@ -58,8 +58,9 @@ public interface H1ProtocolConfig extends HttpProtocolConfig {
     int maxStartLineLength();
 
     /**
-     * Get the maximum total allowed length (size in bytes) of all HTTP
-     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> or all
+     * Get the maximum total allowed length (size in bytes) of the HTTP
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> and all
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a>, or all
      * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a>.
      * <p>
      * This limit protects against memory exhaustion attacks where an attacker sends many small headers or trailers
@@ -67,13 +68,13 @@ public interface H1ProtocolConfig extends HttpProtocolConfig {
      * memory.
      * <p>
      * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the total headers or
-     * trailers block size exceeds this value.
+     * trailers block size exceeds this value, including CRLF delimiter at the end of each line.
      * <p>
      * This is an HTTP/1.x equivalent of HTTP/2's
      * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_MAX_HEADER_LIST_SIZE</a> that can be
      * configured via {@link Http2Settings#maxHeaderListSize()} for {@link H2ProtocolConfig#initialSettings()}.
      *
-     * @return maximum total allowed length (size in bytes) of all headers or all trailers
+     * @return maximum total allowed length (size in bytes) of the start line and all headers, or all trailers
      * @see #maxHeaderFieldLength()
      * @see Http2Settings#maxHeaderListSize()
      */
@@ -87,7 +88,7 @@ public interface H1ProtocolConfig extends HttpProtocolConfig {
      * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer field</a> to parse.
      * <p>
      * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the length of a header or
-     * trailer field exceeds this value.
+     * trailer field exceeds this value, including CRLF delimiter at the end.
      *
      * @return maximum length (size in bytes) of an individual HTTP
      * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header field</a> or

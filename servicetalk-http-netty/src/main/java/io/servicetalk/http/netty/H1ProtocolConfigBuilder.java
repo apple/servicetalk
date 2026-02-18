@@ -102,7 +102,7 @@ public final class H1ProtocolConfigBuilder {
      * Default value is {@value #DEFAULT_MAX_START_LINE_LENGTH} bytes.
      * <p>
      * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the start line exceeds
-     * this value.
+     * this value, including CRLF delimiter at the end.
      *
      * @param maxStartLineLength maximum length (size in bytes) of the HTTP
      * <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> for an HTTP message
@@ -114,8 +114,9 @@ public final class H1ProtocolConfigBuilder {
     }
 
     /**
-     * Sets the maximum total allowed length (size in bytes) of all HTTP
-     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> or all
+     * Sets the maximum total allowed length (size in bytes) of the HTTP
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> and all
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a>, or all
      * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a>.
      * <p>
      * This limit protects against memory exhaustion attacks where an attacker sends many small headers or trailers
@@ -123,7 +124,7 @@ public final class H1ProtocolConfigBuilder {
      * memory.
      * <p>
      * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the total headers or
-     * trailers block size exceeds this value.
+     * trailers block size exceeds this value, including CRLF delimiter at the end of each line.
      * <p>
      * This is an HTTP/1.x equivalent of HTTP/2's
      * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_MAX_HEADER_LIST_SIZE</a> that can be
@@ -135,7 +136,8 @@ public final class H1ProtocolConfigBuilder {
      * {@code io.servicetalk.http.netty.temporaryDefaultMaxTotalHeaderFieldsLength} to a new value. However, this is a
      * temporary property that will be removed in the future releases.
      *
-     * @param maxTotalHeaderFieldsLength maximum total allowed length (size in bytes) of all headers or all trailers
+     * @param maxTotalHeaderFieldsLength maximum total allowed length (size in bytes) of the start line and all headers,
+     * or all trailers
      * @return {@code this}
      * @see #maxHeaderFieldLength(int)
      * @see H2ProtocolConfigBuilder#initialSettings(Http2Settings)
@@ -153,7 +155,7 @@ public final class H1ProtocolConfigBuilder {
      * Default value is {@value #DEFAULT_MAX_HEADER_FIELD_LENGTH} bytes.
      * <p>
      * <b>Note:</b> a decoder will close the connection with {@code TooLongFrameException} if the length of a header or
-     * trailer field exceeds this value.
+     * trailer field exceeds this value, including CRLF delimiter at the end.
      *
      * @param maxHeaderFieldLength maximum length (size in bytes) of an individual HTTP
      * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header field</a> or
