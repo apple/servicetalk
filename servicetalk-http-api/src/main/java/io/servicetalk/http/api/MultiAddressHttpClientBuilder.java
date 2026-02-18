@@ -20,6 +20,7 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.IoExecutor;
 
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 /**
@@ -143,6 +144,11 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
      * @param config {@link RedirectConfig} to configure redirection behavior. It can be used to tune what requests
      * should follow redirects and which parts of the original request (headers/payload body/trailers) should be
      * redirected to non-relative locations. Use {@code null} to disable redirects.
+     * <p>
+     * Note that this filters location is last, or as if it had been appended right before building the client. If that
+     * is not the desired position you can disable redirects and use
+     * {@link #appendClientFilter(StreamingHttpClientFilterFactory)} to place the {@code RedirectingHttpRequesterFilter}
+     * in the position of your choice.
      * @return {@code this}.
      * @see RedirectConfigBuilder
      */
@@ -169,6 +175,61 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
      */
     default MultiAddressHttpClientBuilder<U, R> defaultHttpsPort(int port) { // FIXME: 0.43 - remove default impl
         throw new UnsupportedOperationException("Setting defaultHttpsPort is not yet supported by "
+                + getClass().getName());
+    }
+
+    /**
+     * Appends the filter to the chain of filters used to decorate the {@link HttpClient} created by this
+     * builder.
+     * <p>
+     * Note this method will be used to decorate the result of {@link #build()} before it is returned to the user.
+     * <p>
+     * The order of execution of these filters are in order of append but will always be before any filters
+     * applied to the underlying single address clients. If 3 filters are added as follows:
+     * <pre>
+     *     builder.appendClientFilter(filter1).appendClientFilter(filter2).appendClientFilter(filter3)
+     * </pre>
+     * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
+     * </pre>
+     *
+     * @param factory {@link StreamingHttpClientFilterFactory} to decorate a {@link HttpClient} for the purpose of
+     * filtering.
+     * @return {@code this}
+     * @see #initializer(SingleAddressInitializer) for adding filters to the underlying clients.
+     */
+    default MultiAddressHttpClientBuilder<U, R> appendClientFilter(StreamingHttpClientFilterFactory factory) {
+        throw new UnsupportedOperationException("Setting client filters is not yet supported by "
+                + getClass().getName());
+    }
+
+    /**
+     * Appends the filter to the chain of filters used to decorate the {@link HttpClient} created by this
+     * builder, for every request that passes the provided {@link Predicate}.
+     * <p>
+     * Note this method will be used to decorate the result of {@link #build()} before it is
+     * returned to the user.
+     * <p>
+     * The order of execution of these filters are in order of append but will always be before any filters
+     * applied to the underlying single address clients. If 3 filters are added as follows:
+     * <pre>
+     *     builder.appendClientFilter(filter1).appendClientFilter(filter2).appendClientFilter(filter3)
+     * </pre>
+     * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
+     * </pre>
+     *
+     * @param predicate the {@link Predicate} to test if the filter must be applied.
+     * @param factory {@link StreamingHttpClientFilterFactory} to decorate a {@link HttpClient} for the purpose of
+     * filtering.
+     * @return {@code this}
+     * @see #initializer(SingleAddressInitializer) for adding filters to the underlying clients.
+     */
+    default MultiAddressHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
+                                                                   StreamingHttpClientFilterFactory factory) {
+        throw new UnsupportedOperationException("Setting client filters is not yet supported by "
                 + getClass().getName());
     }
 }

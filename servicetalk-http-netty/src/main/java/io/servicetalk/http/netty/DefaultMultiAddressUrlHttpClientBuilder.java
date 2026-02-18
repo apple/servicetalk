@@ -58,6 +58,7 @@ import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.util.Locale;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpScheme.HTTP;
@@ -74,6 +75,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.setExecutionContext;
+import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalClientFilterFactory;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -110,6 +112,11 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     private int defaultHttpsPort = HTTPS.port();
     @Nullable
     private SingleAddressInitializer<HostAndPort, InetSocketAddress> singleAddressInitializer;
+    private final ClientStrategyInfluencerChainBuilder influencerChainBuilder =
+            new ClientStrategyInfluencerChainBuilder();
+    // Detect leaks that can be caused by unexpected exceptions. Must be the first filter in the chain.
+    private StreamingHttpClientFilterFactory clientFilterFactory =
+            HttpMessageDiscardWatchdogClientFilter.CLIENT_CLEANER;
 
     DefaultMultiAddressUrlHttpClientBuilder(
             final Function<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>> bFactory) {
@@ -120,7 +127,26 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     public StreamingHttpClient buildStreaming() {
         final CompositeCloseable closeables = newCompositeCloseable();
         try {
-            final HttpExecutionContext executionContext = executionContextBuilder.build();
+            StreamingHttpClientFilterFactory clientFilterFactory = this.clientFilterFactory;
+            ClientStrategyInfluencerChainBuilder influencerChainBuilder = this.influencerChainBuilder;
+
+            if (redirectConfig != null) {
+                StreamingHttpClientFilterFactory redirectFilter = new RedirectingHttpRequesterFilter(redirectConfig);
+                // If this assertion changes we need to merge its execution strategy.
+                assert redirectFilter.requiredOffloads() == offloadNone();
+                // Need to wrap the top level client (group) in order for non-relative redirects to work
+                clientFilterFactory = appendFilter(clientFilterFactory, redirectFilter);
+            }
+
+            HttpExecutionContextBuilder executionContextBuilder = this.executionContextBuilder;
+            final HttpExecutionContext builderExecutionContext = executionContextBuilder.build();
+            final HttpExecutionStrategy computedStrategy =
+                    influencerChainBuilder.buildForClient(builderExecutionContext.executionStrategy());
+
+            final HttpExecutionContext executionContext = new HttpExecutionContextBuilder(executionContextBuilder)
+                        .executionStrategy(computedStrategy)
+                        .build();
+
             final ClientFactory clientFactory =
                     new ClientFactory(builderFactory, executionContext, singleAddressInitializer);
             final UrlKeyFactory keyFactory = new UrlKeyFactory(defaultHttpPort, defaultHttpsPort);
@@ -131,12 +157,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                                     headersFactory != null ? headersFactory : DefaultHttpHeadersFactory.INSTANCE,
                                     HTTP_1_1)));
 
-            // Need to wrap the top level client (group) in order for non-relative redirects to work
-            urlClient = redirectConfig == null ? urlClient :
-                    new RedirectingHttpRequesterFilter(redirectConfig).create(urlClient);
-
-            // Detect leaks that can be caused by unexpected exceptions
-            urlClient = HttpMessageDiscardWatchdogClientFilter.CLIENT_CLEANER.create(urlClient);
+            urlClient = clientFilterFactory.create(urlClient);
 
             LOGGER.debug("Multi-address client created with base strategy {}", executionContext.executionStrategy());
             return new FilterableClientToClient(urlClient, executionContext);
@@ -473,6 +494,23 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         return this;
     }
 
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendClientFilter(
+            StreamingHttpClientFilterFactory factory) {
+        requireNonNull(factory, "factory");
+        influencerChainBuilder.add(factory);
+        clientFilterFactory = appendFilter(clientFilterFactory, factory);
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendClientFilter(
+            Predicate<StreamingHttpRequest> predicate, StreamingHttpClientFilterFactory factory) {
+        requireNonNull(predicate, "predicate");
+        requireNonNull(factory, "factory");
+        return appendClientFilter(toConditionalClientFilterFactory(predicate, factory));
+    }
+
     /**
      * Verifies that the given port number is within the allowed range.
      *
@@ -484,5 +522,10 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             throw new IllegalArgumentException("Provided port number is out of range (between 1 and 65535): " + port);
         }
         return port;
+    }
+
+    private static StreamingHttpClientFilterFactory appendFilter(StreamingHttpClientFilterFactory filter1,
+                                                                 StreamingHttpClientFilterFactory filter2) {
+        return client -> filter1.create(filter2.create(client));
     }
 }
