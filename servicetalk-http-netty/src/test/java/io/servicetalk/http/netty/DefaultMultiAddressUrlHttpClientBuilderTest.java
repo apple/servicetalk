@@ -348,8 +348,7 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
              BlockingHttpClient client = HttpClients.forMultiAddressUrl(getClass().getSimpleName())
-                     .ioExecutor(CTX.ioExecutor())
-                     .executor(CTX.executor())
+                     // Do not override execution strategy so filter requirements are merged
                      .appendClientFilter(c -> new StreamingHttpClientFilter(c) {
                          @Override
                          protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
@@ -382,10 +381,7 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
                 .executionStrategy(offloadNone())
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
              BlockingHttpClient client = HttpClients.forMultiAddressUrl(getClass().getSimpleName())
-                     .ioExecutor(INTERNAL_CLIENT_CTX.ioExecutor())
-                     .executor(INTERNAL_CLIENT_CTX.executor())
-                     // Use default strategy so filter requirements are merged
-                     .executionStrategy(defaultStrategy())
+                     // Do not override execution strategy so filter requirements are merged
                      .appendClientFilter(new StreamingHttpClientFilterFactory() {
                          @Override
                          public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {

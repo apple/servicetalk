@@ -24,7 +24,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
-import io.servicetalk.http.api.DelegatingHttpExecutionContext;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
@@ -133,23 +132,20 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
             if (redirectConfig != null) {
                 StreamingHttpClientFilterFactory redirectFilter = new RedirectingHttpRequesterFilter(redirectConfig);
-                // Technically this is not necessary since the redirect filter doesn't offload but we add the check
-                // to future-proof it.
-                influencerChainBuilder = influencerChainBuilder.copy();
-                influencerChainBuilder.add(redirectFilter);
+                // If this assertion changes we need to merge its execution strategy.
+                assert redirectFilter.requiredOffloads() == offloadNone();
                 // Need to wrap the top level client (group) in order for non-relative redirects to work
                 clientFilterFactory = appendFilter(clientFilterFactory, redirectFilter);
             }
 
+            HttpExecutionContextBuilder executionContextBuilder = this.executionContextBuilder;
             final HttpExecutionContext builderExecutionContext = executionContextBuilder.build();
             final HttpExecutionStrategy computedStrategy =
                     influencerChainBuilder.buildForClient(builderExecutionContext.executionStrategy());
-            final HttpExecutionContext executionContext = new DelegatingHttpExecutionContext(builderExecutionContext) {
-                @Override
-                public HttpExecutionStrategy executionStrategy() {
-                    return computedStrategy;
-                }
-            };
+
+            final HttpExecutionContext executionContext = new HttpExecutionContextBuilder(executionContextBuilder)
+                        .executionStrategy(computedStrategy)
+                        .build();
 
             final ClientFactory clientFactory =
                     new ClientFactory(builderFactory, executionContext, singleAddressInitializer);

@@ -33,7 +33,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.http.api.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
-import io.servicetalk.http.api.DelegatingHttpExecutionContext;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
@@ -228,15 +227,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private static <U, R> StreamingHttpClient buildStreaming(final HttpClientBuildContext<U, R> ctx) {
         final String targetResource = targetResource(ctx);
         final ReadOnlyHttpClientConfig roConfig = ctx.httpConfig().asReadOnly();
-        final HttpExecutionContext builderExecutionContext = ctx.builder.executionContextBuilder.build();
         final HttpExecutionStrategy computedStrategy =
-                ctx.builder.strategyComputation.buildForClient(builderExecutionContext.executionStrategy());
-        final HttpExecutionContext executionContext = new DelegatingHttpExecutionContext(builderExecutionContext) {
-            @Override
-            public HttpExecutionStrategy executionStrategy() {
-                return computedStrategy;
-            }
-        };
+                ctx.builder.strategyComputation.buildForClient(
+                        ctx.builder.executionContextBuilder.build().executionStrategy());
+        ctx.builder.executionContextBuilder.executionStrategy(computedStrategy);
+        final HttpExecutionContext executionContext = ctx.builder.executionContextBuilder.build();
         final SslContext sslContext = roConfig.tcpConfig().sslContext();
 
         // Track resources that potentially need to be closed when an exception is thrown during buildStreaming
