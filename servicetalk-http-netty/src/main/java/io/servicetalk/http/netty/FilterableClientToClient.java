@@ -66,10 +66,10 @@ final class FilterableClientToClient implements StreamingHttpClient {
 
     static {
         if (SKIP_CONCURRENT_REQUEST_CHECK) {
-            LOGGER.warn("-D{}: {}. Skipping this check may lead to corrupted request meta-data and issues that are " +
-                    "hard to debug. Address business logic that causes RejectedSubscribeException and remove " +
-                    "property that disables it. Enable DEBUG level logging for this class to enhance " +
-                    "RejectedSubscribeException with additional diagnostics data.",
+            LOGGER.warn("-D{}: {}. DANGEROUS_CONFIG_WARNING: Skipping this check may lead to corrupted request " +
+                    "meta-data and issues that are hard to debug. Address business logic that causes " +
+                    "RejectedSubscribeException and remove property that disables it. Enable DEBUG level logging for " +
+                    "this class to enhance RejectedSubscribeException with additional diagnostics data.",
                     SKIP_CONCURRENT_REQUEST_CHECK_PROPERTY, SKIP_CONCURRENT_REQUEST_CHECK);
         }
     }
