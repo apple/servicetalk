@@ -228,7 +228,7 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
      * @see #initializer(SingleAddressInitializer) for adding filters to the underlying clients.
      */
     default MultiAddressHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
-                                                            StreamingHttpClientFilterFactory factory) {
+                                                                   StreamingHttpClientFilterFactory factory) {
         throw new UnsupportedOperationException("Setting client filters is not yet supported by "
                 + getClass().getName());
     }
