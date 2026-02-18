@@ -20,6 +20,8 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Collection;
 import java.util.concurrent.CompletionStage;
@@ -28,6 +30,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -137,16 +140,20 @@ class PublisherToCompletionStageTest {
         assertThat(resultRef.get(), is(DELIBERATE_EXCEPTION));
     }
 
-    @Test
-    void futureEmptyComplete() throws Exception {
-        Future<? extends Collection<String>> f = publisher.toFuture();
+    @ParameterizedTest(name = "{displayName} [{index}] viaCompletionStage={0}")
+    @ValueSource(booleans = {false, true})
+    void futureEmptyComplete(boolean viaCompletionStage) throws Exception {
+        Future<? extends Collection<String>> f = viaCompletionStage ?
+                publisher.toCompletionStage().toCompletableFuture() : publisher.toFuture();
         jdkExecutor.execute(publisher::onComplete);
         assertThat(f.get(), is(empty()));
     }
 
-    @Test
-    void futureComplete() throws Exception {
-        Future<? extends Collection<String>> f = publisher.toFuture();
+    @ParameterizedTest(name = "{displayName} [{index}] viaCompletionStage={0}")
+    @ValueSource(booleans = {false, true})
+    void futureComplete(boolean viaCompletionStage) throws Exception {
+        Future<? extends Collection<String>> f = viaCompletionStage ?
+                publisher.toCompletionStage().toCompletableFuture() : publisher.toFuture();
         jdkExecutor.execute(() -> {
             publisher.onNext("Hello", "World");
             publisher.onComplete();
@@ -154,12 +161,16 @@ class PublisherToCompletionStageTest {
         assertThat(f.get(), contains("Hello", "World"));
     }
 
-    @Test
-    void futureReduceComplete() throws Exception {
-        Future<StringBuilder> f = publisher.toFuture(StringBuilder::new, (sb, next) -> {
+    @ParameterizedTest(name = "{displayName} [{index}] viaCompletionStage={0}")
+    @ValueSource(booleans = {false, true})
+    void futureReduceComplete(boolean viaCompletionStage) throws Exception {
+        BiFunction<StringBuilder, String, StringBuilder> reducer = (sb, next) -> {
             sb.append(next);
             return sb;
-        });
+        };
+        Future<StringBuilder> f = viaCompletionStage ?
+                publisher.toCompletionStage(StringBuilder::new, reducer).toCompletableFuture() :
+                publisher.toFuture(StringBuilder::new, reducer);
         jdkExecutor.execute(() -> {
             publisher.onNext("Hello", "World");
             publisher.onComplete();
@@ -167,14 +178,16 @@ class PublisherToCompletionStageTest {
         assertThat(f.get().toString(), is("HelloWorld"));
     }
 
-    @Test
-    void futureFail() {
-        Future<? extends Collection<String>> f = publisher.toFuture();
+    @ParameterizedTest(name = "{displayName} [{index}] viaCompletionStage={0}")
+    @ValueSource(booleans = {false, true})
+    void futureFail(boolean viaCompletionStage) {
+        Future<? extends Collection<String>> f = viaCompletionStage ?
+                publisher.toCompletionStage().toCompletableFuture() : publisher.toFuture();
         jdkExecutor.execute(() -> {
             publisher.onNext("Hello", "World");
             publisher.onError(DELIBERATE_EXCEPTION);
         });
-        Exception e = assertThrows(ExecutionException.class, () -> f.get());
+        Exception e = assertThrows(ExecutionException.class, f::get);
         assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 }

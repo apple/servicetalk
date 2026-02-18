@@ -31,6 +31,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -884,24 +885,18 @@ class SingleToCompletionStageTest {
         assertThat(cancelCount.get(), is(0));
     }
 
-    @Test
-    void blockingGetAsync() throws Exception {
-        blockingGetAsync(source.toCompletionStage().toCompletableFuture(), "foo");
+    @ParameterizedTest(name = "{displayName} [{index}] viaCompletionStage={0}")
+    @ValueSource(booleans = {false, true})
+    void blockingGetAsync(boolean viaCompletionStage) throws Exception {
+        blockingGetAsync(viaCompletionStage ? source.toCompletionStage().toCompletableFuture() : source.toFuture(),
+                "foo");
     }
 
-    @Test
-    void blockingGetAsyncNull() throws Exception {
-        blockingGetAsync(source.toCompletionStage().toCompletableFuture(), null);
-    }
-
-    @Test
-    void futureGetAsync() throws Exception {
-        blockingGetAsync(source.toFuture(), "foo");
-    }
-
-    @Test
-    void futureGetAsyncNull() throws Exception {
-        blockingGetAsync(source.toFuture(), null);
+    @ParameterizedTest(name = "{displayName} [{index}] viaCompletionStage={0}")
+    @ValueSource(booleans = {false, true})
+    void blockingGetAsyncNull(boolean viaCompletionStage) throws Exception {
+        blockingGetAsync(viaCompletionStage ? source.toCompletionStage().toCompletableFuture() : source.toFuture(),
+                null);
     }
 
     private void blockingGetAsync(Future<String> stage, @Nullable String expected)
@@ -910,24 +905,18 @@ class SingleToCompletionStageTest {
         assertEquals(expected, stage.get());
     }
 
-    @Test
-    void blockingGetSync() throws Exception {
-        blockingGetSync(source.toCompletionStage().toCompletableFuture(), "foo");
+    @ParameterizedTest(name = "{displayName} [{index}] viaCompletionStage={0}")
+    @ValueSource(booleans = {false, true})
+    void blockingGetSync(boolean viaCompletionStage) throws Exception {
+        blockingGetSync(viaCompletionStage ? source.toCompletionStage().toCompletableFuture() : source.toFuture(),
+                "foo");
     }
 
-    @Test
-    void blockingGetSyncNull() throws Exception {
-        blockingGetSync(source.toCompletionStage().toCompletableFuture(), null);
-    }
-
-    @Test
-    void futureGetSync() throws Exception {
-        blockingGetSync(source.toFuture(), "foo");
-    }
-
-    @Test
-    void futureGetSyncNull() throws Exception {
-        blockingGetSync(source.toFuture(), null);
+    @ParameterizedTest(name = "{displayName} [{index}] viaCompletionStage={0}")
+    @ValueSource(booleans = {false, true})
+    void blockingGetSyncNull(boolean viaCompletionStage) throws Exception {
+        blockingGetSync(viaCompletionStage ? source.toCompletionStage().toCompletableFuture() : source.toFuture(),
+                null);
     }
 
     private void blockingGetSync(Future<String> stage, @Nullable String expected)
@@ -936,88 +925,50 @@ class SingleToCompletionStageTest {
         assertEquals(expected, stage.get());
     }
 
-    @Test
-    void blockingGetAsyncError() {
-        blockingGetAsyncError(source.toCompletionStage().toCompletableFuture());
-    }
-
-    @Test
-    void futureGetAsyncError() {
-        blockingGetAsyncError(source.toFuture());
-    }
-
-    private void blockingGetAsyncError(Future<String> stage) {
+    @ParameterizedTest(name = "{displayName} [{index}] viaCompletionStage={0}")
+    @ValueSource(booleans = {false, true})
+    void blockingGetAsyncError(boolean viaCompletionStage) {
+        Future<String> f = viaCompletionStage ? source.toCompletionStage().toCompletableFuture() : source.toFuture();
         Exception e = assertThrows(ExecutionException.class, () -> {
             jdkExecutor.execute(() -> testSingle.onError(DELIBERATE_EXCEPTION));
-            stage.get();
+            f.get();
         });
         assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 
-    @Test
-    void blockingGetSyncError() {
-        blockingGetSyncError(source.toCompletionStage().toCompletableFuture());
-    }
-
-    @Test
-    void futureGetSyncError() {
-        blockingGetSyncError(source.toFuture());
-    }
-
-    private void blockingGetSyncError(Future<String> stage) {
+    @ParameterizedTest(name = "{displayName} [{index}] viaCompletionStage={0}")
+    @ValueSource(booleans = {false, true})
+    void blockingGetSyncError(boolean viaCompletionStage) {
+        Future<String> f = viaCompletionStage ? source.toCompletionStage().toCompletableFuture() : source.toFuture();
         Exception e = assertThrows(ExecutionException.class, () -> {
             testSingle.onError(DELIBERATE_EXCEPTION);
-            stage.get();
+            f.get();
         });
         assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 
-    @Test
-    void blockingGetTimeoutExpire() {
-        blockingGetTimeoutExpire(source.toCompletionStage().toCompletableFuture());
+    @ParameterizedTest(name = "{displayName} [{index}] viaCompletionStage={0}")
+    @ValueSource(booleans = {false, true})
+    void blockingGetTimeoutExpire(boolean viaCompletionStage) {
+        Future<String> f = viaCompletionStage ? source.toCompletionStage().toCompletableFuture() : source.toFuture();
+        assertThrows(TimeoutException.class, () -> f.get(10, MILLISECONDS));
     }
 
-    @Test
-    void futureGetTimeoutExpire() {
-        blockingGetTimeoutExpire(source.toFuture());
-    }
-
-    private void blockingGetTimeoutExpire(Future<String> stage) {
-        assertThrows(TimeoutException.class, () -> {
-            stage.get(10, MILLISECONDS);
-        });
-    }
-
-    @Test
-    void blockingGetTimeoutSuccess() throws Exception {
-        blockingGetTimeoutSuccess(source.toCompletionStage().toCompletableFuture());
-    }
-
-    @Test
-    void futureGetTimeoutSuccess() throws Exception {
-        blockingGetTimeoutSuccess(source.toFuture());
-    }
-
-    private void blockingGetTimeoutSuccess(Future<String> stage)
-            throws InterruptedException, ExecutionException, TimeoutException {
+    @ParameterizedTest(name = "{displayName} [{index}] viaCompletionStage={0}")
+    @ValueSource(booleans = {false, true})
+    void blockingGetTimeoutSuccess(boolean viaCompletionStage) throws Exception {
+        Future<String> f = viaCompletionStage ? source.toCompletionStage().toCompletableFuture() : source.toFuture();
         jdkExecutor.execute(() -> testSingle.onSuccess("foo"));
-        assertEquals("foo", stage.get(1, MINUTES));
+        assertEquals("foo", f.get(1, MINUTES));
     }
 
-    @Test
-    void blockingGetTimeoutError() {
-        blockingGetTimeoutError(source.toCompletionStage().toCompletableFuture());
-    }
-
-    @Test
-    void futureGetTimeoutError() {
-        blockingGetTimeoutError(source.toFuture());
-    }
-
-    private void blockingGetTimeoutError(Future<String> stage) {
+    @ParameterizedTest(name = "{displayName} [{index}] viaCompletionStage={0}")
+    @ValueSource(booleans = {false, true})
+    void blockingGetTimeoutError(boolean viaCompletionStage) {
+        Future<String> f = viaCompletionStage ? source.toCompletionStage().toCompletableFuture() : source.toFuture();
         Exception e = assertThrows(ExecutionException.class, () -> {
             jdkExecutor.execute(() -> testSingle.onError(DELIBERATE_EXCEPTION));
-            stage.get(1, MINUTES);
+            f.get(1, MINUTES);
         });
         assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
     }
