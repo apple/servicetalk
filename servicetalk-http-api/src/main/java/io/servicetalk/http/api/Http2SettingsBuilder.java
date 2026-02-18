@@ -67,6 +67,7 @@ public final class Http2SettingsBuilder {
      * The initial value of {@link #MAX_HEADER_LIST_SIZE} is
      * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">unlimited</a>.
      * However, in practice we don't want to allow our peers to use unlimited memory by default.
+     * Keep this value in sync with {@code H1ProtocolConfigBuilder#DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH_VALUE}.
      */
     private static final long DEFAULT_MAX_HEADER_LIST_SIZE = 32 * 1024;
 

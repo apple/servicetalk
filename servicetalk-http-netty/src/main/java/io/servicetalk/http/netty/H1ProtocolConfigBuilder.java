@@ -36,6 +36,7 @@ import static java.util.Objects.requireNonNull;
 public final class H1ProtocolConfigBuilder {
     private static final Logger LOGGER = LoggerFactory.getLogger(H1ProtocolConfigBuilder.class);
     private static final H1SpecExceptions DEFAULT_H1_SPEC_EXCEPTIONS = new H1SpecExceptions.Builder().build();
+    // Keep this value in sync with Http2SettingsBuilder#DEFAULT_MAX_HEADER_LIST_SIZE.
     private static final int DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH_VALUE = 32 * 1024;
     static final int DEFAULT_MAX_START_LINE_LENGTH = 8 * 1024;
     static final int DEFAULT_MAX_HEADER_FIELD_LENGTH = 16 * 1024;
@@ -130,7 +131,7 @@ public final class H1ProtocolConfigBuilder {
      * {@link H2ProtocolConfigBuilder#initialSettings(Http2Settings)}.
      * <p>
      * The default value is {@value #DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH_VALUE} bytes. Users who unexpectedly hit the
-     * default limit can temporary (until they can adjust the limit via this method) set
+     * default limit can temporarily (until they can adjust the limit via this method) set
      * {@code io.servicetalk.http.netty.temporaryDefaultMaxTotalHeaderFieldsLength} to a new value. However, this is a
      * temporary property that will be removed in the future releases.
      *
