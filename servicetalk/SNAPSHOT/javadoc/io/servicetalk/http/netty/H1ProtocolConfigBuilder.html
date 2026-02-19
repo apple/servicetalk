@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -96,8 +96,8 @@ loadScripts(document, 'script');</script>
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
-<div class="summary-table three-column-summary">
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -122,8 +122,9 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="H1ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H1ProtocolConfigBuilder</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#maxHeaderFieldLength(int)" class="member-name-link">maxHeaderFieldLength</a><wbr>(int&nbsp;maxHeaderFieldLength)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Sets the maximum length of the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a>
- and <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a> to parse.</div>
+<div class="block">Sets the maximum length (size in bytes) of an individual HTTP
+ <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header field</a> or
+ <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer field</a> to parse.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="H1ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H1ProtocolConfigBuilder</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#maxPipelinedRequests(int)" class="member-name-link">maxPipelinedRequests</a><wbr>(int&nbsp;maxPipelinedRequests)</code></div>
@@ -134,19 +135,27 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="H1ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H1ProtocolConfigBuilder</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#maxStartLineLength(int)" class="member-name-link">maxStartLineLength</a><wbr>(int&nbsp;maxStartLineLength)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Sets the maximum length of the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> for
- an HTTP message.</div>
+<div class="block">Sets the maximum length (size in bytes) of the HTTP
+ <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> for an HTTP message.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="H1ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H1ProtocolConfigBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#specExceptions(io.servicetalk.http.netty.H1SpecExceptions)" class="member-name-link">specExceptions</a><wbr>(<a href="H1SpecExceptions.html" title="class in io.servicetalk.http.netty">H1SpecExceptions</a>&nbsp;specExceptions)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#maxTotalHeaderFieldsLength(int)" class="member-name-link">maxTotalHeaderFieldsLength</a><wbr>(int&nbsp;maxTotalHeaderFieldsLength)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Sets additional exceptions for <a href="https://tools.ietf.org/html/rfc7230">HTTP/1.1</a> specification.</div>
+<div class="block">Sets the maximum total allowed length (size in bytes) of the HTTP
+ <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> and all
+ <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a>, or all
+ <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a>.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="H1ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H1ProtocolConfigBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#trailersEncodedSizeEstimate(int)" class="member-name-link">trailersEncodedSizeEstimate</a><wbr>(int&nbsp;trailersEncodedSizeEstimate)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#specExceptions(io.servicetalk.http.netty.H1SpecExceptions)" class="member-name-link">specExceptions</a><wbr>(<a href="H1SpecExceptions.html" title="class in io.servicetalk.http.netty">H1SpecExceptions</a>&nbsp;specExceptions)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Sets additional exceptions for <a href="https://tools.ietf.org/html/rfc7230">HTTP/1.1</a> specification.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="H1ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H1ProtocolConfigBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#trailersEncodedSizeEstimate(int)" class="member-name-link">trailersEncodedSizeEstimate</a><wbr>(int&nbsp;trailersEncodedSizeEstimate)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Sets the value used to calculate an exponential moving average of the encoded size of the HTTP
- <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a> for a guess for future
+ <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a> for a guess for future
  buffer allocations.</div>
 </div>
 </div>
@@ -188,7 +197,7 @@ loadScripts(document, 'script');</script>
  HTTP requests to queue up.
  <p>
  Anything above this value will be rejected, <code>1</code> means pipelining is disabled and requests/responses are
- processed sequentially.
+ processed sequentially. Default value is <code>1</code>.
  <p>
  <b>Note:</b> <a href="../api/HttpClient.html#reserveConnection(io.servicetalk.http.api.HttpRequestMetaData)"><code>reserved connections</code></a> will not be restricted by this setting.</div>
 <dl class="notes">
@@ -203,14 +212,16 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="maxStartLineLength(int)">
 <h3>maxStartLineLength</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="H1ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H1ProtocolConfigBuilder</a></span>&nbsp;<span class="element-name">maxStartLineLength</span><wbr><span class="parameters">(int&nbsp;maxStartLineLength)</span></div>
-<div class="block">Sets the maximum length of the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> for
- an HTTP message.
+<div class="block">Sets the maximum length (size in bytes) of the HTTP
+ <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> for an HTTP message.
+ <p>
+ Default value is 8192 bytes.
  <p>
  <b>Note:</b> a decoder will close the connection with <code>TooLongFrameException</code> if the start line exceeds
- this value.</div>
+ this value, including CRLF delimiter at the end.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>maxStartLineLength</code> - maximum size of the HTTP
+<dd><code>maxStartLineLength</code> - maximum length (size in bytes) of the HTTP
  <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> for an HTTP message</dd>
 <dt>Returns:</dt>
 <dd><code>this</code></dd>
@@ -218,21 +229,71 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="maxTotalHeaderFieldsLength(int)">
+<h3>maxTotalHeaderFieldsLength</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="H1ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H1ProtocolConfigBuilder</a></span>&nbsp;<span class="element-name">maxTotalHeaderFieldsLength</span><wbr><span class="parameters">(int&nbsp;maxTotalHeaderFieldsLength)</span></div>
+<div class="block">Sets the maximum total allowed length (size in bytes) of the HTTP
+ <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> and all
+ <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a>, or all
+ <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a>.
+ <p>
+ This limit protects against memory exhaustion attacks where an attacker sends many small headers or trailers
+ that individually pass <a href="#maxHeaderFieldLength(int)"><code>field validation</code></a> but collectively consume excessive
+ memory.
+ <p>
+ <b>Note:</b> a decoder will close the connection with <code>TooLongFrameException</code> if the total headers or
+ trailers block size exceeds this value, including CRLF delimiter at the end of each line.
+ <p>
+ This is an HTTP/1.x equivalent of HTTP/2's
+ <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_MAX_HEADER_LIST_SIZE</a> that can be
+ configured via <a href="../api/Http2Settings.html#maxHeaderListSize()"><code>Http2Settings.maxHeaderListSize()</code></a> for
+ <a href="H2ProtocolConfigBuilder.html#initialSettings(io.servicetalk.http.api.Http2Settings)"><code>H2ProtocolConfigBuilder.initialSettings(Http2Settings)</code></a>.
+ <p>
+ The default value is 32768 bytes. Users who unexpectedly hit the
+ default limit can temporarily (until they can adjust the limit via this method) set
+ <code>io.servicetalk.http.netty.temporaryDefaultMaxTotalHeaderFieldsLength</code> to a new value. However, this is a
+ temporary property that will be removed in the future releases.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>maxTotalHeaderFieldsLength</code> - maximum total allowed length (size in bytes) of the start line and all headers,
+ or all trailers</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="#maxHeaderFieldLength(int)"><code>maxHeaderFieldLength(int)</code></a></li>
+<li><a href="H2ProtocolConfigBuilder.html#initialSettings(io.servicetalk.http.api.Http2Settings)"><code>H2ProtocolConfigBuilder.initialSettings(Http2Settings)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="maxHeaderFieldLength(int)">
 <h3>maxHeaderFieldLength</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="H1ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H1ProtocolConfigBuilder</a></span>&nbsp;<span class="element-name">maxHeaderFieldLength</span><wbr><span class="parameters">(int&nbsp;maxHeaderFieldLength)</span></div>
-<div class="block">Sets the maximum length of the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a>
- and <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a> to parse.
+<div class="block">Sets the maximum length (size in bytes) of an individual HTTP
+ <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header field</a> or
+ <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer field</a> to parse.
+ <p>
+ Default value is 16384 bytes.
  <p>
  <b>Note:</b> a decoder will close the connection with <code>TooLongFrameException</code> if the length of a header or
- trailer field exceeds this value.</div>
+ trailer field exceeds this value, including CRLF delimiter at the end.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>maxHeaderFieldLength</code> - maximum length of HTTP
- <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> and
- <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a> to parse</dd>
+<dd><code>maxHeaderFieldLength</code> - maximum length (size in bytes) of an individual HTTP
+ <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header field</a> or
+ <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer field</a> to parse</dd>
 <dt>Returns:</dt>
 <dd><code>this</code></dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="#maxTotalHeaderFieldsLength(int)"><code>maxTotalHeaderFieldsLength(int)</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
@@ -259,12 +320,12 @@ loadScripts(document, 'script');</script>
 <h3>trailersEncodedSizeEstimate</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="H1ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H1ProtocolConfigBuilder</a></span>&nbsp;<span class="element-name">trailersEncodedSizeEstimate</span><wbr><span class="parameters">(int&nbsp;trailersEncodedSizeEstimate)</span></div>
 <div class="block">Sets the value used to calculate an exponential moving average of the encoded size of the HTTP
- <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a> for a guess for future
+ <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a> for a guess for future
  buffer allocations.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>trailersEncodedSizeEstimate</code> - value used to calculate an exponential moving average of the encoded size of
- the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a></dd>
+ the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a></dd>
 <dt>Returns:</dt>
 <dd><code>this</code></dd>
 </dl>

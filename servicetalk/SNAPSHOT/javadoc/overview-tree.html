@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="script.js"></script>
-<script type="text/javascript" src="script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="tree-page">
@@ -709,6 +709,7 @@ loadScripts(document, 'script');</script>
 <ul>
 <li class="circle">io.servicetalk.client.api.partition.<a href="io/servicetalk/client/api/partition/ClosedPartitionException.html" class="type-name-link" title="class in io.servicetalk.client.api.partition">ClosedPartitionException</a></li>
 <li class="circle">io.servicetalk.client.api.partition.<a href="io/servicetalk/client/api/partition/DuplicateAttributeException.html" class="type-name-link" title="class in io.servicetalk.client.api.partition">DuplicateAttributeException</a></li>
+<li class="circle">io.servicetalk.concurrent.<a href="io/servicetalk/concurrent/NonBlockingThread.IllegalBlockingOperationException.html" class="type-name-link" title="class in io.servicetalk.concurrent">NonBlockingThread.IllegalBlockingOperationException</a></li>
 <li class="circle">io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/QueueFullException.html" class="type-name-link" title="class in io.servicetalk.concurrent.internal">QueueFullException</a>
 <ul>
 <li class="circle">io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/QueueFullAndRejectedSubscribeException.html" class="type-name-link" title="class in io.servicetalk.concurrent.internal">QueueFullAndRejectedSubscribeException</a> (implements io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/RejectedSubscribeError.html" title="interface in io.servicetalk.concurrent.internal">RejectedSubscribeError</a>)</li>
@@ -1184,7 +1185,7 @@ loadScripts(document, 'script');</script>
 </li>
 </ul>
 </li>
-<li class="circle">io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/IoThreadFactory.IoThread.html" class="type-name-link" title="interface in io.servicetalk.transport.api">IoThreadFactory.IoThread</a></li>
+<li class="circle">io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/IoThreadFactory.IoThread.html" class="type-name-link" title="interface in io.servicetalk.transport.api">IoThreadFactory.IoThread</a> (also extends io.servicetalk.concurrent.<a href="io/servicetalk/concurrent/NonBlockingThread.html" title="interface in io.servicetalk.concurrent">NonBlockingThread</a>)</li>
 </ul>
 </li>
 <li class="circle">io.servicetalk.http.router.predicate.dsl.<a href="io/servicetalk/http/router/predicate/dsl/CookieMatcher.html" class="type-name-link" title="interface in io.servicetalk.http.router.predicate.dsl">CookieMatcher</a></li>
@@ -1491,6 +1492,11 @@ loadScripts(document, 'script');</script>
 <li class="circle">io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/MethodDescriptor.html" class="type-name-link" title="interface in io.servicetalk.grpc.api">MethodDescriptor</a>&lt;Req,<wbr>Resp&gt;</li>
 <li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.SingleAddressInitializer.html" class="type-name-link" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder.SingleAddressInitializer</a>&lt;U,<wbr>R&gt;</li>
 <li class="circle">io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyConnectionContext.FlushStrategyProvider.html" class="type-name-link" title="interface in io.servicetalk.transport.netty.internal">NettyConnectionContext.FlushStrategyProvider</a></li>
+<li class="circle">io.servicetalk.concurrent.<a href="io/servicetalk/concurrent/NonBlockingThread.html" class="type-name-link" title="interface in io.servicetalk.concurrent">NonBlockingThread</a>
+<ul>
+<li class="circle">io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/IoThreadFactory.IoThread.html" class="type-name-link" title="interface in io.servicetalk.transport.api">IoThreadFactory.IoThread</a> (also extends io.servicetalk.context.api.<a href="io/servicetalk/context/api/ContextMapHolder.html" title="interface in io.servicetalk.context.api">ContextMapHolder</a>)</li>
+</ul>
+</li>
 <li class="circle">io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/ParameterDescriptor.html" class="type-name-link" title="interface in io.servicetalk.grpc.api">ParameterDescriptor</a>&lt;T&gt;</li>
 <li class="circle">io.servicetalk.client.api.partition.<a href="io/servicetalk/client/api/partition/PartitionAttributes.html" class="type-name-link" title="interface in io.servicetalk.client.api.partition">PartitionAttributes</a></li>
 <li class="circle">io.servicetalk.client.api.partition.<a href="io/servicetalk/client/api/partition/PartitionAttributesBuilder.html" class="type-name-link" title="interface in io.servicetalk.client.api.partition">PartitionAttributesBuilder</a></li>

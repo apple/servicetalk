@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -80,9 +80,13 @@ loadScripts(document, 'script');</script>
 <dd><code><a href="../api/HttpHeadersFactory.html" title="interface in io.servicetalk.http.api">HttpHeadersFactory</a></code></dd>
 </dl>
 <hr>
-<div class="type-signature"><span class="modifiers">public final class </span><span class="element-name type-name-label">H2HeadersFactory</span>
+<div class="type-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public final class </span><span class="element-name type-name-label">H2HeadersFactory</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
 implements <a href="../api/HttpHeadersFactory.html" title="interface in io.servicetalk.http.api">HttpHeadersFactory</a></span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="../api/DefaultHttpHeadersFactory.html" title="class in io.servicetalk.http.api"><code>DefaultHttpHeadersFactory</code></a> instead</div>
+</div>
 <div class="block">A <a href="../api/HttpHeadersFactory.html" title="interface in io.servicetalk.http.api"><code>HttpHeadersFactory</code></a> optimized for HTTP/2.</div>
 </section>
 <section class="summary">
@@ -98,7 +102,9 @@ implements <a href="../api/HttpHeadersFactory.html" title="interface in io.servi
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><code>static final <a href="../api/HttpHeadersFactory.html" title="interface in io.servicetalk.http.api">HttpHeadersFactory</a></code></div>
 <div class="col-second even-row-color"><code><a href="#INSTANCE" class="member-name-link">INSTANCE</a></code></div>
-<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</div>
 </div>
 </section>
 </li>
@@ -114,6 +120,7 @@ implements <a href="../api/HttpHeadersFactory.html" title="interface in io.servi
  boolean&nbsp;validateCookies,
  boolean&nbsp;validateValues)</code></div>
 <div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create an instance of the factory with the default array size hint.</div>
 </div>
 <div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(boolean,boolean,boolean,int,int)" class="member-name-link">H2HeadersFactory</a><wbr>(boolean&nbsp;validateNames,
@@ -122,6 +129,7 @@ implements <a href="../api/HttpHeadersFactory.html" title="interface in io.servi
  int&nbsp;headersArraySizeHint,
  int&nbsp;trailersArraySizeHint)</code></div>
 <div class="col-last odd-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create an instance of the factory.</div>
 </div>
 </div>
@@ -132,45 +140,53 @@ implements <a href="../api/HttpHeadersFactory.html" title="interface in io.servi
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
-<div class="summary-table three-column-summary">
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../api/HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#newEmptyTrailers()" class="member-name-link">newEmptyTrailers</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="../api/HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#newEmptyTrailers()" class="member-name-link">newEmptyTrailers</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create an <a href="../api/HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a> instance designed to hold
  <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>, possibly optimized for being empty.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../api/HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#newHeaders()" class="member-name-link">newHeaders</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="../api/HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#newHeaders()" class="member-name-link">newHeaders</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create an <a href="../api/HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a> instance.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../api/HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#newTrailers()" class="member-name-link">newTrailers</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="../api/HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#newTrailers()" class="member-name-link">newTrailers</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create an <a href="../api/HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a> instance designed to hold
  <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#validateCookies()" class="member-name-link">validateCookies</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code>boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#validateCookies()" class="member-name-link">validateCookies</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Determine if cookies should be validated during parsing into <a href="../api/HttpSetCookie.html" title="interface in io.servicetalk.http.api"><code>HttpSetCookie</code></a>s.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#validateNames()" class="member-name-link">validateNames</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code>boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#validateNames()" class="member-name-link">validateNames</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Determine if header names should be validated during parsing into <a href="../api/HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a>s.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#validateValues()" class="member-name-link">validateValues</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code>boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#validateValues()" class="member-name-link">validateValues</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Determine if header values should be validated during parsing into <a href="../api/HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a>s.</div>
 </div>
 </div>
@@ -194,6 +210,7 @@ implements <a href="../api/HttpHeadersFactory.html" title="interface in io.servi
 <section class="detail" id="INSTANCE">
 <h3>INSTANCE</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="../api/HttpHeadersFactory.html" title="interface in io.servicetalk.http.api">HttpHeadersFactory</a></span>&nbsp;<span class="element-name">INSTANCE</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 </section>
 </li>
 </ul>
@@ -210,6 +227,7 @@ implements <a href="../api/HttpHeadersFactory.html" title="interface in io.servi
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">H2HeadersFactory</span><wbr><span class="parameters">(boolean&nbsp;validateNames,
  boolean&nbsp;validateCookies,
  boolean&nbsp;validateValues)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create an instance of the factory with the default array size hint.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -227,6 +245,7 @@ implements <a href="../api/HttpHeadersFactory.html" title="interface in io.servi
  boolean&nbsp;validateValues,
  int&nbsp;headersArraySizeHint,
  int&nbsp;trailersArraySizeHint)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create an instance of the factory.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -250,6 +269,7 @@ implements <a href="../api/HttpHeadersFactory.html" title="interface in io.servi
 <section class="detail" id="newHeaders()">
 <h3>newHeaders</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../api/HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></span>&nbsp;<span class="element-name">newHeaders</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../api/HttpHeadersFactory.html#newHeaders()">HttpHeadersFactory</a></code></span></div>
 <div class="block">Create an <a href="../api/HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a> instance.</div>
 <dl class="notes">
@@ -264,6 +284,7 @@ implements <a href="../api/HttpHeadersFactory.html" title="interface in io.servi
 <section class="detail" id="newTrailers()">
 <h3>newTrailers</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../api/HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></span>&nbsp;<span class="element-name">newTrailers</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../api/HttpHeadersFactory.html#newTrailers()">HttpHeadersFactory</a></code></span></div>
 <div class="block">Create an <a href="../api/HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a> instance designed to hold
  <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.</div>
@@ -279,6 +300,7 @@ implements <a href="../api/HttpHeadersFactory.html" title="interface in io.servi
 <section class="detail" id="newEmptyTrailers()">
 <h3>newEmptyTrailers</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../api/HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></span>&nbsp;<span class="element-name">newEmptyTrailers</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../api/HttpHeadersFactory.html#newEmptyTrailers()">HttpHeadersFactory</a></code></span></div>
 <div class="block">Create an <a href="../api/HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a> instance designed to hold
  <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>, possibly optimized for being empty.
@@ -297,6 +319,7 @@ implements <a href="../api/HttpHeadersFactory.html" title="interface in io.servi
 <section class="detail" id="validateNames()">
 <h3>validateNames</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">validateNames</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../api/HttpHeadersFactory.html#validateNames()">HttpHeadersFactory</a></code></span></div>
 <div class="block">Determine if header names should be validated during parsing into <a href="../api/HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a>s.</div>
 <dl class="notes">
@@ -311,6 +334,7 @@ implements <a href="../api/HttpHeadersFactory.html" title="interface in io.servi
 <section class="detail" id="validateCookies()">
 <h3>validateCookies</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">validateCookies</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../api/HttpHeadersFactory.html#validateCookies()">HttpHeadersFactory</a></code></span></div>
 <div class="block">Determine if cookies should be validated during parsing into <a href="../api/HttpSetCookie.html" title="interface in io.servicetalk.http.api"><code>HttpSetCookie</code></a>s.</div>
 <dl class="notes">
@@ -325,6 +349,7 @@ implements <a href="../api/HttpHeadersFactory.html" title="interface in io.servi
 <section class="detail" id="validateValues()">
 <h3>validateValues</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">validateValues</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../api/HttpHeadersFactory.html#validateValues()">HttpHeadersFactory</a></code></span></div>
 <div class="block">Determine if header values should be validated during parsing into <a href="../api/HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a>s.</div>
 <dl class="notes">
@@ -339,6 +364,7 @@ implements <a href="../api/HttpHeadersFactory.html" title="interface in io.servi
 <section class="detail" id="toString()">
 <h3>toString</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">toString</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <dl class="notes">
 <dt>Overrides:</dt>
 <dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#toString()" title="class or interface in java.lang" class="external-link">toString</a></code>&nbsp;in class&nbsp;<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></code></dd>

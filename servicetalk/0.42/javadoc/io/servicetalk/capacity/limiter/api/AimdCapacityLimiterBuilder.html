@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../../script.js"></script>
-<script type="text/javascript" src="../../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -105,8 +105,8 @@ loadScripts(document, 'script');</script>
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
-<div class="summary-table three-column-summary">
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -186,13 +186,14 @@ loadScripts(document, 'script');</script>
  int&nbsp;min,
  int&nbsp;max)</span></div>
 <div class="block">Define <code>min</code> and <code>max</code> concurrency limits for this <a href="CapacityLimiter.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter</code></a>.
+ <p>
  The active concurrency will fluctuate between these limits starting from the <code>min</code> and never
  going beyond <code>max</code>. AIMD will keep incrementing the limit by 1 everytime a successful response is
- received, and will decrement by the <code>onDrop</code> <a href="#limits(int,int,int)"><code>limits(int, int, int)</code></a> ratio,
- for every <code>dropped</code> request (i.e. rejected or timeout).
+ received, and will decrement by the <code>onDrop</code> ratio, for every <code>dropped</code> request
+ (i.e. rejected or timeout).
  <p>
- The limit translates to a concurrency figure, eg. how many requests can be in-flight simultaneously and
- doesn't represent a constant rate (i.e. has no notion of time).*
+ The limit translates to a concurrency figure, e.g. how many requests can be in-flight simultaneously and
+ doesn't represent a constant rate (i.e. has no notion of time).
  <p>
  The lower the <code>min</code> is, the slower the ramp up will be, and the bigger it is the more aggressive the
  service will be, keep concurrently issuing <code>min</code> requests to meet this limit. The defaults are within
@@ -216,13 +217,12 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="AimdCapacityLimiterBuilder.html" title="class in io.servicetalk.capacity.limiter.api">AimdCapacityLimiterBuilder</a></span>&nbsp;<span class="element-name">backoffRatio</span><wbr><span class="parameters">(float&nbsp;onDrop,
  float&nbsp;onLimit)</span></div>
 <div class="block">Defines the backoff ratios for AIMD.
+ <p>
  Ratios are used to alter the limit of the <a href="CapacityLimiter.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter</code></a> by the provided multiplier on different
  conditions as identified by their name.
-
  <p>
  The formula for the backoff ratio used is: <code>NewLimit = OldLimit * BackoffRatio</code>, always respecting the
  <code>min</code> and <code>max</code> values.
-
  <p>
  Both limits must be between 0 and 1 exclusively.</div>
 <dl class="notes">
@@ -241,6 +241,7 @@ loadScripts(document, 'script');</script>
 <h3>increment</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="AimdCapacityLimiterBuilder.html" title="class in io.servicetalk.capacity.limiter.api">AimdCapacityLimiterBuilder</a></span>&nbsp;<span class="element-name">increment</span><wbr><span class="parameters">(float&nbsp;increment)</span></div>
 <div class="block">Defines the additive factor of this algorithm.
+ <p>
  Tuning this preference allows to control the speed that the limit can grow within a certain
  <a href="#cooldown(java.time.Duration)"><code>cool-down period</code></a>.</div>
 <dl class="notes">
@@ -256,6 +257,7 @@ loadScripts(document, 'script');</script>
 <h3>cooldown</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="AimdCapacityLimiterBuilder.html" title="class in io.servicetalk.capacity.limiter.api">AimdCapacityLimiterBuilder</a></span>&nbsp;<span class="element-name">cooldown</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;duration)</span></div>
 <div class="block">Defines a period during which the additive part of the algorithm doesn't kick-in.
+ <p>
  This period helps to allow the transport to adjust on the new limits before more adjustments happen. Tuning
  this allows more stable limits rather than continuous increases and decreases.</div>
 <dl class="notes">

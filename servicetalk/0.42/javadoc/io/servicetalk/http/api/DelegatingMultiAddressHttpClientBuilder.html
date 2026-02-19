@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -122,11 +122,24 @@ implements <a href="MultiAddressHttpClientBuilder.html" title="interface in io.s
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
-<div class="summary-table three-column-summary">
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">R</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)" class="member-name-link">appendClientFilter</a><wbr>(<a href="StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpClientFilterFactory</a>&nbsp;factory)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Appends the filter to the chain of filters used to decorate the <a href="HttpClient.html" title="interface in io.servicetalk.http.api"><code>HttpClient</code></a> created by this
+ builder.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">R</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#appendClientFilter(java.util.function.Predicate,io.servicetalk.http.api.StreamingHttpClientFilterFactory)" class="member-name-link">appendClientFilter</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;<a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&gt;&nbsp;predicate,
+ <a href="StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpClientFilterFactory</a>&nbsp;factory)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Appends the filter to the chain of filters used to decorate the <a href="HttpClient.html" title="interface in io.servicetalk.http.api"><code>HttpClient</code></a> created by this
+ builder, for every request that passes the provided <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link"><code>Predicate</code></a>.</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">R</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#bufferAllocator(io.servicetalk.buffer.api.BufferAllocator)" class="member-name-link">bufferAllocator</a><wbr>(<a href="../../buffer/api/BufferAllocator.html" title="interface in io.servicetalk.buffer.api">BufferAllocator</a>&nbsp;allocator)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
@@ -376,7 +389,12 @@ implements <a href="MultiAddressHttpClientBuilder.html" title="interface in io.s
 <dt>Parameters:</dt>
 <dd><code>config</code> - <a href="RedirectConfig.html" title="interface in io.servicetalk.http.api"><code>RedirectConfig</code></a> to configure redirection behavior. It can be used to tune what requests
  should follow redirects and which parts of the original request (headers/payload body/trailers) should be
- redirected to non-relative locations. Use <code>null</code> to disable redirects.</dd>
+ redirected to non-relative locations. Use <code>null</code> to disable redirects.
+ <p>
+ Note that this filters location is last, or as if it had been appended right before building the client. If that
+ is not the desired position you can disable redirects and use
+ <a href="MultiAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>MultiAddressHttpClientBuilder.appendClientFilter(StreamingHttpClientFilterFactory)</code></a> to place the <code>RedirectingHttpRequesterFilter</code>
+ in the position of your choice.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
 <dt>See Also:</dt>
@@ -444,6 +462,81 @@ implements <a href="MultiAddressHttpClientBuilder.html" title="interface in io.s
 <section class="detail" id="buildBlockingStreaming()">
 <h3>buildBlockingStreaming</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="BlockingStreamingHttpClient.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpClient</a></span>&nbsp;<span class="element-name">buildBlockingStreaming</span>()</div>
+</section>
+</li>
+<li>
+<section class="detail" id="appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)">
+<h3>appendClientFilter</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">R</a>&gt;</span>&nbsp;<span class="element-name">appendClientFilter</span><wbr><span class="parameters">(<a href="StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpClientFilterFactory</a>&nbsp;factory)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="MultiAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)">MultiAddressHttpClientBuilder</a></code></span></div>
+<div class="block">Appends the filter to the chain of filters used to decorate the <a href="HttpClient.html" title="interface in io.servicetalk.http.api"><code>HttpClient</code></a> created by this
+ builder.
+ <p>
+ Note this method will be used to decorate the result of <a href="#build()"><code>build()</code></a> before it is returned to the user.
+ <p>
+ The order of execution of these filters are in order of append but will always be before any filters
+ applied to the underlying single address clients. If 3 filters are added as follows:
+ <pre>
+     builder.appendClientFilter(filter1).appendClientFilter(filter2).appendClientFilter(filter3)
+ </pre>
+ making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
+ <pre>
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
+ </pre></div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="MultiAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)">appendClientFilter</a></code>&nbsp;in interface&nbsp;<code><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">R</a>&gt;</code></dd>
+<dt>Parameters:</dt>
+<dd><code>factory</code> - <a href="StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClientFilterFactory</code></a> to decorate a <a href="HttpClient.html" title="interface in io.servicetalk.http.api"><code>HttpClient</code></a> for the purpose of
+ filtering.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="MultiAddressHttpClientBuilder.html#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>for adding filters to the underlying clients.</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="appendClientFilter(java.util.function.Predicate,io.servicetalk.http.api.StreamingHttpClientFilterFactory)">
+<h3>appendClientFilter</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">R</a>&gt;</span>&nbsp;<span class="element-name">appendClientFilter</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;<a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&gt;&nbsp;predicate,
+ <a href="StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpClientFilterFactory</a>&nbsp;factory)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="MultiAddressHttpClientBuilder.html#appendClientFilter(java.util.function.Predicate,io.servicetalk.http.api.StreamingHttpClientFilterFactory)">MultiAddressHttpClientBuilder</a></code></span></div>
+<div class="block">Appends the filter to the chain of filters used to decorate the <a href="HttpClient.html" title="interface in io.servicetalk.http.api"><code>HttpClient</code></a> created by this
+ builder, for every request that passes the provided <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link"><code>Predicate</code></a>.
+ <p>
+ Note this method will be used to decorate the result of <a href="#build()"><code>build()</code></a> before it is
+ returned to the user.
+ <p>
+ The order of execution of these filters are in order of append but will always be before any filters
+ applied to the underlying single address clients. If 3 filters are added as follows:
+ <pre>
+     builder.appendClientFilter(filter1).appendClientFilter(filter2).appendClientFilter(filter3)
+ </pre>
+ making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
+ <pre>
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
+ </pre></div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="MultiAddressHttpClientBuilder.html#appendClientFilter(java.util.function.Predicate,io.servicetalk.http.api.StreamingHttpClientFilterFactory)">appendClientFilter</a></code>&nbsp;in interface&nbsp;<code><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">R</a>&gt;</code></dd>
+<dt>Parameters:</dt>
+<dd><code>predicate</code> - the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link"><code>Predicate</code></a> to test if the filter must be applied.</dd>
+<dd><code>factory</code> - <a href="StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClientFilterFactory</code></a> to decorate a <a href="HttpClient.html" title="interface in io.servicetalk.http.api"><code>HttpClient</code></a> for the purpose of
+ filtering.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="MultiAddressHttpClientBuilder.html#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>for adding filters to the underlying clients.</code></a></li>
+</ul>
+</dd>
+</dl>
 </section>
 </li>
 </ul>

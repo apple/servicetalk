@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="script.js"></script>
-<script type="text/javascript" src="script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="index-page">
@@ -1343,15 +1343,29 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Appends all the passed <a href="io/servicetalk/concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>AsyncCloseable</code></a>s with this <a href="io/servicetalk/concurrent/api/CompositeCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>CompositeCloseable</code></a> such that when this <a href="io/servicetalk/concurrent/api/CompositeCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>CompositeCloseable</code></a> is closed, all of these <a href="io/servicetalk/concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>AsyncCloseable</code></a>s are closed too.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/DelegatingMultiAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)" class="member-name-link">appendClientFilter(StreamingHttpClientFilterFactory)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingMultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">DelegatingMultiAddressHttpClientBuilder</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)" class="member-name-link">appendClientFilter(StreamingHttpClientFilterFactory)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">DelegatingSingleAddressHttpClientBuilder</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)" class="member-name-link">appendClientFilter(StreamingHttpClientFilterFactory)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a></dt>
+<dd>
+<div class="block">Appends the filter to the chain of filters used to decorate the <a href="io/servicetalk/http/api/HttpClient.html" title="interface in io.servicetalk.http.api"><code>HttpClient</code></a> created by this
+ builder.</div>
+</dd>
 <dt><a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)" class="member-name-link">appendClientFilter(StreamingHttpClientFilterFactory)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a></dt>
 <dd>
 <div class="block">Appends the filter to the chain of filters used to decorate the <a href="io/servicetalk/http/api/HttpClient.html" title="interface in io.servicetalk.http.api"><code>HttpClient</code></a> created by this
  builder.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/DelegatingMultiAddressHttpClientBuilder.html#appendClientFilter(java.util.function.Predicate,io.servicetalk.http.api.StreamingHttpClientFilterFactory)" class="member-name-link">appendClientFilter(Predicate&lt;StreamingHttpRequest&gt;, StreamingHttpClientFilterFactory)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingMultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">DelegatingMultiAddressHttpClientBuilder</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html#appendClientFilter(java.util.function.Predicate,io.servicetalk.http.api.StreamingHttpClientFilterFactory)" class="member-name-link">appendClientFilter(Predicate&lt;StreamingHttpRequest&gt;, StreamingHttpClientFilterFactory)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">DelegatingSingleAddressHttpClientBuilder</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html#appendClientFilter(java.util.function.Predicate,io.servicetalk.http.api.StreamingHttpClientFilterFactory)" class="member-name-link">appendClientFilter(Predicate&lt;StreamingHttpRequest&gt;, StreamingHttpClientFilterFactory)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a></dt>
+<dd>
+<div class="block">Appends the filter to the chain of filters used to decorate the <a href="io/servicetalk/http/api/HttpClient.html" title="interface in io.servicetalk.http.api"><code>HttpClient</code></a> created by this
+ builder, for every request that passes the provided <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link"><code>Predicate</code></a>.</div>
+</dd>
 <dt><a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#appendClientFilter(java.util.function.Predicate,io.servicetalk.http.api.StreamingHttpClientFilterFactory)" class="member-name-link">appendClientFilter(Predicate&lt;StreamingHttpRequest&gt;, StreamingHttpClientFilterFactory)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a></dt>
 <dd>
 <div class="block">Appends the filter to the chain of filters used to decorate the <a href="io/servicetalk/http/api/HttpClient.html" title="interface in io.servicetalk.http.api"><code>HttpClient</code></a> created by this
@@ -10204,14 +10218,18 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/http/netty/H2HeadersFactory.html" class="type-name-link" title="class in io.servicetalk.http.netty">H2HeadersFactory</a> - Class in <a href="io/servicetalk/http/netty/package-summary.html">io.servicetalk.http.netty</a></dt>
 <dd>
-<div class="block">A <a href="io/servicetalk/http/api/HttpHeadersFactory.html" title="interface in io.servicetalk.http.api"><code>HttpHeadersFactory</code></a> optimized for HTTP/2.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/DefaultHttpHeadersFactory.html" title="class in io.servicetalk.http.api"><code>DefaultHttpHeadersFactory</code></a> instead</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/http/netty/H2HeadersFactory.html#%3Cinit%3E(boolean,boolean,boolean)" class="member-name-link">H2HeadersFactory(boolean, boolean, boolean)</a> - Constructor for class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H2HeadersFactory.html" title="class in io.servicetalk.http.netty">H2HeadersFactory</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create an instance of the factory with the default array size hint.</div>
 </dd>
 <dt><a href="io/servicetalk/http/netty/H2HeadersFactory.html#%3Cinit%3E(boolean,boolean,boolean,int,int)" class="member-name-link">H2HeadersFactory(boolean, boolean, boolean, int, int)</a> - Constructor for class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H2HeadersFactory.html" title="class in io.servicetalk.http.netty">H2HeadersFactory</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create an instance of the factory.</div>
 </dd>
 <dt><a href="io/servicetalk/http/netty/H2KeepAlivePolicies.html" class="type-name-link" title="class in io.servicetalk.http.netty">H2KeepAlivePolicies</a> - Class in <a href="io/servicetalk/http/netty/package-summary.html">io.servicetalk.http.netty</a></dt>
@@ -11449,6 +11467,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Set whether the host selector should ignore <code>Host</code>s weight.</div>
 </dd>
+<dt><a href="io/servicetalk/concurrent/NonBlockingThread.IllegalBlockingOperationException.html#%3Cinit%3E(java.lang.String)" class="member-name-link">IllegalBlockingOperationException(String)</a> - Constructor for exception io.servicetalk.concurrent.<a href="io/servicetalk/concurrent/NonBlockingThread.IllegalBlockingOperationException.html" title="class in io.servicetalk.concurrent">NonBlockingThread.IllegalBlockingOperationException</a></dt>
+<dd>
+<div class="block">Creates a new instance.</div>
+</dd>
 <dt><a href="io/servicetalk/utils/internal/IllegalCharacterException.html" class="type-name-link" title="class in io.servicetalk.utils.internal">IllegalCharacterException</a> - Exception in <a href="io/servicetalk/utils/internal/package-summary.html">io.servicetalk.utils.internal</a></dt>
 <dd>
 <div class="block">Exception that clarifies an illegal character and expected values.</div>
@@ -11827,7 +11849,9 @@ loadScripts(document, 'script');</script>
 <div class="block">Instance of <a href="io/servicetalk/http/api/HttpExceptionMapperServiceFilter.html" title="class in io.servicetalk.http.api"><code>HttpExceptionMapperServiceFilter</code></a>.</div>
 </dd>
 <dt><a href="io/servicetalk/http/netty/H2HeadersFactory.html#INSTANCE" class="member-name-link">INSTANCE</a> - Static variable in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H2HeadersFactory.html" title="class in io.servicetalk.http.netty">H2HeadersFactory</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="io/servicetalk/http/utils/EnforceSequentialModeRequesterFilter.html#INSTANCE" class="member-name-link">INSTANCE</a> - Static variable in class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/EnforceSequentialModeRequesterFilter.html" title="class in io.servicetalk.http.utils">EnforceSequentialModeRequesterFilter</a></dt>
 <dd>
 <div class="block">Singleton instance of <a href="io/servicetalk/http/utils/EnforceSequentialModeRequesterFilter.html" title="class in io.servicetalk.http.utils"><code>EnforceSequentialModeRequesterFilter</code></a>.</div>
@@ -12840,31 +12864,31 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Completable.html#liftAsync(io.servicetalk.concurrent.api.CompletableOperator)" class="member-name-link">liftAsync(CompletableOperator)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></dt>
 <dd>
-<div class="block"><strong>This method requires advanced knowledge of building operators.</strong></div>
+<div class="block"><strong>This method requires advanced knowledge of building operators.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Publisher.html#liftAsync(io.servicetalk.concurrent.api.PublisherOperator)" class="member-name-link">liftAsync(PublisherOperator&lt;? super T, ? extends R&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
 <dd>
-<div class="block"><strong>This method requires advanced knowledge of building operators.</strong></div>
+<div class="block"><strong>This method requires advanced knowledge of building operators.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Single.html#liftAsync(io.servicetalk.concurrent.api.SingleOperator)" class="member-name-link">liftAsync(SingleOperator&lt;? super T, ? extends R&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a></dt>
 <dd>
-<div class="block"><strong>This method requires advanced knowledge of building operators.</strong></div>
+<div class="block"><strong>This method requires advanced knowledge of building operators.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Completable.html#liftSync(io.servicetalk.concurrent.api.CompletableOperator)" class="member-name-link">liftSync(CompletableOperator)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></dt>
 <dd>
-<div class="block"><strong>This method requires advanced knowledge of building operators.</strong></div>
+<div class="block"><strong>This method requires advanced knowledge of building operators.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Publisher.html#liftSync(io.servicetalk.concurrent.api.PublisherOperator)" class="member-name-link">liftSync(PublisherOperator&lt;? super T, ? extends R&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
 <dd>
-<div class="block"><strong>This method requires advanced knowledge of building operators.</strong></div>
+<div class="block"><strong>This method requires advanced knowledge of building operators.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Single.html#liftSync(io.servicetalk.concurrent.api.SingleOperator)" class="member-name-link">liftSync(SingleOperator&lt;? super T, ? extends R&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a></dt>
 <dd>
-<div class="block"><strong>This method requires advanced knowledge of building operators.</strong></div>
+<div class="block"><strong>This method requires advanced knowledge of building operators.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Publisher.html#liftSyncToSingle(io.servicetalk.concurrent.api.PublisherToSingleOperator)" class="member-name-link">liftSyncToSingle(PublisherToSingleOperator&lt;? super T, ? extends R&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
 <dd>
-<div class="block"><strong>This method requires advanced knowledge of building operators.</strong></div>
+<div class="block"><strong>This method requires advanced knowledge of building operators.</div>
 </dd>
 <dt><a href="io/servicetalk/client/api/LimitingConnectionFactoryFilter.html" class="type-name-link" title="class in io.servicetalk.client.api">LimitingConnectionFactoryFilter</a>&lt;<a href="io/servicetalk/client/api/LimitingConnectionFactoryFilter.html" title="type parameter in LimitingConnectionFactoryFilter">ResolvedAddress</a>,<wbr><a href="io/servicetalk/client/api/LimitingConnectionFactoryFilter.html" title="type parameter in LimitingConnectionFactoryFilter">C</a> extends <a href="io/servicetalk/concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>&gt; - Class in <a href="io/servicetalk/client/api/package-summary.html">io.servicetalk.client.api</a></dt>
 <dd>
@@ -13531,13 +13555,15 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/http/netty/H1ProtocolConfig.html#maxHeaderFieldLength()" class="member-name-link">maxHeaderFieldLength()</a> - Method in interface io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H1ProtocolConfig.html" title="interface in io.servicetalk.http.netty">H1ProtocolConfig</a></dt>
 <dd>
-<div class="block">Maximum length of the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> and
- <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a> to parse.</div>
+<div class="block">Maximum length (size in bytes) of an individual HTTP
+ <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header field</a> or
+ <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer field</a> to parse.</div>
 </dd>
 <dt><a href="io/servicetalk/http/netty/H1ProtocolConfigBuilder.html#maxHeaderFieldLength(int)" class="member-name-link">maxHeaderFieldLength(int)</a> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H1ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H1ProtocolConfigBuilder</a></dt>
 <dd>
-<div class="block">Sets the maximum length of the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a>
- and <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a> to parse.</div>
+<div class="block">Sets the maximum length (size in bytes) of an individual HTTP
+ <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header field</a> or
+ <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer field</a> to parse.</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/Http2Settings.html#maxHeaderListSize()" class="member-name-link">maxHeaderListSize()</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/Http2Settings.html" title="interface in io.servicetalk.http.api">Http2Settings</a></dt>
 <dd>
@@ -13584,13 +13610,27 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/http/netty/H1ProtocolConfig.html#maxStartLineLength()" class="member-name-link">maxStartLineLength()</a> - Method in interface io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H1ProtocolConfig.html" title="interface in io.servicetalk.http.netty">H1ProtocolConfig</a></dt>
 <dd>
-<div class="block">Maximum length of the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> for an HTTP
- message.</div>
+<div class="block">Maximum length (size in bytes) of the HTTP
+ <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> for an HTTP message.</div>
 </dd>
 <dt><a href="io/servicetalk/http/netty/H1ProtocolConfigBuilder.html#maxStartLineLength(int)" class="member-name-link">maxStartLineLength(int)</a> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H1ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H1ProtocolConfigBuilder</a></dt>
 <dd>
-<div class="block">Sets the maximum length of the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> for
- an HTTP message.</div>
+<div class="block">Sets the maximum length (size in bytes) of the HTTP
+ <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> for an HTTP message.</div>
+</dd>
+<dt><a href="io/servicetalk/http/netty/H1ProtocolConfig.html#maxTotalHeaderFieldsLength()" class="member-name-link">maxTotalHeaderFieldsLength()</a> - Method in interface io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H1ProtocolConfig.html" title="interface in io.servicetalk.http.netty">H1ProtocolConfig</a></dt>
+<dd>
+<div class="block">Get the maximum total allowed length (size in bytes) of the HTTP
+ <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> and all
+ <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a>, or all
+ <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a>.</div>
+</dd>
+<dt><a href="io/servicetalk/http/netty/H1ProtocolConfigBuilder.html#maxTotalHeaderFieldsLength(int)" class="member-name-link">maxTotalHeaderFieldsLength(int)</a> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H1ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H1ProtocolConfigBuilder</a></dt>
+<dd>
+<div class="block">Sets the maximum total allowed length (size in bytes) of the HTTP
+ <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> and all
+ <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a>, or all
+ <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a>.</div>
 </dd>
 <dt><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.Builder.html#maxTotalRetries(int)" class="member-name-link">maxTotalRetries(int)</a> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.Builder</a></dt>
 <dd>
@@ -14594,7 +14634,9 @@ loadScripts(document, 'script');</script>
  <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>, possibly optimized for being empty.</div>
 </dd>
 <dt><a href="io/servicetalk/http/netty/H2HeadersFactory.html#newEmptyTrailers()" class="member-name-link">newEmptyTrailers()</a> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H2HeadersFactory.html" title="class in io.servicetalk.http.netty">H2HeadersFactory</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="io/servicetalk/concurrent/internal/SubscriberUtils.html#newExceptionForInvalidRequestN(long)" class="member-name-link">newExceptionForInvalidRequestN(long)</a> - Static method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/SubscriberUtils.html" title="class in io.servicetalk.concurrent.internal">SubscriberUtils</a></dt>
 <dd>
 <div class="block">Create a new exception for an invalid amount of <a href="io/servicetalk/concurrent/PublisherSource.Subscription.html#request(long)"><code>PublisherSource.Subscription.request(long)</code></a> according to
@@ -14633,7 +14675,9 @@ loadScripts(document, 'script');</script>
 <div class="block">Create an <a href="io/servicetalk/http/api/HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a> instance.</div>
 </dd>
 <dt><a href="io/servicetalk/http/netty/H2HeadersFactory.html#newHeaders()" class="member-name-link">newHeaders()</a> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H2HeadersFactory.html" title="class in io.servicetalk.http.netty">H2HeadersFactory</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="io/servicetalk/health/v1/HealthCheckRequest.html#newInstance(com.google.protobuf.GeneratedMessageV3.UnusedPrivateParameter)" class="member-name-link">newInstance(GeneratedMessageV3.UnusedPrivateParameter)</a> - Method in class io.servicetalk.health.v1.<a href="io/servicetalk/health/v1/HealthCheckRequest.html" title="class in io.servicetalk.health.v1">HealthCheckRequest</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/health/v1/HealthCheckResponse.html#newInstance(com.google.protobuf.GeneratedMessageV3.UnusedPrivateParameter)" class="member-name-link">newInstance(GeneratedMessageV3.UnusedPrivateParameter)</a> - Method in class io.servicetalk.health.v1.<a href="io/servicetalk/health/v1/HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a></dt>
@@ -14906,7 +14950,9 @@ loadScripts(document, 'script');</script>
  <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.</div>
 </dd>
 <dt><a href="io/servicetalk/http/netty/H2HeadersFactory.html#newTrailers()" class="member-name-link">newTrailers()</a> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H2HeadersFactory.html" title="class in io.servicetalk.http.netty">H2HeadersFactory</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/StreamingHttpRequests.html#newTransportRequest(io.servicetalk.http.api.HttpRequestMetaData,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Publisher,boolean,io.servicetalk.http.api.HttpHeadersFactory)" class="member-name-link">newTransportRequest(HttpRequestMetaData, BufferAllocator, Publisher&lt;Object&gt;, boolean, HttpHeadersFactory)</a> - Static method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpRequests.html" title="class in io.servicetalk.http.api">StreamingHttpRequests</a></dt>
 <dd>
 <div class="block">Creates a new <a href="io/servicetalk/http/api/StreamingHttpRequest.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpRequest</code></a> which is read from the transport.</div>
@@ -15064,6 +15110,15 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/http/api/StreamingHttpResponseFactory.html#nonAuthoritativeInformation()" class="member-name-link">nonAuthoritativeInformation()</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpResponseFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpResponseFactory</a></dt>
 <dd>
 <div class="block">Create a new <a href="io/servicetalk/http/api/HttpResponseStatus.html#NON_AUTHORITATIVE_INFORMATION"><code>HttpResponseStatus.NON_AUTHORITATIVE_INFORMATION</code></a> response.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/NonBlockingThread.html" class="type-name-link" title="interface in io.servicetalk.concurrent">NonBlockingThread</a> - Interface in <a href="io/servicetalk/concurrent/package-summary.html">io.servicetalk.concurrent</a></dt>
+<dd>
+<div class="block">Marker interface for <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Thread.html" title="class or interface in java.lang" class="external-link"><code>Thread</code></a>s that must never be blocked (blocking operations not permitted),
+ like I/O threads.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/NonBlockingThread.IllegalBlockingOperationException.html" class="type-name-link" title="class in io.servicetalk.concurrent">NonBlockingThread.IllegalBlockingOperationException</a> - Exception in <a href="io/servicetalk/concurrent/package-summary.html">io.servicetalk.concurrent</a></dt>
+<dd>
+<div class="block">This exception is thrown when a blocking operation is performed on a <a href="io/servicetalk/concurrent/NonBlockingThread.html" title="interface in io.servicetalk.concurrent"><code>NonBlockingThread</code></a>.</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpSetCookie.SameSite.html#None" class="member-name-link">None</a> - Enum constant in enum class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpSetCookie.SameSite.html" title="enum class in io.servicetalk.http.api">HttpSetCookie.SameSite</a></dt>
 <dd>&nbsp;</dd>
@@ -18252,6 +18307,10 @@ loadScripts(document, 'script');</script>
  established.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/internal/RejectedSubscribeException.html#%3Cinit%3E(java.lang.String)" class="member-name-link">RejectedSubscribeException(String)</a> - Constructor for exception io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/RejectedSubscribeException.html" title="class in io.servicetalk.concurrent.internal">RejectedSubscribeException</a></dt>
+<dd>
+<div class="block">Create a new instance.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/internal/RejectedSubscribeException.html#%3Cinit%3E(java.lang.String,java.lang.Throwable)" class="member-name-link">RejectedSubscribeException(String, Throwable)</a> - Constructor for exception io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/RejectedSubscribeException.html" title="class in io.servicetalk.concurrent.internal">RejectedSubscribeException</a></dt>
 <dd>
 <div class="block">Create a new instance.</div>
 </dd>
@@ -23181,7 +23240,9 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/http/netty/H1SpecExceptions.html#toString()" class="member-name-link">toString()</a> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H1SpecExceptions.html" title="class in io.servicetalk.http.netty">H1SpecExceptions</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/netty/H2HeadersFactory.html#toString()" class="member-name-link">toString()</a> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H2HeadersFactory.html" title="class in io.servicetalk.http.netty">H2HeadersFactory</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="io/servicetalk/http/netty/ProxyResponseException.html#toString()" class="member-name-link">toString()</a> - Method in exception io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/ProxyResponseException.html" title="class in io.servicetalk.http.netty">ProxyResponseException</a></dt>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
@@ -23409,13 +23470,13 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/http/netty/H1ProtocolConfig.html#trailersEncodedSizeEstimate()" class="member-name-link">trailersEncodedSizeEstimate()</a> - Method in interface io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H1ProtocolConfig.html" title="interface in io.servicetalk.http.netty">H1ProtocolConfig</a></dt>
 <dd>
 <div class="block">Value used to calculate an exponential moving average of the encoded size of the HTTP
- <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a> for a guess for future
+ <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a> for a guess for future
  buffer allocations.</div>
 </dd>
 <dt><a href="io/servicetalk/http/netty/H1ProtocolConfigBuilder.html#trailersEncodedSizeEstimate(int)" class="member-name-link">trailersEncodedSizeEstimate(int)</a> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H1ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H1ProtocolConfigBuilder</a></dt>
 <dd>
 <div class="block">Sets the value used to calculate an exponential moving average of the encoded size of the HTTP
- <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a> for a guess for future
+ <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer fields</a> for a guess for future
  buffer allocations.</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/RedirectConfigBuilder.html#trailersToRedirect(java.lang.CharSequence...)" class="member-name-link">trailersToRedirect(CharSequence...)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/RedirectConfigBuilder.html" title="class in io.servicetalk.http.api">RedirectConfigBuilder</a></dt>
@@ -24100,7 +24161,9 @@ loadScripts(document, 'script');</script>
 <div class="block">Determine if cookies should be validated during parsing into <a href="io/servicetalk/http/api/HttpSetCookie.html" title="interface in io.servicetalk.http.api"><code>HttpSetCookie</code></a>s.</div>
 </dd>
 <dt><a href="io/servicetalk/http/netty/H2HeadersFactory.html#validateCookies()" class="member-name-link">validateCookies()</a> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H2HeadersFactory.html" title="class in io.servicetalk.http.netty">H2HeadersFactory</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="io/servicetalk/opentracing/internal/HexUtils.html#validateHexBytes(T)" class="member-name-link">validateHexBytes(T)</a> - Static method in class io.servicetalk.opentracing.internal.<a href="io/servicetalk/opentracing/internal/HexUtils.html" title="class in io.servicetalk.opentracing.internal">HexUtils</a></dt>
 <dd>
 <div class="block">Checks that the provided <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link"><code>CharSequence</code></a> is a valid hex <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link"><code>CharSequence</code></a>,
@@ -24113,7 +24176,9 @@ loadScripts(document, 'script');</script>
 <div class="block">Determine if header names should be validated during parsing into <a href="io/servicetalk/http/api/HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a>s.</div>
 </dd>
 <dt><a href="io/servicetalk/http/netty/H2HeadersFactory.html#validateNames()" class="member-name-link">validateNames()</a> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H2HeadersFactory.html" title="class in io.servicetalk.http.netty">H2HeadersFactory</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="io/servicetalk/concurrent/api/Publisher.html#validateOutstandingDemand()" class="member-name-link">validateOutstandingDemand()</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
 <dd>
 <div class="block">Validate the outstanding demand (<a href="io/servicetalk/concurrent/PublisherSource.Subscription.html#request(long)"><code>PublisherSource.Subscription.request(long)</code></a> minus
@@ -24135,7 +24200,9 @@ loadScripts(document, 'script');</script>
 <div class="block">Determine if header values should be validated during parsing into <a href="io/servicetalk/http/api/HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a>s.</div>
 </dd>
 <dt><a href="io/servicetalk/http/netty/H2HeadersFactory.html#validateValues()" class="member-name-link">validateValues()</a> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H2HeadersFactory.html" title="class in io.servicetalk.http.netty">H2HeadersFactory</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="io/servicetalk/grpc/api/GrpcStatusCode.html#value()" class="member-name-link">value()</a> - Method in enum class io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcStatusCode.html" title="enum class in io.servicetalk.grpc.api">GrpcStatusCode</a></dt>
 <dd>
 <div class="block">Returns the integer code value.</div>
@@ -24400,8 +24467,15 @@ the order they are declared.</div>
 <dl class="index">
 <dt><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.Builder.html#waitForLoadBalancer(boolean)" class="member-name-link">waitForLoadBalancer(boolean)</a> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.Builder</a></dt>
 <dd>
-<div class="block">By default, automatic retries wait for the associated <a href="io/servicetalk/client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> to be
- <a href="io/servicetalk/client/api/LoadBalancerReadyEvent.html" title="interface in io.servicetalk.client.api"><code>ready</code></a> before triggering a retry for requests.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.Builder.html#waitForLoadBalancer(java.time.Duration)"><code>RetryingHttpRequesterFilter.Builder.waitForLoadBalancer(Duration)</code></a> instead.</div>
+</div>
+</dd>
+<dt><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.Builder.html#waitForLoadBalancer(java.time.Duration)" class="member-name-link">waitForLoadBalancer(Duration)</a> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.Builder</a></dt>
+<dd>
+<div class="block">By default, automatic retries will wait for the <a href="io/servicetalk/client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> to be
+ <a href="io/servicetalk/client/api/LoadBalancerReadyEvent.html" title="interface in io.servicetalk.client.api"><code>ready</code></a> or for the <a href="io/servicetalk/client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> to report an error, whichever
+ happens first.</div>
 </dd>
 <dt><a href="io/servicetalk/logging/api/LogLevel.html#WARN" class="member-name-link">WARN</a> - Enum constant in enum class io.servicetalk.logging.api.<a href="io/servicetalk/logging/api/LogLevel.html" title="enum class in io.servicetalk.logging.api">LogLevel</a></dt>
 <dd>
