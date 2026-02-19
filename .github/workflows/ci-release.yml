@@ -47,26 +47,34 @@ jobs:
           SONATYPE_TOKEN: ${{ secrets.SONATYPE_TOKEN }}
         run: |
           # Build arguments to feed to the single gradlew publish command
-          if [ "${{ matrix.java }}" = "8" ]; then
-            FIRST_GRADLE_TARGETS=" check"
-            SECOND_GRADLE_TARGETS=" --no-parallel publish"
-          else
-            FIRST_GRADLE_TARGETS=""
-            SECOND_GRADLE_TARGETS=""
+          FIRST_GRADLE_TARGETS=""
+          SECOND_GRADLE_TARGETS=""
 
-            # Execute the printJavaTargetCompatibility task to get the java target compatibility for each subproject
-            # and extract the projects that require jdk9+.
-            while read -r line
-            do
-              javaTarget=$(echo "$line" | sed -e 's/^version: \(.*\) name:.*/\1/g')
-              if [ "$javaTarget" = "1.9" ] || [ "$javaTarget" = "1.10" ] || [ "$javaTarget" -gt "8" ] 2> /dev/null
-              then
-                currDir=$(echo "$line" | sed -e 's/^version:.* name: \(.*\)$/\1/g')
-                FIRST_GRADLE_TARGETS="$FIRST_GRADLE_TARGETS :$currDir:check"
-                SECOND_GRADLE_TARGETS="$SECOND_GRADLE_TARGETS :$currDir:publish"
-              fi
-            done < <(./gradlew printJavaTargetCompatibility)
-          fi
+          # Execute the printJavaTargetCompatibility task to get the java target compatibility for each subproject
+          # and partition projects based on the matrix JDK version.
+          while read -r line
+          do
+            javaTarget=$(echo "$line" | sed -e 's/^version: \(.*\) name:.*/\1/g')
+            currDir=$(echo "$line" | sed -e 's/^version:.* name: \(.*\)$/\1/g')
+
+            # Check if this module requires JDK 9+
+            if [ "$javaTarget" = "1.9" ] || [ "$javaTarget" = "1.10" ] || [ "$javaTarget" -gt "8" ] 2> /dev/null
+            then
+              requiresJdk9Plus=true
+            else
+              requiresJdk9Plus=false
+            fi
+
+            # Add module to targets if:
+            # - JDK 8 job and module does NOT require JDK 9+, OR
+            # - JDK 11 job and module DOES require JDK 9+
+            if { [ "${{ matrix.java }}" = "8" ] && [ "$requiresJdk9Plus" = "false" ]; } || \
+               { [ "${{ matrix.java }}" != "8" ] && [ "$requiresJdk9Plus" = "true" ]; }
+            then
+              FIRST_GRADLE_TARGETS="$FIRST_GRADLE_TARGETS :$currDir:check"
+              SECOND_GRADLE_TARGETS="$SECOND_GRADLE_TARGETS :$currDir:publish"
+            fi
+          done < <(./gradlew printJavaTargetCompatibility)
 
           # Execute the gradlew command to publish the build
           sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel -PreleaseBuild=true$FIRST_GRADLE_TARGETS && ./gradlew --no-daemon --no-parallel -PreleaseBuild=true$SECOND_GRADLE_TARGETS"
