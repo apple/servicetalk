@@ -22,29 +22,21 @@ jobs:
       contents: read
       actions: read
       checks: write
-    name: Snapshot JDK ${{ matrix.java }}
+    name: Snapshot
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        java: [ 8, 11 ]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
       - name: Check SNAPSHOT version suffix
         run: if [[ $(cat gradle.properties | grep version= | sed 's/^version=//') =~ .*-SNAPSHOT ]]; then exit 0; else exit 1; fi
-      - name: Set up JDK ${{ matrix.java }}
+      - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:
-          java-version: |
-            17
-            ${{ matrix.java }}
+          java-version: 17
           distribution: 'zulu'
           cache: 'gradle'
       - name: Print JDK Version
         run: java -version
-      - name: Set Gradle Environment
-        run: echo "GRADLE_OPTS=-Dorg.gradle.java.home=$JAVA_HOME_17_${{ runner.arch }}" >> "$GITHUB_ENV"
       - name: Make gradlew Executable
         run: chmod +x gradlew
       - name: Clean Gradle project
@@ -56,55 +48,33 @@ jobs:
           SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
           SONATYPE_TOKEN: ${{ secrets.SONATYPE_TOKEN }}
         run: |
-          # Build arguments to feed to the single gradlew publish command
-          if [ "${{ matrix.java }}" = "8" ]; then
-            FIRST_GRADLE_TARGETS=" check"
-            SECOND_GRADLE_TARGETS=" publish"
-          else
-            FIRST_GRADLE_TARGETS=""
-            SECOND_GRADLE_TARGETS=""
-
-            # Execute the printJavaTargetCompatibility task to get the java target compatibility for each subproject
-            # and extract the projects that require jdk9+.
-            while read -r line
-            do
-              javaTarget=$(echo "$line" | sed -e 's/^version: \(.*\) name:.*/\1/g')
-              if [ "$javaTarget" = "1.9" ] || [ "$javaTarget" = "1.10" ] || [ "$javaTarget" -gt "8" ] 2> /dev/null
-              then
-                currDir=$(echo "$line" | sed -e 's/^version:.* name: \(.*\)$/\1/g')
-                FIRST_GRADLE_TARGETS="$FIRST_GRADLE_TARGETS :$currDir:check"
-                SECOND_GRADLE_TARGETS="$SECOND_GRADLE_TARGETS :$currDir:publish"
-              fi
-            done < <(./gradlew printJavaTargetCompatibility)
-          fi
-
-          # Execute the gradlew command to publish the build
-          sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel$FIRST_GRADLE_TARGETS && ./gradlew --no-daemon --no-parallel$SECOND_GRADLE_TARGETS"
+          # Build all modules with JDK 17, using --release for correct bytecode compatibility
+          sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel check && ./gradlew --no-daemon --no-parallel publish"
       - name: Publish Test Results
         if: always()
         uses: scacap/action-surefire-report@5609ce4db72c09db044803b344a8968fd1f315da
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/test/TEST-*.xml'
-          check_name: Test Report JDK ${{ matrix.java }}
+          check_name: Test Report Snapshot
       - name: Publish Checkstyle Report
         if: always()
         uses: jwgmeligmeyling/checkstyle-github-action@50292990e18466f2c5d95d04ff5fab931254fa5f
         with:
-          name: Checkstyle Report JDK ${{ matrix.java }}
+          name: Checkstyle Report Snapshot
           path: '**/build/reports/checkstyle/*.xml'
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish PMD Report
         if: always()
         uses: jwgmeligmeyling/pmd-github-action@322e346bd76a0757c4d54ff9209e245965aa066d
         with:
-          name: PMD Report JDK ${{ matrix.java }}
+          name: PMD Report Snapshot
           path: '**/build/reports/pmd/*.xml'
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish SpotBugs Report
         if: always()
         uses: jwgmeligmeyling/spotbugs-github-action@b8e2c3523acb34c87f14e18cbcd2d87db8c8584e
         with:
-          name: SpotBugs Report JDK ${{ matrix.java }}
+          name: SpotBugs Report Snapshot
           path: '**/build/reports/spotbugs/*.xml'
           token: ${{ secrets.GITHUB_TOKEN }}
