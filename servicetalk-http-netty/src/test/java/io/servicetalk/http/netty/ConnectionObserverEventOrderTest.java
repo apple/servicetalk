@@ -52,7 +52,6 @@ class ConnectionObserverEventOrderTest {
             "connectionClosed", "onResponseError", "onExchangeFinally"));
 
     private final BlockingQueue<String> eventQueue = new LinkedBlockingQueue<>();
-    private final BlockingQueue<Throwable> stackTraces = new LinkedBlockingQueue<>();
 
     @Test
     void repro() throws Exception {
@@ -74,19 +73,8 @@ class ConnectionObserverEventOrderTest {
             }
         });
         for (String expected : expectedEvents) {
-            assertEquals(expected, eventQueue.take(), "stack trace: " + getStackTrace(stackTraces.poll()));
+            assertEquals(expected, eventQueue.take());
         }
-    }
-
-    private static String getStackTrace(@Nullable Throwable throwable) {
-        if (throwable == null) {
-            return "<null>";
-        }
-        StringBuilder sb = new StringBuilder();
-        for (Object o : throwable.getStackTrace()) {
-            sb.append('\n').append(o);
-        }
-        return sb.append("\n====================\n").toString();
     }
 
     private final class HttpLifecycleObserverImpl implements HttpLifecycleObserver {
@@ -178,9 +166,7 @@ class ConnectionObserverEventOrderTest {
     }
 
     private void addEvent() {
-        Throwable ex = new Exception();
-        stackTraces.add(ex);
-        for (StackTraceElement element : ex.getStackTrace()) {
+        for (StackTraceElement element : new Exception().getStackTrace()) {
             if (expectedEvents.contains(element.getMethodName())) {
                 eventQueue.add(element.getMethodName());
                 return;
