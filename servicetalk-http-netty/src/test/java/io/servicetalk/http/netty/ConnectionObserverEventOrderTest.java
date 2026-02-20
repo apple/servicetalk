@@ -29,6 +29,7 @@ import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -47,6 +48,7 @@ class ConnectionObserverEventOrderTest {
                     .setClassLevel(true);
 
     private final BlockingQueue<String> eventQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<Throwable> stackTraces = new LinkedBlockingQueue<>();
 
     @Test
     void repro() throws Exception {
@@ -71,8 +73,19 @@ class ConnectionObserverEventOrderTest {
         List<String> expectedEvents = Arrays.asList("onNewExchange", "onRequest", "onNewConnection",
                 "connectionClosed", "onResponseError", "onExchangeFinally");
         for (String expected : expectedEvents) {
-            assertEquals(expected, eventQueue.take());
+            assertEquals(expected, eventQueue.take(), "stack trace: " + getStackTrace(stackTraces.poll()));
         }
+    }
+
+    private static String getStackTrace(@Nullable Throwable throwable) {
+        if (throwable == null) {
+            return "<null>";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (Object o : throwable.getStackTrace()) {
+            sb.append('\n').append(o);
+        }
+        return sb.append("\n====================\n").toString();
     }
 
     private final class HttpLifecycleObserverImpl implements HttpLifecycleObserver {
@@ -164,6 +177,15 @@ class ConnectionObserverEventOrderTest {
     }
 
     private void addEvent() {
-        eventQueue.add(new Exception().getStackTrace()[2].getMethodName());
+        Throwable ex = new Exception();
+        stackTraces.add(ex);
+        StackTraceElement[] stackTrace = ex.getStackTrace();
+        for (int i = 0; i < stackTrace.length - 1; i++) {
+            if (stackTrace[i].getMethodName().equals("addEvent")) {
+                eventQueue.add(ex.getStackTrace()[i + 1].getMethodName());
+                return;
+            }
+        }
+        throw new IllegalStateException("Failed to find the expected stack trace structure");
     }
 }
