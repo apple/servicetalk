@@ -106,6 +106,15 @@ task validateLocalDocSite(type: Exec) {
 quality.dependsOn validateLocalDocSite
 
 subprojects {
+  // Force ByteBuddy 1.18.5 for JDK 25 compatibility
+  // Mockito 4.11.0 uses ByteBuddy ~1.12.x which doesn't support JDK 25. More recent versions of Mockito pull in a compatible version.
+  configurations.all {
+    resolutionStrategy {
+      force 'net.bytebuddy:byte-buddy:1.18.5'
+      force 'net.bytebuddy:byte-buddy-agent:1.18.5'
+    }
+  }
+
   if (JavaVersion.current() >= JavaVersion.VERSION_11) {
     apply plugin: "com.autonomousapps.dependency-analysis"
   }
