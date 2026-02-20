@@ -30,7 +30,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Arrays;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.annotation.Nullable;
@@ -45,6 +46,10 @@ class ConnectionObserverEventOrderTest {
     static final ExecutionContextExtension EXECUTION_CONTEXT =
             ExecutionContextExtension.cached("server-io", "server-executor")
                     .setClassLevel(true);
+
+    private final Set<String> expectedEvents = new LinkedHashSet<>(
+            Arrays.asList("onNewExchange", "onRequest", "onNewConnection",
+            "connectionClosed", "onResponseError", "onExchangeFinally"));
 
     private final BlockingQueue<String> eventQueue = new LinkedBlockingQueue<>();
 
@@ -67,9 +72,6 @@ class ConnectionObserverEventOrderTest {
                 client.request(client.get("/sayHello"));
             }
         });
-
-        List<String> expectedEvents = Arrays.asList("onNewExchange", "onRequest", "onNewConnection",
-                "connectionClosed", "onResponseError", "onExchangeFinally");
         for (String expected : expectedEvents) {
             assertEquals(expected, eventQueue.take());
         }
@@ -164,6 +166,12 @@ class ConnectionObserverEventOrderTest {
     }
 
     private void addEvent() {
-        eventQueue.add(new Exception().getStackTrace()[2].getMethodName());
+        for (StackTraceElement element : new Exception().getStackTrace()) {
+            if (expectedEvents.contains(element.getMethodName())) {
+                eventQueue.add(element.getMethodName());
+                return;
+            }
+        }
+        throw new IllegalStateException("Failed to find the expected stack trace structure");
     }
 }

@@ -24,6 +24,8 @@ import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.tasks.AbstractPublishToMaven
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.gradle.jvm.toolchain.JavaToolchainService
 
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addManifestAttributes
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addQualityTask
@@ -45,6 +47,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
     super.apply(project, true)
 
     applyJavaLibraryPlugin project
+    configureToolchains project
     configureTestFixtures project
     configureTests project
     enforceCheckstyleRoot project
@@ -58,16 +61,18 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       pluginManager.apply("java-library")
 
       java {
-        // Bytecode compatibility (redundant with `options.release` but helpful when JDK8 is used)
+        // No toolchain configuration here - main compilation uses Gradle daemon JDK (JDK 17 in CI)
+        // Test compilation/execution uses TEST_JAVA_VERSION if set
+        // Bytecode compatibility - produce JDK 8 compatible bytecode by default
         sourceCompatibility = TARGET_VERSION
         targetCompatibility = TARGET_VERSION
       }
 
-      if (JavaVersion.current().isJava9Compatible()) {
-        tasks.withType(JavaCompile).configureEach {
-          // Prevents accidental use of newer APIs that are not available in the specified JDK version
-          options.release = Integer.parseInt(TARGET_VERSION.getMajorVersion())
-        }
+      // All compile tasks default to generating JDK8 compatible bytecode. Modules can override this if necessary.
+      tasks.withType(JavaCompile).configureEach {
+        // Prevents accidental use of newer APIs that are not available in the specified JDK version
+        // Note: Test tasks may override this in configureToolchains() when TEST_JAVA_VERSION is set
+        options.release = Integer.parseInt(TARGET_VERSION.getMajorVersion())
       }
 
       jar {
@@ -200,6 +205,55 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         idea {
           module {
             testSources.from(fixturesDir)
+          }
+        }
+      }
+    }
+  }
+
+  private static void configureToolchains(Project project) {
+    def testJavaVersion = System.getenv('TEST_JAVA_VERSION')
+    
+    // Only override test compilation and execution when TEST_JAVA_VERSION is explicitly set
+    // Otherwise, leave existing compilation settings unchanged (modules configure their own --release)
+    if (testJavaVersion) {
+      // Use afterEvaluate to ensure this runs after module-specific build.gradle configurations
+      project.afterEvaluate {
+        def toolchainService = project.extensions.getByType(JavaToolchainService)
+        def testJavaVersionInt = testJavaVersion as Integer
+        def testJavaVersionObj = JavaVersion.toVersion(testJavaVersionInt)
+
+        // Check if TEST_JAVA_VERSION is compatible with module's minimum required version
+        // Modules set sourceCompatibility to indicate their minimum JDK requirement
+        def moduleMinVersion = project.hasProperty('java') && project.java.sourceCompatibility ?
+            project.java.sourceCompatibility : JavaVersion.VERSION_1_8
+
+        if (!testJavaVersionObj.isCompatibleWith(moduleMinVersion)) {
+          // TEST_JAVA_VERSION is too old for this module - disable all tasks
+          project.logger.info("Skipping ${project.name}: requires JDK ${moduleMinVersion.majorVersion}+ but TEST_JAVA_VERSION is ${testJavaVersionInt}")
+          project.tasks.all { task -> task.enabled = false }
+          return
+        }
+        
+        // Configure test (and test fixture) source compilation to use TEST_JAVA_VERSION
+        // This simulates a consumer project using the specified JDK version
+        project.tasks.withType(JavaCompile).matching { it.name.toLowerCase().contains('test') }.configureEach { compileTask ->
+          compileTask.javaCompiler = toolchainService.compilerFor {
+            languageVersion = JavaLanguageVersion.of(testJavaVersionInt)
+          }
+          // Override compatibility settings to match TEST_JAVA_VERSION
+          // This allows test code to use APIs available in the TEST_JAVA_VERSION
+          compileTask.sourceCompatibility = JavaVersion.toVersion(testJavaVersionInt)
+          compileTask.targetCompatibility = JavaVersion.toVersion(testJavaVersionInt)
+          // Clear the --release flag since we're using the actual TEST_JAVA_VERSION toolchain
+          // (and JDK 8 doesn't support --release anyway)
+          compileTask.options.release.set(null as Integer)
+        }
+        
+        // Configure test execution to use TEST_JAVA_VERSION
+        project.tasks.withType(Test).all {
+          javaLauncher = toolchainService.launcherFor {
+            languageVersion = JavaLanguageVersion.of(testJavaVersionInt)
           }
         }
       }

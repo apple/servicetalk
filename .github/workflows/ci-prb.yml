@@ -29,18 +29,24 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
-      - name: Set up JDK ${{ matrix.java }}
+      - name: Set up JDK ${{ matrix.java }} and JDK 17
         uses: actions/setup-java@v5
         with:
           java-version: |
-            17
             ${{ matrix.java }}
+            17
           distribution: 'zulu'
           cache: 'gradle'
-      - name: Print JDK Version
-        run: java -version
-      - name: Set Gradle Environment
-        run: echo "GRADLE_OPTS=-Dorg.gradle.java.home=$JAVA_HOME_17_${{ runner.arch }}" >> "$GITHUB_ENV"
+      - name: Print JDK Versions
+        run: |
+          echo "Gradle will run on JDK 17:"
+          java -version
+          echo "Tests will run on JDK ${{ matrix.java }}:"
+          if [ -d "$JAVA_HOME_${{ matrix.java }}_${{ runner.arch }}" ]; then
+            "$JAVA_HOME_${{ matrix.java }}_${{ runner.arch }}/bin/java" -version
+          fi
+      - name: Set Test Java Version
+        run: echo "TEST_JAVA_VERSION=${{ matrix.java }}" >> "$GITHUB_ENV"
       - name: Make gradlew Executable
         run: chmod +x gradlew
       - name: Clean Gradle project

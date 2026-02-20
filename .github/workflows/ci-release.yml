@@ -12,29 +12,21 @@ jobs:
       contents: read
       actions: read
       checks: write
-    name: Release JDK ${{ matrix.java }}
+    name: Release
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        java: [ 8, 11 ]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
       - name: Check NO SNAPSHOT version suffix
         run: if [[ $(cat gradle.properties | grep version= | sed 's/^version=//') =~ .*-SNAPSHOT ]]; then exit 1; else exit 0; fi
-      - name: Set up JDK ${{ matrix.java }}
+      - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:
-          java-version: |
-            17
-            ${{ matrix.java }}
+          java-version: 17
           distribution: 'zulu'
           cache: 'gradle'
       - name: Print JDK Version
         run: java -version
-      - name: Set Gradle Environment
-        run: echo "GRADLE_OPTS=-Dorg.gradle.java.home=$JAVA_HOME_17_${{ runner.arch }}" >> "$GITHUB_ENV"
       - name: Make gradlew Executable
         run: chmod +x gradlew
       - name: Clean Gradle project
@@ -46,30 +38,8 @@ jobs:
           SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
           SONATYPE_TOKEN: ${{ secrets.SONATYPE_TOKEN }}
         run: |
-          # Build arguments to feed to the single gradlew publish command
-          if [ "${{ matrix.java }}" = "8" ]; then
-            FIRST_GRADLE_TARGETS=" check"
-            SECOND_GRADLE_TARGETS=" --no-parallel publish"
-          else
-            FIRST_GRADLE_TARGETS=""
-            SECOND_GRADLE_TARGETS=""
-
-            # Execute the printJavaTargetCompatibility task to get the java target compatibility for each subproject
-            # and extract the projects that require jdk9+.
-            while read -r line
-            do
-              javaTarget=$(echo "$line" | sed -e 's/^version: \(.*\) name:.*/\1/g')
-              if [ "$javaTarget" = "1.9" ] || [ "$javaTarget" = "1.10" ] || [ "$javaTarget" -gt "8" ] 2> /dev/null
-              then
-                currDir=$(echo "$line" | sed -e 's/^version:.* name: \(.*\)$/\1/g')
-                FIRST_GRADLE_TARGETS="$FIRST_GRADLE_TARGETS :$currDir:check"
-                SECOND_GRADLE_TARGETS="$SECOND_GRADLE_TARGETS :$currDir:publish"
-              fi
-            done < <(./gradlew printJavaTargetCompatibility)
-          fi
-
-          # Execute the gradlew command to publish the build
-          sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel -PreleaseBuild=true$FIRST_GRADLE_TARGETS && ./gradlew --no-daemon --no-parallel -PreleaseBuild=true$SECOND_GRADLE_TARGETS"
+          # Build all modules with JDK 17, using --release for correct bytecode compatibility
+          sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel -PreleaseBuild=true check && ./gradlew --no-daemon --no-parallel -PreleaseBuild=true publish"
       - name: Central Portal manual Repo Close
         # Details at https://central.sonatype.org/publish/publish-portal-ossrh-staging-api/#configuring-the-repository
         env:
