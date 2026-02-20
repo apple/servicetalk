@@ -220,6 +220,19 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       project.afterEvaluate {
         def toolchainService = project.extensions.getByType(JavaToolchainService)
         def testJavaVersionInt = testJavaVersion as Integer
+        def testJavaVersionObj = JavaVersion.toVersion(testJavaVersionInt)
+
+        // Check if TEST_JAVA_VERSION is compatible with module's minimum required version
+        // Modules set sourceCompatibility to indicate their minimum JDK requirement
+        def moduleMinVersion = project.hasProperty('java') && project.java.sourceCompatibility ?
+            project.java.sourceCompatibility : JavaVersion.VERSION_1_8
+
+        if (!testJavaVersionObj.isCompatibleWith(moduleMinVersion)) {
+          // TEST_JAVA_VERSION is too old for this module - disable all tasks
+          project.logger.info("Skipping ${project.name}: requires JDK ${moduleMinVersion.majorVersion}+ but TEST_JAVA_VERSION is ${testJavaVersionInt}")
+          project.tasks.all { task -> task.enabled = false }
+          return
+        }
         
         // Configure test (and test fixture) source compilation to use TEST_JAVA_VERSION
         // This simulates a consumer project using the specified JDK version
