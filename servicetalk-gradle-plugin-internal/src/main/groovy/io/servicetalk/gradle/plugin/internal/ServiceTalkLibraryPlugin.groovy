@@ -71,6 +71,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       // All compile tasks default to generating JDK8 compatible bytecode. Modules can override this if necessary.
       tasks.withType(JavaCompile).configureEach {
         // Prevents accidental use of newer APIs that are not available in the specified JDK version
+        // Note: Test tasks may override this in configureToolchains() when TEST_JAVA_VERSION is set
         options.release = Integer.parseInt(TARGET_VERSION.getMajorVersion())
       }
 
@@ -236,15 +237,21 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         
         // Configure test (and test fixture) source compilation to use TEST_JAVA_VERSION
         // This simulates a consumer project using the specified JDK version
-        project.tasks.withType(JavaCompile).matching { it.name.toLowerCase().contains('test') }.configureEach {
-          javaCompiler = toolchainService.compilerFor {
+        project.tasks.withType(JavaCompile).matching { it.name.toLowerCase().contains('test') }.configureEach { compileTask ->
+          compileTask.javaCompiler = toolchainService.compilerFor {
             languageVersion = JavaLanguageVersion.of(testJavaVersionInt)
           }
           // Override compatibility settings to match TEST_JAVA_VERSION
           // This allows test code to use APIs available in the TEST_JAVA_VERSION
-          sourceCompatibility = JavaVersion.toVersion(testJavaVersionInt)
-          targetCompatibility = JavaVersion.toVersion(testJavaVersionInt)
-          options.release = testJavaVersionInt
+          compileTask.sourceCompatibility = JavaVersion.toVersion(testJavaVersionInt)
+          compileTask.targetCompatibility = JavaVersion.toVersion(testJavaVersionInt)
+          // --release flag was added in JDK 9, so only set it for JDK 9+
+          if (testJavaVersionInt >= 9) {
+            compileTask.options.release = testJavaVersionInt
+          } else {
+            // For JDK 8: Set release to null and use compilerArgs to ensure no --release flag
+            compileTask.options.release.set(null as Integer)
+          }
         }
         
         // Configure test execution to use TEST_JAVA_VERSION
