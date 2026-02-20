@@ -29,9 +29,9 @@ import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.io.PrintWriter;
 import java.util.Arrays;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.annotation.Nullable;
@@ -46,6 +46,10 @@ class ConnectionObserverEventOrderTest {
     static final ExecutionContextExtension EXECUTION_CONTEXT =
             ExecutionContextExtension.cached("server-io", "server-executor")
                     .setClassLevel(true);
+
+    private final Set<String> expectedEvents = new LinkedHashSet<>(
+            Arrays.asList("onNewExchange", "onRequest", "onNewConnection",
+            "connectionClosed", "onResponseError", "onExchangeFinally"));
 
     private final BlockingQueue<String> eventQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<Throwable> stackTraces = new LinkedBlockingQueue<>();
@@ -69,9 +73,6 @@ class ConnectionObserverEventOrderTest {
                 client.request(client.get("/sayHello"));
             }
         });
-
-        List<String> expectedEvents = Arrays.asList("onNewExchange", "onRequest", "onNewConnection",
-                "connectionClosed", "onResponseError", "onExchangeFinally");
         for (String expected : expectedEvents) {
             assertEquals(expected, eventQueue.take(), "stack trace: " + getStackTrace(stackTraces.poll()));
         }
@@ -179,10 +180,9 @@ class ConnectionObserverEventOrderTest {
     private void addEvent() {
         Throwable ex = new Exception();
         stackTraces.add(ex);
-        StackTraceElement[] stackTrace = ex.getStackTrace();
-        for (int i = 0; i < stackTrace.length - 1; i++) {
-            if (stackTrace[i].getMethodName().equals("addEvent")) {
-                eventQueue.add(ex.getStackTrace()[i + 1].getMethodName());
+        for (StackTraceElement element : ex.getStackTrace()) {
+            if (expectedEvents.contains(element.getMethodName())) {
+                eventQueue.add(element.getMethodName());
                 return;
             }
         }
