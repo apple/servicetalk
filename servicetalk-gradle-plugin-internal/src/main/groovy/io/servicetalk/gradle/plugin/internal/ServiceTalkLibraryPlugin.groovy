@@ -51,6 +51,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
     applyPmdPlugin project
     applySpotBugsPlugin project
     addQualityTask project
+    configureCompilerCheck project
   }
 
   private static void applyJavaLibraryPlugin(Project project) {
@@ -184,6 +185,28 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
           // That could be automatically configured "pluginMaven" publication for gradle plugins that are required
           // only for Gradle Plugin Portal and should not be published to Maven Central
           publication == publishing.publications.mavenJava
+        }
+      }
+    }
+  }
+
+  private static void configureCompilerCheck(Project project) {
+    project.configure(project) {
+      tasks.withType(JavaCompile).configureEach {
+        doFirst {
+          def actualVersion = javaCompiler.get().metadata.languageVersion.asInt()
+          if (actualVersion != targetCompatibility) {
+            throw new GradleException("CRITICAL: Compilation attempted with Java $actualVersion, but Java $targetCompatibility is required.")
+          }
+        }
+      }
+
+      tasks.withType(Test).configureEach {
+        doFirst {
+          def actualVersion = javaLauncher.get().metadata.languageVersion.asInt()
+          if (actualVersion != targetCompatibility) {
+            throw new GradleException("CRITICAL: Tests attempted with Java $actualVersion, but Java $targetCompatibility is required.")
+          }
         }
       }
     }
