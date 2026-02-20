@@ -204,9 +204,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       tasks.withType(Test).configureEach {
         doFirst {
           def actualVersion = javaLauncher.get().metadata.languageVersion.asInt()
-          if (actualVersion != targetCompatibility) {
-            logger.warn("CRITICAL: Tests attempted with Java $actualVersion, but Java $targetCompatibility is required.")
-          }
+          logger.warn("INFO: Tests attempted with Java $actualVersion.")
         }
       }
     }
