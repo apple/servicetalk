@@ -245,13 +245,9 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
           // This allows test code to use APIs available in the TEST_JAVA_VERSION
           compileTask.sourceCompatibility = JavaVersion.toVersion(testJavaVersionInt)
           compileTask.targetCompatibility = JavaVersion.toVersion(testJavaVersionInt)
-          // --release flag was added in JDK 9, so only set it for JDK 9+
-          if (testJavaVersionInt >= 9) {
-            compileTask.options.release = testJavaVersionInt
-          } else {
-            // For JDK 8: Set release to null and use compilerArgs to ensure no --release flag
-            compileTask.options.release.set(null as Integer)
-          }
+          // Clear the --release flag since we're using the actual TEST_JAVA_VERSION toolchain
+          // (and JDK 8 doesn't support --release anyway)
+          compileTask.options.release.set(null as Integer)
         }
         
         // Configure test execution to use TEST_JAVA_VERSION
