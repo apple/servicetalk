@@ -50,9 +50,7 @@ buildscript {
     }
   }
   dependencies {
-    if (JavaVersion.current().isJava11Compatible()) {
-      classpath("com.autonomousapps:dependency-analysis-gradle-plugin:$dependencyAnalysisPluginVersion")
-    }
+    classpath("com.autonomousapps:dependency-analysis-gradle-plugin:$dependencyAnalysisPluginVersion")
   }
 }
 
@@ -65,37 +63,35 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-root"
 
 // Unfortunately, we can not make this validation part of our servicetalk-gradle-plugin-internal because it requires
 // JDK11 while we build and package our plugin with JDK8.
-if (JavaVersion.current().isJava11Compatible()) {
-  apply plugin: "com.autonomousapps.dependency-analysis"
+apply plugin: "com.autonomousapps.dependency-analysis"
 
-  dependencyAnalysis {
-    issues {
-      all {
-        onAny {
-          severity("fail")
-        }
-        onUnusedDependencies {
-          // We use it for log4j2.xml configuration
-          exclude(":servicetalk-test-resources")
-        }
-        onUsedTransitiveDependencies {
-          // We import it as api dependency via :servicetalk-annotations and don't want to repeat it explicitly
-          exclude("com.google.code.findbugs:jsr305")
-        }
-        onIncorrectConfiguration {
-          // We don't want to leak it as api dependency to our users
-          exclude("com.google.code.findbugs:jsr305")
-        }
-        onCompileOnly {
-          // False positive, these annotations use RetentionPolicy.RUNTIME
-          exclude(":servicetalk-annotations")
-        }
+dependencyAnalysis {
+  issues {
+    all {
+      onAny {
+        severity("fail")
+      }
+      onUnusedDependencies {
+        // We use it for log4j2.xml configuration
+        exclude(":servicetalk-test-resources")
+      }
+      onUsedTransitiveDependencies {
+        // We import it as api dependency via :servicetalk-annotations and don't want to repeat it explicitly
+        exclude("com.google.code.findbugs:jsr305")
+      }
+      onIncorrectConfiguration {
+        // We don't want to leak it as api dependency to our users
+        exclude("com.google.code.findbugs:jsr305")
+      }
+      onCompileOnly {
+        // False positive, these annotations use RetentionPolicy.RUNTIME
+        exclude(":servicetalk-annotations")
       }
     }
   }
-
-  quality.dependsOn buildHealth
 }
+
+quality.dependsOn buildHealth
 
 task validateLocalDocSite(type: Exec) {
   group = 'Documentation'
@@ -108,87 +104,14 @@ quality.dependsOn validateLocalDocSite
 subprojects {
   // Force ByteBuddy version forward for JDK 25 compatibility
   // Mockito 4.x uses ByteBuddy ~1.12.x which doesn't support JDK 25.
-  configurations.all {
+  configurations.matching { it.name.startsWith("test") }.all {
     resolutionStrategy {
       force "net.bytebuddy:byte-buddy:$byteBuddyVersion"
       force "net.bytebuddy:byte-buddy-agent:$byteBuddyVersion"
     }
   }
 
-  if (JavaVersion.current() >= JavaVersion.VERSION_11) {
-    apply plugin: "com.autonomousapps.dependency-analysis"
-  }
-  // Used by ci-release.yaml to determine which modules need to be built/released with JDK11.
-  task printJavaTargetCompatibility {
-    doLast {
-      if (project.parent == project.rootProject) {
-        def javaLanguage = (project.tasks.withType(JavaCompile)?.findByName("compileJava")?.options?.release?.get()) ?:
-            Integer.parseInt(Versions.TARGET_VERSION.getMajorVersion())
-        println("version: " + javaLanguage + " name: " + project.name)
-      }
-    }
-  }
-
-  // Debug task to verify which JDK is actually being used for compilation and testing
-  // Must run after evaluation to capture final task configuration
-  afterEvaluate {
-    task verifyJdkUsage {
-      doLast {
-        if (project.parent == project.rootProject) {
-          println "=" * 80
-          println "Project: $project.name"
-          println "Gradle Daemon JVM: ${org.gradle.internal.jvm.Jvm.current().javaHome}"
-          println "Gradle Daemon JVM Version: ${JavaVersion.current()}"
-
-          // Show configured toolchain if available
-          if (project.hasProperty('java') && project.java.hasProperty('toolchain')) {
-            def toolchain = project.java.toolchain
-            if (toolchain.languageVersion.present) {
-              println "Configured Toolchain Version: ${toolchain.languageVersion.get()}"
-            } else {
-              println "Configured Toolchain Version: not set (will use Gradle daemon JVM)"
-            }
-          }
-
-          tasks.withType(JavaCompile).each { compileTask ->
-            println "\nCompile Task: ${compileTask.name}"
-            println "  Source Compatibility: ${compileTask.sourceCompatibility}"
-            println "  Target Compatibility: ${compileTask.targetCompatibility}"
-
-            // Show actual JDK being used for compilation (from toolchain)
-            if (compileTask.hasProperty('javaCompiler') && compileTask.javaCompiler.present) {
-              def compiler = compileTask.javaCompiler.get()
-              println "  Compiler JDK: ${compiler.metadata.installationPath}"
-              println "  Compiler Version: ${compiler.metadata.languageVersion}"
-            } else {
-              println "  Compiler JDK: using Gradle daemon JVM"
-            }
-
-            if (compileTask.options.release.isPresent()) {
-              println "  Release Flag: ${compileTask.options.release.get()}"
-            } else {
-              println "  Release Flag: not set"
-            }
-          }
-
-          tasks.withType(Test).each { testTask ->
-            println "\nTest Task: ${testTask.name}"
-
-            // Show actual JDK being used for tests (from toolchain)
-            if (testTask.hasProperty('javaLauncher') && testTask.javaLauncher.present) {
-              def launcher = testTask.javaLauncher.get()
-              println "  Test JDK: ${launcher.metadata.installationPath}"
-              println "  Test JDK Version: ${launcher.metadata.languageVersion}"
-            } else {
-              println "  Test JDK: using Gradle daemon JVM"
-              println "  Test JDK Version: ${JavaVersion.current()}"
-            }
-          }
-          println "=" * 80
-        }
-      }
-    }
-  }
+  apply plugin: "com.autonomousapps.dependency-analysis"
 
   // Configure dependency locking: https://docs.gradle.org/current/userguide/dependency_locking.html
   dependencyLocking {

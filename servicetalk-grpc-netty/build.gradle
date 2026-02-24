@@ -103,7 +103,7 @@ dependencies {
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
   // Required for generated protobuf code when compiling with JDK 9+ (javax.annotation.Generated)
-  testCompileOnly "javax.annotation:javax.annotation-api:1.3.2"
+  testCompileOnly "javax.annotation:javax.annotation-api:$javaxAnnotationApiVersion"
 }
 
 protobuf {
