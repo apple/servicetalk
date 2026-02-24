@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -31,6 +32,17 @@ import static io.servicetalk.transport.api.AbstractSslConfigBuilder.DEFAULT_HAND
  * Specifies the configuration for TLS/SSL.
  */
 public interface SslConfig {
+
+    /**
+     * Get the javax {@link SSLContext} to use for transport security.
+     *
+     * @return the javax {@link SSLContext} to use for transport security.
+     */
+    @Nullable
+    default SSLContext sslContext() {
+        return null;
+    }
+
     /**
      * Get the {@link TrustManagerFactory} used for verifying the remote endpoint's certificate.
      *

@@ -51,6 +51,16 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
     }
 
     /**
+     * Create a new instance using a {@link javax.net.ssl.SSLContext} for key and trust configuration.
+     *
+     * @param sslContext the {@link javax.net.ssl.SSLContext} to use for SSL/TLS.
+     * @see ClientSslConfig#sslContext()
+     */
+    public ClientSslConfigBuilder(javax.net.ssl.SSLContext sslContext) {
+        sslContext(sslContext);
+    }
+
+    /**
      * Create a new instance using {@code tmf} to verify trusted servers.
      *
      * @param tmf The {@link TrustManagerFactory} used to verify trusted servers.
@@ -142,7 +152,7 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
      * @return a new {@link ClientSslConfig}.
      */
     public ClientSslConfig build() {
-        return new DefaultClientSslConfig(hostnameVerificationAlgorithm, peerHost, peerPort, sniHostname,
+        return new DefaultClientSslConfig(sslContext(), hostnameVerificationAlgorithm, peerHost, peerPort, sniHostname,
                 trustManager(), trustCertChainSupplier(), keyManager(), keyCertChainSupplier(), keySupplier(),
                 keyPassword(), sslProtocols(), alpnProtocols(), ciphers(), cipherSuiteFilter(), sessionCacheSize(),
                 sessionTimeout(), maxCertificateListBytes(), provider(), certificateCompressionAlgorithms(),
@@ -163,7 +173,8 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
         @Nullable
         private final String sniHostname;
 
-        DefaultClientSslConfig(@Nullable final String hostnameVerificationAlgorithm,
+        DefaultClientSslConfig(@Nullable final javax.net.ssl.SSLContext sslContext,
+                               @Nullable final String hostnameVerificationAlgorithm,
                                @Nullable final String peerHost,
                                final int peerPort,
                                @Nullable final String sniHostname,
@@ -178,8 +189,8 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
                                final int maxCertificateListBytes, @Nullable final SslProvider provider,
                                @Nullable final List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms,
                                final Duration handshakeTimeout) {
-            super(trustManagerFactory, trustCertChainSupplier, keyManagerFactory, keyCertChainSupplier, keySupplier,
-                    keyPassword, sslProtocols, alpnProtocols, ciphers, cipherSuiteFilter, sessionCacheSize,
+            super(sslContext, trustManagerFactory, trustCertChainSupplier, keyManagerFactory, keyCertChainSupplier,
+                    keySupplier, keyPassword, sslProtocols, alpnProtocols, ciphers, cipherSuiteFilter, sessionCacheSize,
                     sessionTimeout, maxCertificateListBytes, provider, certificateCompressionAlgorithms,
                     handshakeTimeout);
             this.hostnameVerificationAlgorithm = hostnameVerificationAlgorithm;

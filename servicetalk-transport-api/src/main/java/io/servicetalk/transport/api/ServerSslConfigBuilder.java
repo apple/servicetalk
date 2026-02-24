@@ -34,6 +34,16 @@ public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<Serve
     private SslClientAuthMode clientAuthMode = NONE;
 
     /**
+     * Create a new instance using a {@link javax.net.ssl.SSLContext}  for key and trust configuration.
+     *
+     * @param sslContext the {@link javax.net.ssl.SSLContext} to use for SSL/TLS.
+     * @see ServerSslConfig#sslContext()
+     */
+    public ServerSslConfigBuilder(javax.net.ssl.SSLContext sslContext) {
+        sslContext(sslContext);
+    }
+
+    /**
      * Create a new instance using the {@link KeyManagerFactory} for SSL/TLS handshakes.
      *
      * @param kmf the {@link KeyManagerFactory} to use for the SSL/TLS handshakes.
@@ -106,10 +116,10 @@ public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<Serve
      * @return a new {@link ServerSslConfig}.
      */
     public ServerSslConfig build() {
-        return new DefaultServerSslConfig(clientAuthMode, trustManager(), trustCertChainSupplier(), keyManager(),
-                keyCertChainSupplier(), keySupplier(), keyPassword(), sslProtocols(), alpnProtocols(), ciphers(),
-                cipherSuiteFilter(), sessionCacheSize(), sessionTimeout(), maxCertificateListBytes(), provider(),
-                certificateCompressionAlgorithms(), handshakeTimeout());
+        return new DefaultServerSslConfig(sslContext(), clientAuthMode, trustManager(), trustCertChainSupplier(),
+                keyManager(), keyCertChainSupplier(), keySupplier(), keyPassword(), sslProtocols(), alpnProtocols(),
+                ciphers(), cipherSuiteFilter(), sessionCacheSize(), sessionTimeout(), maxCertificateListBytes(),
+                provider(), certificateCompressionAlgorithms(), handshakeTimeout());
     }
 
     @Override
@@ -120,7 +130,8 @@ public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<Serve
     private static final class DefaultServerSslConfig extends AbstractSslConfig implements ServerSslConfig {
         private final SslClientAuthMode clientAuthMode;
 
-        DefaultServerSslConfig(SslClientAuthMode clientAuthMode,
+        DefaultServerSslConfig(@Nullable final javax.net.ssl.SSLContext sslContext,
+                               SslClientAuthMode clientAuthMode,
                                @Nullable final TrustManagerFactory trustManagerFactory,
                                @Nullable final Supplier<InputStream> trustCertChainSupplier,
                                @Nullable final KeyManagerFactory keyManagerFactory,
@@ -132,8 +143,8 @@ public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<Serve
                                final int maxCertificateListBytes, @Nullable final SslProvider provider,
                                @Nullable final List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms,
                                final Duration handshakeTimeout) {
-            super(trustManagerFactory, trustCertChainSupplier, keyManagerFactory, keyCertChainSupplier, keySupplier,
-                    keyPassword, sslProtocols, alpnProtocols, ciphers, cipherSuiteFilter, sessionCacheSize,
+            super(sslContext, trustManagerFactory, trustCertChainSupplier, keyManagerFactory, keyCertChainSupplier,
+                    keySupplier, keyPassword, sslProtocols, alpnProtocols, ciphers, cipherSuiteFilter, sessionCacheSize,
                     sessionTimeout, maxCertificateListBytes, provider, certificateCompressionAlgorithms,
                     handshakeTimeout);
             this.clientAuthMode = clientAuthMode;

@@ -19,11 +19,14 @@ import io.servicetalk.transport.api.CertificateCompressionAlgorithm;
 import io.servicetalk.transport.api.CertificateCompressionAlgorithms;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.ServerSslConfig;
+import io.servicetalk.transport.api.SslClientAuthMode;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.api.SslConfig.CipherSuiteFilter;
 
+import io.netty.handler.ssl.ApplicationProtocolConfig;
 import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.IdentityCipherSuiteFilter;
+import io.netty.handler.ssl.JdkSslContext;
 import io.netty.handler.ssl.OpenSslCertificateCompressionConfig;
 import io.netty.handler.ssl.OpenSslContextOption;
 import io.netty.handler.ssl.SslContext;
@@ -42,6 +45,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 
 import static io.netty.handler.ssl.OpenSslContextOption.MAX_CERTIFICATE_LIST_BYTES;
@@ -135,6 +139,12 @@ public final class SslContextFactory {
      * @return A new {@link SslContext} for a client.
      */
     public static SslContext forClient(ClientSslConfig config) {
+        // Check for javax SSLContext first
+        SSLContext javaxSslContext = config.sslContext();
+        if (javaxSslContext != null) {
+            return createJdkSslContextForClient(config, javaxSslContext);
+        }
+
         final SslContextBuilder builder = SslContextBuilder.forClient();
         setEndpointIdentificationAlgorithm(ENDPOINT_IDENTIFICATION_ALGORITHM, builder,
                 config.hostnameVerificationAlgorithm());
@@ -167,6 +177,12 @@ public final class SslContextFactory {
      * @return A new {@link SslContext} for a server.
      */
     public static SslContext forServer(ServerSslConfig config) {
+        // Check for javax SSLContext first
+        SSLContext javaxSslContext = config.sslContext();
+        if (javaxSslContext != null) {
+            return createJdkSslContextForServer(config, javaxSslContext);
+        }
+
         final SslContextBuilder builder;
         KeyManagerFactory keyManagerFactory = config.keyManagerFactory();
         if (keyManagerFactory != null) {
@@ -202,6 +218,76 @@ public final class SslContextFactory {
         }
 
         return configureBuilder(config, builder, true);
+    }
+
+    private static SslContext createJdkSslContextForClient(final ClientSslConfig config,
+                                                            final SSLContext javaxSslContext) {
+        return createJdkSslContext(config, javaxSslContext, true, ClientAuth.NONE);
+    }
+
+    private static SslContext createJdkSslContextForServer(final ServerSslConfig config,
+                                                            final SSLContext javaxSslContext) {
+        return createJdkSslContext(config, javaxSslContext, false, toNettyClientAuth(config.clientAuthMode()));
+    }
+
+    /**
+     * Creates a Netty {@link JdkSslContext} from a {@link javax.net.ssl.SSLContext}.
+     * This method applies ServiceTalk configuration (ciphers, protocols, ALPN, session settings)
+     * to the provided SSLContext and wraps it in a Netty-compatible context.
+     */
+    private static SslContext createJdkSslContext(final SslConfig config,
+                                                   final SSLContext javaxSslContext,
+                                                   final boolean isClient,
+                                                   final ClientAuth clientAuth) {
+        io.netty.handler.ssl.CipherSuiteFilter cipherFilter =
+                toNettyCipherSuiteFilter(config.cipherSuiteFilter());
+        ApplicationProtocolConfig alpnConfig = nettyApplicationProtocol(config.alpnProtocols());
+        List<String> ciphers = config.ciphers();
+        List<String> protocols = config.sslProtocols();
+
+        // Apply session configuration to the appropriate session context
+        if (config.sessionCacheSize() > 0) {
+            (isClient ? javaxSslContext.getClientSessionContext()
+                      : javaxSslContext.getServerSessionContext())
+                    .setSessionCacheSize(toIntWithOverflowProtection(config.sessionCacheSize()));
+        }
+        if (config.sessionTimeout() > 0) {
+            (isClient ? javaxSslContext.getClientSessionContext()
+                      : javaxSslContext.getServerSessionContext())
+                    .setSessionTimeout(toIntWithOverflowProtection(config.sessionTimeout()));
+        }
+        JdkSslContext nettySslContext = new JdkSslContext(
+                javaxSslContext,
+                isClient,
+                ciphers,
+                cipherFilter,
+                alpnConfig,
+                clientAuth,
+                protocols != null ? protocols.toArray(new String[0]) : null,
+                false  // startTls
+        );
+
+        nettySslContext.attributes().attr(HANDSHAKE_TIMEOUT_MILLIS)
+                .set(config.handshakeTimeout().toMillis());
+
+        return nettySslContext;
+    }
+
+    private static int toIntWithOverflowProtection(long value) {
+        return value > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) value;
+    }
+
+    private static ClientAuth toNettyClientAuth(final SslClientAuthMode clientAuthMode) {
+        switch (clientAuthMode) {
+            case NONE:
+                return ClientAuth.NONE;
+            case OPTIONAL:
+                return ClientAuth.OPTIONAL;
+            case REQUIRE:
+                return ClientAuth.REQUIRE;
+            default:
+                throw new IllegalArgumentException("Unsupported SslClientAuthMode: " + clientAuthMode);
+        }
     }
 
     private static void configureTrustManager(SslConfig config, SslContextBuilder builder) {
