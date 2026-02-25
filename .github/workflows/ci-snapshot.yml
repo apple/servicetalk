@@ -41,15 +41,15 @@ jobs:
         run: chmod +x gradlew
       - name: Clean Gradle project
         run: ./gradlew --parallel clean
-      - name: Build with Gradle
+      - name: Gradle Check project
+        run: sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --parallel check"
+      - name: Publish with Gradle
         env:
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.ORG_GRADLE_PROJECT_SIGNINGKEY }}
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.ORG_GRADLE_PROJECT_SIGNINGPASSWORD }}
           SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
           SONATYPE_TOKEN: ${{ secrets.SONATYPE_TOKEN }}
-        run: |
-          # Build all modules with JDK 17, using --release for correct bytecode compatibility
-          sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel check && ./gradlew --no-daemon --no-parallel publish"
+        run: ./gradlew --no-parallel publish
       - name: Publish Test Results
         if: always()
         uses: scacap/action-surefire-report@5609ce4db72c09db044803b344a8968fd1f315da
