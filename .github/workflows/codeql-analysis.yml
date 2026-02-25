@@ -43,15 +43,11 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
-          java-version: |
-            17
-            11
+          java-version: 17
           distribution: 'zulu'
           cache: 'gradle'
       - name: Print JDK Version
         run: java -version
-      - name: Set Gradle Environment
-        run: echo "GRADLE_OPTS=-Dorg.gradle.java.home=$JAVA_HOME_17_${{ runner.arch }}" >> "$GITHUB_ENV"
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
