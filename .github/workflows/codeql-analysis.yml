@@ -47,7 +47,6 @@ jobs:
             17
             11
           distribution: 'zulu'
-          cache: 'gradle'
       - name: Print JDK Version
         run: java -version
       - name: Set Gradle Environment
