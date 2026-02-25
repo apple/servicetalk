@@ -19,13 +19,9 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 // Required version for module
 def javaLanguageVersion = JavaVersion.VERSION_1_9
 
-if (!JavaVersion.current().isCompatibleWith(javaLanguageVersion)) {
-    project.tasks.all { task -> task.enabled = false }
-}
-
 java {
-    sourceCompatibility = javaLanguageVersion
-    targetCompatibility = javaLanguageVersion
+  sourceCompatibility = javaLanguageVersion
+  targetCompatibility = javaLanguageVersion
 }
 
 tasks.withType(JavaCompile).configureEach {

@@ -50,47 +50,48 @@ buildscript {
     }
   }
   dependencies {
-    if (JavaVersion.current().isJava11Compatible()) {
-      classpath("com.autonomousapps:dependency-analysis-gradle-plugin:$dependencyAnalysisPluginVersion")
-    }
+    classpath("com.autonomousapps:dependency-analysis-gradle-plugin:$dependencyAnalysisPluginVersion")
   }
 }
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-root"
 
+// No default toolchain configuration at root level
+// Main sources compile with the JDK running Gradle (typically JDK 17 in CI)
+// Test sources compile and run with TEST_JAVA_VERSION if set, otherwise use current JDK
+// Modules requiring specific JDKs (jdkflow, Jersey) override this for their main sources
+
 // Unfortunately, we can not make this validation part of our servicetalk-gradle-plugin-internal because it requires
 // JDK11 while we build and package our plugin with JDK8.
-if (JavaVersion.current().isJava11Compatible()) {
-  apply plugin: "com.autonomousapps.dependency-analysis"
+apply plugin: "com.autonomousapps.dependency-analysis"
 
-  dependencyAnalysis {
-    issues {
-      all {
-        onAny {
-          severity("fail")
-        }
-        onUnusedDependencies {
-          // We use it for log4j2.xml configuration
-          exclude(":servicetalk-test-resources")
-        }
-        onUsedTransitiveDependencies {
-          // We import it as api dependency via :servicetalk-annotations and don't want to repeat it explicitly
-          exclude("com.google.code.findbugs:jsr305")
-        }
-        onIncorrectConfiguration {
-          // We don't want to leak it as api dependency to our users
-          exclude("com.google.code.findbugs:jsr305")
-        }
-        onCompileOnly {
-          // False positive, these annotations use RetentionPolicy.RUNTIME
-          exclude(":servicetalk-annotations")
-        }
+dependencyAnalysis {
+  issues {
+    all {
+      onAny {
+        severity("fail")
+      }
+      onUnusedDependencies {
+        // We use it for log4j2.xml configuration
+        exclude(":servicetalk-test-resources")
+      }
+      onUsedTransitiveDependencies {
+        // We import it as api dependency via :servicetalk-annotations and don't want to repeat it explicitly
+        exclude("com.google.code.findbugs:jsr305")
+      }
+      onIncorrectConfiguration {
+        // We don't want to leak it as api dependency to our users
+        exclude("com.google.code.findbugs:jsr305")
+      }
+      onCompileOnly {
+        // False positive, these annotations use RetentionPolicy.RUNTIME
+        exclude(":servicetalk-annotations")
       }
     }
   }
-
-  quality.dependsOn buildHealth
 }
+
+quality.dependsOn buildHealth
 
 task validateLocalDocSite(type: Exec) {
   group = 'Documentation'
@@ -101,19 +102,16 @@ task validateLocalDocSite(type: Exec) {
 quality.dependsOn validateLocalDocSite
 
 subprojects {
-  if (JavaVersion.current() >= JavaVersion.VERSION_11) {
-    apply plugin: "com.autonomousapps.dependency-analysis"
-  }
-  // Used by ci-release.yaml to determine which modules need to be built/released with JDK11.
-  task printJavaTargetCompatibility {
-    doLast {
-      if (project.parent == project.rootProject) {
-        def javaLanguage = (project.tasks.withType(JavaCompile)?.findByName("compileJava")?.options?.release?.get()) ?:
-            Integer.parseInt(Versions.TARGET_VERSION.getMajorVersion())
-        println("version: " + javaLanguage + " name: " + project.name)
-      }
+  // Force ByteBuddy version forward for JDK 25 compatibility
+  // Mockito 4.x uses ByteBuddy ~1.12.x which doesn't support JDK 25.
+  configurations.matching { it.name.startsWith("test") }.all {
+    resolutionStrategy {
+      force "net.bytebuddy:byte-buddy:$byteBuddyVersion"
+      force "net.bytebuddy:byte-buddy-agent:$byteBuddyVersion"
     }
   }
+
+  apply plugin: "com.autonomousapps.dependency-analysis"
 
   // Configure dependency locking: https://docs.gradle.org/current/userguide/dependency_locking.html
   dependencyLocking {
