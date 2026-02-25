@@ -17,6 +17,7 @@ package io.servicetalk.gradle.plugin.internal
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
+import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.XmlProvider
@@ -28,9 +29,11 @@ import org.gradle.api.java.archives.Manifest
 import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.bundling.Jar
+import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.javadoc.Javadoc
 
 import groovy.xml.XmlParser
+import org.gradle.api.tasks.testing.Test
 
 import java.lang.reflect.Field
 
@@ -254,6 +257,69 @@ final class ProjectUtils {
         }
         if (tasks.findByName("generatePomFileForMavenJavaPublication")) {  // verifies generated pom.xml
           dependsOn tasks.generatePomFileForMavenJavaPublication
+        }
+      }
+    }
+  }
+
+  static void addToolchainDebugTask(Project project) {
+    // Debug task to verify which JDK is actually being used for compilation and testing
+    // Must run after evaluation to capture final task configuration
+    project.afterEvaluate {
+      project.tasks.register("verifyJdkUsage") {
+        doLast {
+          if (project.parent == project.rootProject) {
+            logger.info("=" * 80)
+            logger.info("Project: $project.name")
+            logger.info("Gradle Daemon JVM: ${org.gradle.internal.jvm.Jvm.current().javaHome}")
+            logger.info("Gradle Daemon JVM Version: ${JavaVersion.current()}")
+
+            // Show configured toolchain if available
+            if (project.hasProperty('java') && project.java.hasProperty('toolchain')) {
+              def toolchain = project.java.toolchain
+              if (toolchain.languageVersion.present) {
+                logger.info("Configured Toolchain Version: ${toolchain.languageVersion.get()}")
+              } else {
+                logger.info("Configured Toolchain Version: not set (will use Gradle daemon JVM)")
+              }
+            }
+
+            project.tasks.withType(JavaCompile).each { compileTask ->
+              logger.info("\nCompile Task: ${compileTask.name}")
+              logger.info("  Source Compatibility: ${compileTask.sourceCompatibility}")
+              logger.info("  Target Compatibility: ${compileTask.targetCompatibility}")
+
+              // Show actual JDK being used for compilation (from toolchain)
+              if (compileTask.hasProperty('javaCompiler') && compileTask.javaCompiler.present) {
+                def compiler = compileTask.javaCompiler.get()
+                logger.info("  Compiler JDK: ${compiler.metadata.installationPath}")
+                logger.info("  Compiler Version: ${compiler.metadata.languageVersion}")
+              } else {
+                logger.info("  Compiler JDK: using Gradle daemon JVM")
+              }
+
+              if (compileTask.options.release.isPresent()) {
+                logger.info("  Release Flag: ${compileTask.options.release.get()}")
+              } else {
+                logger.info("  Release Flag: not set")
+              }
+            }
+
+            project.tasks.withType(Test).each { testTask ->
+              logger.info("\nTest Task: ${testTask.name}")
+
+              // Show actual JDK being used for tests (from toolchain)
+              if (testTask.hasProperty('javaLauncher') && testTask.javaLauncher.present) {
+                def launcher = testTask.javaLauncher.get()
+                logger.info("  Test JDK: ${launcher.metadata.installationPath}")
+                logger.info("  Test JDK Version: ${launcher.metadata.languageVersion}")
+              } else {
+                logger.info("  Test JDK: using Gradle daemon JVM")
+                logger.info("  Test JDK Version: ${JavaVersion.current()}")
+              }
+            }
+            logger.info("=" * 80)
+          }
         }
       }
     }
