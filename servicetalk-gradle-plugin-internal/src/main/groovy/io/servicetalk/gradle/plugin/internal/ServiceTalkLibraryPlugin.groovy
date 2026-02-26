@@ -26,6 +26,7 @@ import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.jvm.toolchain.JavaToolchainService
+import org.gradle.jvm.toolchain.JvmVendorSpec
 
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addManifestAttributes
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addQualityTask
@@ -215,14 +216,15 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
 
   private static void configureToolchains(Project project) {
     def testJavaVersion = System.getenv("TEST_JAVA_VERSION")
+    def toolchainVendor = System.getenv("TEST_JAVA_VENDOR")?.with { JvmVendorSpec.matching(it) }
     
     // Only override test compilation and execution when TEST_JAVA_VERSION is explicitly set
     // Otherwise, leave existing compilation settings unchanged (modules configure their own --release)
     if (testJavaVersion) {
+      def testJavaVersionInt = testJavaVersion as Integer
       // Use afterEvaluate to ensure this runs after module-specific build.gradle configurations
       project.afterEvaluate {
         def toolchainService = project.extensions.getByType(JavaToolchainService)
-        def testJavaVersionInt = testJavaVersion as Integer
         def testJavaVersionObj = JavaVersion.toVersion(testJavaVersionInt)
 
         // Check if TEST_JAVA_VERSION is compatible with module's minimum required version
@@ -248,6 +250,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         project.tasks.withType(JavaCompile).matching(isTestCompileTask).configureEach { compileTask ->
           compileTask.javaCompiler = toolchainService.compilerFor {
             languageVersion = JavaLanguageVersion.of(testJavaVersionInt)
+            vendor = toolchainVendor
           }
           // Override compatibility settings to match TEST_JAVA_VERSION
           // This allows test code to use APIs available in the TEST_JAVA_VERSION
@@ -262,6 +265,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         project.tasks.withType(Test).all {
           javaLauncher = toolchainService.launcherFor {
             languageVersion = JavaLanguageVersion.of(testJavaVersionInt)
+            vendor = toolchainVendor
           }
         }
       }
