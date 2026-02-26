@@ -32,14 +32,14 @@ jobs:
       - name: Clean Gradle project
         run: ./gradlew --parallel clean
       - name: Gradle Check project
-        run: sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --parallel check"
+        run: sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel check"
       - name: Publish with Gradle
         env:
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.ORG_GRADLE_PROJECT_SIGNINGKEY }}
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.ORG_GRADLE_PROJECT_SIGNINGPASSWORD }}
           SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
           SONATYPE_TOKEN: ${{ secrets.SONATYPE_TOKEN }}
-        run: ./gradlew --no-parallel -PreleaseBuild=true publish
+        run: ./gradlew --no-daemon --no-parallel -PreleaseBuild=true publish
       - name: Central Portal manual Repo Close
         # Details at https://central.sonatype.org/publish/publish-portal-ossrh-staging-api/#configuring-the-repository
         env:
