@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManagerFactory;
@@ -51,12 +52,12 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
     }
 
     /**
-     * Create a new instance using a {@link javax.net.ssl.SSLContext} for key and trust configuration.
+     * Create a new instance using a {@link SSLContext} for key and trust configuration.
      *
-     * @param sslContext the {@link javax.net.ssl.SSLContext} to use for SSL/TLS.
+     * @param sslContext the {@link SSLContext} to use for SSL/TLS.
      * @see ClientSslConfig#sslContext()
      */
-    public ClientSslConfigBuilder(javax.net.ssl.SSLContext sslContext) {
+    public ClientSslConfigBuilder(SSLContext sslContext) {
         sslContext(sslContext);
     }
 
@@ -173,7 +174,7 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
         @Nullable
         private final String sniHostname;
 
-        DefaultClientSslConfig(@Nullable final javax.net.ssl.SSLContext sslContext,
+        DefaultClientSslConfig(@Nullable final SSLContext sslContext,
                                @Nullable final String hostnameVerificationAlgorithm,
                                @Nullable final String peerHost,
                                final int peerPort,

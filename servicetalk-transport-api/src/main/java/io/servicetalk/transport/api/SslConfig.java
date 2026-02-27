@@ -35,6 +35,17 @@ public interface SslConfig {
 
     /**
      * Get the javax {@link SSLContext} to use for transport security.
+     * <p>
+     * If this method return a non-null value, only the {@link SslProvider#JDK} provider will be used and the following
+     * methods will return {@code null}:
+     * <ul>
+     *   <li>{@link #trustManagerFactory()}</li>
+     *   <li>{@link #trustCertChainSupplier()}</li>
+     *   <li>{@link #keyManagerFactory()}</li>
+     *   <li>{@link #keyCertChainSupplier()}</li>
+     *   <li>{@link #keySupplier()}</li>
+     *   <li>{@link #keyPassword()}</li>
+     * </ul>
      *
      * @return the javax {@link SSLContext} to use for transport security.
      */

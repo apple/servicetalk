@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManagerFactory;
 
@@ -34,12 +35,12 @@ public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<Serve
     private SslClientAuthMode clientAuthMode = NONE;
 
     /**
-     * Create a new instance using a {@link javax.net.ssl.SSLContext}  for key and trust configuration.
+     * Create a new instance using a {@link SSLContext}  for key and trust configuration.
      *
-     * @param sslContext the {@link javax.net.ssl.SSLContext} to use for SSL/TLS.
+     * @param sslContext the {@link SSLContext} to use for SSL/TLS.
      * @see ServerSslConfig#sslContext()
      */
-    public ServerSslConfigBuilder(javax.net.ssl.SSLContext sslContext) {
+    public ServerSslConfigBuilder(SSLContext sslContext) {
         sslContext(sslContext);
     }
 
@@ -130,7 +131,7 @@ public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<Serve
     private static final class DefaultServerSslConfig extends AbstractSslConfig implements ServerSslConfig {
         private final SslClientAuthMode clientAuthMode;
 
-        DefaultServerSslConfig(@Nullable final javax.net.ssl.SSLContext sslContext,
+        DefaultServerSslConfig(@Nullable final SSLContext sslContext,
                                SslClientAuthMode clientAuthMode,
                                @Nullable final TrustManagerFactory trustManagerFactory,
                                @Nullable final Supplier<InputStream> trustCertChainSupplier,

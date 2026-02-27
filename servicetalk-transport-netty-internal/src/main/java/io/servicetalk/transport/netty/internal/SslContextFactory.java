@@ -203,20 +203,7 @@ public final class SslContextFactory {
             }
         }
 
-        switch (config.clientAuthMode()) {
-            case NONE:
-                builder.clientAuth(ClientAuth.NONE);
-                break;
-            case OPTIONAL:
-                builder.clientAuth(ClientAuth.OPTIONAL);
-                break;
-            case REQUIRE:
-                builder.clientAuth(ClientAuth.REQUIRE);
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported SslClientAuthMode: " + config.clientAuthMode());
-        }
-
+        builder.clientAuth(toNettyClientAuth(config.clientAuthMode()));
         return configureBuilder(config, builder, true);
     }
 

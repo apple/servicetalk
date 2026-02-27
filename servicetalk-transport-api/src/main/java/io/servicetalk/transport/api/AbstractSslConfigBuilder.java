@@ -78,8 +78,8 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
     /**
      * Set a pre-configured {@link SSLContext} to use for SSL/TLS.
      * <p>
-     * When an SSLContext is provided, it takes precedence over individual trust and key manager
-     * configurations.
+     * When an {@link SSLContext} is provided, it takes precedence over individual trust and key manager
+     * configurations and forces the {@link SslProvider} to JDK.
      * <p>
      * This method is mutually exclusive with:
      * <ul>
