@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -44,6 +45,8 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
     static final Duration DEFAULT_HANDSHAKE_TIMEOUT = ofSeconds(5);
     private static final int DEFAULT_MAX_CERTIFICATE_LIST_BYTES = 32 * 1024;    // 32Kb
 
+    @Nullable
+    private SSLContext sslContext;
     @Nullable
     private TrustManagerFactory trustManagerFactory;
     @Nullable
@@ -73,6 +76,42 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
     private Duration handshakeTimeout = DEFAULT_HANDSHAKE_TIMEOUT;
 
     /**
+     * Set a pre-configured {@link SSLContext} to use for SSL/TLS.
+     * <p>
+     * When an {@link SSLContext} is provided, it takes precedence over individual trust and key manager
+     * configurations and forces the {@link SslProvider} to JDK.
+     * <p>
+     * This method is mutually exclusive with:
+     * <ul>
+     *   <li>{@link #trustManager(TrustManagerFactory)}</li>
+     *   <li>{@link #trustManager(Supplier)}</li>
+     *   <li>{@link #keyManager(KeyManagerFactory)}</li>
+     *   <li>{@link #keyManager(Supplier, Supplier)}</li>
+     *   <li>{@link #keyManager(Supplier, Supplier, String)}</li>
+     * </ul>
+     *
+     * @param sslContext the SSLContext to use
+     * @return {@code this}
+     * @see SslConfig#sslContext()
+     */
+    public final T sslContext(final SSLContext sslContext) {
+        this.sslContext = requireNonNull(sslContext);
+        // Clear individual manager configurations as they conflict with SSLContext
+        trustManagerFactory = null;
+        trustCertChainSupplier = null;
+        keyManagerFactory = null;
+        keyCertChainSupplier = null;
+        keySupplier = null;
+        keyPassword = null;
+        return thisT();
+    }
+
+    @Nullable
+    final SSLContext sslContext() {
+        return sslContext;
+    }
+
+    /**
      * Set the {@link TrustManagerFactory} used for verifying the remote endpoint's certificate.
      *
      * @param tmf the {@link TrustManagerFactory} used for verifying the remote endpoint's certificate.
@@ -82,6 +121,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
     public final T trustManager(TrustManagerFactory tmf) {
         this.trustManagerFactory = requireNonNull(tmf);
         trustCertChainSupplier = null;
+        sslContext = null;
         return thisT();
     }
 
@@ -105,6 +145,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
     public final T trustManager(Supplier<InputStream> trustCertChainSupplier) {
         this.trustCertChainSupplier = requireNonNull(trustCertChainSupplier);
         trustManagerFactory = null;
+        sslContext = null;
         return thisT();
     }
 
@@ -125,6 +166,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
         keyCertChainSupplier = null;
         keySupplier = null;
         keyPassword = null;
+        sslContext = null;
         return thisT();
     }
 
@@ -155,6 +197,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
         this.keySupplier = requireNonNull(keySupplier);
         keyPassword = null;
         keyManagerFactory = null;
+        sslContext = null;
         return thisT();
     }
 
@@ -183,6 +226,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
         this.keySupplier = requireNonNull(keySupplier);
         this.keyPassword = keyPassword;
         keyManagerFactory = null;
+        sslContext = null;
         return thisT();
     }
 

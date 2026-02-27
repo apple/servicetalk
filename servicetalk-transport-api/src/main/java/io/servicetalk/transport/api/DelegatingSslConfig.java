@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
 import static java.util.Objects.requireNonNull;
@@ -137,5 +138,11 @@ public abstract class DelegatingSslConfig<T extends SslConfig> implements SslCon
     @Override
     public int maxCertificateListBytes() {
         return delegate.maxCertificateListBytes();
+    }
+
+    @Nullable
+    @Override
+    public SSLContext sslContext() {
+        return delegate.sslContext();
     }
 }

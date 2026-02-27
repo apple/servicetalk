@@ -21,9 +21,12 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
 abstract class AbstractSslConfig implements SslConfig {
+    @Nullable
+    private final SSLContext sslContext;
     @Nullable
     private final TrustManagerFactory trustManagerFactory;
     @Nullable
@@ -52,7 +55,8 @@ abstract class AbstractSslConfig implements SslConfig {
     private final List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms;
     private final Duration handshakeTimeout;
 
-    AbstractSslConfig(@Nullable final TrustManagerFactory trustManagerFactory,
+    AbstractSslConfig(@Nullable final SSLContext sslContext,
+                      @Nullable final TrustManagerFactory trustManagerFactory,
                       @Nullable final Supplier<InputStream> trustCertChainSupplier,
                       @Nullable final KeyManagerFactory keyManagerFactory,
                       @Nullable final Supplier<InputStream> keyCertChainSupplier,
@@ -64,6 +68,7 @@ abstract class AbstractSslConfig implements SslConfig {
                       final int maxCertificateListBytes, @Nullable final SslProvider provider,
                       @Nullable final List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms,
                       final Duration handshakeTimeout) {
+        this.sslContext = sslContext;
         this.trustManagerFactory = trustManagerFactory;
         this.trustCertChainSupplier = trustCertChainSupplier;
         this.keyManagerFactory = keyManagerFactory;
@@ -80,6 +85,12 @@ abstract class AbstractSslConfig implements SslConfig {
         this.provider = provider;
         this.certificateCompressionAlgorithms = certificateCompressionAlgorithms;
         this.handshakeTimeout = handshakeTimeout;
+    }
+
+    @Nullable
+    @Override
+    public final SSLContext sslContext() {
+        return sslContext;
     }
 
     @Nullable
