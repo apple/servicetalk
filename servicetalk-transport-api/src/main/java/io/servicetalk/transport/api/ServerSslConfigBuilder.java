@@ -35,7 +35,7 @@ public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<Serve
     private SslClientAuthMode clientAuthMode = NONE;
 
     /**
-     * Create a new instance using a {@link SSLContext}  for key and trust configuration.
+     * Create a new instance using a {@link SSLContext} for key and trust configuration.
      *
      * @param sslContext the {@link SSLContext} to use for SSL/TLS.
      * @see ServerSslConfig#sslContext()
