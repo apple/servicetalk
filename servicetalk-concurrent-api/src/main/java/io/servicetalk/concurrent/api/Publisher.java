@@ -67,6 +67,7 @@ import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnErrorSupplier
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnNextSupplier;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnRequestSupplier;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnSubscribeSupplier;
+import static io.servicetalk.concurrent.api.PublisherZipper.ZIP_MAX_CONCURRENCY;
 import static io.servicetalk.concurrent.api.ReplayPublisher.newReplayPublisher;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.utils.internal.DurationUtils.toNanos;
@@ -2366,6 +2367,134 @@ Kotlin flatMapLatest</a>
      */
     public final Publisher<T> concatPropagateCancel(Completable next) {
         return new PublisherConcatWithCompletable<>(this, next, true);
+    }
+
+    /**
+     * Create a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      List<T> thisResults = resultOfThisPublisher();
+     *      List<T2> otherResults = resultOfOtherPublisher();
+     *      assert thisResults.size() == otherResults.size();
+     *      List<R> zippedResults = ...;
+     *      for (int i = 0; i < thisResults.size(); ++i) {
+     *        zippedResults.add(zipper.apply(thisResults.get(i), otherResults.get(i)));
+     *      }
+     *      return zippedResults;
+     * }</pre>
+     * @param other The other {@link Publisher} to zip.
+     * @param zipper Used to combine the completed results for each item from {@link Publisher}.
+     * @param <T2> The type of {@code other}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}.
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see #zipWith(Publisher, BiFunction, int)
+     * @see #zipWithDelayError(Publisher, BiFunction)
+     */
+    public final <T2, R> Publisher<R> zipWith(Publisher<? extends T2> other,
+                                              BiFunction<? super T, ? super T2, ? extends R> zipper) {
+        return zip(this, other, zipper);
+    }
+
+    /**
+     * Create a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      List<T> thisResults = resultOfThisPublisher();
+     *      List<T2> otherResults = resultOfOtherPublisher();
+     *      assert thisResults.size() == otherResults.size();
+     *      List<R> zippedResults = ...;
+     *      for (int i = 0; i < thisResults.size(); ++i) {
+     *        zippedResults.add(zipper.apply(thisResults.get(i), otherResults.get(i)));
+     *      }
+     *      return zippedResults;
+     * }</pre>
+     * @param other The other {@link Publisher} to zip.
+     * @param zipper Used to combine the completed results for each item from {@link Publisher}.
+     * @param maxOutstandingDemand maximum outstanding demand to each {@link Publisher}, used to limit queue sizes that
+     * are required between {@link Publisher}s that produce data at different rates.
+     * @param <T2> The type of {@code other}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}.
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see #zipWithDelayError(Publisher, BiFunction)
+     */
+    public final <T2, R> Publisher<R> zipWith(Publisher<? extends T2> other,
+                                              BiFunction<? super T, ? super T2, ? extends R> zipper,
+                                              int maxOutstandingDemand) {
+        return zip(this, other, zipper, maxOutstandingDemand);
+    }
+
+    /**
+     * Create a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}. If any of the {@link Publisher}s terminate with an error, the returned
+     * {@link Publisher} will wait for termination till all the other {@link Publisher}s have been subscribed and
+     * terminated, and then terminate with the first error.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      List<T> thisResults = resultOfThisPublisher();
+     *      List<T2> otherResults = resultOfOtherPublisher();
+     *      assert thisResults.size() == otherResults.size();
+     *      List<R> zippedResults = ...;
+     *      for (int i = 0; i < thisResults.size(); ++i) {
+     *        zippedResults.add(zipper.apply(thisResults.get(i), otherResults.get(i)));
+     *      }
+     *      return zippedResults;
+     * }</pre>
+     * @param other The other {@link Publisher} to zip.
+     * @param zipper Used to combine the completed results for each item from each {@link Publisher}.
+     * @param <T2> The type of {@code other}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}.
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see #zipWithDelayError(Publisher, BiFunction, int)
+     * @see #zipWith(Publisher, BiFunction)
+     */
+    public final <T2, R> Publisher<R> zipWithDelayError(Publisher<? extends T2> other,
+                                                        BiFunction<? super T, ? super T2, ? extends R> zipper) {
+        return zipDelayError(this, other, zipper);
+    }
+
+    /**
+     * Create a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}. If any of the {@link Publisher}s terminate with an error, the returned
+     * {@link Publisher} will wait for termination till all the other {@link Publisher}s have been subscribed and
+     * terminated, and then terminate with the first error.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      List<T> thisResults = resultOfThisPublisher();
+     *      List<T2> otherResults = resultOfOtherPublisher();
+     *      assert thisResults.size() == otherResults.size();
+     *      List<R> zippedResults = ...;
+     *      for (int i = 0; i < thisResults.size(); ++i) {
+     *        zippedResults.add(zipper.apply(thisResults.get(i), otherResults.get(i)));
+     *      }
+     *      return zippedResults;
+     * }</pre>
+     * @param other The other {@link Publisher} to zip.
+     * @param zipper Used to combine the completed results for each item from each {@link Publisher}.
+     * @param maxOutstandingDemand maximum outstanding demand to each {@link Publisher}, used to limit queue sizes that
+     * are required between {@link Publisher}s that produce data at different rates.
+     * @param <T2> The type of {@code other}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}.
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see #zipWith(Publisher, BiFunction)
+     */
+    public final <T2, R> Publisher<R> zipWithDelayError(Publisher<? extends T2> other,
+                                                        BiFunction<? super T, ? super T2, ? extends R> zipper,
+                                                        int maxOutstandingDemand) {
+        return zipDelayError(this, other, zipper, maxOutstandingDemand);
     }
 
     /**
@@ -4877,6 +5006,601 @@ Kotlin flatMapLatest</a>
     @SafeVarargs
     public static <T> Publisher<T> mergeAllDelayError(int maxConcurrency, Publisher<? extends T>... publishers) {
         return from(publishers).flatMapMergeDelayError(identity(), maxConcurrency);
+    }
+
+    /**
+     * Create a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      List<T1> p1Results = resultOfP1Publisher();
+     *      List<T2> p2Results = resultOfP2Publisher();
+     *      assert p1Results.size() == p2Results.size();
+     *      List<R> zippedResults = ...;
+     *      for (int i = 0; i < p1Results.size(); ++i) {
+     *        zippedResults.add(zipper.apply(p1Results.get(i), p2Results.get(i)));
+     *      }
+     *      return zippedResults;
+     * }</pre>
+     * @param p1 The first {@link Publisher} to zip.
+     * @param p2 The second {@link Publisher} to zip.
+     * @param zipper Used to combine the completed results for each item from all {@link Publisher}s.
+     * @param <T1> The type of {@code p1}.
+     * @param <T2> The type of {@code p2}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code p1} and {@code p2}.
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see #zip(Publisher, Publisher, BiFunction, int)
+     * @see #zipDelayError(Publisher, Publisher, BiFunction)
+     */
+    public static <T1, T2, R> Publisher<R> zip(Publisher<? extends T1> p1, Publisher<? extends T2> p2,
+                                               BiFunction<? super T1, ? super T2, ? extends R> zipper) {
+        return zip(p1, p2, zipper, ZIP_MAX_CONCURRENCY);
+    }
+
+    /**
+     * Create a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      List<T1> p1Results = resultOfP1Publisher();
+     *      List<T2> p2Results = resultOfP2Publisher();
+     *      assert p1Results.size() == p2Results.size();
+     *      List<R> zippedResults = ...;
+     *      for (int i = 0; i < p1Results.size(); ++i) {
+     *        zippedResults.add(zipper.apply(p1Results.get(i), p2Results.get(i)));
+     *      }
+     *      return zippedResults;
+     * }</pre>
+     * @param p1 The first {@link Publisher} to zip.
+     * @param p2 The second {@link Publisher} to zip.
+     * @param zipper Used to combine the completed results for each item from all {@link Publisher}s.
+     * @param maxOutstandingDemand maximum outstanding demand to each {@link Publisher}, used to limit queue sizes that
+     * are required between {@link Publisher}s that produce data at different rates.
+     * @param <T1> The type of {@code p1}.
+     * @param <T2> The type of {@code p2}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code p1} and {@code p2}.
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see #zipDelayError(Publisher, Publisher, BiFunction, int)
+     */
+    public static <T1, T2, R> Publisher<R> zip(Publisher<? extends T1> p1, Publisher<? extends T2> p2,
+                                               BiFunction<? super T1, ? super T2, ? extends R> zipper,
+                                               int maxOutstandingDemand) {
+        return PublisherZipper.zip(false, maxOutstandingDemand, p1, p2, zipper);
+    }
+
+    /**
+     * Create a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}. If any of the {@link Publisher}s terminate with an error, the returned
+     * {@link Publisher} will wait for termination till all the other {@link Publisher}s have been subscribed and
+     * terminated, and then terminate with the first error.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      List<T1> p1Results = resultOfP1Publisher();
+     *      List<T2> p2Results = resultOfP2Publisher();
+     *      assert p1Results.size() == p2Results.size();
+     *      List<R> zippedResults = ...;
+     *      for (int i = 0; i < p1Results.size(); ++i) {
+     *        zippedResults.add(zipper.apply(p1Results.get(i), p2Results.get(i)));
+     *      }
+     *      return zippedResults;
+     * }</pre>
+     * @param p1 The first {@link Publisher} to zip.
+     * @param p2 The second {@link Publisher} to zip.
+     * @param zipper Used to combine the completed results for each item from all {@link Publisher}s.
+     * @param <T1> The type of {@code p1}.
+     * @param <T2> The type of {@code p2}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code p1} and {@code p2}.
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see #zipDelayError(Publisher, Publisher, BiFunction, int)
+     * @see #zip(Publisher, Publisher, BiFunction)
+     */
+    public static <T1, T2, R> Publisher<R> zipDelayError(Publisher<? extends T1> p1, Publisher<? extends T2> p2,
+                                                         BiFunction<? super T1, ? super T2, ? extends R> zipper) {
+        return zipDelayError(p1, p2, zipper, ZIP_MAX_CONCURRENCY);
+    }
+
+    /**
+     * Create a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}. If any of the {@link Publisher}s terminate with an error, the returned
+     * {@link Publisher} will wait for termination till all the other {@link Publisher}s have been subscribed and
+     * terminated, and then terminate with the first error.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      List<T1> p1Results = resultOfP1Publisher();
+     *      List<T2> p2Results = resultOfP2Publisher();
+     *      assert p1Results.size() == p2Results.size();
+     *      List<R> zippedResults = ...;
+     *      for (int i = 0; i < p1Results.size(); ++i) {
+     *        zippedResults.add(zipper.apply(p1Results.get(i), p2Results.get(i)));
+     *      }
+     *      return zippedResults;
+     * }</pre>
+     * @param p1 The first {@link Publisher} to zip.
+     * @param p2 The second {@link Publisher} to zip.
+     * @param zipper Used to combine the completed results for each item from all {@link Publisher}s.
+     * @param maxOutstandingDemand maximum outstanding demand to each {@link Publisher}, used to limit queue sizes that
+     * are required between {@link Publisher}s that produce data at different rates.
+     * @param <T1> The type of {@code p1}.
+     * @param <T2> The type of {@code p2}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code p1} and {@code p2}.
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see #zip(Publisher, Publisher, BiFunction, int)
+     */
+    public static <T1, T2, R> Publisher<R> zipDelayError(Publisher<? extends T1> p1, Publisher<? extends T2> p2,
+                                                         BiFunction<? super T1, ? super T2, ? extends R> zipper,
+                                                         int maxOutstandingDemand) {
+        return PublisherZipper.zip(true, maxOutstandingDemand, p1, p2, zipper);
+    }
+
+    /**
+     * Create a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      List<T1> p1Results = resultOfP1Publisher();
+     *      List<T2> p2Results = resultOfP2Publisher();
+     *      List<T3> p3Results = resultOfP3Publisher();
+     *      assert p1Results.size() == p2Results.size() && p1Results.size() == p3Results.size();
+     *      List<R> zippedResults = ...;
+     *      for (int i = 0; i < p1Results.size(); ++i) {
+     *        zippedResults.add(zipper.apply(p1Results.get(i), p2Results.get(i), p3Results.get(i)));
+     *      }
+     *      return zippedResults;
+     * }</pre>
+     * @param p1 The first {@link Publisher} to zip.
+     * @param p2 The second {@link Publisher} to zip.
+     * @param p3 The third {@link Publisher} to zip.
+     * @param zipper Used to combine the completed results for each item from all {@link Publisher}s.
+     * @param <T1> The type of {@code p1}.
+     * @param <T2> The type of {@code p2}.
+     * @param <T3> the type of {@code p3}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code p1}, {@code p2}, and {@code p3}.
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see #zip(Publisher, Publisher, Publisher, Function3, int)
+     * @see #zipDelayError(Publisher, Publisher, Publisher, Function3)
+     */
+    public static <T1, T2, T3, R> Publisher<R> zip(
+            Publisher<? extends T1> p1, Publisher<? extends T2> p2, Publisher<? extends T3> p3,
+            Function3<? super T1, ? super T2, ? super T3, ? extends R> zipper) {
+        return zip(p1, p2, p3, zipper, ZIP_MAX_CONCURRENCY);
+    }
+
+    /**
+     * Create a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      List<T1> p1Results = resultOfP1Publisher();
+     *      List<T2> p2Results = resultOfP2Publisher();
+     *      List<T3> p3Results = resultOfP3Publisher();
+     *      assert p1Results.size() == p2Results.size() && p1Results.size() == p3Results.size();
+     *      List<R> zippedResults = ...;
+     *      for (int i = 0; i < p1Results.size(); ++i) {
+     *        zippedResults.add(zipper.apply(p1Results.get(i), p2Results.get(i), p3Results.get(i)));
+     *      }
+     *      return zippedResults;
+     * }</pre>
+     * @param p1 The first {@link Publisher} to zip.
+     * @param p2 The second {@link Publisher} to zip.
+     * @param p3 The third {@link Publisher} to zip.
+     * @param zipper Used to combine the completed results for each item from all {@link Publisher}s.
+     * @param maxOutstandingDemand maximum outstanding demand to each {@link Publisher}, used to limit queue sizes that
+     * are required between {@link Publisher}s that produce data at different rates.
+     * @param <T1> The type of {@code p1}.
+     * @param <T2> The type of {@code p2}.
+     * @param <T3> the type of {@code p3}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code p1}, {@code p2}, and {@code p3}.
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see #zipDelayError(Publisher, Publisher, Publisher, Function3, int)
+     */
+    public static <T1, T2, T3, R> Publisher<R> zip(
+            Publisher<? extends T1> p1, Publisher<? extends T2> p2, Publisher<? extends T3> p3,
+            Function3<? super T1, ? super T2, ? super T3, ? extends R> zipper, int maxOutstandingDemand) {
+        return PublisherZipper.zip(false, maxOutstandingDemand, p1, p2, p3, zipper);
+    }
+
+    /**
+     * Create a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}. If any of the {@link Publisher}s terminate with an error, the returned
+     * {@link Publisher} will wait for termination till all the other {@link Publisher}s have been subscribed and
+     * terminated, and then terminate with the first error.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      List<T1> p1Results = resultOfP1Publisher();
+     *      List<T2> p2Results = resultOfP2Publisher();
+     *      List<T3> p3Results = resultOfP3Publisher();
+     *      assert p1Results.size() == p2Results.size() && p1Results.size() == p3Results.size();
+     *      List<R> zippedResults = ...;
+     *      for (int i = 0; i < p1Results.size(); ++i) {
+     *        zippedResults.add(zipper.apply(p1Results.get(i), p2Results.get(i), p3Results.get(i)));
+     *      }
+     *      return zippedResults;
+     * }</pre>
+     * @param p1 The first {@link Publisher} to zip.
+     * @param p2 The second {@link Publisher} to zip.
+     * @param p3 The third {@link Publisher} to zip.
+     * @param zipper Used to combine the completed results for each item from all {@link Publisher}s.
+     * @param <T1> The type of {@code p1}.
+     * @param <T2> The type of {@code p2}.
+     * @param <T3> the type of {@code p3}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code p1}, {@code p2}, and {@code p3}.
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see #zipDelayError(Publisher, Publisher, Publisher, Function3, int)
+     * @see #zip(Publisher, Publisher, Publisher, Function3)
+     */
+    public static <T1, T2, T3, R> Publisher<R> zipDelayError(
+            Publisher<? extends T1> p1, Publisher<? extends T2> p2, Publisher<? extends T3> p3,
+            Function3<? super T1, ? super T2, ? super T3, ? extends R> zipper) {
+        return zipDelayError(p1, p2, p3, zipper, ZIP_MAX_CONCURRENCY);
+    }
+
+    /**
+     * Create a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}. If any of the {@link Publisher}s terminate with an error, the returned
+     * {@link Publisher} will wait for termination till all the other {@link Publisher}s have been subscribed and
+     * terminated, and then terminate with the first error.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      List<T1> p1Results = resultOfP1Publisher();
+     *      List<T2> p2Results = resultOfP2Publisher();
+     *      List<T3> p3Results = resultOfP3Publisher();
+     *      assert p1Results.size() == p2Results.size() && p1Results.size() == p3Results.size();
+     *      List<R> zippedResults = ...;
+     *      for (int i = 0; i < p1Results.size(); ++i) {
+     *        zippedResults.add(zipper.apply(p1Results.get(i), p2Results.get(i), p3Results.get(i)));
+     *      }
+     *      return zippedResults;
+     * }</pre>
+     * @param p1 The first {@link Publisher} to zip.
+     * @param p2 The second {@link Publisher} to zip.
+     * @param p3 The third {@link Publisher} to zip.
+     * @param zipper Used to combine the completed results for each item from all {@link Publisher}s.
+     * @param maxOutstandingDemand maximum outstanding demand to each {@link Publisher}, used to limit queue sizes that
+     * are required between {@link Publisher}s that produce data at different rates.
+     * @param <T1> The type of {@code p1}.
+     * @param <T2> The type of {@code p2}.
+     * @param <T3> the type of {@code p3}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code p1}, {@code p2}, and {@code p3}.
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see #zip(Publisher, Publisher, Publisher, Function3, int)
+     */
+    public static <T1, T2, T3, R> Publisher<R> zipDelayError(
+            Publisher<? extends T1> p1, Publisher<? extends T2> p2, Publisher<? extends T3> p3,
+            Function3<? super T1, ? super T2, ? super T3, ? extends R> zipper, int maxOutstandingDemand) {
+        return PublisherZipper.zip(true, maxOutstandingDemand, p1, p2, p3, zipper);
+    }
+
+    /**
+     * Create a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      List<T1> p1Results = resultOfP1Publisher();
+     *      List<T2> p2Results = resultOfP2Publisher();
+     *      List<T3> p3Results = resultOfP3Publisher();
+     *      List<T4> p4Results = resultOfP3Publisher();
+     *      assert p1Results.size() == p2Results.size() && p1Results.size() == p3Results.size() &&
+     *             p1Results.size() == p4Results.size();
+     *      List<R> zippedResults = ...;
+     *      for (int i = 0; i < p1Results.size(); ++i) {
+     *        zippedResults.add(zipper.apply(p1Results.get(i), p2Results.get(i), p3Results.get(i), r4Results.get(i)));
+     *      }
+     *      return zippedResults;
+     * }</pre>
+     * @param p1 The first {@link Publisher} to zip.
+     * @param p2 The second {@link Publisher} to zip.
+     * @param p3 The third {@link Publisher} to zip.
+     * @param p4 The third {@link Publisher} to zip.
+     * @param zipper Used to combine the completed results for each item from all {@link Publisher}s.
+     * @param <T1> The type of {@code p1}.
+     * @param <T2> The type of {@code p2}.
+     * @param <T3> the type of {@code p3}.
+     * @param <T4> the type of {@code p4}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code p1}, {@code p2}, {@code p3}, and {@code p4}.
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see #zip(Publisher, Publisher, Publisher, Publisher, Function4, int)
+     * @see #zipDelayError(Publisher, Publisher, Publisher, Publisher, Function4)
+     */
+    public static <T1, T2, T3, T4, R> Publisher<R> zip(
+            Publisher<? extends T1> p1, Publisher<? extends T2> p2, Publisher<? extends T3> p3,
+            Publisher<? extends T4> p4, Function4<? super T1, ? super T2, ? super T3, ? super T4, ? extends R> zipper) {
+        return zip(p1, p2, p3, p4, zipper, ZIP_MAX_CONCURRENCY);
+    }
+
+    /**
+     * Create a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      List<T1> p1Results = resultOfP1Publisher();
+     *      List<T2> p2Results = resultOfP2Publisher();
+     *      List<T3> p3Results = resultOfP3Publisher();
+     *      List<T4> p4Results = resultOfP3Publisher();
+     *      assert p1Results.size() == p2Results.size() && p1Results.size() == p3Results.size() &&
+     *             p1Results.size() == p4Results.size();
+     *      List<R> zippedResults = ...;
+     *      for (int i = 0; i < p1Results.size(); ++i) {
+     *        zippedResults.add(zipper.apply(p1Results.get(i), p2Results.get(i), p3Results.get(i), r4Results.get(i)));
+     *      }
+     *      return zippedResults;
+     * }</pre>
+     * @param p1 The first {@link Publisher} to zip.
+     * @param p2 The second {@link Publisher} to zip.
+     * @param p3 The third {@link Publisher} to zip.
+     * @param p4 The third {@link Publisher} to zip.
+     * @param zipper Used to combine the completed results for each item from all {@link Publisher}s.
+     * @param maxOutstandingDemand maximum outstanding demand to each {@link Publisher}, used to limit queue sizes that
+     * are required between {@link Publisher}s that produce data at different rates.
+     * @param <T1> The type of {@code p1}.
+     * @param <T2> The type of {@code p2}.
+     * @param <T3> the type of {@code p3}.
+     * @param <T4> the type of {@code p4}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code p1}, {@code p2}, {@code p3}, and {@code p4}.
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see #zipDelayError(Publisher, Publisher, Publisher, Publisher, Function4, int)
+     */
+    public static <T1, T2, T3, T4, R> Publisher<R> zip(
+            Publisher<? extends T1> p1, Publisher<? extends T2> p2, Publisher<? extends T3> p3,
+            Publisher<? extends T4> p4, Function4<? super T1, ? super T2, ? super T3, ? super T4, ? extends R> zipper,
+            int maxOutstandingDemand) {
+        return PublisherZipper.zip(false, maxOutstandingDemand, p1, p2, p3, p4, zipper);
+    }
+
+    /**
+     * Create a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}. If any of the {@link Publisher}s terminate with an error, the returned
+     * {@link Publisher} will wait for termination till all the other {@link Publisher}s have been subscribed and
+     * terminated, and then terminate with the first error.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      List<T1> p1Results = resultOfP1Publisher();
+     *      List<T2> p2Results = resultOfP2Publisher();
+     *      List<T3> p3Results = resultOfP3Publisher();
+     *      List<T4> p4Results = resultOfP3Publisher();
+     *      assert p1Results.size() == p2Results.size() && p1Results.size() == p3Results.size() &&
+     *             p1Results.size() == p4Results.size();
+     *      List<R> zippedResults = ...;
+     *      for (int i = 0; i < p1Results.size(); ++i) {
+     *        zippedResults.add(zipper.apply(p1Results.get(i), p2Results.get(i), p3Results.get(i), r4Results.get(i)));
+     *      }
+     *      return zippedResults;
+     * }</pre>
+     * @param p1 The first {@link Publisher} to zip.
+     * @param p2 The second {@link Publisher} to zip.
+     * @param p3 The third {@link Publisher} to zip.
+     * @param p4 The third {@link Publisher} to zip.
+     * @param zipper Used to combine the completed results for each item from all {@link Publisher}s.
+     * @param <T1> The type of {@code p1}.
+     * @param <T2> The type of {@code p2}.
+     * @param <T3> the type of {@code p3}.
+     * @param <T4> the type of {@code p4}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code p1}, {@code p2}, {@code p3}, and {@code p4}.
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see #zipDelayError(Publisher, Publisher, Publisher, Publisher, Function4, int)
+     * @see #zip(Publisher, Publisher, Publisher, Publisher, Function4)
+     */
+    public static <T1, T2, T3, T4, R> Publisher<R> zipDelayError(
+            Publisher<? extends T1> p1, Publisher<? extends T2> p2, Publisher<? extends T3> p3,
+            Publisher<? extends T4> p4, Function4<? super T1, ? super T2, ? super T3, ? super T4, ? extends R> zipper) {
+        return zipDelayError(p1, p2, p3, p4, zipper, ZIP_MAX_CONCURRENCY);
+    }
+
+    /**
+     * Create a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}. If any of the {@link Publisher}s terminate with an error, the returned
+     * {@link Publisher} will wait for termination till all the other {@link Publisher}s have been subscribed and
+     * terminated, and then terminate with the first error.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      List<T1> p1Results = resultOfP1Publisher();
+     *      List<T2> p2Results = resultOfP2Publisher();
+     *      List<T3> p3Results = resultOfP3Publisher();
+     *      List<T4> p4Results = resultOfP3Publisher();
+     *      assert p1Results.size() == p2Results.size() && p1Results.size() == p3Results.size() &&
+     *             p1Results.size() == p4Results.size();
+     *      List<R> zippedResults = ...;
+     *      for (int i = 0; i < p1Results.size(); ++i) {
+     *        zippedResults.add(zipper.apply(p1Results.get(i), p2Results.get(i), p3Results.get(i), r4Results.get(i)));
+     *      }
+     *      return zippedResults;
+     * }</pre>
+     * @param p1 The first {@link Publisher} to zip.
+     * @param p2 The second {@link Publisher} to zip.
+     * @param p3 The third {@link Publisher} to zip.
+     * @param p4 The third {@link Publisher} to zip.
+     * @param zipper Used to combine the completed results for each item from all {@link Publisher}s.
+     * @param maxOutstandingDemand maximum outstanding demand to each {@link Publisher}, used to limit queue sizes that
+     * are required between {@link Publisher}s that produce data at different rates.
+     * @param <T1> The type of {@code p1}.
+     * @param <T2> The type of {@code p2}.
+     * @param <T3> the type of {@code p3}.
+     * @param <T4> the type of {@code p4}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code p1}, {@code p2}, {@code p3}, and {@code p4}.
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see #zip(Publisher, Publisher, Publisher, Publisher, Function4, int)
+     */
+    public static <T1, T2, T3, T4, R> Publisher<R> zipDelayError(
+            Publisher<? extends T1> p1, Publisher<? extends T2> p2, Publisher<? extends T3> p3,
+            Publisher<? extends T4> p4, Function4<? super T1, ? super T2, ? super T3, ? super T4, ? extends R> zipper,
+            int maxOutstandingDemand) {
+        return PublisherZipper.zip(true, maxOutstandingDemand, p1, p2, p3, p4, zipper);
+    }
+
+    /**
+     * Create a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      Queue<T>[] results = resultOfAllPublishers();
+     *      List<R> zippedResults = ...;
+     *      for (int i = 0; i < results.length - 1; ++i) {
+     *        assert results[i].size() == results[i + 1].size(); // each publisher emits the same number of signals.
+     *      }
+     *      for (;;) {
+     *        Object[] objects = new Object[results.size()];
+     *        for (int i = 0; i < objects.length; ++i) {
+     *          objects[i] = results[i].poll();
+     *        }
+     *        zippedResults.add(zipper.apply(objects));
+     *      }
+     *      return zippedResults;
+     * }</pre>
+     * @param zipper Used to combine the completed results for each item from all {@link Publisher}s.
+     * @param publishers The {@link Publisher}s to zip together.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code publishers}.
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see #zip(Function, int, Publisher[])
+     * @see #zipDelayError(Function, Publisher[])
+     */
+    public static <R> Publisher<R> zip(Function<? super Object[], ? extends R> zipper, Publisher<?>... publishers) {
+        return zip(zipper, ZIP_MAX_CONCURRENCY, publishers);
+    }
+
+    /**
+     * Create a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      Queue<T>[] results = resultOfAllPublishers();
+     *      List<R> zippedResults = ...;
+     *      for (int i = 0; i < results.length - 1; ++i) {
+     *        assert results[i].size() == results[i + 1].size(); // each publisher emits the same number of signals.
+     *      }
+     *      for (;;) {
+     *        Object[] objects = new Object[results.size()];
+     *        for (int i = 0; i < objects.length; ++i) {
+     *          objects[i] = results[i].poll();
+     *        }
+     *        zippedResults.add(zipper.apply(objects));
+     *      }
+     *      return zippedResults;
+     * }</pre>
+     * @param zipper Used to combine the completed results for each item from all {@link Publisher}s.
+     * @param maxOutstandingDemand maximum outstanding demand to each {@link Publisher}, used to limit queue sizes that
+     * are required between {@link Publisher}s that produce data at different rates.
+     * @param publishers The {@link Publisher}s to zip together.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code publishers}.
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see #zipDelayError(Function, int, Publisher[])
+     */
+    public static <R> Publisher<R> zip(Function<? super Object[], ? extends R> zipper, int maxOutstandingDemand,
+                                       Publisher<?>... publishers) {
+        return PublisherZipper.zip(false, maxOutstandingDemand, zipper, publishers);
+    }
+
+    /**
+     * Create a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}. If any of the {@link Publisher}s terminate with an error, the returned
+     * {@link Publisher} will wait for termination till all the other {@link Publisher}s have been subscribed and
+     * terminated, and then terminate with the first error.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      Queue<T>[] results = resultOfAllPublishers();
+     *      List<R> zippedResults = ...;
+     *      for (int i = 0; i < results.length - 1; ++i) {
+     *        assert results[i].size() == results[i + 1].size(); // each publisher emits the same number of signals.
+     *      }
+     *      for (;;) {
+     *        Object[] objects = new Object[results.size()];
+     *        for (int i = 0; i < objects.length; ++i) {
+     *          objects[i] = results[i].poll();
+     *        }
+     *        zippedResults.add(zipper.apply(objects));
+     *      }
+     *      return zippedResults;
+     * }</pre>
+     * @param zipper Used to combine the completed results for each item from all {@link Publisher}s.
+     * @param publishers The {@link Publisher}s to zip together.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code publishers}.
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see #zipDelayError(Function, int, Publisher[])
+     * @see #zip(Function, Publisher[])
+     */
+    public static <R> Publisher<R> zipDelayError(
+            Function<? super Object[], ? extends R> zipper, Publisher<?>... publishers) {
+        return zipDelayError(zipper, ZIP_MAX_CONCURRENCY, publishers);
+    }
+
+    /**
+     * Create a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code this} and {@code other}. If any of the {@link Publisher}s terminate with an error, the returned
+     * {@link Publisher} will wait for termination till all the other {@link Publisher}s have been subscribed and
+     * terminated, and then terminate with the first error.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      Queue<T>[] results = resultOfAllPublishers();
+     *      List<R> zippedResults = ...;
+     *      for (int i = 0; i < results.length - 1; ++i) {
+     *        assert results[i].size() == results[i + 1].size(); // each publisher emits the same number of signals.
+     *      }
+     *      for (;;) {
+     *        Object[] objects = new Object[results.size()];
+     *        for (int i = 0; i < objects.length; ++i) {
+     *          objects[i] = results[i].poll();
+     *        }
+     *        zippedResults.add(zipper.apply(objects));
+     *      }
+     *      return zippedResults;
+     * }</pre>
+     * @param zipper Used to combine the completed results for each item from all {@link Publisher}s.
+     * @param maxOutstandingDemand maximum outstanding demand to each {@link Publisher}, used to limit queue sizes that
+     * are required between {@link Publisher}s that produce data at different rates.
+     * @param publishers The {@link Publisher}s to zip together.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Publisher} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code publishers}.
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see #zip(Function, int, Publisher[])
+     */
+    public static <R> Publisher<R> zipDelayError(
+            Function<? super Object[], ? extends R> zipper, int maxOutstandingDemand, Publisher<?>... publishers) {
+        return PublisherZipper.zip(true, maxOutstandingDemand, zipper, publishers);
     }
 
     //
