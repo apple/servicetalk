@@ -273,7 +273,7 @@ their upstream dependency. In most cases that would be:
 
 and these are our defaults, but you can modify this `Predicate` according to your upstream behavior.
 
-* link*:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceClientPeerRejectionsExample.java[Peer rejection signals example]
+* link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceClientPeerRejectionsExample.java[Peer rejection signals example]
 
 The above example, will evaluate the remote rejection, and the request will result in a `RequestRejectedException`.
 If you want to still evaluate the remote rejection, but allow the original response from the upstream to be returned
