@@ -41,8 +41,14 @@ dependencies {
     // Exclude OkHttp sender to force use of ServiceTalk sender via SPI
     exclude group: 'io.opentelemetry', module: 'opentelemetry-exporter-sender-okhttp'
   }
+  // OpenTelemetry protobuf definitions for decoding and verifying OTLP messages in tests
+  // This is critical for verifying that gRPC framing is correct
+  testImplementation "io.opentelemetry.proto:opentelemetry-proto:1.4.0-alpha"
   testImplementation project(":servicetalk-test-resources")
   testImplementation project(":servicetalk-transport-netty-internal")
+  testImplementation project(":servicetalk-buffer-netty")
+  // ServiceTalk's gRPC protobuf serialization infrastructure for validating gRPC framing
+  testImplementation project(":servicetalk-grpc-protobuf")
 
   // Log4j2 for test logging
   testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
