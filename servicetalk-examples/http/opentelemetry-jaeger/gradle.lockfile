@@ -1,11 +1,10 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
+com.google.api.grpc:proto-google-common-protos:2.51.0=runtimeClasspath
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
-com.squareup.okhttp3:okhttp-jvm:5.3.2=runtimeClasspath
-com.squareup.okhttp3:okhttp:5.3.2=runtimeClasspath
-com.squareup.okio:okio-jvm:3.16.4=runtimeClasspath
-com.squareup.okio:okio:3.16.4=runtimeClasspath
+com.google.protobuf:protobuf-bom:3.25.8=runtimeClasspath
+com.google.protobuf:protobuf-java:3.25.8=runtimeClasspath
 io.netty:netty-bom:4.1.131.Final=runtimeClasspath
 io.netty:netty-buffer:4.1.131.Final=runtimeClasspath
 io.netty:netty-codec-dns:4.1.131.Final=runtimeClasspath
@@ -35,10 +34,8 @@ io.opentelemetry:opentelemetry-bom:1.59.0=compileClasspath,runtimeClasspath
 io.opentelemetry:opentelemetry-common:1.59.0=compileClasspath,runtimeClasspath
 io.opentelemetry:opentelemetry-context:1.59.0=compileClasspath,runtimeClasspath
 io.opentelemetry:opentelemetry-exporter-common:1.59.0=runtimeClasspath
-io.opentelemetry:opentelemetry-exporter-logging:1.59.0=compileClasspath,runtimeClasspath
 io.opentelemetry:opentelemetry-exporter-otlp-common:1.59.0=runtimeClasspath
 io.opentelemetry:opentelemetry-exporter-otlp:1.59.0=compileClasspath,runtimeClasspath
-io.opentelemetry:opentelemetry-exporter-sender-okhttp:1.59.0=runtimeClasspath
 io.opentelemetry:opentelemetry-sdk-common:1.59.0=compileClasspath,runtimeClasspath
 io.opentelemetry:opentelemetry-sdk-extension-autoconfigure-spi:1.59.0=runtimeClasspath
 io.opentelemetry:opentelemetry-sdk-logs:1.59.0=compileClasspath,runtimeClasspath
@@ -48,8 +45,7 @@ io.opentelemetry:opentelemetry-sdk:1.59.0=compileClasspath,runtimeClasspath
 org.apache.logging.log4j:log4j-api:2.23.1=runtimeClasspath
 org.apache.logging.log4j:log4j-core:2.23.1=runtimeClasspath
 org.apache.logging.log4j:log4j-slf4j-impl:2.23.1=runtimeClasspath
+org.hamcrest:hamcrest:2.2=compileClasspath,runtimeClasspath
 org.jctools:jctools-core:4.0.5=runtimeClasspath
-org.jetbrains.kotlin:kotlin-stdlib:2.2.21=runtimeClasspath
-org.jetbrains:annotations:13.0=runtimeClasspath
 org.slf4j:slf4j-api:1.7.36=compileClasspath,runtimeClasspath
 empty=annotationProcessor
