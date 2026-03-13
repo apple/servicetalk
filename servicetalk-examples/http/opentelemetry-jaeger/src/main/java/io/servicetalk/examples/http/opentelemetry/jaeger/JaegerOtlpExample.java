@@ -102,33 +102,30 @@ public final class JaegerOtlpExample {
         // no instances.
     }
 
-    /** This is a comment */
     public static void main(String[] args) throws Exception {
         // Configure OpenTelemetry SDK with OTLP exporter
         // The ServiceTalk HTTP transport will be automatically discovered via SPI
         LOGGER.info("Configuring OpenTelemetry with OTLP exporter...");
         LOGGER.info("ServiceTalk HTTP transport will be automatically discovered via SPI");
 
-        OpenTelemetry openTelemetry = configureOpenTelemetry();
-        GlobalOpenTelemetry.set(openTelemetry);
+        GlobalOpenTelemetry.set(configureOpenTelemetry());
 
         // Start a simple HTTP server
         LOGGER.info("Starting HTTP server on port 8080...");
-        HttpServerContext serverContext = startServer(openTelemetry);
+        HttpServerContext serverContext = startServer();
 
         try {
             LOGGER.info("Server started successfully");
             LOGGER.info("======================================================================");
             LOGGER.info("Making HTTP requests to generate trace data...");
             LOGGER.info("======================================================================");
-
             // Create HTTP client and make requests
-            makeRequestsWithTracing(openTelemetry);
+            makeRequestsWithTracing();
 
             // Give time for spans to be exported
             LOGGER.info("Waiting for spans to be exported to Jaeger...");
             Thread.sleep(3000);
-            
+
             LOGGER.info("======================================================================");
             LOGGER.info("Example completed successfully!");
             LOGGER.info("View traces in Jaeger UI: http://localhost:16686");
@@ -138,6 +135,7 @@ public final class JaegerOtlpExample {
             LOGGER.debug("Closing server context");
             serverContext.close();
             // Shutdown OpenTelemetry to flush remaining spans
+            OpenTelemetry openTelemetry = GlobalOpenTelemetry.get();
             if (openTelemetry instanceof OpenTelemetrySdk) {
                 LOGGER.debug("Shutting down OpenTelemetry SDK");
                 ((OpenTelemetrySdk) openTelemetry).close();
@@ -178,7 +176,6 @@ public final class JaegerOtlpExample {
 
     private static SpanExporter buildGrpcExporter() throws Exception {
         OtlpGrpcSpanExporterBuilder exporterBuilder = OtlpGrpcSpanExporter.builder()
-//                .setEndpoint(JAEGER_OTLP_HTTP_ENDPOINT)
                 .setTimeout(Duration.ofSeconds(10));
 
         // Configure mTLS if enabled
@@ -246,7 +243,7 @@ public final class JaegerOtlpExample {
         return (X509TrustManager) trustManagerFactory.getTrustManagers()[0];
     }
 
-    private static HttpServerContext startServer(OpenTelemetry openTelemetry) throws Exception {
+    private static HttpServerContext startServer() throws Exception {
         LOGGER.debug("Creating OpenTelemetry HTTP service filter");
         OpenTelemetryHttpServiceFilter serverFilter = new OpenTelemetryHttpServiceFilter.Builder()
                 .build();
@@ -274,10 +271,10 @@ public final class JaegerOtlpExample {
                 });
     }
 
-    private static void makeRequestsWithTracing(OpenTelemetry openTelemetry) throws Exception {
+    private static void makeRequestsWithTracing() throws Exception {
         LOGGER.debug("Getting tracer for service: {}", SERVICE_NAME);
-        Tracer tracer = openTelemetry.getTracer(SERVICE_NAME);
-        
+        Tracer tracer = GlobalOpenTelemetry.get().getTracer(SERVICE_NAME);
+
         LOGGER.debug("Creating OpenTelemetry HTTP requester filter");
         OpenTelemetryHttpRequesterFilter clientFilter = new OpenTelemetryHttpRequesterFilter.Builder()
                 .componentName(SERVICE_NAME + "-client")
@@ -293,7 +290,7 @@ public final class JaegerOtlpExample {
             Span span1 = tracer.spanBuilder("request-1-workflow")
                     .setAttribute("workflow.step", "initial")
                     .startSpan();
-            
+
             try {
                 HttpResponse response1 = client.request(client.get("/hello"));
                 String body1 = response1.payloadBody(textDeserializer());
@@ -310,7 +307,7 @@ public final class JaegerOtlpExample {
             Span span2 = tracer.spanBuilder("request-2-workflow")
                     .setAttribute("workflow.step", "secondary")
                     .startSpan();
-            
+
             try {
                 HttpResponse response2 = client.request(client.get("/world"));
                 String body2 = response2.payloadBody(textDeserializer());
@@ -358,7 +355,6 @@ public final class JaegerOtlpExample {
                 } finally {
                     postSpan.end();
                 }
-
             } finally {
                 parentSpan.end();
             }

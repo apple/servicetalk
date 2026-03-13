@@ -37,8 +37,6 @@ import java.time.Duration;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
 
 final class ServiceTalkHttpClientFactory {
 
@@ -106,9 +104,6 @@ final class ServiceTalkHttpClientFactory {
         return HttpClients.forSingleAddress(host, port);
     }
 
-    /**
-     * Apply connect timeout using socket options.
-     */
     private static void applyConnectTimeout(
             SingleAddressHttpClientBuilder<?, ?> builder,
             @Nullable Duration connectTimeout) {
@@ -121,9 +116,6 @@ final class ServiceTalkHttpClientFactory {
         builder.socketOption(ServiceTalkSocketOptions.CONNECT_TIMEOUT, (int) connectTimeout.toMillis());
     }
 
-    /**
-     * Apply request timeout using TimeoutHttpRequesterFilter.
-     */
     private static void applyRequestTimeout(
             SingleAddressHttpClientBuilder<?, ?> builder,
             @Nullable Duration timeout) {
@@ -137,17 +129,6 @@ final class ServiceTalkHttpClientFactory {
         builder.appendClientFilter(new TimeoutHttpRequesterFilter(timeout, true));
     }
 
-    /**
-     * Apply SSL/TLS configuration to the client builder.
-     * <p>
-     * This method handles several scenarios:
-     * <ul>
-     *   <li>If a custom {@link X509TrustManager} is provided, wrap it in a {@link TrustManagerFactory}</li>
-     *   <li>If a custom {@link SSLContext} is provided, extract its trust managers</li>
-     *   <li>If neither is provided, use system default trust managers</li>
-     * </ul>
-     * Additionally configures SNI hostname based on the endpoint.
-     */
     private static void applySslConfiguration(
             SingleAddressHttpClientBuilder<?, ?> builder,
             URI endpoint,
@@ -188,13 +169,6 @@ final class ServiceTalkHttpClientFactory {
         }
     }
 
-    /**
-     * Apply proxy configuration (HTTP only, not applicable to gRPC).
-     * <p>
-     * Maps OpenTelemetry's {@link ProxyOptions} to ServiceTalk's {@code ProxyConfig}.
-     * Uses the actual endpoint URI for proxy selection to ensure proper proxy resolution
-     * based on destination host and scheme.
-     */
     private static void applyProxyConfiguration(
             SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder,
             URI endpoint,
@@ -251,13 +225,6 @@ final class ServiceTalkHttpClientFactory {
         }
     }
 
-    /**
-     * Apply retry policy configuration.
-     * <p>
-     * Maps OpenTelemetry's {@link RetryPolicy} to ServiceTalk's {@link RetryingHttpRequesterFilter}.
-     * OpenTelemetry provides exponential backoff parameters which we map to ServiceTalk's
-     * BackOffPolicy.
-     */
     private static void applyRetryPolicy(
             SingleAddressHttpClientBuilder<?, ?> builder,
             @Nullable RetryPolicy retryPolicy) {

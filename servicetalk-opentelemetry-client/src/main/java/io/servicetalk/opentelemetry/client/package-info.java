@@ -13,45 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * ServiceTalk-based transport implementations for OpenTelemetry SDK exporters.
- * <p>
- * This package provides implementations of OpenTelemetry's {@code GrpcSender} and
- * {@code HttpSender} interfaces, which enable using ServiceTalk's high-performance HTTP and
- * gRPC clients as the underlying transport for OpenTelemetry telemetry data.
- * <h2>Key Classes</h2>
- * <ul>
- *   <li>{@link io.servicetalk.opentelemetry.client.ServiceTalkHttpSender} - HTTP transport using
- *   ServiceTalk's HTTP client</li>
- *   <li>{@link io.servicetalk.opentelemetry.client.ServiceTalkGrpcSender} - gRPC transport using
- *   ServiceTalk's HTTP/2 client</li>
- * </ul>
- * <h2>Usage Example</h2>
- * <pre>{@code
- * // Create an HTTP sender
- * ServiceTalkHttpSender httpSender = ServiceTalkHttpSender.builder()
- *     .setEndpoint("http://localhost:4318/v1/traces")
- *     .setCompression(true)
- *     .build();
- *
- * // Use with OpenTelemetry's OTLP exporter
- * SpanExporter spanExporter = OtlpHttpSpanExporter.builder()
- *     .setHttpSender(httpSender)
- *     .build();
- *
- * // Register with the OpenTelemetry SDK
- * SdkTracerProvider tracerProvider = SdkTracerProvider.builder()
- *     .addSpanProcessor(BatchSpanProcessor.builder(spanExporter).build())
- *     .build();
- * }</pre>
- * <p>
- * These senders work universally with traces, metrics, and logs - the same sender implementation
- * can be used with {@code OtlpHttpSpanExporter}, {@code OtlpHttpMetricExporter}, and
- * {@code OtlpHttpLogRecordExporter}.
- *
- * @see io.servicetalk.opentelemetry.client.ServiceTalkHttpSender
- * @see io.servicetalk.opentelemetry.client.ServiceTalkGrpcSender
- */
+
 @ElementsAreNonnullByDefault
 package io.servicetalk.opentelemetry.client;
 
