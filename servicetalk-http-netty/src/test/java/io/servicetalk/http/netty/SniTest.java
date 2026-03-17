@@ -47,7 +47,7 @@ import javax.net.ssl.SSLSession;
 import static io.servicetalk.http.netty.BuilderUtils.newClientBuilder;
 import static io.servicetalk.http.netty.BuilderUtils.newServerBuilder;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
-import static io.servicetalk.http.netty.SslHandshakeTimeoutTest.HANDSHAKE_TIMEOUT_MILLIS;
+import static io.servicetalk.http.netty.SslHandshakeFailuresTest.HANDSHAKE_TIMEOUT_MILLIS;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.net.InetAddress.getLoopbackAddress;
