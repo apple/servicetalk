@@ -16,20 +16,27 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectTimeoutException;
+import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.api.RetryableException;
+import io.servicetalk.transport.api.TransportObserver;
 
 import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeoutException;
+import javax.annotation.Nullable;
 
 import static io.netty.util.internal.PlatformDependent.normalizedOs;
 import static io.servicetalk.client.api.LimitingConnectionFactoryFilter.withMax;
@@ -47,7 +54,9 @@ import static java.lang.Boolean.TRUE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ConnectionAcceptingNettyHttpServerTest extends AbstractNettyHttpServerTest {
@@ -73,10 +82,12 @@ class ConnectionAcceptingNettyHttpServerTest extends AbstractNettyHttpServerTest
                 .enableWireLogging("servicetalk-tests-wire-logger", TRACE, TRUE::booleanValue);
     }
 
-    private StreamingHttpClient newClientWithConnectTimeout() {
+    private StreamingHttpClient newClientWithConnectTimeout(TransportObserver observer) {
         return newClientBuilder()
                 // It's important to use CONNECT_TIMEOUT here to verify that connections aren't establishing.
                 .socketOption(CONNECT_TIMEOUT, CONNECT_TIMEOUT_MILLIS)
+                .appendConnectionFactoryFilter(
+                        new TransportObserverConnectionFactoryFilter<>(observer))
                 .buildStreaming();
     }
 
@@ -100,6 +111,7 @@ class ConnectionAcceptingNettyHttpServerTest extends AbstractNettyHttpServerTest
 
     @Test
     void testIdleTimeout() throws Exception {
+        BlockingQueue<Throwable> observed = new LinkedBlockingQueue<>();
         setUp(CACHED, CACHED);
         final StreamingHttpRequest request = streamingHttpClient().newRequest(GET, SVC_ECHO);
 
@@ -111,15 +123,22 @@ class ConnectionAcceptingNettyHttpServerTest extends AbstractNettyHttpServerTest
         // Connection will establish but remain in the accept-queue
         // (i.e., NOT accepted by the server => occupying 1 backlog entry)
         assertConnectionRequestReceiveTimesOut(request);
-        try (StreamingHttpClient client = newClientWithConnectTimeout()) {
+        try (StreamingHttpClient client = newClientWithConnectTimeout(new ConnectionClosedObserver(observed))) {
             // Since we control the backlog size, this connection won't establish (i.e., NO syn-ack)
             // timeout operator can be used to kill it or socket connection-timeout
             final Single<StreamingHttpResponse> response =
                     client.reserveConnection(request).flatMap(conn -> conn.request(request));
-            final ExecutionException executionException =
-                    assertThrows(ExecutionException.class, () -> awaitIndefinitely(response));
-            assertThat(executionException.getCause(), instanceOf(ConnectTimeoutException.class));
+            final ExecutionException e = assertThrows(ExecutionException.class, () -> awaitIndefinitely(response));
+            assertConnectTimeoutException(e.getCause());
         }
+        assertThat(observed, hasSize(1));
+        observed.forEach(ConnectionAcceptingNettyHttpServerTest::assertConnectTimeoutException);
+    }
+
+    private static void assertConnectTimeoutException(Throwable t) {
+        assertThat(t, is(instanceOf(ConnectTimeoutException.class)));
+        assertThat(t, is(instanceOf(RetryableException.class)));
+        assertThat(t.getCause(), is(instanceOf(io.netty.channel.ConnectTimeoutException.class)));
     }
 
     private void assertConnectionRequestReceiveTimesOut(final StreamingHttpRequest request) {
@@ -136,5 +155,24 @@ class ConnectionAcceptingNettyHttpServerTest extends AbstractNettyHttpServerTest
                         .flatMap(conn -> conn.request(request)));
         assert response != null;
         assertResponse(response, HTTP_1_1, OK, "");
+    }
+
+    private static final class ConnectionClosedObserver implements TransportObserver, ConnectionObserver {
+
+        private final BlockingQueue<Throwable> observed;
+
+        ConnectionClosedObserver(BlockingQueue<Throwable> observed) {
+            this.observed = observed;
+        }
+
+        @Override
+        public ConnectionObserver onNewConnection(@Nullable final Object localAddress, final Object remoteAddress) {
+            return this;
+        }
+
+        @Override
+        public void connectionClosed(final Throwable error) {
+            observed.add(error);
+        }
     }
 }
