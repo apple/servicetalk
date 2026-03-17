@@ -170,7 +170,8 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
 
     @Test
     void tlsRecordOnPlaintextConnection() {
-        // 0x16 is the TLS Handshake content type
+        // technically this should never happen on a response, but test has been added for parity with the
+        // request decoder test.
         byte[] tlsRecord = {0x16, 0x03, 0x01, 0x00, 0x05};
         DecoderException e = assertThrows(DecoderException.class,
                 () -> channel().writeInbound(wrappedBuffer(tlsRecord)));

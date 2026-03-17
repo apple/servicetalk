@@ -126,21 +126,17 @@ class HttpRequestDecoderTest extends HttpObjectDecoderTest {
 
     @Test
     void tlsClientHelloOnPlaintextConnection() {
-        // 0x16 is the TLS Handshake content type, which is the first byte of a TLS ClientHello
-        byte[] tlsClientHello = {0x16, 0x03, 0x01, 0x00, 0x05};
-        DecoderException e = assertThrows(DecoderException.class,
-                () -> channel().writeInbound(wrappedBuffer(tlsClientHello)));
-        assertThat(e.getMessage(), startsWith("Received a TLS/SSL ClientHello on a non-TLS HTTP connection"));
-        assertThat(e.getCause(), is(instanceOf(IllegalCharacterException.class)));
-        assertThat(channel().inboundMessages(), is(empty()));
+        asssertTlsOnPlaintext(new byte[]{0x16, 0x03, 0x01, 0x00, 0x05});
     }
 
     @Test
-    void tlsClientHelloSingleByte() {
-        // Even a single 0x16 byte should be detected as a potential TLS ClientHello
-        byte[] singleByte = {0x16};
-        DecoderException e = assertThrows(DecoderException.class,
-                () -> channel().writeInbound(wrappedBuffer(singleByte)));
+    void tlsClientHelloSingleByteOnPlaintextConnection() {
+        asssertTlsOnPlaintext(new byte[]{0x16});
+    }
+
+    private void asssertTlsOnPlaintext(final byte[] input) {
+        final DecoderException e = assertThrows(DecoderException.class,
+                () -> channel().writeInbound(wrappedBuffer(input)));
         assertThat(e.getMessage(), startsWith("Received a TLS/SSL ClientHello on a non-TLS HTTP connection"));
         assertThat(e.getCause(), is(instanceOf(IllegalCharacterException.class)));
         assertThat(channel().inboundMessages(), is(empty()));
