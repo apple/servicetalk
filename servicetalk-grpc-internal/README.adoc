@@ -17,5 +17,4 @@
 
 This module contains internal details of the ServiceTalk gRPC implementation.
 
-
 See the link:https://docs.servicetalk.io/[ServiceTalk docs] for more information.
