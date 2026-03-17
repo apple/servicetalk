@@ -20,6 +20,7 @@ import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
+import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.DecoderException;
@@ -31,6 +32,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
@@ -46,6 +48,7 @@ import static java.lang.Integer.toHexString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
@@ -119,6 +122,28 @@ class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     @Test
     void illegalPrefaceCharacter() {
         assertDecoderExceptionWithCause(' ' + startLine() + "\r\n", "Invalid preface character");
+    }
+
+    @Test
+    void tlsClientHelloOnPlaintextConnection() {
+        // 0x16 is the TLS Handshake content type, which is the first byte of a TLS ClientHello
+        byte[] tlsClientHello = {0x16, 0x03, 0x01, 0x00, 0x05};
+        DecoderException e = assertThrows(DecoderException.class,
+                () -> channel().writeInbound(wrappedBuffer(tlsClientHello)));
+        assertThat(e.getMessage(), startsWith("Received a TLS/SSL ClientHello on a non-TLS HTTP connection"));
+        assertThat(e.getCause(), is(instanceOf(IllegalCharacterException.class)));
+        assertThat(channel().inboundMessages(), is(empty()));
+    }
+
+    @Test
+    void tlsClientHelloSingleByte() {
+        // Even a single 0x16 byte should be detected as a potential TLS ClientHello
+        byte[] singleByte = {0x16};
+        DecoderException e = assertThrows(DecoderException.class,
+                () -> channel().writeInbound(wrappedBuffer(singleByte)));
+        assertThat(e.getMessage(), startsWith("Received a TLS/SSL ClientHello on a non-TLS HTTP connection"));
+        assertThat(e.getCause(), is(instanceOf(IllegalCharacterException.class)));
+        assertThat(channel().inboundMessages(), is(empty()));
     }
 
     @Test

@@ -91,6 +91,11 @@ import static java.util.Objects.requireNonNull;
 abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDecoder {
     private static final long HTTP_VERSION_FORMAT = 0x485454502f312e00L;    // HEX representation of "HTTP/1.x"
     private static final long HTTP_VERSION_MASK = 0xffffffffffffff00L;
+    /**
+     * TLS record content type for Handshake (ClientHello), as defined in
+     * <a href="https://tools.ietf.org/html/rfc5246#section-6.2.1">RFC 5246, Section 6.2.1</a>.
+     */
+    private static final byte TLS_CONTENT_TYPE_HANDSHAKE = 0x16;
     private static final ByteProcessor SKIP_PREFACING_CRLF = value -> {
         if (isVCHAR(value)) {
             return false;
@@ -629,7 +634,12 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         final int readableBytes = buffer.writerIndex() - cumulationIndex;
         // Look at one more character than allowed to expect a valid VCHAR:
         final int len = min(MAX_ALLOWED_CHARS_TO_SKIP_PLUS_ONE - skippedControls, readableBytes);
-        final int i = buffer.forEachByte(cumulationIndex, len, SKIP_PREFACING_CRLF);
+        final int i;
+        try {
+            i = buffer.forEachByte(cumulationIndex, len, SKIP_PREFACING_CRLF);
+        } catch (StacklessDecoderException e) {
+            throw maybeWrapWithTlsHint(buffer, e);
+        }
         if (i < 0) {
             skippedControls += len;
             if (skippedControls > MAX_ALLOWED_CHARS_TO_SKIP) {
@@ -644,6 +654,17 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             buffer.readerIndex(i);
             return true;
         }
+    }
+
+    private static StacklessDecoderException maybeWrapWithTlsHint(final ByteBuf buffer,
+                                                                  final StacklessDecoderException original) {
+        if (buffer.isReadable() && buffer.getByte(buffer.readerIndex()) == TLS_CONTENT_TYPE_HANDSHAKE) {
+            return new StacklessDecoderException(
+                    "Received a TLS/SSL ClientHello on a non-TLS HTTP connection, " +
+                    "this indicates a client attempting to connect via HTTPS on a plaintext HTTP port",
+                    original.getCause());
+        }
+        return original;
     }
 
     private void parseHeaderLine(final HttpHeaders headers, final ByteBuf buffer, final int lfIndex,
