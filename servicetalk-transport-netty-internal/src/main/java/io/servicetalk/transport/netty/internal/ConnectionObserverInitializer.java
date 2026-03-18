@@ -111,7 +111,6 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
 
     @Override
     public void init(final Channel channel) {
-        assert channel.eventLoop().inEventLoop();
         channel.pipeline().addLast(new ConnectionObserverHandler(observer, connectionInfoFactory,
                 sslConfig != null, isFastOpen(channel), sslConfig));
     }
@@ -126,13 +125,12 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
         private final ConnectionObserver observer;
         private final Function<Channel, ConnectionInfo> connectionInfoFactory;
         private final boolean handshakeOnActive;
-        @Nullable
-        private final SslConfig sslConfig;
-
         private boolean tcpHandshakeComplete;
         private boolean addedCloseListener;
         @Nullable
         private SecurityHandshakeObserver handshakeObserver;
+        @Nullable
+        private final SslConfig sslConfig;
 
         ConnectionObserverHandler(final ConnectionObserver observer,
                                   final Function<Channel, ConnectionInfo> connectionInfoFactory,
@@ -158,21 +156,27 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
 
         @Override
         public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress,
-                            ChannelPromise promise) {
-            // The connect promise is the first to be notified for either success or a failure, even before the
-            // channel.closeFuture(). We use it to attach the channel.closeFuture() listener as soon as possible in case
-            // of a successful connect to report future channel closure. In case of the failure, the decorated error
-            // will be reported to ConnectionObserver inside the similar listener added by TcpConnector.
+                            ChannelPromise promise) throws Exception {
+            // The connect promise is the first to be notified of problems in the connect phase, even before the
+            // channel.closeFuture(). We typically want to know about closure before we get to returning the failed
+            // response because it is the cause of the failed response, so we eagerly propagate that in the event of
+            // a failed connect promise. We add our listener to the promise before forwarding the call so we can be
+            // sure this callback is fired early in the failure pathway.
             promise.addListener((ChannelFuture future) -> {
-                assert ctx.channel().eventLoop().inEventLoop();
                 if (future.isSuccess()) {
                     maybeAddChannelClosedListener(ctx.channel());
                 } else {
-                    // Mark as added to avoid double reporting.
+                    assert ctx.channel().eventLoop().inEventLoop();
                     addedCloseListener = true;
+                    Throwable t = future.cause();
+                    if (t == null) {
+                        observer.connectionClosed();
+                    } else {
+                        observer.connectionClosed(t);
+                    }
                 }
             });
-            ctx.connect(remoteAddress, localAddress, promise);
+            super.connect(ctx, remoteAddress, localAddress, promise);
         }
 
         @Override
@@ -182,7 +186,6 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
         }
 
         private void whenChannelActive(final Channel channel) {
-            assert channel.eventLoop().inEventLoop();
             maybeAddChannelClosedListener(channel);
             reportTcpHandshakeComplete(channel);
             if (handshakeOnActive) {
@@ -191,6 +194,7 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
         }
 
         private void maybeAddChannelClosedListener(Channel channel) {
+            assert channel.eventLoop().inEventLoop();
             if (addedCloseListener) {
                 return;
             }
