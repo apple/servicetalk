@@ -58,9 +58,9 @@ discuss the various implementations offered in ServiceTalk.
 
 link:{source-root}/servicetalk-dns-discovery-netty/src/main/java/io/servicetalk/dns/discovery/netty/DefaultDnsServiceDiscovererBuilder.java[DefaultDnsServiceDiscovererBuilder]
 is used to configure and build instances of _ServiceDiscoverer_ that use
-link:https://tools.ietf.org/html/rfc1035[Domain Name System (DNS)] to resolve hosts represented by domain name into a
+link:https://datatracker.ietf.org/doc/html/rfc1035[Domain Name System (DNS)] to resolve hosts represented by domain name into a
 set of IP-addresses needed for _Clients_ to connect to the remote servers. Resolution happens every
-link:https://tools.ietf.org/html/rfc1035#section-3.2.1[TTL] seconds.
+link:https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.1[TTL] seconds.
 
 TIP: This is the default implementation that will be used automatically if no alternative _ServiceDiscoverer_ is
 configured when users create a _Client_ instance.

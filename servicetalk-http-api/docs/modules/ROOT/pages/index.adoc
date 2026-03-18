@@ -8,8 +8,8 @@ endif::[]
 
 = HTTP
 
-This module defines the ServiceTalk client and server API for the link:https://tools.ietf.org/html/rfc7231[HTTP/1.x]
-and link:https://tools.ietf.org/html/rfc7540[HTTP/2] protocols. This module supports all the different
+This module defines the ServiceTalk client and server API for the link:https://datatracker.ietf.org/doc/html/rfc7231[HTTP/1.x]
+and link:https://datatracker.ietf.org/doc/html/rfc7540[HTTP/2] protocols. This module supports all the different
 xref:{page-version}@servicetalk::programming-paradigms.adoc[Programming Paradigms] for client and server.
 Here is a quick start example of the
 xref:{page-version}@servicetalk::programming-paradigms.adoc#blocking-and-aggregated[blocking and aggregated] paradigm:
@@ -129,7 +129,7 @@ xref:{page-version}@servicetalk-client-api::service-discovery.adoc#domain-name-s
 This `Client` is for use cases where you want to issue requests to a single service (that may have multiple instances).
 
 === MultiAddress Client
-This `Client` parses the link:https://tools.ietf.org/html/rfc7230#section-5.3[request-target] to determine the remote
+This `Client` parses the link:https://datatracker.ietf.org/doc/html/rfc7230#section-5.3[request-target] to determine the remote
 address for each request. This `Client` simulates a browser type of use case.
 
 Each of the above ``Client``s can be created via the
@@ -215,8 +215,8 @@ control flow.
 
 == Using HTTP/2 transport
 
-ServiceTalk supports both link:https://tools.ietf.org/html/rfc7231[HTTP/1.x] and
-link:https://tools.ietf.org/html/rfc7540[HTTP/2] protocols.
+ServiceTalk supports both link:https://datatracker.ietf.org/doc/html/rfc7231[HTTP/1.x] and
+link:https://datatracker.ietf.org/doc/html/rfc7540[HTTP/2] protocols.
 
 HTTP/2 provides many benefits over HTTP/1.1 ranging from improving performance (eg: multiplexing, binary framing) to
 adding new features (eg: server push, request prioritization). ServiceTalk intends to provide all these features to
@@ -228,7 +228,7 @@ in ServiceTalk eventually.
 
 For the cleartext TCP connections, users have to configure the desired protocol version upfront, using builder methods.
 For secure TLS connections, a protocol version must be negotiated using
-link:https://tools.ietf.org/html/rfc7301[ALPN extension].
+link:https://datatracker.ietf.org/doc/html/rfc7301[ALPN extension].
 
 For more information about how to configure
 different HTTP protocol versions see xref:{page-version}@servicetalk-examples::http/index.adoc#HTTP2[these] examples.
