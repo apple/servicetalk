@@ -15,7 +15,16 @@
  */
 
 apply plugin: "java"
+apply plugin: "application"
 apply from: "../../gradle/idea.gradle"
+
+application {
+  mainClass = "io.servicetalk.examples.http.opentelemetry.jaeger.JaegerOtlpExample"
+}
+
+run {
+  systemProperty "io.opentelemetry.sdk.common.export.GrpcSenderProvider", "io.servicetalk.opentelemetry.client.ServiceTalkGrpcSenderProvider"
+}
 
 dependencies {
   implementation platform("io.opentelemetry:opentelemetry-bom:$opentelemetryVersion")
@@ -35,7 +44,7 @@ dependencies {
   // OTLP exporter (uses SPI to find transport)
   // Exclude default OkHttp sender to use ServiceTalk's implementation exclusively
   implementation("io.opentelemetry:opentelemetry-exporter-otlp") {
-    exclude group: 'io.opentelemetry', module: 'opentelemetry-exporter-sender-okhttp'
+//    exclude group: 'io.opentelemetry', module: 'opentelemetry-exporter-sender-okhttp'
   }
 
   implementation "org.slf4j:slf4j-api:$slf4jVersion"

@@ -103,6 +103,8 @@ public final class JaegerOtlpExample {
     }
 
     public static void main(String[] args) throws Exception {
+        System.setProperty("io.opentelemetry.sdk.common.export.GrpcSenderProvider",
+                "io.servicetalk.opentelemetry.client.ServiceTalkGrpcSenderProvider");
         // Configure OpenTelemetry SDK with OTLP exporter
         // The ServiceTalk HTTP transport will be automatically discovered via SPI
         LOGGER.info("Configuring OpenTelemetry with OTLP exporter...");
