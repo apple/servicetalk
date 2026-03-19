@@ -64,6 +64,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -168,33 +169,21 @@ public final class TcpConnector {
                                 connectHandler.connectFailed(cause);
                             }
                         });
-                        ctx.connect(remoteAddress, localAddress, new DelegatingChannelPromise(promise) {
-                            @Override
-                            public boolean tryFailure(Throwable cause) {
-                                return promise.tryFailure(onFailure(cause));
-                            }
-
-                            @Override
-                            public ChannelPromise setFailure(Throwable cause) {
-                                return promise.setFailure(onFailure(cause));
-                            }
-
-                            private Throwable onFailure(Throwable cause) {
-                                if (cause != null) {
-                                    if (cause instanceof ConnectTimeoutException) {
-                                        String msg = resolvedRemoteAddress instanceof FileDescriptorSocketAddress ?
-                                                "Failed to register: " + resolvedRemoteAddress :
-                                                "Failed to connect: " + resolvedRemoteAddress + " (localAddress: " +
-                                                        localAddress + ")";
-                                        cause = new io.servicetalk.client.api.ConnectTimeoutException(msg, cause);
-                                    } else if (cause instanceof ConnectException) {
-                                        cause = new RetryableConnectException((ConnectException) cause);
-                                    }
+                        ctx.connect(remoteAddress, localAddress, new DelegatingChannelPromise(promise, cause -> {
+                            if (cause != null) {
+                                if (cause instanceof ConnectTimeoutException) {
+                                    String msg = resolvedRemoteAddress instanceof FileDescriptorSocketAddress ?
+                                            "Failed to register: " + resolvedRemoteAddress :
+                                            "Failed to connect: " + resolvedRemoteAddress + " (localAddress: " +
+                                                    localAddress + ")";
+                                    cause = new io.servicetalk.client.api.ConnectTimeoutException(msg, cause);
+                                } else if (cause instanceof ConnectException) {
+                                    cause = new RetryableConnectException((ConnectException) cause);
                                 }
                                 assignConnectionError(channel, cause);
-                                return cause;
                             }
-                        });
+                            return cause;
+                        }));
                     }
                 });
                 connectHandler.accept(channel);
@@ -473,12 +462,24 @@ public final class TcpConnector {
         }
     }
 
-    abstract static class DelegatingChannelPromise implements ChannelPromise {
+    private static final class DelegatingChannelPromise implements ChannelPromise {
 
         private final ChannelPromise delegate;
+        private final Function<Throwable, Throwable> onFailure;
 
-        DelegatingChannelPromise(ChannelPromise delegate) {
+        DelegatingChannelPromise(ChannelPromise delegate, Function<Throwable, Throwable> onFailure) {
             this.delegate = delegate;
+            this.onFailure = onFailure;
+        }
+
+        @Override
+        public boolean tryFailure(Throwable cause) {
+            return delegate.tryFailure(onFailure.apply(cause));
+        }
+
+        @Override
+        public ChannelPromise setFailure(Throwable cause) {
+            return delegate.setFailure(onFailure.apply(cause));
         }
 
         @Override
@@ -556,7 +557,7 @@ public final class TcpConnector {
 
         @Override
         public ChannelPromise unvoid() {
-            return this; // TODO: this is broken.
+            return isVoid() ? new DelegatingChannelPromise(delegate.unvoid(), onFailure) : this;
         }
 
         @Override
