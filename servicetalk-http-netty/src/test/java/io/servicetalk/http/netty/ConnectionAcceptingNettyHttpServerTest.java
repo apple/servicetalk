@@ -174,5 +174,10 @@ class ConnectionAcceptingNettyHttpServerTest extends AbstractNettyHttpServerTest
         public void connectionClosed(final Throwable error) {
             observed.add(error);
         }
+
+        @Override
+        public void connectionClosed() {
+            observed.add(new IllegalStateException("Unexpected call to connectionClosed()"));
+        }
     }
 }
