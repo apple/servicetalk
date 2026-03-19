@@ -176,7 +176,7 @@ public final class TcpConnector {
                                 connectHandler.connectFailed(cause);
                             }
                         });
-                        super.connect(ctx, remoteAddress, localAddress, promise);
+                        ctx.connect(remoteAddress, localAddress, promise);
                     }
                 });
                 connectHandler.accept(channel);
@@ -331,6 +331,8 @@ public final class TcpConnector {
         }
 
         void connectFailed(final Throwable cause) {
+            // Report the error to the observer before propagating it down to the target subscriber.
+            connectionObserver.connectionClosed(cause);
             if (terminatedUpdater.compareAndSet(this, 0, 1)) {
                 target.onError(cause);
             }
