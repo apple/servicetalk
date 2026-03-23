@@ -102,7 +102,11 @@ final class OptionalSslNegotiator {
 
         final Consumer<NettyConnectionContext> connectionConsumer = serverConnection -> {
             if (serverConnection instanceof NettyHttpServer.NettyHttpServerConnection) {
+                ((NettyHttpServer.NettyHttpServerConnection) serverConnection).notifyConnectionEstablished();
                 ((NettyHttpServer.NettyHttpServerConnection) serverConnection).process(true);
+            } else if (serverConnection instanceof H2ServerParentConnectionContext) {
+                ((H2ServerParentConnectionContext) serverConnection)
+                        .notifyConnectionEstablishedAndEnableAutoRead();
             }
         };
 

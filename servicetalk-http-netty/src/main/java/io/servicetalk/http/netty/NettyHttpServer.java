@@ -144,7 +144,10 @@ final class NettyHttpServer {
                 (channel, connectionObserver) -> initChannel(channel, executionContext, config,
                         new TcpServerChannelInitializer(tcpServerConfig, connectionObserver, executionContext), service,
                         connectionObserver),
-                serverConnection -> serverConnection.process(true),
+                serverConnection -> {
+                    serverConnection.notifyConnectionEstablished();
+                    serverConnection.process(true);
+                },
                         earlyConnectionAcceptor, lateConnectionAcceptor)
                 .map(delegate -> {
                     LOGGER.debug("Started HTTP/1.1 server for address {}.", delegate.listenAddress());
@@ -185,10 +188,14 @@ final class NettyHttpServer {
                 closeHandler, tcpConfig.flushStrategy(), tcpConfig.idleTimeoutMs(), tcpConfig.sslConfig(),
                 initializer.andThen(getChannelInitializer(
                         getByteBufAllocator(builderExecutionContext.bufferAllocator()), h1Config, closeHandler)),
-                HTTP_1_1, observer, false, __ -> false)
-                .map(conn -> new NettyHttpServerConnection(conn, service,
-                        HTTP_1_1, h1Config.headersFactory(),
-                        config.allowDropTrailersReadFromTransport())),
+                HTTP_1_1, observer, false, __ -> false, true)
+                .map(conn -> {
+                    final NettyHttpServerConnection serverConn = new NettyHttpServerConnection(conn, service,
+                            HTTP_1_1, h1Config.headersFactory(),
+                            config.allowDropTrailersReadFromTransport());
+                    serverConn.observer = observer;
+                    return serverConn;
+                }),
                 HTTP_1_1, channel);
     }
 
@@ -270,6 +277,8 @@ final class NettyHttpServer {
         private final HttpExecutionContext executionContext;
         private final ChangingFlushStrategy flushStrategy;
         private final boolean requireTrailerHeader;
+        @Nullable
+        private ConnectionObserver observer;
 
         NettyHttpServerConnection(final NettyConnection<Object, Object> connection,
                                   final StreamingHttpService service,
@@ -307,6 +316,17 @@ final class NettyHttpServer {
                     });
             toSource(handleRequestAndWriteResponse(requestSingle, handleMultipleRequests))
                     .subscribe(new ErrorLoggingHttpSubscriber(this));
+        }
+
+        /**
+         * Notifies the observer that the connection has been established. Called from the connection consumer
+         * after all connection acceptors have passed.
+         */
+        void notifyConnectionEstablished() {
+            if (observer != null && connection instanceof DefaultNettyConnection) {
+                ((DefaultNettyConnection<?, ?>) connection).notifyConnectionEstablished(observer);
+                observer = null;
+            }
         }
 
         @Override
