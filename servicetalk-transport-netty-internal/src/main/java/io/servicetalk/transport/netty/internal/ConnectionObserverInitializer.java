@@ -168,10 +168,7 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
                 } else {
                     assert ctx.channel().eventLoop().inEventLoop();
                     addedCloseListener = true;
-                    Throwable t = channelError(future.channel());
-                    if (t == null) {
-                        t = future.cause();
-                    }
+                    Throwable t = future.cause();
                     if (t == null) {
                         observer.connectionClosed();
                     } else {

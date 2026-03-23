@@ -50,6 +50,11 @@
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
   </Match>
   <Match>
+    <Class name="io.servicetalk.tcp.netty.internal.TcpConnector$ConnectHandler"/>
+    <Method name="lambda$connectFuture$1"/>
+    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+  </Match>
+  <Match>
     <Class name="io.servicetalk.tcp.netty.internal.TcpServerBinder$3"/>
     <Method name="lambda$handleSubscribe$1"/>
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>

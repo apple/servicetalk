@@ -42,6 +42,7 @@ public class DeferSslHandler extends ChannelDuplexHandler {
      * Indicates that we are ready to stop deferring, and add the deferred {@link SslHandler}.
      */
     public void ready() {
+        assert channel.eventLoop().inEventLoop();
         final ChannelPipeline pipeline = channel.pipeline();
         final ConnectionObserverHandler observerHandler = pipeline.get(ConnectionObserverHandler.class);
         if (observerHandler != null) {

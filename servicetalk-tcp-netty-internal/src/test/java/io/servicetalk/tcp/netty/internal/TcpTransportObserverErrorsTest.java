@@ -154,6 +154,7 @@ final class TcpTransportObserverErrorsTest extends AbstractTransportObserverTest
             case CONNECTION_REFUSED:
                 verify(clientConnectionObserver, await()).connectionClosed(exceptionCaptor.capture());
                 assertThat(exceptionCaptor.getValue(), instanceOf(ConnectException.class));
+                assertThat(exceptionCaptor.getValue(), instanceOf(RetryableException.class));
                 assertThat(exceptionCaptor.getValue().getMessage(), containsString("refused"));
                 break;
             case CONNECTION_ACCEPTOR:
