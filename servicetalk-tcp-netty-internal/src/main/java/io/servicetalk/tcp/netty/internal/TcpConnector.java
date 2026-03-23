@@ -479,7 +479,8 @@ public final class TcpConnector {
 
         @Override
         public ChannelPromise setFailure(Throwable cause) {
-            return delegate.setFailure(onFailure.apply(cause));
+            delegate.setFailure(onFailure.apply(cause));
+            return this;
         }
 
         @Override
