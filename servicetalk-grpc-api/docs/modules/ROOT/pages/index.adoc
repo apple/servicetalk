@@ -18,10 +18,10 @@ link:https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md[gRPC wire pr
 extensively. However, our xref:{page-version}@servicetalk::index.adoc#design-philosophy[design philosophies] are
 different than
 link:https://github.com/grpc/grpc-java[grpc-java] and ServiceTalk also provides
-link:https://tools.ietf.org/html/rfc7540[HTTP/2] directly for users. The
+link:https://datatracker.ietf.org/doc/html/rfc7540[HTTP/2] directly for users. The
 link:https://github.com/grpc/grpc-java[grpc-java] team and the ServiceTalk team collaborated to bring
-link:https://tools.ietf.org/html/rfc7540[HTTP/2] support to Netty, and both share the same underlying protocol
-implementation. Once you have link:https://tools.ietf.org/html/rfc7540[HTTP/2] support the investment to support the
+link:https://datatracker.ietf.org/doc/html/rfc7540[HTTP/2] support to Netty, and both share the same underlying protocol
+implementation. Once you have link:https://datatracker.ietf.org/doc/html/rfc7540[HTTP/2] support the investment to support the
 link:https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md[gRPC wire protocol] is relatively small but it
 enables ServiceTalk users to benefit from our
 xref:{page-version}@servicetalk::index.adoc#DesignPhilosophy[design philosophy] consistently across all protocols.

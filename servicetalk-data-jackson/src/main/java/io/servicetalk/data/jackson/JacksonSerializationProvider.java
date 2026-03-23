@@ -47,7 +47,9 @@ public final class JacksonSerializationProvider implements SerializationProvider
 
     /**
      * New instances which will use the default {@link ObjectMapper}.
+     * @deprecated Use {@link JacksonSerializerFactory}.
      */
+    @Deprecated
     public JacksonSerializationProvider() {
         this(new ObjectMapper());
     }
@@ -56,7 +58,9 @@ public final class JacksonSerializationProvider implements SerializationProvider
      * New instance.
      *
      * @param mapper {@link ObjectMapper} to use.
+     * @deprecated Use {@link JacksonSerializerFactory}.
      */
+    @Deprecated
     public JacksonSerializationProvider(final ObjectMapper mapper) {
         this.mapper = requireNonNull(mapper);
     }

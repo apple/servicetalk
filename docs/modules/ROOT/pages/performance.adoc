@@ -495,7 +495,7 @@ HttpServers.forPort(8080)
 
 === HTTP Header validation
 ServiceTalk aims to be safe by default, hence it validates HTTP headers (including cookies) in accordance to the
-link:https://tools.ietf.org/html/rfc7230[HTTP RFCs]. However validation is not for free and comes with some overhead. If
+link:https://datatracker.ietf.org/doc/html/rfc7230[HTTP RFCs]. However validation is not for free and comes with some overhead. If
 you know that your headers will always be valid or are willing to forgo validation, then you can disable header
 validation as follows:
 
