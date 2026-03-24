@@ -137,7 +137,7 @@ class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     private void asssertTlsOnPlaintext(final byte[] input) {
         final DecoderException e = assertThrows(DecoderException.class,
                 () -> channel().writeInbound(wrappedBuffer(input)));
-        assertThat(e.getMessage(), startsWith("Received a TLS/SSL ClientHello on a non-TLS HTTP connection"));
+        assertThat(e.getMessage(), startsWith("Received a TLS/SSL record on a non-TLS HTTP connection"));
         assertThat(e.getCause(), is(instanceOf(IllegalCharacterException.class)));
         assertThat(channel().inboundMessages(), is(empty()));
     }

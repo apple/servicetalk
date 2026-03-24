@@ -175,7 +175,7 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
         byte[] tlsRecord = {0x16, 0x03, 0x01, 0x00, 0x05};
         DecoderException e = assertThrows(DecoderException.class,
                 () -> channel().writeInbound(wrappedBuffer(tlsRecord)));
-        assertThat(e.getMessage(), startsWith("Received a TLS/SSL ClientHello on a non-TLS HTTP connection"));
+        assertThat(e.getMessage(), startsWith("Received a TLS/SSL record on a non-TLS HTTP connection"));
         assertThat(e.getCause(), is(instanceOf(IllegalCharacterException.class)));
         assertThat(channel().inboundMessages(), is(empty()));
     }

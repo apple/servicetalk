@@ -92,8 +92,9 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     private static final long HTTP_VERSION_FORMAT = 0x485454502f312e00L;    // HEX representation of "HTTP/1.x"
     private static final long HTTP_VERSION_MASK = 0xffffffffffffff00L;
     /**
-     * TLS record content type for Handshake (ClientHello), as defined in
-     * <a href="https://tools.ietf.org/html/rfc5246#section-6.2.1">RFC 5246, Section 6.2.1</a>.
+     * TLS record content type for Handshake, as defined in the TLS record layer specification.
+     * This value is the same across TLS 1.0 (<a href="https://tools.ietf.org/html/rfc2246">RFC 2246</a>)
+     * through TLS 1.3 (<a href="https://tools.ietf.org/html/rfc8446">RFC 8446</a>).
      */
     private static final byte TLS_CONTENT_TYPE_HANDSHAKE = 0x16;
     private static final ByteProcessor SKIP_PREFACING_CRLF = value -> {
@@ -102,6 +103,12 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         }
         if (value == CR || value == LF) {
             return true;
+        }
+        if (value == TLS_CONTENT_TYPE_HANDSHAKE) {
+            throw new StacklessDecoderException(
+                    "Received a TLS/SSL record on a non-TLS HTTP connection. " +
+                    "This likely indicates a client attempting to connect via HTTPS to a plaintext HTTP port",
+                    new IllegalCharacterException(value, "CR (0x0d), LF (0x0a)"));
         }
         throw new StacklessDecoderException("Invalid preface character before the start-line of the HTTP message",
                 new IllegalCharacterException(value, "CR (0x0d), LF (0x0a)"));
@@ -634,12 +641,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         final int readableBytes = buffer.writerIndex() - cumulationIndex;
         // Look at one more character than allowed to expect a valid VCHAR:
         final int len = min(MAX_ALLOWED_CHARS_TO_SKIP_PLUS_ONE - skippedControls, readableBytes);
-        final int i;
-        try {
-            i = buffer.forEachByte(cumulationIndex, len, SKIP_PREFACING_CRLF);
-        } catch (StacklessDecoderException e) {
-            throw maybeWrapWithTlsHint(buffer, e);
-        }
+        final int i = buffer.forEachByte(cumulationIndex, len, SKIP_PREFACING_CRLF);
         if (i < 0) {
             skippedControls += len;
             if (skippedControls > MAX_ALLOWED_CHARS_TO_SKIP) {
@@ -654,17 +656,6 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             buffer.readerIndex(i);
             return true;
         }
-    }
-
-    private static StacklessDecoderException maybeWrapWithTlsHint(final ByteBuf buffer,
-                                                                  final StacklessDecoderException original) {
-        if (buffer.isReadable() && buffer.getByte(buffer.readerIndex()) == TLS_CONTENT_TYPE_HANDSHAKE) {
-            return new StacklessDecoderException(
-                    "Received a TLS/SSL ClientHello on a non-TLS HTTP connection, " +
-                    "this indicates a client attempting to connect via HTTPS on a plaintext HTTP port",
-                    original.getCause());
-        }
-        return original;
     }
 
     private void parseHeaderLine(final HttpHeaders headers, final ByteBuf buffer, final int lfIndex,
