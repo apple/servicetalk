@@ -39,8 +39,10 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.netty.HttpResponseDecoder.Signal;
+import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.handler.codec.DecoderException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -51,6 +53,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 
+import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
@@ -71,10 +74,14 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_P
 import static java.lang.Integer.toHexString;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class HttpResponseDecoderTest extends HttpObjectDecoderTest {
 
@@ -159,6 +166,18 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     @Test
     void illegalPrefaceCharacter() {
         assertDecoderExceptionWithCause(" HTTP/1.1 200 OK" + "\r\n", "Invalid preface character");
+    }
+
+    @Test
+    void tlsRecordOnPlaintextConnection() {
+        // technically this should never happen on a response, but test has been added for parity with the
+        // request decoder test.
+        byte[] tlsRecord = {0x16, 0x03, 0x01, 0x00, 0x05};
+        DecoderException e = assertThrows(DecoderException.class,
+                () -> channel().writeInbound(wrappedBuffer(tlsRecord)));
+        assertThat(e.getMessage(), startsWith("Received a TLS/SSL record on a non-TLS HTTP connection"));
+        assertThat(e.getCause(), is(instanceOf(IllegalCharacterException.class)));
+        assertThat(channel().inboundMessages(), is(empty()));
     }
 
     @Test

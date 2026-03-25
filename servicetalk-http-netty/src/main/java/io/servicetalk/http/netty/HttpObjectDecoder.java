@@ -91,12 +91,24 @@ import static java.util.Objects.requireNonNull;
 abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDecoder {
     private static final long HTTP_VERSION_FORMAT = 0x485454502f312e00L;    // HEX representation of "HTTP/1.x"
     private static final long HTTP_VERSION_MASK = 0xffffffffffffff00L;
+    /**
+     * TLS record content type for Handshake, as defined in the TLS record layer specification.
+     * This value is the same across TLS 1.0 (<a href="https://tools.ietf.org/html/rfc2246">RFC 2246</a>)
+     * through TLS 1.3 (<a href="https://tools.ietf.org/html/rfc8446">RFC 8446</a>).
+     */
+    private static final byte TLS_CONTENT_TYPE_HANDSHAKE = 0x16;
     private static final ByteProcessor SKIP_PREFACING_CRLF = value -> {
         if (isVCHAR(value)) {
             return false;
         }
         if (value == CR || value == LF) {
             return true;
+        }
+        if (value == TLS_CONTENT_TYPE_HANDSHAKE) {
+            throw new StacklessDecoderException(
+                    "Received a TLS/SSL record on a non-TLS HTTP connection. " +
+                    "This likely indicates a client attempting to connect via HTTPS to a plaintext HTTP port",
+                    new IllegalCharacterException(value, "CR (0x0d), LF (0x0a)"));
         }
         throw new StacklessDecoderException("Invalid preface character before the start-line of the HTTP message",
                 new IllegalCharacterException(value, "CR (0x0d), LF (0x0a)"));
