@@ -187,7 +187,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                         HttpHeadersFactory headersFactory,
                                         StreamingHttpRequestResponseFactory reqRespFactory,
                                         ConnectionObserver observer) {
-            super(connection, delayedCancellable, waitForSslHandshake, observer);
+            super(connection, delayedCancellable, waitForSslHandshake, observer,
+                    false /* deferAutoRead: client enables auto-read immediately */);
             this.subscriber = requireNonNull(subscriber);
             this.headersFactory = requireNonNull(headersFactory);
             this.reqRespFactory = requireNonNull(reqRespFactory);
