@@ -15,6 +15,7 @@
  */
 
 import io.servicetalk.gradle.plugin.internal.Versions
+import org.gradle.testing.jacoco.plugins.JacocoCoverageReport
 
 if (!repositories) {
   allprojects {
@@ -92,6 +93,52 @@ dependencyAnalysis {
 }
 
 quality.dependsOn buildHealth
+
+apply plugin: "jacoco-report-aggregation"
+
+// Pin the JaCoCo version on the root project to match the version used by subprojects,
+// avoiding .exec file incompatibilities between different JaCoCo versions.
+jacoco {
+  toolVersion = Versions.JACOCO_VERSION
+}
+
+// Declare which subprojects contribute to the aggregate coverage report.
+// Uses name-based filtering so subprojects don't need to be eagerly evaluated
+// (compatible with org.gradle.configureondemand=true in gradle.properties).
+dependencies {
+  subprojects.findAll { sub ->
+    sub.name != "servicetalk-bom" &&
+    sub.name != "servicetalk-dependencies" &&
+    // Build tooling — its transitive deps (spotbugs-gradle-plugin, etc.) aren't resolvable
+    // from the project's regular repositories.
+    sub.name != "servicetalk-gradle-plugin-internal" &&
+    !sub.path.contains("examples") &&
+    // jersey3-jakarta modules are copies of the jersey modules with identical class names;
+    // including them causes "Can't add different class with same name" in JaCoCo analysis.
+    !sub.name.contains("-jersey3-jakarta")
+  }.each { sub ->
+    jacocoAggregation project(sub.path)
+  }
+}
+
+// Aggregate JaCoCo report across all subprojects.
+// Usage: ./gradlew testCodeCoverageReport  (runs all tests first, then merges coverage)
+reporting {
+  reports {
+    testCodeCoverageReport(JacocoCoverageReport) {
+      testSuiteName = "test"
+    }
+  }
+}
+
+tasks.named("testCodeCoverageReport") {
+  reports {
+    xml.required = true
+    html.required = true
+    html.outputLocation = layout.buildDirectory.dir("reports/jacoco/aggregate/html")
+    xml.outputLocation = layout.buildDirectory.file("reports/jacoco/aggregate/jacocoAggregateReport.xml")
+  }
+}
 
 task validateLocalDocSite(type: Exec) {
   group = 'Documentation'
