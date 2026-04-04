@@ -67,6 +67,7 @@ include "servicetalk-annotations",
         "servicetalk-examples:http:jaxrs",
         "servicetalk-examples:http:metadata",
         "servicetalk-examples:http:opentelemetry-tracing",
+        "servicetalk-examples:http:opentelemetry-jaeger",
         "servicetalk-examples:http:opentracing",
         "servicetalk-examples:http:observer",
         "servicetalk-examples:http:retry",
@@ -112,6 +113,7 @@ include "servicetalk-annotations",
         "servicetalk-oio-api",
         "servicetalk-oio-api-internal",
         "servicetalk-opentelemetry-asynccontext",
+        "servicetalk-opentelemetry-client",
         "servicetalk-opentelemetry-http",
         "servicetalk-opentracing-inmemory",
         "servicetalk-opentracing-inmemory-api",
@@ -154,6 +156,7 @@ project(":servicetalk-examples:http:jaxrs").name = "servicetalk-examples-http-ja
 project(":servicetalk-examples:http:loadbalancer").name = "servicetalk-examples-http-loadbalancer"
 project(":servicetalk-examples:http:metadata").name = "servicetalk-examples-http-metadata"
 project(":servicetalk-examples:http:opentelemetry-tracing").name = "servicetalk-examples-http-opentelemetry-tracing"
+project(":servicetalk-examples:http:opentelemetry-jaeger").name = "servicetalk-examples-http-opentelemetry-jaeger"
 project(":servicetalk-examples:http:opentracing").name = "servicetalk-examples-http-opentracing"
 project(":servicetalk-examples:http:observer").name = "servicetalk-examples-http-observer"
 project(":servicetalk-examples:http:retry").name = "servicetalk-examples-http-retry"
