@@ -48,22 +48,22 @@ task copySourcesForJackson3(type: Copy) {
   dependsOn tasks.cleanSources
   from '../servicetalk-data-jackson/src'
   into 'src'
-  filter { line -> line.replaceAll('com.fasterxml.jackson.core', 'tools.jackson.core') }
-  filter { line -> line.replaceAll('com.fasterxml.jackson.databind', 'tools.jackson.databind') }
-  filter { line -> line.replaceAll('com.fasterxml.jackson.datatype', 'tools.jackson.datatype') }
-  filter { line -> line.replaceAll('tools.jackson.core.JsonFactory', 'tools.jackson.core.json.JsonFactory') }
+  filter { line -> line.replaceAll('com\\.fasterxml\\.jackson\\.core', 'tools.jackson.core') }
+  filter { line -> line.replaceAll('com\\.fasterxml\\.jackson\\.databind', 'tools.jackson.databind') }
+  filter { line -> line.replaceAll('com\\.fasterxml\\.jackson\\.datatype', 'tools.jackson.datatype') }
+  filter { line -> line.replaceAll('tools\\.jackson\\.core\\.JsonFactory', 'tools.jackson.core.json.JsonFactory') }
   filter { line -> line.replaceAll('TextNode', 'StringNode') }
   filter { line -> line.replaceAll('FIELD_NAME', 'PROPERTY_NAME') }
   filter { line -> line.replaceAll('getCurrentName', 'currentName') }
   filter { line -> line.replaceAll('getNonBlockingInputFeeder', 'nonBlockingInputFeeder') }
   filter { line -> line.replaceAll('IOException e', 'JacksonException e') }
-  filter { line -> line.replaceAll('java.io.IOException', 'tools.jackson.core.JacksonException') }
+  filter { line -> line.replaceAll('java\\.io\\.IOException', 'tools.jackson.core.JacksonException') }
   filter { line -> line.replaceAll('throws IOException', '') }
-  filter { line -> line.replaceAll('final JsonFactory factory = reader.getFactory', 'final tools.jackson.core.TokenStreamFactory factory = reader.parserFactory') }
-  filter { line -> line.replaceAll('parser = factory.createNonBlockingByteArrayParser\\(\\)', 'parser = factory.createNonBlockingByteArrayParser(tools.jackson.core.ObjectReadContext.empty())') }
-  filter { line -> line.replaceAll('parser = reader.getFactory\\(\\).createNonBlockingByteArrayParser\\(\\)', 'parser = reader.parserFactory().createNonBlockingByteArrayParser(tools.jackson.core.ObjectReadContext.empty())') }
-  filter { line -> line.replaceAll('tools.jackson.core.JsonParseException', 'tools.jackson.core.exc.StreamReadException') }
-  filter { line -> line.replaceAll('JsonParseException.class', 'StreamReadException.class') }
+  filter { line -> line.replaceAll('final JsonFactory factory = reader\\.getFactory', 'final tools.jackson.core.TokenStreamFactory factory = reader.parserFactory') }
+  filter { line -> line.replaceAll('parser = factory\\.createNonBlockingByteArrayParser\\(\\)', 'parser = factory.createNonBlockingByteArrayParser(tools.jackson.core.ObjectReadContext.empty())') }
+  filter { line -> line.replaceAll('parser = reader\\.getFactory\\(\\).createNonBlockingByteArrayParser\\(\\)', 'parser = reader.parserFactory().createNonBlockingByteArrayParser(tools.jackson.core.ObjectReadContext.empty())') }
+  filter { line -> line.replaceAll('tools\\.jackson\\.core\\.JsonParseException', 'tools.jackson.core.exc.StreamReadException') }
+  filter { line -> line.replaceAll('JsonParseException\\.class', 'StreamReadException.class') }
 }
 
 tasks.processResources.dependsOn(copySourcesForJackson3)
