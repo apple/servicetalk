@@ -47,6 +47,11 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -341,6 +346,111 @@ class EarlyAndLateConnectionAcceptorTest {
         try (ServerContext server = builder.listenAndAwait(service);
              BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(server)).buildBlocking()) {
             assertThrows(IOException.class, () -> client.request(client.get("/sayHello")));
+        }
+    }
+
+    /**
+     * Verifies that the HTTP service is NOT invoked when a {@link LateConnectionAcceptor} rejects
+     * for HTTP/2 prior-knowledge (no TLS). Previously, auto-read was enabled before acceptors
+     * completed, allowing requests to reach the service before rejection.
+     * <p>
+     * Note: TLS-based protocols (H2_TLS, H2_ALPN) are excluded because with TLS the SSL handshake
+     * read may also deliver application data (H2 preface) in the same {@code channelRead} call that
+     * completes the handshake. This is a pre-existing issue unrelated to the auto-read fix — our
+     * fix prevents <em>new</em> reads via auto-read, but cannot prevent data already decoded by the
+     * SslHandler during the handshake read cycle.
+     */
+    @Test
+    void h2ServiceNotInvokedWhenLateAcceptorRejects() throws Exception {
+        final AtomicBoolean serviceInvoked = new AtomicBoolean(false);
+
+        HttpServerBuilder builder = serverBuilder()
+                .protocols(h2Default())
+                .appendLateConnectionAcceptor(info -> Completable.failed(DELIBERATE_EXCEPTION));
+
+        final HttpService service = (ctx, request, responseFactory) -> {
+            serviceInvoked.set(true);
+            return succeeded(responseFactory.ok().payloadBody("Hello World!", textSerializerUtf8()));
+        };
+        try (ServerContext server = builder.listenAndAwait(service)) {
+            try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(server))
+                    .protocols(h2Default()).buildBlocking()) {
+                assertThrows(Exception.class, () -> client.request(client.get("/sayHello")));
+            }
+        }
+
+        assertThat("Service should not be invoked when late acceptor rejects",
+                serviceInvoked.get(), is(false));
+    }
+
+    /**
+     * Verifies that auto-read is not enabled before the late acceptor completes for HTTP/2 prior-knowledge.
+     * The late acceptor blocks, verifying the server does not process frames prematurely.
+     */
+    @Test
+    void h2NoFramesSentBeforeLateAcceptorCompletes() throws Exception {
+        final CountDownLatch acceptorStarted = new CountDownLatch(1);
+        final CountDownLatch acceptorRelease = new CountDownLatch(1);
+        final AtomicBoolean serviceInvoked = new AtomicBoolean(false);
+
+        HttpServerBuilder builder = serverBuilder()
+                .protocols(h2Default())
+                .appendLateConnectionAcceptor(new LateConnectionAcceptor() {
+                    @Override
+                    public Completable accept(final ConnectionInfo info) {
+                        return accept((ConnectionContext) info);
+                    }
+
+                    @Override
+                    public Completable accept(final ConnectionContext context) {
+                        return Completable.defer(() -> {
+                            acceptorStarted.countDown();
+                            try {
+                                acceptorRelease.await();
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                            }
+                            return Completable.completed();
+                        });
+                    }
+
+                    @Override
+                    public ConnectExecutionStrategy requiredOffloads() {
+                        return ConnectExecutionStrategy.offloadAll();
+                    }
+                });
+
+        final HttpService service = (ctx, request, responseFactory) -> {
+            serviceInvoked.set(true);
+            return succeeded(responseFactory.ok().payloadBody("Hello World!", textSerializerUtf8()));
+        };
+        try (ServerContext server = builder.listenAndAwait(service)) {
+            try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(server))
+                    .protocols(h2Default()).buildBlocking()) {
+                // Send request in a background thread — the late acceptor will block
+                final ExecutorService executor = Executors.newSingleThreadExecutor();
+                try {
+                    final Future<HttpResponse> responseFuture = executor.submit(
+                            () -> client.request(client.get("/sayHello")));
+
+                    // Wait for the acceptor to start executing
+                    acceptorStarted.await();
+
+                    // While the acceptor is blocking, service should NOT have been invoked
+                    assertThat("Service should not be invoked while late acceptor is blocking",
+                            serviceInvoked.get(), is(false));
+
+                    // Release the acceptor to let the connection complete
+                    acceptorRelease.countDown();
+
+                    // Verify the request completed successfully
+                    HttpResponse response = responseFuture.get();
+                    assertNotNull(response, "No response received");
+                    assertThat(response.status(), is(HttpResponseStatus.OK));
+                } finally {
+                    executor.shutdownNow();
+                }
+            }
         }
     }
 

@@ -30,6 +30,7 @@ import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.DataObserver;
 import io.servicetalk.transport.api.ConnectionObserver.ReadObserver;
@@ -145,6 +146,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     private final ChannelConfig parentChannelConfig;
     private volatile DataObserver dataObserver;
     private final boolean isClient;
+    private final boolean deferConnectionEstablished;
     private final Predicate<Object> shouldWait;
     private final UnaryOperator<Throwable> enrichProtocolError;
     private final TerminalSignalConsumer cleanupStateConsumer = new TerminalSignalConsumer() {
@@ -176,7 +178,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             long idleTimeoutMs, Protocol protocol,
             @Nullable SslConfig sslConfig, @Nullable SSLSession sslSession,
             @Nullable ChannelConfig parentChannelConfig, DataObserver dataObserver, boolean isClient,
-            Predicate<Object> shouldWait, UnaryOperator<Throwable> enrichProtocolError) {
+            Predicate<Object> shouldWait, UnaryOperator<Throwable> enrichProtocolError,
+            boolean deferConnectionEstablished) {
         super(channel,
                 executionContext.executionStrategy().isCloseOffloaded() ? executionContext.executor() : immediate());
         nettyChannelPublisher = new NettyChannelPublisher<>(channel, closeHandler);
@@ -203,8 +206,18 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         this.protocol = requireNonNull(protocol);
         this.dataObserver = dataObserver;
         this.isClient = isClient;
+        this.deferConnectionEstablished = deferConnectionEstablished;
         this.shouldWait = requireNonNull(shouldWait);
         this.enrichProtocolError = requireNonNull(enrichProtocolError);
+    }
+
+    /**
+     * Notifies the observer that the connection has been established and sets the {@link DataObserver}.
+     *
+     * @param observer the {@link ConnectionObserver} to notify.
+     */
+    public void notifyConnectionEstablished(final ConnectionObserver observer) {
+        this.dataObserver = observer.connectionEstablished(this);
     }
 
     /**
@@ -354,7 +367,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
         DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, parent, executionContext,
                 closeHandler, flushStrategy, idleTimeoutMs, protocol, sslConfig, sslSession, parentChannelConfig,
-                streamObserver.streamEstablished(), isClient, shouldWait, enrichProtocolError);
+                streamObserver.streamEstablished(), isClient, shouldWait, enrichProtocolError, false);
         channel.pipeline().addLast(new NettyToStChannelHandler<>(connection, null,
                 null, false, NoopConnectionObserver.INSTANCE));
         return connection;
@@ -493,6 +506,41 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             FlushStrategy flushStrategy, long idleTimeoutMs, @Nullable SslConfig sslConfig,
             ChannelInitializer initializer, Protocol protocol, ConnectionObserver observer, boolean isClient,
             Predicate<Object> shouldWait) {
+        return initChannel(channel, executionContext, closeHandler, flushStrategy, idleTimeoutMs, sslConfig,
+                initializer, protocol, observer, isClient, shouldWait, false);
+    }
+
+    /**
+     * Given a {@link Channel} this will initialize the {@link ChannelPipeline} and create a
+     * {@link DefaultNettyConnection}. The resulting single will complete after the TLS handshake has completed
+     * (if applicable) or otherwise after the channel is active and ready to use.
+     * @param channel A newly created {@link Channel}.
+     * @param executionContext The {@link ExecutionContext} to use for the {@link DefaultNettyConnection}. Note:
+     * {@link ExecutionContext#ioExecutor()} must be backed by a single {@link EventLoop} thread identical to
+     * {@link Channel#eventLoop()} for the specified channel.
+     * @param closeHandler Manages the half closure of the {@link DefaultNettyConnection}.
+     * @param flushStrategy Manages flushing of data for the {@link DefaultNettyConnection}.
+     * @param idleTimeoutMs Value for {@link ServiceTalkSocketOptions#IDLE_TIMEOUT IDLE_TIMEOUT} socket option.
+     * @param sslConfig The {@link SslConfig} to use for the {@link DefaultNettyConnection}.
+     * @param initializer Synchronously initializes the pipeline upon subscribe.
+     * @param protocol {@link Protocol} for the returned {@link DefaultNettyConnection}.
+     * @param observer {@link ConnectionObserver} to report network events.
+     * @param isClient tells if this {@link Channel} is for the client.
+     * @param shouldWait predicate that tells when request payload body should wait for continuation signal.
+     * @param deferConnectionEstablished if {@code true}, the
+     * {@link ConnectionObserver#connectionEstablished(ConnectionInfo)} callback will not be
+     * invoked when the connection Single resolves. Instead, the caller is responsible for calling
+     * {@link #notifyConnectionEstablished(ConnectionObserver)} after all connection acceptors have completed.
+     * @param <Read> Type of objects read from the {@link NettyConnection}.
+     * @param <Write> Type of objects written to the {@link NettyConnection}.
+     * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
+     * ready to use.
+     */
+    public static <Read, Write> Single<DefaultNettyConnection<Read, Write>> initChannel(
+            Channel channel, ExecutionContext<?> executionContext, CloseHandler closeHandler,
+            FlushStrategy flushStrategy, long idleTimeoutMs, @Nullable SslConfig sslConfig,
+            ChannelInitializer initializer, Protocol protocol, ConnectionObserver observer, boolean isClient,
+            Predicate<Object> shouldWait, boolean deferConnectionEstablished) {
         assert channel.eventLoop() == toEventLoopAwareNettyIoExecutor(executionContext.ioExecutor()).eventLoopGroup();
         return new SubscribableSingle<DefaultNettyConnection<Read, Write>>() {
             @Override
@@ -515,7 +563,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                     final SSLSession sslSession = extractSslSession(sslConfig, pipeline);
                     DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, null,
                             executionContext, closeHandler, flushStrategy, idleTimeoutMs, protocol, sslConfig,
-                            sslSession, null, NoopDataObserver.INSTANCE, isClient, shouldWait, identity());
+                            sslSession, null, NoopDataObserver.INSTANCE, isClient, shouldWait, identity(),
+                            deferConnectionEstablished);
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     delayedCancellable = new DelayedCancellable();
                     nettyInboundHandler = new NettyToStChannelHandler<>(connection, subscriber,
@@ -1020,9 +1069,11 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             assert subscriber != null;
             SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriberCopy = subscriber;
             subscriber = null;
-            // TODO: how can we make sure we have the correct context information here.
-            //  See HttpTransportObserverAsyncContextTest. It has some assertions for 'broken' behavior.
-            connection.dataObserver = observer.connectionEstablished(connection);
+            if (!connection.deferConnectionEstablished) {
+                // TODO: how can we make sure we have the correct context information here.
+                //  See HttpTransportObserverAsyncContextTest. It has some assertions for 'broken' behavior.
+                connection.notifyConnectionEstablished(observer);
+            }
             subscriberCopy.onSuccess(connection);
         }
 
