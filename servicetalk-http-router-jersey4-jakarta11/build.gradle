@@ -1,0 +1,172 @@
+/*
+ * Copyright © 2019, 2021, 2024 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
+
+// Required version for module
+def javaLanguageVersion = JavaVersion.VERSION_17
+
+java {
+  sourceCompatibility = javaLanguageVersion
+  targetCompatibility = javaLanguageVersion
+}
+
+tasks.withType(JavaCompile).configureEach {
+  options.release = Integer.parseInt(javaLanguageVersion.getMajorVersion())
+}
+
+tasks.withType(Checkstyle).all {
+  enabled = false
+}
+
+tasks.withType(Pmd).all {
+  enabled = false
+}
+
+tasks.withType(com.github.spotbugs.snom.SpotBugsTask).all {
+  enabled = false
+}
+
+task cleanSources(type: Delete) {
+  // Don't delete src/testFixtures/java/.gitkeep
+  // gitkeep used to ensure that a src/textFixtures/java exists or Gradle processing will fail
+  delete 'src/main', 'src/test', 'src/testFixtures/java/io'
+}
+
+task copySourcesForJersey4(type: Copy) {
+  dependsOn tasks.cleanSources
+  from '../servicetalk-http-router-jersey/src'
+  into 'src'
+  filter { line -> line.replaceAll('javax\\.ws\\.rs', 'jakarta.ws.rs') }
+  filter { line -> line.replaceAll('javax\\.inject', 'jakarta.inject') }
+  filter { line -> line.replaceAll('com\\.fasterxml\\.jackson\\.core', 'tools.jackson.core') }
+  filter { line -> line.replaceAll('com\\.fasterxml\\.jackson\\.databind', 'tools.jackson.databind') }
+  filter { line -> line.replaceAll('ObjectMapper', 'JsonMapper') }
+  filter { line -> line.replaceAll('tools\\.jackson\\.databind\\.JsonMapper', 'tools.jackson.databind.json.JsonMapper') }
+  filter { line -> line.replaceAll('new JsonMapper\\(\\)', 'JsonMapper.builder().build()') }
+  filter { line -> line.replaceAll('^        \\} catch \\(final IOException e\\) \\{', '        } catch (final Exception e) {') }
+  filter { line -> line.replaceAll('org\\.glassfish\\.jersey\\.internal\\.inject\\.AbstractBinder', 'org.glassfish.jersey.inject.hk2.AbstractBinder') }
+  filter { line -> line.replaceAll('eventSink.close\\(\\);', 'try{ eventSink.close(); } catch (java.io.IOException e) { throw new IllegalStateException(e);}') }
+  filter { line -> line.replaceAll('sendAndAssertStatusOnly.*pojoin.*foo', '//') }
+  filter { line -> line.replaceAll('aString', 'someString') }
+  filter { line -> line.replaceAll('getsomeString', 'getSomeString') }
+  filter { line -> line.replaceAll('setsomeString', 'setSomeString') }
+  filter { line -> line.replaceAll(' 29 ', ' 32 ') }
+  filter { line -> line.replaceAll('executionContext\\(\\)\\.executor\\(\\)\\.timer\\(10', 'executionContext().executor().timer(1') }
+
+  // Only modify specific javax.annotations.  Some like javax.annotation.Nullable need to stay the same
+  filter { line -> line.replaceAll('javax.annotation.Priority', 'jakarta.annotation.Priority') }
+}
+
+tasks.processResources.dependsOn(copySourcesForJersey4)
+tasks.sourcesJar.dependsOn(copySourcesForJersey4)
+tasks.compileJava.dependsOn(copySourcesForJersey4)
+tasks.processTestResources.dependsOn(copySourcesForJersey4)
+tasks.compileTestJava.dependsOn(copySourcesForJersey4)
+tasks.processTestFixturesResources.dependsOn(copySourcesForJersey4)
+afterEvaluate {
+  if (tasks.findByName("projectHealth")) {
+    tasks.withType(com.autonomousapps.tasks.CodeSourceExploderTask) {
+      dependsOn(copySourcesForJersey4)
+    }
+  }
+}
+
+def actualJerseyVersion = "${jersey4VersionEE11}"
+def actualJavaxActivationVersion = "${javaxActivationVersionEE11}"
+def actualJavaxAnnotationsApiVersion = "${javaxAnnotationsApiVersionEE11}"
+def actualJavaxJaxbApiVersion = "${javaxJaxbApiVersionEE11}"
+def actualJavaxJaxbCoreVersion = "${javaxJaxbCoreVersionEE11}"
+def actualJavaxJaxbImplVersion = "${javaxJaxbImplVersionEE11}"
+def actualJavaxInjectVersion = "${javaxInjectVersionEE11}"
+def actualJaxRsVersion = "${jaxRsVersionEE11}"
+
+// Dependencies must remain consistent between servicetalk-http-router-jerseyX modules
+dependencies {
+  api platform("org.glassfish.jersey:jersey-bom:$actualJerseyVersion")
+  api project(":servicetalk-http-api")
+  api project(":servicetalk-router-api")
+  api project(":servicetalk-transport-api")
+  api "jakarta.annotation:jakarta.annotation-api:$actualJavaxAnnotationsApiVersion" // Priority
+  api "jakarta.ws.rs:jakarta.ws.rs-api:$actualJaxRsVersion"
+  api "org.glassfish.jersey.core:jersey-common" // AutoDiscoverable
+
+  implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-buffer-api")
+  implementation project(":servicetalk-concurrent")
+  implementation project(":servicetalk-concurrent-api")
+  implementation project(":servicetalk-concurrent-api-internal")
+  implementation project(":servicetalk-concurrent-internal")
+  implementation project(":servicetalk-http-router-jersey4-jakarta11-internal")
+  implementation project(":servicetalk-http-utils")
+  implementation project(":servicetalk-router-utils-internal")
+  implementation project(":servicetalk-utils-internal")
+  implementation "jakarta.inject:jakarta.inject-api:$actualJavaxInjectVersion" // replacement for org.glassfish.hk2.external:jakarta.inject
+  implementation "org.glassfish.jersey.core:jersey-server"
+  implementation "org.glassfish.jersey.inject:jersey-hk2"
+  implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+  runtimeOnly "jakarta.activation:jakarta.activation-api:$actualJavaxActivationVersion" // replacement for com.sun.activation:jakarta.activation
+  runtimeOnly "jakarta.xml.bind:jakarta.xml.bind-api:$actualJavaxJaxbApiVersion"
+  runtimeOnly "org.glassfish.jaxb:jaxb-core:$actualJavaxJaxbCoreVersion" // replacement for com.sun.xml.bind:jaxb-core
+  runtimeOnly "org.glassfish.jaxb:jaxb-runtime:$actualJavaxJaxbImplVersion" // replacement for com.sun.xml.bind:jaxb-impl
+
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+  testImplementation "org.junit.jupiter:junit-jupiter-api"
+  testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
+
+  testRuntimeOnly "org.glassfish.jersey.media:jersey-media-json-jackson"
+
+  testFixturesApi platform("org.glassfish.jersey:jersey-bom:$actualJerseyVersion")
+  testFixturesApi platform("org.junit:junit-bom:$junit5Version")
+  testFixturesApi project(":servicetalk-buffer-api")
+  testFixturesApi project(":servicetalk-concurrent-api")
+  testFixturesApi project(":servicetalk-http-api")
+  testFixturesApi project(":servicetalk-router-api")
+  testFixturesApi project(":servicetalk-transport-api")
+  testFixturesApi "jakarta.annotation:jakarta.annotation-api:$actualJavaxAnnotationsApiVersion"
+  testFixturesApi "jakarta.ws.rs:jakarta.ws.rs-api:$actualJaxRsVersion"
+  testFixturesApi "org.glassfish.jersey.core:jersey-server"
+  testFixturesApi "org.hamcrest:hamcrest:$hamcrestVersion"
+  testFixturesApi "org.junit.jupiter:junit-jupiter-api"
+  testFixturesApi "org.junit.platform:junit-platform-suite-api"
+
+  testFixturesImplementation platform("tools.jackson:jackson-bom:$jackson3Version")
+  testFixturesImplementation testFixtures(project(":servicetalk-concurrent-api"))
+  testFixturesImplementation testFixtures(project(":servicetalk-concurrent-internal"))
+  testFixturesImplementation testFixtures(project(":servicetalk-http-netty"))
+  testFixturesImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
+  testFixturesImplementation project(":servicetalk-buffer-netty")
+  testFixturesImplementation project(":servicetalk-concurrent")
+  testFixturesImplementation project(":servicetalk-context-api")
+  testFixturesImplementation project(":servicetalk-data-jackson3")
+  testFixturesImplementation project(":servicetalk-http-netty")
+  testFixturesImplementation project(":servicetalk-http-router-predicate")
+  testFixturesImplementation project(":servicetalk-router-utils-internal")
+  testFixturesImplementation project(":servicetalk-serializer-api")
+  testFixturesImplementation project(":servicetalk-test-resources")
+  testFixturesImplementation project(":servicetalk-transport-netty-internal")
+  testFixturesImplementation "tools.jackson.core:jackson-core"
+  testFixturesImplementation "tools.jackson.core:jackson-databind"
+  testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  testFixturesImplementation "net.javacrumbs.json-unit:json-unit:$jsonUnit5Version"
+  testFixturesImplementation "org.junit.jupiter:junit-jupiter-params"
+  testFixturesImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
+  testFixturesImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
+
+  testFixturesRuntimeOnly "org.glassfish.jersey.inject:jersey-hk2"
+  testFixturesRuntimeOnly "org.glassfish.jersey.media:jersey-media-sse"
+}

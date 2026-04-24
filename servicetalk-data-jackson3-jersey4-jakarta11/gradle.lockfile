@@ -1,0 +1,27 @@
+# This is a Gradle generated file for dependency locking.
+# Manual edits can break the build and are not advised.
+# This file is expected to be part of source control.
+com.fasterxml.jackson.core:jackson-annotations:2.21=compileClasspath,runtimeClasspath
+com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
+com.sun.istack:istack-commons-runtime:4.1.2=runtimeClasspath
+jakarta.activation:jakarta.activation-api:2.1.4=runtimeClasspath
+jakarta.annotation:jakarta.annotation-api:3.0.0=compileClasspath,runtimeClasspath
+jakarta.inject:jakarta.inject-api:2.0.1=compileClasspath,runtimeClasspath
+jakarta.validation:jakarta.validation-api:3.1.0=compileClasspath,runtimeClasspath
+jakarta.ws.rs:jakarta.ws.rs-api:4.0.0=compileClasspath,runtimeClasspath
+jakarta.xml.bind:jakarta.xml.bind-api:4.0.4=runtimeClasspath
+org.eclipse.angus:angus-activation:2.0.3=runtimeClasspath
+org.glassfish.hk2:osgi-resource-locator:3.0.0=compileClasspath,runtimeClasspath
+org.glassfish.jaxb:jaxb-core:4.0.6=runtimeClasspath
+org.glassfish.jaxb:jaxb-runtime:4.0.6=runtimeClasspath
+org.glassfish.jaxb:txw2:4.0.6=runtimeClasspath
+org.glassfish.jersey.core:jersey-client:4.0.2=compileClasspath,runtimeClasspath
+org.glassfish.jersey.core:jersey-common:4.0.2=compileClasspath,runtimeClasspath
+org.glassfish.jersey.core:jersey-server:4.0.2=compileClasspath,runtimeClasspath
+org.glassfish.jersey:jersey-bom:4.0.2=compileClasspath,runtimeClasspath
+org.jctools:jctools-core:4.0.5=runtimeClasspath
+org.slf4j:slf4j-api:1.7.36=compileClasspath,runtimeClasspath
+tools.jackson.core:jackson-core:3.1.1=compileClasspath,runtimeClasspath
+tools.jackson.core:jackson-databind:3.1.1=compileClasspath,runtimeClasspath
+tools.jackson:jackson-bom:3.1.1=compileClasspath,runtimeClasspath
+empty=annotationProcessor
