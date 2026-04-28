@@ -71,11 +71,13 @@ final class DeferredServerChannelBinder {
                 serverConnection -> {
                     // Notify connection established after all acceptors have completed:
                     if (serverConnection instanceof NettyHttpServerConnection) {
-                        ((NettyHttpServerConnection) serverConnection).notifyConnectionEstablished();
-                        ((NettyHttpServerConnection) serverConnection).process(true);
+                        ((NettyHttpServerConnection) serverConnection).notifyConnectionEstablishedAndProcess();
                     } else if (serverConnection instanceof H2ServerParentConnectionContext) {
                         ((H2ServerParentConnectionContext) serverConnection)
                                 .notifyConnectionEstablishedAndEnableAutoRead();
+                    } else {
+                        throw new IllegalStateException("Unexpected connection type: " +
+                                serverConnection.getClass().getName());
                     }
                 }, earlyConnectionAcceptor, lateConnectionAcceptor)
                 .map(delegate -> {

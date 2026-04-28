@@ -63,7 +63,6 @@ import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.FlushStrategyHolder;
 import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
-import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext.FlushStrategyProvider;
 
@@ -144,10 +143,7 @@ final class NettyHttpServer {
                 (channel, connectionObserver) -> initChannel(channel, executionContext, config,
                         new TcpServerChannelInitializer(tcpServerConfig, connectionObserver, executionContext), service,
                         connectionObserver),
-                serverConnection -> {
-                    serverConnection.notifyConnectionEstablished();
-                    serverConnection.process(true);
-                },
+                serverConnection -> serverConnection.notifyConnectionEstablishedAndProcess(),
                         earlyConnectionAcceptor, lateConnectionAcceptor)
                 .map(delegate -> {
                     LOGGER.debug("Started HTTP/1.1 server for address {}.", delegate.listenAddress());
@@ -189,13 +185,9 @@ final class NettyHttpServer {
                 initializer.andThen(getChannelInitializer(
                         getByteBufAllocator(builderExecutionContext.bufferAllocator()), h1Config, closeHandler)),
                 HTTP_1_1, observer, false, __ -> false, true)
-                .map(conn -> {
-                    final NettyHttpServerConnection serverConn = new NettyHttpServerConnection(conn, service,
+                .map(conn -> new NettyHttpServerConnection(conn, service,
                             HTTP_1_1, h1Config.headersFactory(),
-                            config.allowDropTrailersReadFromTransport());
-                    serverConn.observer = observer;
-                    return serverConn;
-                }),
+                            config.allowDropTrailersReadFromTransport(), observer)),
                 HTTP_1_1, channel);
     }
 
@@ -272,7 +264,7 @@ final class NettyHttpServer {
 
     static final class NettyHttpServerConnection extends HttpServiceContext implements NettyConnectionContext {
         private final StreamingHttpService service;
-        private final NettyConnection<Object, Object> connection;
+        private final DefaultNettyConnection<Object, Object> connection;
         private final HttpHeadersFactory headersFactory;
         private final HttpExecutionContext executionContext;
         private final ChangingFlushStrategy flushStrategy;
@@ -280,11 +272,12 @@ final class NettyHttpServer {
         @Nullable
         private ConnectionObserver observer;
 
-        NettyHttpServerConnection(final NettyConnection<Object, Object> connection,
+        NettyHttpServerConnection(final DefaultNettyConnection<Object, Object> connection,
                                   final StreamingHttpService service,
                                   final HttpProtocolVersion version,
                                   final HttpHeadersFactory headersFactory,
-                                  final boolean requireTrailerHeader) {
+                                  final boolean requireTrailerHeader,
+                                  @Nullable final ConnectionObserver observer) {
             super(headersFactory,
                     new DefaultHttpResponseFactory(headersFactory, connection.executionContext().bufferAllocator(),
                             version),
@@ -301,6 +294,7 @@ final class NettyHttpServer {
             this.flushStrategy = new ChangingFlushStrategy(new FlushStrategyHolder(connection.defaultFlushStrategy()));
             connection.updateFlushStrategy((current, isCurrentOriginal) -> flushStrategy);
             this.requireTrailerHeader = requireTrailerHeader;
+            this.observer = observer;
         }
 
         void process(final boolean handleMultipleRequests) {
@@ -318,15 +312,12 @@ final class NettyHttpServer {
                     .subscribe(new ErrorLoggingHttpSubscriber(this));
         }
 
-        /**
-         * Notifies the observer that the connection has been established. Called from the connection consumer
-         * after all connection acceptors have passed.
-         */
-        void notifyConnectionEstablished() {
-            if (observer != null && connection instanceof DefaultNettyConnection) {
-                ((DefaultNettyConnection<?, ?>) connection).notifyConnectionEstablished(observer);
+        void notifyConnectionEstablishedAndProcess() {
+            if (observer != null) {
+                connection.notifyConnectionEstablished(observer);
                 observer = null;
             }
+            process(true);
         }
 
         @Override

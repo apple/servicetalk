@@ -77,9 +77,11 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                             @Nullable final SslConfig sslConfig,
                                             @Nullable final SSLSession sslSession,
                                             final SocketAddress listenAddress,
-                                            final KeepAliveManager keepAliveManager) {
+                                            final KeepAliveManager keepAliveManager,
+                                            final ConnectionObserver observer) {
         super(channel, executionContext, flushStrategy, idleTimeoutMs, sslConfig, sslSession, keepAliveManager);
         this.listenAddress = requireNonNull(listenAddress);
+        this.observer = requireNonNull(observer);
     }
 
     @Override
@@ -93,24 +95,10 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
     }
 
     /**
-     * Notifies the observer that the multiplexed connection has been established and enables auto-read
-     * so that HTTP/2 frames begin flowing through the pipeline.
-     * <p>
-     * These two actions are combined into a single method because they <b>must</b> happen in this exact order:
-     * the {@code multiplexedObserver} must be set before any frames arrive, and enabling auto-read is what
-     * triggers frame delivery. Separating them would risk a future caller enabling auto-read without first
-     * setting the observer, causing frames to be processed with a {@code NoopMultiplexedObserver}.
-     * <p>
-     * Thread-safety invariant — this method may run on an offload executor thread (e.g., when a
-     * {@link LateConnectionAcceptor} requires offloading). The {@code observer}
-     * and {@code parentConnectionHandler} fields were written during {@link #initChannel} (on the event loop)
-     * and are safely published here via the reactive chain's {@code onSuccess} delivery, which provides a
-     * happens-before edge.
-     * <p>
-     * The actual work is always dispatched to the event loop to ensure that the {@code multiplexedObserver}
-     * write and the subsequent {@code setAutoRead(true)} (which triggers {@code channel.read()} inline)
-     * both execute on the same thread that will read the observer when frames arrive. This makes the
-     * visibility guarantee trivial — single-threaded access, no memory ordering concerns.
+     * Notifies the observer and enables auto-read. Must be called after all connection acceptors complete.
+     * Both actions are combined because the {@code multiplexedObserver} must be set before any frames arrive,
+     * and enabling auto-read is what triggers frame delivery. Always dispatches to the event loop to ensure
+     * the observer write and {@code setAutoRead(true)} both execute on the thread that processes frames.
      */
     void notifyConnectionEstablishedAndEnableAutoRead() {
         final EventLoop eventLoop = nettyChannel().eventLoop();
@@ -122,11 +110,10 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
     }
 
     private void doNotifyAndEnableAutoRead() {
-        if (observer != null && parentConnectionHandler != null) {
-            parentConnectionHandler.multiplexedObserver = observer.multiplexedConnectionEstablished(this);
-            observer = null;
-            parentConnectionHandler = null;
-        }
+        assert observer != null && parentConnectionHandler != null;
+        parentConnectionHandler.multiplexedObserver = observer.multiplexedConnectionEstablished(this);
+        observer = null;
+        parentConnectionHandler = null;
         nettyChannel().config().setAutoRead(true);
     }
 
@@ -192,13 +179,12 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                     H2ServerParentConnectionContext connection = new H2ServerParentConnectionContext(channel,
                             httpExecutionContext, config.tcpConfig().flushStrategy(),
                             config.tcpConfig().idleTimeoutMs(), sslConfig, sslSession, listenAddress,
-                            new KeepAliveManager(channel, h2ServerConfig.keepAlivePolicy()));
+                            new KeepAliveManager(channel, h2ServerConfig.keepAlivePolicy()), observer);
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     delayedCancellable = new DelayedCancellable();
                     parentChannelInitializer = new DefaultH2ServerParentConnection(connection, subscriber,
                             delayedCancellable, shouldWaitForSslHandshake(sslSession, sslConfig), observer,
                             true /* deferAutoRead */);
-                    connection.observer = observer;
                     connection.parentConnectionHandler = parentChannelInitializer;
 
                     new H2ServerParentChannelInitializer(h2ServerConfig,
@@ -237,7 +223,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                 // ServiceTalk HTTP service handler
                                 new NettyHttpServerConnection(streamConnection, service, HTTP_2_0,
                                         h2ServerConfig.headersFactory(),
-                                        config.allowDropTrailersReadFromTransport()).process(false);
+                                        config.allowDropTrailersReadFromTransport(), null).process(false);
                             }
                     }).init(channel);
                 } catch (Throwable cause) {
