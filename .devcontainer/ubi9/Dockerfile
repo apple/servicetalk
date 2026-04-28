@@ -25,4 +25,4 @@ RUN bash -c "source /root/.sdkman/bin/sdkman-init.sh && \
     rm -rf /root/.sdkman/tmp/*"
 
 RUN echo 'export JAVA_HOME="/root/.sdkman/candidates/java/current"' >> ~/.bashrc
-RUN echo 'PATH=/jdk/bin:$PATH' >> ~/.bashrc
+RUN echo 'export PATH=$JAVA_HOME/bin:$PATH' >> ~/.bashrc
