@@ -657,9 +657,12 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
         if (headers == this) {
             return this;
         }
-        if (headers instanceof MultiMap) {
-            putAll((MultiMap<? extends CharSequence, ? extends CharSequence>) headers);
-        } else { // Slow copy
+        if (headers instanceof DefaultHttpHeaders) {
+            DefaultHttpHeaders rhs = (DefaultHttpHeaders) headers;
+            putAll(rhs, validateNames && !rhs.validateNames, validateValues && !rhs.validateValues);
+        } else if (headers instanceof MultiMap) {
+            putAll((MultiMap<? extends CharSequence, ? extends CharSequence>) headers, validateNames, validateValues);
+        } else { // Slow copy either because it's not a compatible data structure or to ensure validation.
             for (final Map.Entry<? extends CharSequence, ? extends CharSequence> header : headers) {
                 add(header.getKey(), header.getValue());
             }
