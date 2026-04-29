@@ -264,8 +264,8 @@ abstract class MultiMap<K, V> {
         }
     }
 
-    final void putAll(final MultiMap<? extends K, ? extends V> multiMap) {
-        putAll0(multiMap);
+    final void putAll(final MultiMap<? extends K, ? extends V> multiMap, boolean validateKey, boolean validateValue) {
+        putAll0(multiMap, validateKey, validateValue);
     }
 
     final void putExclusive(final K key, final V value) {
@@ -501,7 +501,7 @@ abstract class MultiMap<K, V> {
         return putEntry(entries[bucketIndex], keyHash, bucketIndex, key, value);
     }
 
-    private void putAll0(final MultiMap<? extends K, ? extends V> rhs) {
+    private void putAll0(final MultiMap<? extends K, ? extends V> rhs, boolean validateKey, boolean validateValue) {
         if (isKeyEqualityCompatible(rhs)) { // Fast path
             BucketHead<? extends K, ? extends V> rhsBucketHead = rhs.lastBucketHead;
             while (rhsBucketHead != null) {
@@ -510,7 +510,9 @@ abstract class MultiMap<K, V> {
                 final int bucketIndex = index(rhsEntry.keyHash);
                 BucketHead<K, V> bucketHead = entries[bucketIndex];
                 if (bucketHead == null) {
-                    bucketHead = putEntry(null, rhsEntry.keyHash, bucketIndex, rhsEntry.getKey(), rhsEntry.getValue());
+                    bucketHead = putEntry(null, rhsEntry.keyHash, bucketIndex,
+                            maybeValidateKey(validateKey, rhsEntry.getKey()),
+                            maybeValidateValue(validateValue, rhsEntry.getValue()));
                     rhsEntry = rhsEntry.bucketNext;
                     if (rhsEntry == null) {
                         rhsBucketHead = rhsBucketHead.prevBucketHead;
@@ -518,7 +520,9 @@ abstract class MultiMap<K, V> {
                     }
                 }
                 do {
-                    putEntry(bucketHead, rhsEntry.keyHash, bucketIndex, rhsEntry.getKey(), rhsEntry.getValue());
+                    putEntry(bucketHead, rhsEntry.keyHash, bucketIndex,
+                            maybeValidateKey(validateKey, rhsEntry.getKey()),
+                            maybeValidateValue(validateValue, rhsEntry.getValue()));
                     rhsEntry = rhsEntry.bucketNext;
                 } while (rhsEntry != null);
                 rhsBucketHead = rhsBucketHead.prevBucketHead;
@@ -529,12 +533,22 @@ abstract class MultiMap<K, V> {
                 MultiMapEntry<? extends K, ? extends V> rhsEntry = rhsBucketHead.entry;
                 assert rhsEntry != null;
                 do {
-                    putEntry(rhsEntry.keyHash, index(rhsEntry.keyHash), rhsEntry.getKey(), rhsEntry.getValue());
+                    putEntry(rhsEntry.keyHash, index(rhsEntry.keyHash),
+                            maybeValidateKey(validateKey, rhsEntry.getKey()),
+                            maybeValidateValue(validateValue, rhsEntry.getValue()));
                     rhsEntry = rhsEntry.bucketNext;
                 } while (rhsEntry != null);
                 rhsBucketHead = rhsBucketHead.prevBucketHead;
             }
         }
+    }
+
+    private K maybeValidateKey(boolean validate, K key) {
+        return validate ? validateKey(key) : key;
+    }
+
+    private V maybeValidateValue(boolean validate, V value) {
+        return validate ? validateValue(value) : value;
     }
 
     private abstract class EntryIterator<T> implements Iterator<T> {
