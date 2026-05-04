@@ -35,6 +35,14 @@ final class BiGrpcLifecycleObserver implements GrpcLifecycleObserver {
         this.second = requireNonNull(second);
     }
 
+    GrpcLifecycleObserver first() {
+        return first;
+    }
+
+    GrpcLifecycleObserver second() {
+        return second;
+    }
+
     @Override
     public GrpcExchangeObserver onNewExchange() {
         final GrpcExchangeObserver f;
