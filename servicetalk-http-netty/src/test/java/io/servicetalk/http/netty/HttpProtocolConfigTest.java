@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -55,7 +56,7 @@ class HttpProtocolConfigTest {
                 HttpClients.forSingleAddress("localhost", 8080)
                         .protocols(h2Default(), h1Default());
 
-        Exception e = assertThrows(IllegalStateException.class, () -> builder.build());
+        Exception e = assertThrows(IllegalStateException.class, builder::build);
         assertEquals("Cleartext HTTP/1.1 -> HTTP/2 (h2c) upgrade is not supported", e.getMessage());
     }
 
@@ -81,7 +82,7 @@ class HttpProtocolConfigTest {
     void serverWithNullProtocolConfig() {
         HttpServerBuilder builder = HttpServers.forAddress(localAddress(0));
 
-        assertThrows(NullPointerException.class, () -> builder.protocols(null));
+        assertThrows(NullPointerException.class, () -> builder.protocols((HttpProtocolConfig) null));
     }
 
     @Test
@@ -158,5 +159,48 @@ class HttpProtocolConfigTest {
         Exception e = assertThrows(IllegalArgumentException.class, () ->
             builder.protocols(h2Default(), h2Default()));
         assertThat(e.getMessage(), startsWith("Duplicated configuration"));
+    }
+
+    @Test
+    void maxTotalHeaderFieldsLengthAdjustedWhenFieldLengthIsHigher() {
+        H1ProtocolConfig config = h1()
+                .maxHeaderFieldLength(64 * 1024)
+                .build();
+
+        assertEquals(64 * 1024, config.maxHeaderFieldLength());
+        assertEquals(64 * 1024, config.maxTotalHeaderFieldsLength());
+    }
+
+    @Test
+    void maxTotalHeaderFieldsLengthAdjustedWhenExplicitlySetLower() {
+        H1ProtocolConfig config = h1()
+                .maxHeaderFieldLength(64 * 1024)
+                .maxTotalHeaderFieldsLength(16 * 1024)
+                .build();
+
+        assertEquals(64 * 1024, config.maxHeaderFieldLength());
+        assertEquals(64 * 1024, config.maxTotalHeaderFieldsLength());
+    }
+
+    @Test
+    void maxTotalHeaderFieldsLengthNotAdjustedWhenAlreadySufficient() {
+        H1ProtocolConfig config = h1()
+                .maxHeaderFieldLength(16 * 1024)
+                .maxTotalHeaderFieldsLength(64 * 1024)
+                .build();
+
+        assertEquals(16 * 1024, config.maxHeaderFieldLength());
+        assertEquals(64 * 1024, config.maxTotalHeaderFieldsLength());
+    }
+
+    @Test
+    void maxTotalHeaderFieldsLengthWorksWhenEqual() {
+        H1ProtocolConfig config = h1()
+                .maxHeaderFieldLength(32 * 1024)
+                .maxTotalHeaderFieldsLength(32 * 1024)
+                .build();
+
+        assertEquals(32 * 1024, config.maxHeaderFieldLength());
+        assertEquals(32 * 1024, config.maxTotalHeaderFieldsLength());
     }
 }
