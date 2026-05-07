@@ -28,7 +28,8 @@ final class GzipCompressionBuilder extends ZipCompressionBuilder {
     public SerializerDeserializer<Buffer> build() {
         return new NettyCompressionSerializer(
                 () -> new JdkZlibEncoder(ZlibWrapper.GZIP, compressionLevel()),
-                () -> new JdkZlibDecoder(ZlibWrapper.GZIP, maxChunkSize()));
+                () -> new JdkZlibDecoder(ZlibWrapper.GZIP, maxChunkSize()),
+                maxDecompressedBytes());
     }
 
     @Override
