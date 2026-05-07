@@ -34,6 +34,14 @@ final class BiHttpLifecycleObserver implements HttpLifecycleObserver {
         this.second = requireNonNull(second);
     }
 
+    HttpLifecycleObserver first() {
+        return first;
+    }
+
+    HttpLifecycleObserver second() {
+        return second;
+    }
+
     @Override
     public HttpExchangeObserver onNewExchange() {
         final HttpExchangeObserver f;

@@ -18,6 +18,10 @@ package io.servicetalk.grpc.utils;
 import io.servicetalk.grpc.api.GrpcLifecycleObserver;
 import io.servicetalk.logging.api.LogLevel;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * A factory to create different {@link GrpcLifecycleObserver}s.
  */
@@ -45,6 +49,7 @@ public final class GrpcLifecycleObservers {
      * @param second {@link GrpcLifecycleObserver} to combine
      * @return a {@link GrpcLifecycleObserver} that delegates all invocations to the provided
      * {@link GrpcLifecycleObserver}s
+     * @see #unpack(GrpcLifecycleObserver)
      */
     public static GrpcLifecycleObserver combine(final GrpcLifecycleObserver first, final GrpcLifecycleObserver second) {
         return new BiGrpcLifecycleObserver(first, second);
@@ -58,6 +63,7 @@ public final class GrpcLifecycleObservers {
      * @param others {@link GrpcLifecycleObserver}s to combine
      * @return a {@link GrpcLifecycleObserver} that delegates all invocations to the provided
      * {@link GrpcLifecycleObserver}s
+     * @see #unpack(GrpcLifecycleObserver)
      */
     public static GrpcLifecycleObserver combine(final GrpcLifecycleObserver first, final GrpcLifecycleObserver second,
                                                 final GrpcLifecycleObserver... others) {
@@ -68,5 +74,36 @@ public final class GrpcLifecycleObservers {
             }
         }
         return bi;
+    }
+
+    /**
+     * Unpacks a {@link GrpcLifecycleObserver} into a list of its leaf observers.
+     * <p>
+     * If the provided {@code observer} was created using one of the {@link #combine(GrpcLifecycleObserver,
+     * GrpcLifecycleObserver) combine} methods, this method recursively extracts all individual observers that were
+     * combined. Otherwise, returns a singleton list containing the provided observer.
+     *
+     * @param observer {@link GrpcLifecycleObserver} to unpack
+     * @return a {@link List} of leaf {@link GrpcLifecycleObserver}s
+     * @see #combine(GrpcLifecycleObserver, GrpcLifecycleObserver)
+     * @see #combine(GrpcLifecycleObserver, GrpcLifecycleObserver, GrpcLifecycleObserver...)
+     */
+    public static List<GrpcLifecycleObserver> unpack(final GrpcLifecycleObserver observer) {
+        if (observer instanceof BiGrpcLifecycleObserver) {
+            final List<GrpcLifecycleObserver> result = new ArrayList<>();
+            unpack(observer, result);
+            return Collections.unmodifiableList(result);
+        }
+        return Collections.singletonList(observer);
+    }
+
+    private static void unpack(final GrpcLifecycleObserver observer, final List<GrpcLifecycleObserver> result) {
+        if (observer instanceof BiGrpcLifecycleObserver) {
+            final BiGrpcLifecycleObserver bi = (BiGrpcLifecycleObserver) observer;
+            unpack(bi.first(), result);
+            unpack(bi.second(), result);
+        } else {
+            result.add(observer);
+        }
     }
 }

@@ -36,11 +36,13 @@ import io.servicetalk.http.api.StreamingHttpResponses;
 import io.servicetalk.http.netty.NoopHttpLifecycleObserver.NoopHttpExchangeObserver;
 import io.servicetalk.http.netty.NoopHttpLifecycleObserver.NoopHttpRequestObserver;
 import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
+import io.servicetalk.http.utils.HttpLifecycleObservers;
 import io.servicetalk.transport.api.ConnectionInfo;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -65,6 +67,15 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
     AbstractLifecycleObserverHttpFilter(final HttpLifecycleObserver observer, final boolean client) {
         this.observer = requireNonNull(observer);
         this.client = client;
+    }
+
+    /**
+     * Returns the {@link HttpLifecycleObserver}s used by this filter.
+     *
+     * @return a {@link List} of {@link HttpLifecycleObserver}s used by this filter
+     */
+    public List<? extends HttpLifecycleObserver> lifecycleObservers() {
+        return HttpLifecycleObservers.unpack(observer);
     }
 
     /**
