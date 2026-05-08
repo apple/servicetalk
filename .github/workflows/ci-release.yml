@@ -51,7 +51,7 @@ jobs:
           echo "Go to https://central.sonatype.com/publishing/deployments to finish publishing artifacts"
       - name: Publish Test Results
         if: always()
-        uses: scacap/action-surefire-report@fa13579fdd93ed8fc7e717a25eceedcfcbc39dda
+        uses: scacap/action-surefire-report@c534cea38c961ea629b2dca6931972b971603a85
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/test/TEST-*.xml'
