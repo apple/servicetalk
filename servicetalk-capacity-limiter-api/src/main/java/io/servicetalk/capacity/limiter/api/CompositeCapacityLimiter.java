@@ -50,28 +50,24 @@ final class CompositeCapacityLimiter implements CapacityLimiter {
     }
 
     @Override
+    @Nullable
     public Ticket tryAcquire(final Classification classification, @Nullable final ContextMap context) {
         Ticket[] results = null;
         int idx = 0;
         for (final CapacityLimiter provider : providers) {
             final Ticket ticket = provider.tryAcquire(classification, context);
-            if (ticket != null) {
-                if (results == null) {
-                    results = new Ticket[providers.size()];
+            if (ticket == null) {
+                if (results != null) {
+                    completed(results);
                 }
-
-                results[idx++] = ticket;
-                continue;
-            }
-
-            if (results != null) {
-                completed(results);
                 return null;
             }
+            if (results == null) {
+                results = new Ticket[providers.size()];
+            }
+            results[idx++] = ticket;
         }
-
-        assert results != null;
-        return compositeResult(results);
+        return results == null ? null : compositeResult(results);
     }
 
     private static int completed(final Ticket[] results) {
