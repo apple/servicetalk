@@ -66,16 +66,14 @@ final class FixedCapacityLimiter implements CapacityLimiter {
         final int effectiveLimit = (capacity * priority) / 100;
         for (;;) {
             final int currPending = pending;
-            if (currPending == effectiveLimit &&
-                    pendingUpdater.compareAndSet(this, currPending, currPending)) {
+            if (currPending >= effectiveLimit) {
                 notifyObserver(currPending);
                 return null;
-            } else if (currPending < effectiveLimit) {
-                final int newPending = currPending + 1;
-                if (pendingUpdater.compareAndSet(this, currPending, newPending)) {
-                    notifyObserver(newPending);
-                    return new DefaultTicket(this, effectiveLimit - newPending, newPending);
-                }
+            }
+            final int newPending = currPending + 1;
+            if (pendingUpdater.compareAndSet(this, currPending, newPending)) {
+                notifyObserver(newPending);
+                return new DefaultTicket(this, effectiveLimit - newPending, newPending);
             }
         }
     }
