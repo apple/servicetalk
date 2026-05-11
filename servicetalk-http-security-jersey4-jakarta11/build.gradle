@@ -1,0 +1,117 @@
+/*
+ * Copyright © 2026 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
+
+// Required version for module
+def javaLanguageVersion = JavaVersion.VERSION_17
+
+java {
+  sourceCompatibility = javaLanguageVersion
+  targetCompatibility = javaLanguageVersion
+}
+
+tasks.withType(JavaCompile).configureEach {
+  options.release = Integer.parseInt(javaLanguageVersion.getMajorVersion())
+}
+
+tasks.withType(Checkstyle).all {
+  enabled = false
+}
+
+tasks.withType(Pmd).all {
+  enabled = false
+}
+
+tasks.withType(com.github.spotbugs.snom.SpotBugsTask).all {
+  enabled = false
+}
+
+task cleanSources(type: Delete) {
+  delete 'src'
+}
+
+task copySourcesForJersey4(type: Copy) {
+  dependsOn tasks.cleanSources
+  from '../servicetalk-http-security-jersey/src'
+  into 'src'
+  filter { line -> line.replaceAll('javax\\.ws\\.rs', 'jakarta.ws.rs') }
+  filter { line -> line.replaceAll('javax\\.inject', 'jakarta.inject') }
+  filter { line -> line.replaceAll('fluent\\.JsonFluentAssert\\.assertThatJson', 'assertj.JsonAssertions.assertThatJson') }
+  filter { line -> line.replaceAll('isStringEqualTo\\(BASIC_AUTH\\)', 'isStringEqualTo(BASIC_AUTH);') }
+  filter { line -> line.replaceAll('\\.node\\(\\"userPrincipal.name\\"\\)\\.isPresent\\(\\)', 'assertThatJson(json).node("userPrincipal.name").isPresent();') }
+  filter { line -> line.replaceAll('\\.node\\(\\"secure\\"\\)', 'assertThatJson(json).node("secure")') }
+  filter { line -> line.replaceAll('node\\(\\"authenticationScheme\\"\\)\\.isEqualTo\\(null\\)', 'node("authenticationScheme").isEqualTo(null);') }
+  filter { line -> line.replaceAll('\\.node\\(\\"userPrincipal\\"\\).isEqualTo\\(null\\)', 'assertThatJson(json).node("userPrincipal").isEqualTo(null);') }
+
+  // Only modify specific javax.annotations.  Some like javax.annotation.Nullable need to stay the same
+  filter { line -> line.replaceAll('javax\\.annotation\\.Priority', 'jakarta.annotation.Priority') }
+  filter { line -> line.replaceAll('javax\\.annotation\\.security', 'jakarta.annotation.security') }
+}
+
+tasks.processResources.dependsOn(copySourcesForJersey4)
+tasks.sourcesJar.dependsOn(copySourcesForJersey4)
+tasks.compileJava.dependsOn(copySourcesForJersey4)
+tasks.processTestResources.dependsOn(copySourcesForJersey4)
+tasks.compileTestJava.dependsOn(copySourcesForJersey4)
+afterEvaluate {
+  if (tasks.findByName("projectHealth")) {
+    tasks.withType(com.autonomousapps.tasks.CodeSourceExploderTask) {
+      dependsOn(copySourcesForJersey4)
+    }
+  }
+}
+
+def actualJerseyVersion = "${jersey4VersionEE11}"
+def actualJavaxAnnotationsApiVersion = "${javaxAnnotationsApiVersionEE11}"
+def actualJaxRsVersion = "${jaxRsVersionEE11}"
+
+// Dependencies must remain consistent between servicetalk-http-security-jerseyX modules
+dependencies {
+  api "jakarta.ws.rs:jakarta.ws.rs-api:$actualJaxRsVersion"
+  api project(":servicetalk-context-api")
+
+  implementation platform("org.glassfish.jersey:jersey-bom:$actualJerseyVersion")
+  implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-concurrent-api")
+
+  compileOnly "jakarta.annotation:jakarta.annotation-api:$actualJavaxAnnotationsApiVersion"
+
+  runtimeOnly "org.glassfish.jersey.core:jersey-common"
+
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+  testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
+  testImplementation project(":servicetalk-buffer-api")
+  testImplementation project(":servicetalk-http-api")
+  testImplementation project(":servicetalk-http-netty")
+  testImplementation project(":servicetalk-http-router-jersey4-jakarta11")
+  testImplementation project(":servicetalk-http-utils")
+  testImplementation project(":servicetalk-transport-api")
+  testImplementation "org.junit.jupiter:junit-jupiter-api"
+  testImplementation "org.junit.jupiter:junit-jupiter-params"
+  testImplementation "net.javacrumbs.json-unit:json-unit-assertj:$jsonUnit5Version"
+  testImplementation "org.assertj:assertj-core:$assertJCoreVersion"
+  testImplementation "org.glassfish.jersey.core:jersey-server"
+  testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
+  testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
+  testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
+
+  testRuntimeOnly testFixtures(project(":servicetalk-concurrent-internal"))
+  // BaseJerseyRouterTestSuite assumes JSON serialization is supported.
+  testRuntimeOnly project(":servicetalk-data-jackson3-jersey4-jakarta11")
+  testRuntimeOnly project(":servicetalk-test-resources")
+  testRuntimeOnly "org.glassfish.jersey.inject:jersey-hk2"
+}
