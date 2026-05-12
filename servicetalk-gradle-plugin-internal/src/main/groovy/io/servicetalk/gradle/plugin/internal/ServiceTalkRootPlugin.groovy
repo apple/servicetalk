@@ -67,8 +67,11 @@ final class ServiceTalkRootPlugin extends ServiceTalkCorePlugin {
 
           subprojects.findAll {
             !it.name.contains("examples")
-                // No need to generate javadoc for -jersey3 modules because they are copied from -jersey
+                // No need to generate javadoc for -jersey3/4 modules because they are copied from -jersey
                 && !it.name.contains("-jersey3-jakarta")
+                && !it.name.contains("-jersey4-jakarta")
+                // No need to generate javadoc for -jackson3 modules because they are copied from -jackson
+                && !it.name.endsWith("-jackson3")
           }.each { prj ->
             prj.tasks.withType(Javadoc).findAll {it.name.equals("javadoc")}.each { javadocTask ->
               // Use .from and .files to eagerly resolve during configuration phase
