@@ -66,16 +66,14 @@ final class FixedCapacityLimiter implements CapacityLimiter {
         final int effectiveLimit = (capacity * priority) / 100;
         for (;;) {
             final int currPending = pending;
-            if (currPending == effectiveLimit &&
-                    pendingUpdater.compareAndSet(this, currPending, currPending)) {
+            if (currPending >= effectiveLimit) {
                 notifyObserver(currPending);
                 return null;
-            } else if (currPending < effectiveLimit) {
-                final int newPending = currPending + 1;
-                if (pendingUpdater.compareAndSet(this, currPending, newPending)) {
-                    notifyObserver(newPending);
-                    return new DefaultTicket(this, effectiveLimit - newPending, newPending);
-                }
+            }
+            final int newPending = currPending + 1;
+            if (pendingUpdater.compareAndSet(this, currPending, newPending)) {
+                notifyObserver(newPending);
+                return new DefaultTicket(this, effectiveLimit - newPending, newPending);
             }
         }
     }
@@ -124,6 +122,11 @@ final class FixedCapacityLimiter implements CapacityLimiter {
 
         private int release() {
             final int pending = pendingUpdater.decrementAndGet(fixedCapacityProvider);
+            if (pending < 0) {
+                LOGGER.warn("Negative pending requests detected: {}. This is a bug: please report this to the " +
+                        "ServiceTalk team. Capacity Limiter: {}", pending, fixedCapacityProvider);
+                assert pending >= 0; // so it throws when assertions are enabled and we can get a stack trace.
+            }
             fixedCapacityProvider.notifyObserver(pending);
             return max(0, fixedCapacityProvider.capacity - pending);
         }

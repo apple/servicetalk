@@ -74,6 +74,24 @@ class FixedCapacityLimiterTest {
         evaluateExpectingAllow();
     }
 
+    @Test
+    void lowerPriorityAfterSaturationIsRejected() {
+        final FixedCapacityLimiter limiter = new FixedCapacityLimiter(10);
+        for (int i = 0; i < 6; i++) {
+            assertThat(limiter.tryAcquire(() -> 100, null), notNullValue());
+        }
+        // effectiveLimit for priority=50 is 5, pending=6 > 5 — must reject, not spin.
+        assertThat(limiter.tryAcquire(() -> 50, null), nullValue());
+    }
+
+    @Test
+    void zeroPriorityWhilePendingIsRejected() {
+        final FixedCapacityLimiter limiter = new FixedCapacityLimiter(10);
+        assertThat(limiter.tryAcquire(() -> 100, null), notNullValue());
+        // effectiveLimit for priority=0 is 0, pending=1 > 0 — must reject, not spin.
+        assertThat(limiter.tryAcquire(() -> 0, null), nullValue());
+    }
+
     private CapacityLimiter.Ticket evaluateExpectingAllow() {
         final CapacityLimiter.Ticket ticket = provider.tryAcquire(() -> 100, null);
         assertThat("Unexpected result, expected allow.", ticket, notNullValue());
