@@ -40,12 +40,15 @@ import static io.servicetalk.buffer.api.CharSequences.regionMatches;
 import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.encoding.api.internal.HeaderUtils.encodingFor;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
+import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.VARY;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
+import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
+import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
 import static io.servicetalk.http.api.UriUtils.TCHAR_HMASK;
 import static io.servicetalk.http.api.UriUtils.TCHAR_LMASK;
 import static io.servicetalk.http.api.UriUtils.isBitSet;
@@ -154,6 +157,35 @@ public final class HeaderUtils {
         // As per https://tools.ietf.org/html/rfc7230#section-3.3.1 the `transfer-encoding` header may contain
         // multiple values, comma separated.
         return containsCommaSeparatedValueIgnoreCase(headers, TRANSFER_ENCODING, CHUNKED);
+    }
+
+    /**
+     * Returns {@code true} if {@code headers} contains a {@link HttpHeaderNames#CONNECTION} header whose
+     * value includes {@link HttpHeaderValues#CLOSE}.
+     * <p>
+     * The {@code Connection} header may carry multiple comma-separated values (for example
+     * {@code Connection: close, Upgrade}); this method returns {@code true} if any of them is {@code close}.
+     *
+     * @param headers The {@link HttpHeaders} to check.
+     * @return {@code true} if {@code headers} indicates {@code Connection: close}, {@code false} otherwise.
+     */
+    public static boolean isConnectionClose(final HttpHeaders headers) {
+        return containsCommaSeparatedValueIgnoreCase(headers, CONNECTION, CLOSE);
+    }
+
+    /**
+     * Returns {@code true} if {@code headers} contains a {@link HttpHeaderNames#CONNECTION} header whose
+     * value includes {@link HttpHeaderValues#KEEP_ALIVE}.
+     * <p>
+     * The {@code Connection} header may carry multiple comma-separated values (for example
+     * {@code Connection: keep-alive, Upgrade}); this method returns {@code true} if any of them is
+     * {@code keep-alive}.
+     *
+     * @param headers The {@link HttpHeaders} to check.
+     * @return {@code true} if {@code headers} indicates {@code Connection: keep-alive}, {@code false} otherwise.
+     */
+    public static boolean isConnectionKeepAlive(final HttpHeaders headers) {
+        return containsCommaSeparatedValueIgnoreCase(headers, CONNECTION, KEEP_ALIVE);
     }
 
     static boolean containsCommaSeparatedValueIgnoreCase(final HttpHeaders headers, final CharSequence name,
