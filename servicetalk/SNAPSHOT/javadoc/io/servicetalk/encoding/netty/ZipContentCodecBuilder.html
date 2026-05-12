@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -92,8 +92,8 @@ loadScripts(document, 'script');</script>
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel">
-<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
+<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
+<div class="summary-table three-column-summary">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -107,11 +107,18 @@ loadScripts(document, 'script');</script>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#maxChunkSize(int)" class="member-name-link">maxChunkSize</a><wbr>(int&nbsp;maxChunkSize)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span></div>
-<div class="block">Set the max allowed chunk size to inflate during decoding.</div>
+<div class="block">Set the max allowed chunk size the decoder may emit in a single inflate step.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code>final <a href="ZipContentCodecBuilder.html" title="class in io.servicetalk.encoding.netty">ZipContentCodecBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#withCompressionLevel(int)" class="member-name-link">withCompressionLevel</a><wbr>(int&nbsp;compressionLevel)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#maxDecompressedBytes(long)" class="member-name-link">maxDecompressedBytes</a><wbr>(long&nbsp;maxDecompressedBytes)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block">Set the maximum cumulative size in bytes of the decompressed payload produced by a single
+ aggregated <a href="../api/ContentCodec.html#decode(io.servicetalk.buffer.api.Buffer,io.servicetalk.buffer.api.BufferAllocator)"><code>decode</code></a> call.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code>final <a href="ZipContentCodecBuilder.html" title="class in io.servicetalk.encoding.netty">ZipContentCodecBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#withCompressionLevel(int)" class="member-name-link">withCompressionLevel</a><wbr>(int&nbsp;compressionLevel)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Sets the compression level for this codec's encoder.</div>
 </div>
@@ -152,10 +159,47 @@ loadScripts(document, 'script');</script>
 <h3>maxChunkSize</h3>
 <div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="ZipContentCodecBuilder.html" title="class in io.servicetalk.encoding.netty">ZipContentCodecBuilder</a></span>&nbsp;<span class="element-name">maxChunkSize</span><wbr><span class="parameters">(int&nbsp;maxChunkSize)</span></div>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
-<div class="block">Set the max allowed chunk size to inflate during decoding.</div>
+<div class="block">Set the max allowed chunk size the decoder may emit in a single inflate step. This does
+ <em>not</em> bound the total decompressed payload size; see
+ <a href="#maxDecompressedBytes(long)"><code>maxDecompressedBytes(long)</code></a> for that.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>maxChunkSize</code> - the max allowed chunk size to inflate during decoding.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="maxDecompressedBytes(long)">
+<h3>maxDecompressedBytes</h3>
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="ZipContentCodecBuilder.html" title="class in io.servicetalk.encoding.netty">ZipContentCodecBuilder</a></span>&nbsp;<span class="element-name">maxDecompressedBytes</span><wbr><span class="parameters">(long&nbsp;maxDecompressedBytes)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block">Set the maximum cumulative size in bytes of the decompressed payload produced by a single
+ aggregated <a href="../api/ContentCodec.html#decode(io.servicetalk.buffer.api.Buffer,io.servicetalk.buffer.api.BufferAllocator)"><code>decode</code></a> call. When the limit is exceeded the
+ operation fails with a <a href="../api/CodecDecodingException.html" title="class in io.servicetalk.encoding.api"><code>CodecDecodingException</code></a>. Used to
+ defend against decompression-bomb inputs where a small compressed payload expands to an
+ unbounded amount of memory.
+ <p>
+ Unlike <a href="#maxChunkSize(int)"><code>maxChunkSize(int)</code></a>, which bounds only a single inflate step inside the codec,
+ this bound is tracked across every chunk produced for the same input.
+ <p>
+ Defaults to 64 MiB. The default can be overridden process-wide via the
+ "io.servicetalk.encoding.netty.maxDecompressedBytes" system property (intended as
+ an operational escape hatch for unforeseen issues — prefer per-builder configuration).
+ A value of <code>0</code> disables the limit; callers that decode trusted input and need
+ unbounded decompression can opt out, but doing so re-exposes the decompression-bomb
+ attack surface.
+ <p>
+ This setting does <em>not</em> apply to the streaming
+ <a href="../api/ContentCodec.html#decode(io.servicetalk.concurrent.api.Publisher,io.servicetalk.buffer.api.BufferAllocator)"><code>ContentCodec.decode(io.servicetalk.concurrent.api.Publisher, io.servicetalk.buffer.api.BufferAllocator)</code></a> path.
+ Streaming consumers typically process much larger payloads and are assumed to apply
+ back-pressure; a streaming client that aggregates decoded chunks into a single buffer
+ should enforce its own size bound.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>maxDecompressedBytes</code> - the max total decompressed bytes allowed per aggregated decode,
+ or <code>0</code> for unbounded.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code></dd>
 </dl>

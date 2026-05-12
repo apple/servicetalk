@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -127,8 +127,8 @@ loadScripts(document, 'script');</script>
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel">
-<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
+<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
+<div class="summary-table three-column-summary">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -145,6 +145,18 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Checks if the provider headers contain a <code>Content-Type</code> header that matches the specified content type,
  and optionally the provided charset.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#isConnectionClose(io.servicetalk.http.api.HttpHeaders)" class="member-name-link">isConnectionClose</a><wbr>(<a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;headers)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Returns <code>true</code> if <code>headers</code> contains a <a href="HttpHeaderNames.html#CONNECTION"><code>HttpHeaderNames.CONNECTION</code></a> header whose
+ value includes <a href="HttpHeaderValues.html#CLOSE"><code>HttpHeaderValues.CLOSE</code></a>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#isConnectionKeepAlive(io.servicetalk.http.api.HttpHeaders)" class="member-name-link">isConnectionKeepAlive</a><wbr>(<a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;headers)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Returns <code>true</code> if <code>headers</code> contains a <a href="HttpHeaderNames.html#CONNECTION"><code>HttpHeaderNames.CONNECTION</code></a> header whose
+ value includes <a href="HttpHeaderValues.html#KEEP_ALIVE"><code>HttpHeaderValues.KEEP_ALIVE</code></a>.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static boolean</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#isSetCookieNameMatches(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">isSetCookieNameMatches</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;setCookieString,
@@ -232,6 +244,41 @@ loadScripts(document, 'script');</script>
 <dt>Returns:</dt>
 <dd> true if <code>headers</code> indicates <code>transfer-encoding</code> <code>chunked</code>, <code>false</code>
  otherwise.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="isConnectionClose(io.servicetalk.http.api.HttpHeaders)">
+<h3>isConnectionClose</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">isConnectionClose</span><wbr><span class="parameters">(<a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;headers)</span></div>
+<div class="block">Returns <code>true</code> if <code>headers</code> contains a <a href="HttpHeaderNames.html#CONNECTION"><code>HttpHeaderNames.CONNECTION</code></a> header whose
+ value includes <a href="HttpHeaderValues.html#CLOSE"><code>HttpHeaderValues.CLOSE</code></a>.
+ <p>
+ The <code>Connection</code> header may carry multiple comma-separated values (for example
+ <code>Connection: close, Upgrade</code>); this method returns <code>true</code> if any of them is <code>close</code>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>headers</code> - The <a href="HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a> to check.</dd>
+<dt>Returns:</dt>
+<dd><code>true</code> if <code>headers</code> indicates <code>Connection: close</code>, <code>false</code> otherwise.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="isConnectionKeepAlive(io.servicetalk.http.api.HttpHeaders)">
+<h3>isConnectionKeepAlive</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">isConnectionKeepAlive</span><wbr><span class="parameters">(<a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;headers)</span></div>
+<div class="block">Returns <code>true</code> if <code>headers</code> contains a <a href="HttpHeaderNames.html#CONNECTION"><code>HttpHeaderNames.CONNECTION</code></a> header whose
+ value includes <a href="HttpHeaderValues.html#KEEP_ALIVE"><code>HttpHeaderValues.KEEP_ALIVE</code></a>.
+ <p>
+ The <code>Connection</code> header may carry multiple comma-separated values (for example
+ <code>Connection: keep-alive, Upgrade</code>); this method returns <code>true</code> if any of them is
+ <code>keep-alive</code>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>headers</code> - The <a href="HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a> to check.</dd>
+<dt>Returns:</dt>
+<dd><code>true</code> if <code>headers</code> indicates <code>Connection: keep-alive</code>, <code>false</code> otherwise.</dd>
 </dl>
 </section>
 </li>

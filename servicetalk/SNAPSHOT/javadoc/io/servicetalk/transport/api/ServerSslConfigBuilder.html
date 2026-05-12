@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -107,6 +107,10 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color">
 <div class="block">Create a new instance using the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/KeyManagerFactory.html" title="class or interface in javax.net.ssl" class="external-link"><code>KeyManagerFactory</code></a> for SSL/TLS handshakes.</div>
 </div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(javax.net.ssl.SSLContext)" class="member-name-link">ServerSslConfigBuilder</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLContext.html" title="class or interface in javax.net.ssl" class="external-link">SSLContext</a>&nbsp;sslContext)</code></div>
+<div class="col-last odd-row-color">
+<div class="block">Create a new instance using a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLContext.html" title="class or interface in javax.net.ssl" class="external-link"><code>SSLContext</code></a> for key and trust configuration.</div>
+</div>
 </div>
 </section>
 </li>
@@ -116,8 +120,8 @@ loadScripts(document, 'script');</script>
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel">
-<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
+<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
+<div class="summary-table three-column-summary">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -212,26 +216,31 @@ loadScripts(document, 'script');</script>
 <div class="block">Get the timeout for the cached SSL session objects, in seconds.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslProtocols(java.lang.String...)" class="member-name-link">sslProtocols</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>...&nbsp;protocols)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslContext(javax.net.ssl.SSLContext)" class="member-name-link">sslContext</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLContext.html" title="class or interface in javax.net.ssl" class="external-link">SSLContext</a>&nbsp;sslContext)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Set the TLS protocols to enable, in the order of preference.</div>
+<div class="block">Set a pre-configured <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLContext.html" title="class or interface in javax.net.ssl" class="external-link"><code>SSLContext</code></a> to use for SSL/TLS.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslProtocols(java.util.List)" class="member-name-link">sslProtocols</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;protocols)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslProtocols(java.lang.String...)" class="member-name-link">sslProtocols</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>...&nbsp;protocols)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the TLS protocols to enable, in the order of preference.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>protected <a href="ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#thisT()" class="member-name-link">thisT</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#trustManager(java.util.function.Supplier)" class="member-name-link">trustManager</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link">InputStream</a>&gt;&nbsp;trustCertChainSupplier)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Set the trusted certificates for verifying the remote endpoint's certificate.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#trustManager(javax.net.ssl.TrustManagerFactory)" class="member-name-link">trustManager</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/TrustManagerFactory.html" title="class or interface in javax.net.ssl" class="external-link">TrustManagerFactory</a>&nbsp;tmf)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslProtocols(java.util.List)" class="member-name-link">sslProtocols</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;protocols)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Set the TLS protocols to enable, in the order of preference.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>protected <a href="ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#thisT()" class="member-name-link">thisT</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#trustManager(java.util.function.Supplier)" class="member-name-link">trustManager</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link">InputStream</a>&gt;&nbsp;trustCertChainSupplier)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Set the trusted certificates for verifying the remote endpoint's certificate.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#trustManager(javax.net.ssl.TrustManagerFactory)" class="member-name-link">trustManager</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/TrustManagerFactory.html" title="class or interface in javax.net.ssl" class="external-link">TrustManagerFactory</a>&nbsp;tmf)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/TrustManagerFactory.html" title="class or interface in javax.net.ssl" class="external-link"><code>TrustManagerFactory</code></a> used for verifying the remote endpoint's certificate.</div>
 </div>
 </div>
@@ -251,6 +260,23 @@ loadScripts(document, 'script');</script>
 <section class="constructor-details" id="constructor-detail">
 <h2>Constructor Details</h2>
 <ul class="member-list">
+<li>
+<section class="detail" id="&lt;init&gt;(javax.net.ssl.SSLContext)">
+<h3>ServerSslConfigBuilder</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">ServerSslConfigBuilder</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLContext.html" title="class or interface in javax.net.ssl" class="external-link">SSLContext</a>&nbsp;sslContext)</span></div>
+<div class="block">Create a new instance using a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLContext.html" title="class or interface in javax.net.ssl" class="external-link"><code>SSLContext</code></a> for key and trust configuration.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>sslContext</code> - the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLContext.html" title="class or interface in javax.net.ssl" class="external-link"><code>SSLContext</code></a> to use for SSL/TLS.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="SslConfig.html#sslContext()"><code>SslConfig.sslContext()</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
 <li>
 <section class="detail" id="&lt;init&gt;(javax.net.ssl.KeyManagerFactory)">
 <h3>ServerSslConfigBuilder</h3>
@@ -372,6 +398,37 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="thisT()">
 <h3>thisT</h3>
 <div class="member-signature"><span class="modifiers">protected</span>&nbsp;<span class="return-type"><a href="ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></span>&nbsp;<span class="element-name">thisT</span>()</div>
+</section>
+</li>
+<li>
+<section class="detail" id="sslContext(javax.net.ssl.SSLContext)">
+<h3>sslContext</h3>
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></span>&nbsp;<span class="element-name">sslContext</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLContext.html" title="class or interface in javax.net.ssl" class="external-link">SSLContext</a>&nbsp;sslContext)</span></div>
+<div class="block">Set a pre-configured <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLContext.html" title="class or interface in javax.net.ssl" class="external-link"><code>SSLContext</code></a> to use for SSL/TLS.
+ <p>
+ When an <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLContext.html" title="class or interface in javax.net.ssl" class="external-link"><code>SSLContext</code></a> is provided, it takes precedence over individual trust and key manager
+ configurations and forces the <a href="SslProvider.html" title="enum class in io.servicetalk.transport.api"><code>SslProvider</code></a> to JDK.
+ <p>
+ This method is mutually exclusive with:
+ <ul>
+   <li><a href="#trustManager(javax.net.ssl.TrustManagerFactory)"><code>trustManager(TrustManagerFactory)</code></a></li>
+   <li><a href="#trustManager(java.util.function.Supplier)"><code>trustManager(Supplier)</code></a></li>
+   <li><a href="#keyManager(javax.net.ssl.KeyManagerFactory)"><code>keyManager(KeyManagerFactory)</code></a></li>
+   <li><a href="#keyManager(java.util.function.Supplier,java.util.function.Supplier)"><code>keyManager(Supplier, Supplier)</code></a></li>
+   <li><a href="#keyManager(java.util.function.Supplier,java.util.function.Supplier,java.lang.String)"><code>keyManager(Supplier, Supplier, String)</code></a></li>
+ </ul></div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>sslContext</code> - the SSLContext to use</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="SslConfig.html#sslContext()"><code>SslConfig.sslContext()</code></a></li>
+</ul>
+</dd>
+</dl>
 </section>
 </li>
 <li>

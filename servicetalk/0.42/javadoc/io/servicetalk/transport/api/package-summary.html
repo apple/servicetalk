@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="package-declaration-page">
@@ -70,8 +70,8 @@ loadScripts(document, 'script');</script>
 <li>
 <div id="class-summary">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="class-summary-tab0" role="tab" aria-selected="true" aria-controls="class-summary.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary', 2)" class="active-table-tab">All Classes and Interfaces</button><button id="class-summary-tab1" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab1', 2)" class="table-tab">Interfaces</button><button id="class-summary-tab2" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab2', 2)" class="table-tab">Classes</button><button id="class-summary-tab3" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab3', 2)" class="table-tab">Enum Classes</button><button id="class-summary-tab5" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab5', 2)" class="table-tab">Exceptions</button></div>
-<div id="class-summary.tabpanel" role="tabpanel">
-<div class="summary-table two-column-summary" aria-labelledby="class-summary-tab0">
+<div id="class-summary.tabpanel" role="tabpanel" aria-labelledby="class-summary-tab0">
+<div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color class-summary class-summary-tab1"><a href="CertificateCompressionAlgorithm.html" title="interface in io.servicetalk.transport.api">CertificateCompressionAlgorithm</a></div>
@@ -260,24 +260,28 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color class-summary class-summary-tab3">
 <div class="block">Defines filtering logic for ciphers suites.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab3"><a href="SslProvider.html" title="enum class in io.servicetalk.transport.api">SslProvider</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab3">
+<div class="col-first even-row-color class-summary class-summary-tab5"><a href="SslHandshakeTimeoutException.html" title="class in io.servicetalk.transport.api">SslHandshakeTimeoutException</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab5">
+<div class="block">Thrown when an SSL/TLS handshake fails with a timeout.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab3"><a href="SslProvider.html" title="enum class in io.servicetalk.transport.api">SslProvider</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab3">
 <div class="block">The provider to use for <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLEngine.html" title="class or interface in javax.net.ssl" class="external-link"><code>SSLEngine</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="TransportConfig.html" title="interface in io.servicetalk.transport.api">TransportConfig</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="TransportConfig.html" title="interface in io.servicetalk.transport.api">TransportConfig</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">Configuration for transport settings.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="TransportConfigBuilder.html" title="class in io.servicetalk.transport.api">TransportConfigBuilder</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="TransportConfigBuilder.html" title="class in io.servicetalk.transport.api">TransportConfigBuilder</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Builder for <a href="TransportConfig.html" title="interface in io.servicetalk.transport.api"><code>TransportConfig</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">An observer interface that provides visibility into transport events.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="TransportObservers.html" title="class in io.servicetalk.transport.api">TransportObservers</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="TransportObservers.html" title="class in io.servicetalk.transport.api">TransportObservers</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A factory to create different <a href="TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a>s.</div>
 </div>
 </div>

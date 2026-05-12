@@ -1129,8 +1129,8 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>This module defines the ServiceTalk client and server API for the <a href="https://tools.ietf.org/html/rfc7231">HTTP/1.x</a>
-and <a href="https://tools.ietf.org/html/rfc7540">HTTP/2</a> protocols. This module supports all the different
+<p>This module defines the ServiceTalk client and server API for the <a href="https://datatracker.ietf.org/doc/html/rfc7231">HTTP/1.x</a>
+and <a href="https://datatracker.ietf.org/doc/html/rfc7540">HTTP/2</a> protocols. This module supports all the different
 <a href="../../servicetalk/SNAPSHOT/programming-paradigms.html" class="page">Programming Paradigms</a> for client and server.
 Here is a quick start example of the
 <a href="../../servicetalk/SNAPSHOT/programming-paradigms.html#blocking-and-aggregated" class="page">blocking and aggregated</a> paradigm:</p>
@@ -1293,7 +1293,7 @@ This <code>Client</code> is for use cases where you want to issue requests to a 
 <div class="sect2">
 <h3 id="multiaddress-client"><a class="anchor" href="#multiaddress-client"></a><a class="link" href="#multiaddress-client">MultiAddress Client</a></h3>
 <div class="paragraph">
-<p>This <code>Client</code> parses the <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request-target</a> to determine the remote
+<p>This <code>Client</code> parses the <a href="https://datatracker.ietf.org/doc/html/rfc7230#section-5.3">request-target</a> to determine the remote
 address for each request. This <code>Client</code> simulates a browser type of use case.</p>
 </div>
 <div class="paragraph">
@@ -1406,8 +1406,8 @@ control flow.</p>
 <h2 id="using-http2-transport"><a class="anchor" href="#using-http2-transport"></a><a class="link" href="#using-http2-transport">Using HTTP/2 transport</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>ServiceTalk supports both <a href="https://tools.ietf.org/html/rfc7231">HTTP/1.x</a> and
-<a href="https://tools.ietf.org/html/rfc7540">HTTP/2</a> protocols.</p>
+<p>ServiceTalk supports both <a href="https://datatracker.ietf.org/doc/html/rfc7231">HTTP/1.x</a> and
+<a href="https://datatracker.ietf.org/doc/html/rfc7540">HTTP/2</a> protocols.</p>
 </div>
 <div class="paragraph">
 <p>HTTP/2 provides many benefits over HTTP/1.1 ranging from improving performance (eg: multiplexing, binary framing) to
@@ -1421,7 +1421,7 @@ in ServiceTalk eventually.</p>
 <div class="paragraph">
 <p>For the cleartext TCP connections, users have to configure the desired protocol version upfront, using builder methods.
 For secure TLS connections, a protocol version must be negotiated using
-<a href="https://tools.ietf.org/html/rfc7301">ALPN extension</a>.</p>
+<a href="https://datatracker.ietf.org/doc/html/rfc7301">ALPN extension</a>.</p>
 </div>
 <div class="paragraph">
 <p>For more information about how to configure

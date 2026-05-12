@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -101,13 +101,15 @@ implements <a href="../../serialization/api/SerializationProvider.html" title="i
 <div class="table-header col-last">Description</div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E()" class="member-name-link">JacksonSerializationProvider</a>()</code></div>
 <div class="col-last even-row-color">
-<div class="block"><span class="deprecated-label">Deprecated.</span></div>
-<div class="block">New instances which will use the default <code>ObjectMapper</code>.</div>
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="JacksonSerializerFactory.html" title="class in io.servicetalk.data.jackson"><code>JacksonSerializerFactory</code></a>.</div>
+</div>
 </div>
 <div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(com.fasterxml.jackson.databind.ObjectMapper)" class="member-name-link">JacksonSerializationProvider</a><wbr>(com.fasterxml.jackson.databind.ObjectMapper&nbsp;mapper)</code></div>
 <div class="col-last odd-row-color">
-<div class="block"><span class="deprecated-label">Deprecated.</span></div>
-<div class="block">New instance.</div>
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="JacksonSerializerFactory.html" title="class in io.servicetalk.data.jackson"><code>JacksonSerializerFactory</code></a>.</div>
+</div>
 </div>
 </div>
 </section>
@@ -118,8 +120,8 @@ implements <a href="../../serialization/api/SerializationProvider.html" title="i
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel">
-<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
+<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
+<div class="summary-table three-column-summary">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -174,16 +176,22 @@ implements <a href="../../serialization/api/SerializationProvider.html" title="i
 <li>
 <section class="detail" id="&lt;init&gt;()">
 <h3>JacksonSerializationProvider</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">JacksonSerializationProvider</span>()</div>
-<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public</span>&nbsp;<span class="element-name">JacksonSerializationProvider</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="JacksonSerializerFactory.html" title="class in io.servicetalk.data.jackson"><code>JacksonSerializerFactory</code></a>.</div>
+</div>
 <div class="block">New instances which will use the default <code>ObjectMapper</code>.</div>
 </section>
 </li>
 <li>
 <section class="detail" id="&lt;init&gt;(com.fasterxml.jackson.databind.ObjectMapper)">
 <h3>JacksonSerializationProvider</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">JacksonSerializationProvider</span><wbr><span class="parameters">(com.fasterxml.jackson.databind.ObjectMapper&nbsp;mapper)</span></div>
-<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public</span>&nbsp;<span class="element-name">JacksonSerializationProvider</span><wbr><span class="parameters">(com.fasterxml.jackson.databind.ObjectMapper&nbsp;mapper)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="JacksonSerializerFactory.html" title="class in io.servicetalk.data.jackson"><code>JacksonSerializerFactory</code></a>.</div>
+</div>
 <div class="block">New instance.</div>
 <dl class="notes">
 <dt>Parameters:</dt>

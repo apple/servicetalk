@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -107,8 +107,8 @@ loadScripts(document, 'script');</script>
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel">
-<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
+<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
+<div class="summary-table three-column-summary">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -126,6 +126,11 @@ loadScripts(document, 'script');</script>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#capturedResponseHeaders(java.util.List)" class="member-name-link">capturedResponseHeaders</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;capturedResponseHeaders)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Add the response headers to be captured as extra span attributes.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="OpenTelemetryHttpServiceFilter.Builder.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryHttpServiceFilter.Builder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#openTelemetry(io.opentelemetry.api.OpenTelemetry)" class="member-name-link">openTelemetry</a><wbr>(io.opentelemetry.api.OpenTelemetry&nbsp;openTelemetry)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Set the <code>OpenTelemetry</code> instance to use for creating spans.</div>
 </div>
 </div>
 </div>
@@ -209,6 +214,22 @@ loadScripts(document, 'script');</script>
 <li><code>HttpServerAttributesExtractorBuilder.setCapturedResponseHeaders(List)</code></li>
 </ul>
 </dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="openTelemetry(io.opentelemetry.api.OpenTelemetry)">
+<h3>openTelemetry</h3>
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="OpenTelemetryHttpServiceFilter.Builder.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryHttpServiceFilter.Builder</a></span>&nbsp;<span class="element-name">openTelemetry</span><wbr><span class="parameters">(io.opentelemetry.api.OpenTelemetry&nbsp;openTelemetry)</span></div>
+<div class="block">Set the <code>OpenTelemetry</code> instance to use for creating spans.
+ <p>
+ Note that this is deliberately left package private. Beyond testing, there are not any compelling use cases
+ for an <code>OpenTelemetry</code> other than <code>GlobalOpenTelemetry.get()</code>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>openTelemetry</code> - the <code>OpenTelemetry</code> instance</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
 </dl>
 </section>
 </li>
