@@ -128,8 +128,14 @@ final class DefaultClientGroup<Key, Client extends ListenableAsyncCloseable> imp
             throw new IllegalArgumentException("Failed to create new client", t);
         }
 
-        final boolean replaced = clientMap.replace(key, PLACEHOLDER_CLIENT, client);
-        assert replaced : "Expected to replace PLACEHOLDER_CLIENT";
+        if (!clientMap.replace(key, PLACEHOLDER_CLIENT, client)) {
+            // closeAsync() drained our PLACEHOLDER reservation after our earlier `closed` check. The newly
+            // created client was never inserted into the map, so nothing else will close it.
+            assert closed : "Expected group to be closed when PLACEHOLDER_CLIENT replacement fails";
+            client.closeAsync().subscribe();
+            LOGGER.debug("Recently created client {} was closed, group {} closed before insertion", client, this);
+            throw new IllegalStateException(CLOSED_EXCEPTION_MSG);
+        }
         toSource(client.onClose()).subscribe(new RemoveClientOnClose(key, client));
         LOGGER.debug("A new client {} was created", client);
 
