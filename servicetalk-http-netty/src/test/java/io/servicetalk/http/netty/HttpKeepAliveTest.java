@@ -28,6 +28,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.http.netty.HttpKeepAlive.CLOSE_ADD_HEADER;
@@ -81,6 +82,17 @@ class HttpKeepAliveTest {
     @ValueSource(strings = {"keep-alive", "keep-alive, Upgrade", "Upgrade, keep-alive"})
     void http10ConnectionWithKeepAliveIsKeepAlive(String connectionValue) {
         assertThat(responseKeepAlive(metaData(HTTP_1_0, connectionValue)), is(KEEP_ALIVE_ADD_HEADER));
+    }
+
+    @Test
+    void http2NoConnectionHeaderIsKeepAliveNoHeader() {
+        assertThat(responseKeepAlive(metaData(HTTP_2_0)), is(KEEP_ALIVE_NO_HEADER));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"close", "keep-alive", "close, Upgrade", "keep-alive, Upgrade"})
+    void http2IgnoresConnectionHeader(String connectionValue) {
+        assertThat(responseKeepAlive(metaData(HTTP_2_0, connectionValue)), is(KEEP_ALIVE_NO_HEADER));
     }
 
     private static StreamingHttpResponse metaData(final HttpProtocolVersion version) {
