@@ -21,6 +21,8 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.PayloadTooLargeException;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
@@ -32,13 +34,19 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.api.CharSequences.parseLong;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 
 /**
  * Limits the response payload size. The filter will throw an exception which may result in stream/connection closure.
- * A {@link PayloadTooLargeException} will be thrown when the maximum payload size is exceeded.
+ * A {@link PayloadTooLargeException} will be thrown when the maximum payload size is exceeded. The
+ * {@code Content-Length} response header (when present) is inspected before the body is read so oversized responses
+ * that declare their size fail early; otherwise the streaming body is bounded as bytes arrive.
  */
 public final class PayloadSizeLimitingHttpRequesterFilter implements
                         StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
@@ -80,10 +88,60 @@ public final class PayloadSizeLimitingHttpRequesterFilter implements
 
     private Single<StreamingHttpResponse> applyLimit(
             StreamingHttpRequest request, Function<StreamingHttpRequest, Single<StreamingHttpResponse>> delegator) {
-        return delegator.apply(request).map(response ->
-                // We could use transformPayloadBody to convert into Buffers, but transformMessageBody has slightly
-                // less overhead. Since this implementation is internal to ServiceTalk we take the more advanced route.
-                response.transformMessageBody(newLimiter(maxResponsePayloadSize)));
+        final HttpRequestMethod method = request.method();
+        return delegator.apply(request).flatMap(response -> {
+            // HEAD responses and 1xx/204/304 responses carry Content-Length as metadata but have no body (RFC 9110
+            // sections 9.3.2 and 8.6). Skip the early check for these; the streaming limiter is a no-op here too
+            // because no payload bytes are delivered.
+            final PayloadTooLargeException ex = responseMayHaveBody(method, response) ?
+                    checkContentLength(response.headers(), maxResponsePayloadSize) : null;
+            if (ex != null) {
+                // Drain the payload before failing so the connection isn't abandoned with undrained bytes,
+                // which would typically force it closed.
+                return response.payloadBody().ignoreElements()
+                        .concat(Single.<StreamingHttpResponse>failed(ex))
+                        .shareContextOnSubscribe();
+            }
+            // We could use transformPayloadBody to convert into Buffers, but transformMessageBody has slightly
+            // less overhead. Since this implementation is internal to ServiceTalk we take the more advanced route.
+            return Single.succeeded(response.transformMessageBody(newLimiter(maxResponsePayloadSize)))
+                    .shareContextOnSubscribe();
+        });
+    }
+
+    private static boolean responseMayHaveBody(HttpRequestMethod method, StreamingHttpResponse response) {
+        if (HEAD.equals(method)) {
+            return false;
+        }
+        final int code = response.status().code();
+        // 1xx (informational), 204 (No Content), and 304 (Not Modified) never have a body.
+        return code >= 200 && code != 204 && code != 304;
+    }
+
+    /**
+     * If {@code headers} declares a {@code Content-Length} exceeding {@code maxPayloadSize}, return a
+     * {@link PayloadTooLargeException} so messages with known content-lengths can fail early. Returns {@code null}
+     * otherwise. A malformed value falls through to the streaming byte-counting limit.
+     */
+    @Nullable
+    static PayloadTooLargeException checkContentLength(HttpHeaders headers, int maxPayloadSize) {
+        final CharSequence cl = headers.get(CONTENT_LENGTH);
+        if (cl == null) {
+            return null;
+        }
+        final long declared;
+        try {
+            declared = parseLong(cl);
+        } catch (NumberFormatException ignored) {
+            // We shouldn't get here because the decoders should reject it, but since this
+            // was opportunistic anyway we can fall back to the 'byte counting' pathway.
+            return null;
+        }
+        if (declared > maxPayloadSize) {
+            return new PayloadTooLargeException("Maximum payload size=" + maxPayloadSize +
+                    " declared Content-Length=" + declared);
+        }
+        return null;
     }
 
     static UnaryOperator<Publisher<?>> newLimiter(int maxPayloadSize) {

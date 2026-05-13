@@ -27,12 +27,17 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
+import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
+import static io.servicetalk.http.api.HttpHeaderValues.CONTINUE;
+import static io.servicetalk.http.utils.PayloadSizeLimitingHttpRequesterFilter.checkContentLength;
 import static io.servicetalk.http.utils.PayloadSizeLimitingHttpRequesterFilter.newLimiter;
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 
 /**
  * Limits the request payload size. The filter will throw an exception which may result in stream/connection closure.
- * A {@link PayloadTooLargeException} will be thrown when the maximum payload size is exceeded.
+ * A {@link PayloadTooLargeException} will be thrown when the maximum payload size is exceeded. The
+ * {@code Content-Length} request header (when present) is inspected before the body is read so oversized requests
+ * that declare their size fail early; otherwise the streaming body is bounded as bytes arrive.
  */
 public final class PayloadSizeLimitingHttpServiceFilter implements StreamingHttpServiceFilterFactory {
     private final int maxRequestPayloadSize;
@@ -52,6 +57,22 @@ public final class PayloadSizeLimitingHttpServiceFilter implements StreamingHttp
             public Single<StreamingHttpResponse> handle(
                     final HttpServiceContext ctx, final StreamingHttpRequest request,
                     final StreamingHttpResponseFactory responseFactory) {
+                final PayloadTooLargeException ex = checkContentLength(request.headers(), maxRequestPayloadSize);
+                if (ex != null) {
+                    if (request.headers().containsIgnoreCase(EXPECT, CONTINUE)) {
+                        // Client is waiting for 100 Continue before sending the body. By not subscribing to
+                        // the payload we prevent NettyHttpServer from writing 100 Continue, so the client will
+                        // receive the 413 response (from HttpExceptionMapperServiceFilter) without sending the
+                        // body at all.
+                        return Single.<StreamingHttpResponse>failed(ex).shareContextOnSubscribe();
+                    }
+                    // Drain the payload before failing so the connection isn't abandoned with undrained bytes,
+                    // which would typically force it closed. The exception will be mapped to 413 by
+                    // HttpExceptionMapperServiceFilter.
+                    return request.payloadBody().ignoreElements()
+                            .concat(Single.<StreamingHttpResponse>failed(ex))
+                            .shareContextOnSubscribe();
+                }
                 return delegate().handle(ctx,
                         // We could use transformPayloadBody to convert into Buffers, but transformMessageBody has
                         // slightly less overhead. Since this implementation is internal to ServiceTalk we take the more
