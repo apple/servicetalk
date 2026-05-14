@@ -44,6 +44,7 @@ import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopMultipl
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.EventLoop;
 import io.netty.handler.codec.http2.Http2SettingsFrame;
 import io.netty.handler.codec.http2.Http2StreamChannel;
 import org.slf4j.Logger;
@@ -66,15 +67,21 @@ import static java.util.Objects.requireNonNull;
 final class H2ServerParentConnectionContext extends H2ParentConnectionContext implements ServerContext {
     private static final Logger LOGGER = LoggerFactory.getLogger(H2ServerParentConnectionContext.class);
     private final SocketAddress listenAddress;
+    @Nullable
+    private ConnectionObserver observer;
+    @Nullable
+    private DefaultH2ServerParentConnection parentConnectionHandler;
     private H2ServerParentConnectionContext(final Channel channel, final HttpExecutionContext executionContext,
                                             final FlushStrategy flushStrategy,
                                             final long idleTimeoutMs,
                                             @Nullable final SslConfig sslConfig,
                                             @Nullable final SSLSession sslSession,
                                             final SocketAddress listenAddress,
-                                            final KeepAliveManager keepAliveManager) {
+                                            final KeepAliveManager keepAliveManager,
+                                            final ConnectionObserver observer) {
         super(channel, executionContext, flushStrategy, idleTimeoutMs, sslConfig, sslSession, keepAliveManager);
         this.listenAddress = requireNonNull(listenAddress);
+        this.observer = requireNonNull(observer);
     }
 
     @Override
@@ -85,6 +92,29 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
     @Override
     public SocketAddress listenAddress() {
         return listenAddress;
+    }
+
+    /**
+     * Notifies the observer and enables auto-read. Must be called after all connection acceptors complete.
+     * Both actions are combined because the {@code multiplexedObserver} must be set before any frames arrive,
+     * and enabling auto-read is what triggers frame delivery. Always dispatches to the event loop to ensure
+     * the observer write and {@code setAutoRead(true)} both execute on the thread that processes frames.
+     */
+    void notifyConnectionEstablishedAndEnableAutoRead() {
+        final EventLoop eventLoop = nettyChannel().eventLoop();
+        if (eventLoop.inEventLoop()) {
+            doNotifyAndEnableAutoRead();
+        } else {
+            eventLoop.execute(this::doNotifyAndEnableAutoRead);
+        }
+    }
+
+    private void doNotifyAndEnableAutoRead() {
+        assert observer != null && parentConnectionHandler != null;
+        parentConnectionHandler.multiplexedObserver = observer.multiplexedConnectionEstablished(this);
+        observer = null;
+        parentConnectionHandler = null;
+        nettyChannel().config().setAutoRead(true);
     }
 
     static Single<HttpServerContext> bind(final HttpExecutionContext executionContext,
@@ -98,11 +128,12 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
             return failed(newH2ConfigException());
         }
         final ReadOnlyTcpServerConfig tcpServerConfig = config.tcpConfig();
+        // Called AFTER all connection acceptors have completed.
         return TcpServerBinder.bind(listenAddress, tcpServerConfig, executionContext, connectionAcceptor,
                 (channel, connectionObserver) -> initChannel(listenAddress, channel, executionContext, config,
                         new TcpServerChannelInitializer(tcpServerConfig, connectionObserver, executionContext), service,
                         connectionObserver),
-                serverConnection -> { /* nothing to do as h2 uses auto read on the parent channel */ },
+                        H2ServerParentConnectionContext::notifyConnectionEstablishedAndEnableAutoRead,
                         earlyConnectionAcceptor, lateConnectionAcceptor)
                 .map(delegate -> {
                     LOGGER.debug("Started HTTP/2 server with prior-knowledge for address {}", delegate.listenAddress());
@@ -148,11 +179,13 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                     H2ServerParentConnectionContext connection = new H2ServerParentConnectionContext(channel,
                             httpExecutionContext, config.tcpConfig().flushStrategy(),
                             config.tcpConfig().idleTimeoutMs(), sslConfig, sslSession, listenAddress,
-                            new KeepAliveManager(channel, h2ServerConfig.keepAlivePolicy()));
+                            new KeepAliveManager(channel, h2ServerConfig.keepAlivePolicy()), observer);
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     delayedCancellable = new DelayedCancellable();
                     parentChannelInitializer = new DefaultH2ServerParentConnection(connection, subscriber,
-                            delayedCancellable, shouldWaitForSslHandshake(sslSession, sslConfig), observer);
+                            delayedCancellable, shouldWaitForSslHandshake(sslSession, sslConfig), observer,
+                            true /* deferAutoRead */);
+                    connection.parentConnectionHandler = parentChannelInitializer;
 
                     new H2ServerParentChannelInitializer(h2ServerConfig,
                         new io.netty.channel.ChannelInitializer<Http2StreamChannel>() {
@@ -190,7 +223,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                 // ServiceTalk HTTP service handler
                                 new NettyHttpServerConnection(streamConnection, service, HTTP_2_0,
                                         h2ServerConfig.headersFactory(),
-                                        config.allowDropTrailersReadFromTransport()).process(false);
+                                        config.allowDropTrailersReadFromTransport(), null).process(false);
                             }
                     }).init(channel);
                 } catch (Throwable cause) {
@@ -221,8 +254,9 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                         final Subscriber<? super H2ServerParentConnectionContext> subscriber,
                                         final DelayedCancellable delayedCancellable,
                                         final boolean waitForSslHandshake,
-                                        final ConnectionObserver observer) {
-            super(parentContext, delayedCancellable, waitForSslHandshake, observer);
+                                        final ConnectionObserver observer,
+                                        final boolean deferAutoRead) {
+            super(parentContext, delayedCancellable, waitForSslHandshake, observer, deferAutoRead);
             this.subscriber = requireNonNull(subscriber);
         }
 
@@ -231,7 +265,9 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
             if (subscriber != null) {
                 Subscriber<? super H2ServerParentConnectionContext> subscriberCopy = subscriber;
                 subscriber = null;
-                multiplexedObserver = observer.multiplexedConnectionEstablished(parentContext);
+                // multiplexedObserver will be set via notifyConnectionEstablishedAndEnableAutoRead() in
+                // connectionConsumer,
+                // after all connection acceptors pass. Safe default: NoopMultiplexedObserver.INSTANCE
                 subscriberCopy.onSuccess((H2ServerParentConnectionContext) parentContext);
             }
         }

@@ -194,15 +194,18 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         final boolean waitForSslHandshake;
         private final DelayedCancellable delayedCancellable;
         final ConnectionObserver observer;
+        private final boolean deferAutoRead;
 
         AbstractH2ParentConnection(H2ParentConnectionContext parentContext,
                                    DelayedCancellable delayedCancellable,
                                    boolean waitForSslHandshake,
-                                   ConnectionObserver observer) {
+                                   ConnectionObserver observer,
+                                   boolean deferAutoRead) {
             this.parentContext = parentContext;
             this.delayedCancellable = delayedCancellable;
             this.waitForSslHandshake = waitForSslHandshake;
             this.observer = observer;
+            this.deferAutoRead = deferAutoRead;
         }
 
         abstract void tryCompleteSubscriber();
@@ -226,8 +229,8 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
             if (channel.isActive()) {
                 doChannelActive(ctx);
             }
-            if (!channel.config().isAutoRead()) {
-                // auto read is required for h2
+            if (!deferAutoRead && !channel.config().isAutoRead()) {
+                // auto read is required for h2, but might be deferred due to connection acceptors
                 channel.config().setAutoRead(true);
             }
         }
