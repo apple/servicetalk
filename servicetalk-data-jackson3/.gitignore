@@ -1,0 +1,4 @@
+src
+# Keep the /src/testFixtures/java around in order for Gradle
+# to detect the presence of testFixtures at configuration time.
+!.gitkeep

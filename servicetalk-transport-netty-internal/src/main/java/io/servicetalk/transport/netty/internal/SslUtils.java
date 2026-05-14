@@ -41,6 +41,7 @@ import static io.netty.handler.ssl.ApplicationProtocolConfig.SelectorFailureBeha
 import static io.netty.handler.ssl.SslProvider.isAlpnSupported;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.assignConnectionError;
 import static io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer.POOLED_ALLOCATOR;
+import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.wrapIfRetryable;
 import static io.servicetalk.transport.netty.internal.SslContextFactory.HANDSHAKE_TIMEOUT_MILLIS;
 import static java.util.Collections.singletonList;
 
@@ -109,7 +110,7 @@ final class SslUtils {
         }
         sslHandler.handshakeFuture().addListener(f -> {
             SecurityHandshakeObserver handshakeObserver = getHandshakeObserver(observerHandler);
-            final Throwable cause = f.cause();
+            final Throwable cause = wrapIfRetryable(f.cause(), channel.parent() == null);
             if (cause == null) {
                 handshakeObserver.handshakeComplete(sslHandler.engine().getSession());
             } else {

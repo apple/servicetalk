@@ -1,0 +1,129 @@
+/*
+ * Copyright © 2026 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+buildscript {
+  dependencies {
+    classpath "com.google.protobuf:protobuf-gradle-plugin:$protobufGradlePluginVersion"
+  }
+}
+
+apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
+apply plugin: "com.google.protobuf"
+
+// Required version for module
+def javaLanguageVersion = JavaVersion.VERSION_17
+
+java {
+  sourceCompatibility = javaLanguageVersion
+  targetCompatibility = javaLanguageVersion
+}
+
+tasks.withType(JavaCompile).configureEach {
+  options.release = Integer.parseInt(javaLanguageVersion.getMajorVersion())
+}
+
+tasks.withType(Checkstyle).all {
+  enabled = false
+}
+
+tasks.withType(Pmd).all {
+  enabled = false
+}
+
+tasks.withType(com.github.spotbugs.snom.SpotBugsTask).all {
+  enabled = false
+}
+
+task cleanSources(type: Delete) {
+  delete 'src'
+}
+
+task copySourcesForJersey4(type: Copy) {
+  dependsOn tasks.cleanSources
+  from '../servicetalk-data-protobuf-jersey/src'
+  into 'src'
+  filter { line -> line.replaceAll('javax\\.ws\\.rs', 'jakarta.ws.rs') }
+  filter { line -> line.replaceAll('javax\\.inject', 'jakarta.inject') }
+
+  // Only modify specific javax.annotations.  Some like javax.annotation.Nullable need to stay the same
+  filter { line -> line.replaceAll('javax.annotation.Priority', 'jakarta.annotation.Priority') }
+}
+
+tasks.processResources.dependsOn(copySourcesForJersey4)
+tasks.sourcesJar.dependsOn(copySourcesForJersey4)
+tasks.compileJava.dependsOn(copySourcesForJersey4)
+tasks.generateProto.dependsOn(copySourcesForJersey4)
+tasks.generateTestProto.dependsOn(copySourcesForJersey4)
+tasks.processTestResources.dependsOn(copySourcesForJersey4)
+tasks.compileTestJava.dependsOn(copySourcesForJersey4)
+afterEvaluate {
+  if (tasks.findByName("projectHealth")) {
+    tasks.withType(com.autonomousapps.tasks.CodeSourceExploderTask) {
+      dependsOn(copySourcesForJersey4)
+    }
+  }
+}
+
+def actualJerseyVersion = "${jersey4VersionEE11}"
+def actualJavaxAnnotationsApiVersion = "${javaxAnnotationsApiVersionEE11}"
+def actualJavaxInjectVersion = "${javaxInjectVersionEE11}"
+def actualJaxRsVersion = "${jaxRsVersionEE11}"
+
+// Dependencies must remain consistent between servicetalk-data-protobuf-jerseyX modules
+dependencies {
+  api platform("org.glassfish.jersey:jersey-bom:$actualJerseyVersion")
+  api "jakarta.annotation:jakarta.annotation-api:$actualJavaxAnnotationsApiVersion" // Priority
+  api "jakarta.ws.rs:jakarta.ws.rs-api:$actualJaxRsVersion" // MediaType, Feature
+  api "org.glassfish.jersey.core:jersey-common" // AutoDiscoverable
+
+  implementation platform("com.google.protobuf:protobuf-bom:$protobufVersion")
+  implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-buffer-api")
+  implementation project(":servicetalk-concurrent-api")
+  implementation project(":servicetalk-concurrent-internal")
+  implementation project(":servicetalk-data-protobuf")
+  implementation project(":servicetalk-http-api")
+  implementation project(":servicetalk-http-router-jersey4-jakarta11-internal")
+  implementation project(":servicetalk-serializer-api")
+  implementation project(":servicetalk-transport-api")
+  implementation "com.google.protobuf:protobuf-java"
+  implementation "jakarta.inject:jakarta.inject-api:$actualJavaxInjectVersion"
+  implementation "org.glassfish.jersey.core:jersey-server"
+  implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+  runtimeOnly project(":servicetalk-http-router-jersey4-jakarta11")
+
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+  testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
+  testImplementation testFixtures(project(":servicetalk-http-router-jersey4-jakarta11"))
+  testImplementation project(":servicetalk-test-resources")
+  testImplementation "org.junit.jupiter:junit-jupiter-api"
+  testImplementation "org.junit.jupiter:junit-jupiter-params"
+  testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
+
+  testCompileOnly "org.junit.platform:junit-platform-suite-api"
+
+  // BaseJerseyRouterTestSuite assumes JSON serialization is supported.
+  testRuntimeOnly project(":servicetalk-data-jackson3-jersey4-jakarta11")
+  testRuntimeOnly "org.glassfish.jersey.inject:jersey-hk2"
+  testRuntimeOnly "org.glassfish.jersey.media:jersey-media-sse"
+}
+
+protobuf {
+  protoc {
+    artifact = "com.google.protobuf:protoc:$protobufVersion"
+  }
+}

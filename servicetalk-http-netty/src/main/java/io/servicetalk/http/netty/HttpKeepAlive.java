@@ -18,6 +18,8 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
+import static io.servicetalk.http.api.HeaderUtils.isConnectionClose;
+import static io.servicetalk.http.api.HeaderUtils.isConnectionKeepAlive;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
 import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
@@ -39,8 +41,8 @@ enum HttpKeepAlive {
         this.shouldAddConnectionHeader = shouldAddConnectionHeader;
     }
 
-    // In the interest of performance we are not accommodating for the spec allowing multiple header fields
-    // or comma-separated values for the Connection header. See: https://tools.ietf.org/html/rfc7230#section-3.2.2
+    // Connection can be a comma-separated list (e.g. "close, Upgrade"), so use the helpers that split
+    // on commas rather than doing a whole-value match. See: https://tools.ietf.org/html/rfc7230#section-3.2.2
     static HttpKeepAlive responseKeepAlive(final HttpMetaData metaData) {
         // If multiple protocols are supported we don't know which protocol will be negotiated. Treat any major
         // protocol >= 2 the same.
@@ -49,10 +51,14 @@ enum HttpKeepAlive {
             // HTTP/2 does not use the Connection header field to indicate connection-specific header fields...
             return KEEP_ALIVE_NO_HEADER;
         } else if (HTTP_1_1.equals(metaData.version())) {
-            return metaData.headers().containsIgnoreCase(CONNECTION, CLOSE) ?
+            return isConnectionClose(metaData.headers()) ?
                     CLOSE_ADD_HEADER : KEEP_ALIVE_NO_HEADER;
         } else if (HTTP_1_0.equals(metaData.version())) {
-            return metaData.headers().containsIgnoreCase(CONNECTION, KEEP_ALIVE) ?
+            // An explicit close header takes precedence over keep-alive
+            if (isConnectionClose(metaData.headers())) {
+                return CLOSE_ADD_HEADER;
+            }
+            return isConnectionKeepAlive(metaData.headers()) ?
                     KEEP_ALIVE_ADD_HEADER : CLOSE_NO_HEADER;
         } else {
             return CLOSE_NO_HEADER;

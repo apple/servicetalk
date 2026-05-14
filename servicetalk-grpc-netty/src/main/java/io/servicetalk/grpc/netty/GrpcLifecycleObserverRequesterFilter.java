@@ -32,8 +32,11 @@ import io.servicetalk.http.utils.TimeoutHttpRequesterFilter;
 
 import org.slf4j.MDC;
 
+import java.util.List;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+
+import static io.servicetalk.grpc.utils.GrpcLifecycleObservers.unpack;
 
 /**
  * An HTTP requester filter that tracks events during gRPC request/response lifecycle.
@@ -71,6 +74,8 @@ import java.util.function.UnaryOperator;
  */
 public final class GrpcLifecycleObserverRequesterFilter extends HttpLifecycleObserverRequesterFilter {
 
+    private final GrpcLifecycleObserver observer;
+
     /**
      * Create a new instance.
      *
@@ -78,5 +83,16 @@ public final class GrpcLifecycleObserverRequesterFilter extends HttpLifecycleObs
      */
     public GrpcLifecycleObserverRequesterFilter(final GrpcLifecycleObserver observer) {
         super(new GrpcToHttpLifecycleObserverBridge(observer));
+        this.observer = observer;
+    }
+
+    /**
+     * Returns the {@link GrpcLifecycleObserver}s used by this filter.
+     *
+     * @return a {@link List} of {@link GrpcLifecycleObserver}s used by this filter
+     */
+    @Override
+    public List<? extends GrpcLifecycleObserver> lifecycleObservers() {
+        return unpack(observer);
     }
 }

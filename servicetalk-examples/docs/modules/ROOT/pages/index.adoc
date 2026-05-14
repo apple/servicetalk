@@ -3,7 +3,7 @@
 This repository is a collection of examples on how to use different facets of ServiceTalk.
 The examples are divided based on protocol and currently have the following supported protocols:
 
-- xref:http/index.adoc[HTTP] - examples for link:https://tools.ietf.org/html/rfc7231[HTTP]
+- xref:http/index.adoc[HTTP] - examples for link:https://datatracker.ietf.org/doc/html/rfc7231[HTTP]
 protocol
 - xref:grpc/index.adoc[gRPC] - examples for
 link:https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md[the gRPC application protocol]

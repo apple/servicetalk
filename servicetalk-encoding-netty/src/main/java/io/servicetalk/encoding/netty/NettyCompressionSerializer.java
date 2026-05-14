@@ -31,23 +31,26 @@ import org.slf4j.LoggerFactory;
 import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 
 import static io.netty.util.internal.PlatformDependent.throwException;
 import static io.servicetalk.buffer.netty.BufferUtils.extractByteBufOrCreate;
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.buffer.netty.BufferUtils.toByteBuf;
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.util.Objects.requireNonNull;
 
 final class NettyCompressionSerializer implements SerializerDeserializer<Buffer> {
     private static final Logger LOGGER = LoggerFactory.getLogger(NettyCompressionSerializer.class);
     private final Supplier<MessageToByteEncoder<ByteBuf>> encoderSupplier;
     private final Supplier<ByteToMessageDecoder> decoderSupplier;
+    private final long maxDecompressedBytes;
 
     NettyCompressionSerializer(final Supplier<MessageToByteEncoder<ByteBuf>> encoderSupplier,
-                               final Supplier<ByteToMessageDecoder> decoderSupplier) {
+                               final Supplier<ByteToMessageDecoder> decoderSupplier,
+                               final long maxDecompressedBytes) {
         this.encoderSupplier = requireNonNull(encoderSupplier);
         this.decoderSupplier = requireNonNull(decoderSupplier);
+        this.maxDecompressedBytes = ensureNonNegative(maxDecompressedBytes, "maxDecompressedBytes");
     }
 
     @Override
@@ -80,15 +83,23 @@ final class NettyCompressionSerializer implements SerializerDeserializer<Buffer>
         final Buffer buffer = allocator.newBuffer(serializedData.readableBytes());
         final ByteBuf nettyDst = toByteBuf(buffer);
         final ByteToMessageDecoder decoder = decoderSupplier.get();
-        final EmbeddedChannel channel = newEmbeddedChannel(decoder, allocator);
+        final EmbeddedChannel channel = newEmbeddedDecoderChannel(decoder, allocator, maxDecompressedBytes);
         try {
             writeAndUpdateIndex(channel, serializedData, true);
+            // Surface cap-exceeded errors (or any other decoder errors) that the pipeline caught.
+            channel.checkException();
             drainChannelQueueToSingleBuffer(channel.inboundMessages(), nettyDst);
             // no need to advance writerIndex -> NettyBuffer's writerIndex reflects the underlying ByteBuf value.
             cleanup(channel);
             return buffer;
         } catch (Throwable e) {
-            safeCleanup(channel);
+            // The cap handler may leave decoded chunks on the inbound queue when it throws mid-
+            // stream; releaseOnError tolerates that state (unlike safeCleanup, which would surface
+            // an AssertionError under -ea and mask the real cause).
+            releaseOnError(channel);
+            if (e instanceof BufferEncodingException) {
+                throw (BufferEncodingException) e;
+            }
             throw new BufferEncodingException("Unexpected exception during decoding", e);
         }
     }
@@ -108,7 +119,6 @@ final class NettyCompressionSerializer implements SerializerDeserializer<Buffer>
         }
     }
 
-    @Nullable
     static void drainChannelQueueToSingleBuffer(final Queue<Object> queue, final ByteBuf nettyDst) {
         ByteBuf buf;
         while ((buf = (ByteBuf) queue.poll()) != null) {
@@ -124,6 +134,26 @@ final class NettyCompressionSerializer implements SerializerDeserializer<Buffer>
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         channel.config().setAllocator(getByteBufAllocator(allocator));
         return channel;
+    }
+
+    private static EmbeddedChannel newEmbeddedDecoderChannel(final ByteToMessageDecoder decoder,
+                                                             final BufferAllocator allocator,
+                                                             final long maxDecompressedBytes) {
+        final EmbeddedChannel channel = maxDecompressedBytes > 0 ?
+                new EmbeddedChannel(decoder, newLimitHandler(maxDecompressedBytes)) :
+                new EmbeddedChannel(decoder);
+        channel.config().setAllocator(getByteBufAllocator(allocator));
+        return channel;
+    }
+
+    static DecompressedByteLimitHandler newLimitHandler(final long maxDecompressedBytes) {
+        return new DecompressedByteLimitHandler(maxDecompressedBytes) {
+            @Override
+            protected RuntimeException newException(final long maxBytes) {
+                return new BufferEncodingException(
+                        "Decompressed payload exceeded maxDecompressedBytes=" + maxBytes);
+            }
+        };
     }
 
     static void preparePendingData(final EmbeddedChannel channel) {
@@ -145,6 +175,19 @@ final class NettyCompressionSerializer implements SerializerDeserializer<Buffer>
             cleanup(channel);
         } catch (AssertionError error) {
             throw error;
+        } catch (Throwable t) {
+            LOGGER.debug("Error while closing embedded channel", t);
+        }
+    }
+
+    /**
+     * Release channel queues on an error path. Unlike {@link #safeCleanup}, this tolerates a
+     * non-empty inbound/outbound queue — which is the expected state after a mid-stream failure
+     * from a pipeline handler.
+     */
+    static void releaseOnError(final EmbeddedChannel channel) {
+        try {
+            channel.finishAndReleaseAll();
         } catch (Throwable t) {
             LOGGER.debug("Error while closing embedded channel", t);
         }

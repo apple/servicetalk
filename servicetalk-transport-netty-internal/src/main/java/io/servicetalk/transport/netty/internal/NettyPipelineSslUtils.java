@@ -15,9 +15,11 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
 import io.servicetalk.transport.api.SslConfig;
+import io.servicetalk.transport.api.SslHandshakeTimeoutException;
 import io.servicetalk.transport.netty.internal.ConnectionObserverInitializer.ConnectionObserverHandler;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 
@@ -30,8 +32,10 @@ import io.netty.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.channels.ClosedChannelException;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
+import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
@@ -95,7 +99,7 @@ public final class NettyPipelineSslUtils {
         if (handshakeFuture.isDone()) {
             final SecurityHandshakeObserver observer = lookForHandshakeObserver(pipeline,
                     connectionObserver != NoopConnectionObserver.INSTANCE);
-            final Throwable cause = handshakeFuture.cause();
+            final Throwable cause = wrapIfRetryable(handshakeFuture.cause(), sslConfig instanceof ClientSslConfig);
             if (cause != null) {
                 if (observer != null) {
                     observer.handshakeFailed(cause);
@@ -142,7 +146,8 @@ public final class NettyPipelineSslUtils {
                                                         Consumer<Throwable> failureConsumer,
                                                         boolean shouldReport) {
         final SecurityHandshakeObserver observer = lookForHandshakeObserver(pipeline, shouldReport);
-        if (sslEvent.isSuccess()) {
+        final Throwable cause = wrapIfRetryable(sslEvent.cause(), pipeline.channel().parent() == null);
+        if (cause == null) {
             final SslHandler sslHandler = pipeline.get(SslHandler.class);
             if (sslHandler != null) {
                 return getSslSession(sslHandler, observer);
@@ -150,9 +155,25 @@ public final class NettyPipelineSslUtils {
                 deliverFailureCause(failureConsumer, unableToFindSslHandler(), observer);
             }
         } else {
-            deliverFailureCause(failureConsumer, sslEvent.cause(), observer);
+            deliverFailureCause(failureConsumer, cause, observer);
         }
         return null;
+    }
+
+    @Nullable
+    static Throwable wrapIfRetryable(@Nullable Throwable cause, boolean isClient) {
+        if (isClient) {
+            if (cause instanceof io.netty.handler.ssl.SslHandshakeTimeoutException) {
+                return new SslHandshakeTimeoutException((SSLHandshakeException) cause);
+            }
+            if (cause instanceof ClosedChannelException) {
+                final Throwable[] suppressed = cause.getSuppressed();
+                if (suppressed.length > 0 && suppressed[0] instanceof SSLHandshakeException) {
+                    return new RetryableClosedChannelException((ClosedChannelException) cause);
+                }
+            }
+        }
+        return cause;
     }
 
     /**

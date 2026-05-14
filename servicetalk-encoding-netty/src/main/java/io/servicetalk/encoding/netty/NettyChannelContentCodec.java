@@ -45,6 +45,7 @@ import static io.servicetalk.buffer.netty.BufferUtils.extractByteBufOrCreate;
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.util.Objects.requireNonNull;
 
 @Deprecated
@@ -57,10 +58,12 @@ final class NettyChannelContentCodec implements ContentCodec { // FIXME: 0.43 - 
     private final CharSequence name;
     private final Supplier<MessageToByteEncoder<ByteBuf>> encoderSupplier;
     private final Supplier<ByteToMessageDecoder> decoderSupplier;
+    private final long maxDecompressedBytes;
 
     NettyChannelContentCodec(final CharSequence name,
                              final Supplier<MessageToByteEncoder<ByteBuf>> encoderSupplier,
-                             final Supplier<ByteToMessageDecoder> decoderSupplier) {
+                             final Supplier<ByteToMessageDecoder> decoderSupplier,
+                             final long maxDecompressedBytes) {
         if (name.length() <= 0) {
             throw new IllegalArgumentException("Name should not be blank.");
         }
@@ -68,6 +71,7 @@ final class NettyChannelContentCodec implements ContentCodec { // FIXME: 0.43 - 
         this.name = name;
         this.encoderSupplier = encoderSupplier;
         this.decoderSupplier = decoderSupplier;
+        this.maxDecompressedBytes = ensureNonNegative(maxDecompressedBytes, "maxDecompressedBytes");
     }
 
     @Override
@@ -222,11 +226,13 @@ final class NettyChannelContentCodec implements ContentCodec { // FIXME: 0.43 - 
         }
 
         final ByteToMessageDecoder decoder = decoderSupplier.get();
-        final EmbeddedChannel channel = newEmbeddedChannel(decoder, allocator);
+        final EmbeddedChannel channel = newEmbeddedDecoderChannel(decoder, allocator, this, maxDecompressedBytes);
 
         try {
             ByteBuf origin = extractByteBufOrCreate(src);
             channel.writeInbound(origin);
+            // Surface cap-exceeded errors (or any other decoder errors) that the pipeline caught.
+            channel.checkException();
 
             Buffer buffer = drainChannelQueueToSingleBuffer(channel.inboundMessages(), allocator);
             if (buffer == null) {
@@ -236,11 +242,13 @@ final class NettyChannelContentCodec implements ContentCodec { // FIXME: 0.43 - 
             cleanup(channel);
             return buffer;
         } catch (CodecDecodingException e) {
+            // The cap handler may leave decoded chunks on the inbound queue when it throws mid-
+            // stream; releaseOnError tolerates that (safeCleanup would trip its assert).
+            releaseOnError(channel);
             throw e;
         } catch (Throwable e) {
+            releaseOnError(channel);
             throw wrapDecodingException(this, e);
-        } finally {
-            safeCleanup(channel);
         }
     }
 
@@ -316,6 +324,27 @@ final class NettyChannelContentCodec implements ContentCodec { // FIXME: 0.43 - 
         return channel;
     }
 
+    private static EmbeddedChannel newEmbeddedDecoderChannel(final ByteToMessageDecoder decoder,
+                                                             final BufferAllocator allocator,
+                                                             final ContentCodec codec,
+                                                             final long maxDecompressedBytes) {
+        final EmbeddedChannel channel = maxDecompressedBytes > 0 ?
+                new EmbeddedChannel(decoder, newLimitHandler(codec, maxDecompressedBytes)) :
+                new EmbeddedChannel(decoder);
+        channel.config().setAllocator(getByteBufAllocator(allocator));
+        return channel;
+    }
+
+    static DecompressedByteLimitHandler newLimitHandler(final ContentCodec codec, final long maxDecompressedBytes) {
+        return new DecompressedByteLimitHandler(maxDecompressedBytes) {
+            @Override
+            protected RuntimeException newException(final long maxBytes) {
+                return new CodecDecodingException(codec,
+                        "Decompressed payload exceeded maxDecompressedBytes=" + maxBytes);
+            }
+        };
+    }
+
     private static void preparePendingData(final EmbeddedChannel channel) {
         try {
             channel.close().sync().get();
@@ -376,6 +405,19 @@ final class NettyChannelContentCodec implements ContentCodec { // FIXME: 0.43 - 
             cleanup(channel);
         } catch (AssertionError error) {
           throw error;
+        } catch (Throwable t) {
+            LOGGER.error("Error while closing embedded channel", t);
+        }
+    }
+
+    /**
+     * Release channel queues on an error path. Unlike {@link #safeCleanup}, this tolerates a
+     * non-empty inbound/outbound queue — which is the expected state after a mid-stream failure
+     * from a pipeline handler.
+     */
+    private static void releaseOnError(final EmbeddedChannel channel) {
+        try {
+            channel.finishAndReleaseAll();
         } catch (Throwable t) {
             LOGGER.error("Error while closing embedded channel", t);
         }

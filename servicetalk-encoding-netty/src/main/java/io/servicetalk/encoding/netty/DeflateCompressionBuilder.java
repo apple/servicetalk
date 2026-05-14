@@ -28,7 +28,8 @@ final class DeflateCompressionBuilder extends ZipCompressionBuilder {
     public SerializerDeserializer<Buffer> build() {
         return new NettyCompressionSerializer(
                 () -> new JdkZlibEncoder(ZlibWrapper.ZLIB, compressionLevel()),
-                () -> new JdkZlibDecoder(ZlibWrapper.ZLIB, maxChunkSize()));
+                () -> new JdkZlibDecoder(ZlibWrapper.ZLIB, maxChunkSize()),
+                maxDecompressedBytes());
     }
 
     @Override

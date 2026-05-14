@@ -215,9 +215,19 @@ public final class H1ProtocolConfigBuilder {
      * @return a new {@link H1ProtocolConfig}
      */
     public H1ProtocolConfig build() {
+        final int effectiveMaxTotalHeaderFieldsLength;
+        if (maxHeaderFieldLength > maxTotalHeaderFieldsLength) {
+            LOGGER.warn("maxHeaderFieldLength ({}) is greater than maxTotalHeaderFieldsLength ({}), adjusting " +
+                            "maxTotalHeaderFieldsLength to match. Configure the desired value explicitly via " +
+                            "H1ProtocolConfigBuilder#maxTotalHeaderFieldsLength(int).",
+                    maxHeaderFieldLength, maxTotalHeaderFieldsLength);
+            effectiveMaxTotalHeaderFieldsLength = maxHeaderFieldLength;
+        } else {
+            effectiveMaxTotalHeaderFieldsLength = maxTotalHeaderFieldsLength;
+        }
         return new DefaultH1ProtocolConfig(headersFactory, maxPipelinedRequests, maxStartLineLength,
                 maxHeaderFieldLength, headersEncodedSizeEstimate, trailersEncodedSizeEstimate, specExceptions,
-                maxTotalHeaderFieldsLength);
+                effectiveMaxTotalHeaderFieldsLength);
     }
 
     private static final class DefaultH1ProtocolConfig implements H1ProtocolConfig {

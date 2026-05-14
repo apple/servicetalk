@@ -9,7 +9,7 @@ endif::[]
 = HTTP Examples
 
 The link:{source-root}/servicetalk-examples/http[`http`]
-folder contains examples for the https://tools.ietf.org/html/rfc7231[HTTP] protocol.
+folder contains examples for the https://datatracker.ietf.org/doc/html/rfc7231[HTTP] protocol.
 
 [#HelloWorld]
 == Hello World
@@ -345,13 +345,13 @@ An example that demonstrates custom handling of tickets on error conditions.
 [#HTTP2]
 == HTTP/2
 
-These examples demonstrate how users can configure link:https://tools.ietf.org/html/rfc7540[HTTP/2] transport in
+These examples demonstrate how users can configure link:https://datatracker.ietf.org/doc/html/rfc7540[HTTP/2] transport in
 ServiceTalk.
 
 === HTTP/2 with Prior-Knowledge
 
 This example demonstrates how to configure using
-link:https://tools.ietf.org/html/rfc7540#section-3.4[HTTP/2 transport with Prior-Knowledge] for HTTP clients and servers:
+link:https://datatracker.ietf.org/doc/html/rfc7540#section-3.4[HTTP/2 transport with Prior-Knowledge] for HTTP clients and servers:
 
 - link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/priorknowledge/Http2PriorKnowledgeServer.java[Http2PriorKnowledgeServer] -
 A server that uses HTTP/2 with Prior Knowledge.
@@ -362,7 +362,7 @@ A multi-address client that conditionally uses HTTP/2 with Prior Knowledge.
 
 === HTTP/2 via ALPN for secure connections
 
-For secure TLS connections link:https://tools.ietf.org/html/rfc7301[ALPN extension] could be used to negotiate the
+For secure TLS connections link:https://datatracker.ietf.org/doc/html/rfc7301[ALPN extension] could be used to negotiate the
 communication protocol:
 
 - link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/alpn/HttpServerWithAlpn.java[HttpServerWithAlpn] -

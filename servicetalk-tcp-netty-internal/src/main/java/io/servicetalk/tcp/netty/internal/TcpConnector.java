@@ -50,6 +50,7 @@ import io.netty.resolver.AddressResolverGroup;
 import io.netty.resolver.NoopAddressResolver;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,9 +58,13 @@ import org.slf4j.LoggerFactory;
 import java.net.ConnectException;
 import java.net.SocketAddress;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -156,10 +161,15 @@ public final class TcpConnector {
                 channel.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
                     @Override
                     public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress,
-                                        SocketAddress localAddress, ChannelPromise promise) throws Exception {
+                                        SocketAddress localAddress, ChannelPromise promise) {
                         ctx.pipeline().remove(this);
                         promise.addListener(f -> {
                             Throwable cause = f.cause();
+                            if (cause != null) {
+                                connectHandler.connectFailed(cause);
+                            }
+                        });
+                        ctx.connect(remoteAddress, localAddress, new DelegatingChannelPromise(promise, cause -> {
                             if (cause != null) {
                                 if (cause instanceof ConnectTimeoutException) {
                                     String msg = resolvedRemoteAddress instanceof FileDescriptorSocketAddress ?
@@ -170,13 +180,10 @@ public final class TcpConnector {
                                 } else if (cause instanceof ConnectException) {
                                     cause = new RetryableConnectException((ConnectException) cause);
                                 }
-                                if (f instanceof ChannelFuture) {
-                                    assignConnectionError(((ChannelFuture) f).channel(), cause);
-                                }
-                                connectHandler.connectFailed(cause);
+                                assignConnectionError(channel, cause);
                             }
-                        });
-                        super.connect(ctx, remoteAddress, localAddress, promise);
+                            return cause;
+                        }));
                     }
                 });
                 connectHandler.accept(channel);
@@ -452,6 +459,183 @@ public final class TcpConnector {
 
         private void unattachContext() {
             capturedContext = null;
+        }
+    }
+
+    private static final class DelegatingChannelPromise implements ChannelPromise {
+
+        private final ChannelPromise delegate;
+        private final Function<Throwable, Throwable> onFailure;
+
+        DelegatingChannelPromise(ChannelPromise delegate, Function<Throwable, Throwable> onFailure) {
+            this.delegate = delegate;
+            this.onFailure = onFailure;
+        }
+
+        @Override
+        public boolean tryFailure(Throwable cause) {
+            return delegate.tryFailure(onFailure.apply(cause));
+        }
+
+        @Override
+        public ChannelPromise setFailure(Throwable cause) {
+            delegate.setFailure(onFailure.apply(cause));
+            return this;
+        }
+
+        @Override
+        public Channel channel() {
+            return delegate.channel();
+        }
+
+        @Override
+        public ChannelPromise setSuccess(Void result) {
+            delegate.setSuccess(result);
+            return this;
+        }
+
+        @Override
+        public ChannelPromise setSuccess() {
+            delegate.setSuccess();
+            return this;
+        }
+
+        @Override
+        public boolean trySuccess() {
+            return delegate.trySuccess();
+        }
+
+        @Override
+        public boolean trySuccess(Void result) {
+            return delegate.trySuccess(result);
+        }
+
+        @Override
+        public ChannelPromise addListener(GenericFutureListener<? extends Future<? super Void>> listener) {
+            delegate.addListener(listener);
+            return this;
+        }
+
+        @Override
+        public ChannelPromise addListeners(GenericFutureListener<? extends Future<? super Void>>... listeners) {
+            delegate.addListeners(listeners);
+            return this;
+        }
+
+        @Override
+        public ChannelPromise removeListener(GenericFutureListener<? extends Future<? super Void>> listener) {
+            delegate.removeListener(listener);
+            return this;
+        }
+
+        @Override
+        public ChannelPromise removeListeners(GenericFutureListener<? extends Future<? super Void>>... listeners) {
+            delegate.removeListeners(listeners);
+            return this;
+        }
+
+        @Override
+        public boolean setUncancellable() {
+            return delegate.setUncancellable();
+        }
+
+        @Override
+        public ChannelPromise await() throws InterruptedException {
+            delegate.await();
+            return this;
+        }
+
+        @Override
+        public ChannelPromise awaitUninterruptibly() {
+            delegate.awaitUninterruptibly();
+            return this;
+        }
+
+        @Override
+        public boolean isVoid() {
+            return delegate.isVoid();
+        }
+
+        @Override
+        public ChannelPromise unvoid() {
+            return isVoid() ? new DelegatingChannelPromise(delegate.unvoid(), onFailure) : this;
+        }
+
+        @Override
+        public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
+            return delegate.await(timeout, unit);
+        }
+
+        @Override
+        public boolean await(long timeoutMillis) throws InterruptedException {
+            return delegate.await(timeoutMillis);
+        }
+
+        @Override
+        public boolean awaitUninterruptibly(long timeout, TimeUnit unit) {
+            return delegate.awaitUninterruptibly(timeout, unit);
+        }
+
+        @Override
+        public boolean awaitUninterruptibly(long timeoutMillis) {
+            return delegate.awaitUninterruptibly(timeoutMillis);
+        }
+
+        @Override
+        public Void getNow() {
+            return delegate.getNow();
+        }
+
+        @Override
+        public boolean cancel(boolean mayInterruptIfRunning) {
+            return delegate.cancel(mayInterruptIfRunning);
+        }
+
+        @Override
+        public boolean isCancelled() {
+            return delegate.isCancelled();
+        }
+
+        @Override
+        public boolean isDone() {
+            return delegate.isDone();
+        }
+
+        @Override
+        public Void get() throws InterruptedException, ExecutionException {
+            return delegate.get();
+        }
+
+        @Override
+        public Void get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+            return delegate.get(timeout, unit);
+        }
+
+        @Override
+        public ChannelPromise sync() throws InterruptedException {
+            delegate.sync();
+            return this;
+        }
+
+        @Override
+        public ChannelPromise syncUninterruptibly() {
+            delegate.syncUninterruptibly();
+            return this;
+        }
+
+        @Override
+        public boolean isSuccess() {
+            return delegate.isSuccess();
+        }
+
+        @Override
+        public boolean isCancellable() {
+            return delegate.isCancellable();
+        }
+
+        @Override
+        public Throwable cause() {
+            return delegate.cause();
         }
     }
 }

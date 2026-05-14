@@ -18,6 +18,10 @@ package io.servicetalk.http.utils;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.logging.api.LogLevel;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * A factory to create different {@link HttpLifecycleObserver}s.
  */
@@ -45,6 +49,7 @@ public final class HttpLifecycleObservers {
      * @param second {@link HttpLifecycleObserver} to combine
      * @return a {@link HttpLifecycleObserver} that delegates all invocations to the provided
      * {@link HttpLifecycleObserver}s
+     * @see #unpack(HttpLifecycleObserver)
      */
     public static HttpLifecycleObserver combine(final HttpLifecycleObserver first, final HttpLifecycleObserver second) {
         return new BiHttpLifecycleObserver(first, second);
@@ -58,6 +63,7 @@ public final class HttpLifecycleObservers {
      * @param others {@link HttpLifecycleObserver}s to combine
      * @return a {@link HttpLifecycleObserver} that delegates all invocations to the provided
      * {@link HttpLifecycleObserver}s
+     * @see #unpack(HttpLifecycleObserver)
      */
     public static HttpLifecycleObserver combine(final HttpLifecycleObserver first, final HttpLifecycleObserver second,
                                                 final HttpLifecycleObserver... others) {
@@ -68,5 +74,36 @@ public final class HttpLifecycleObservers {
             }
         }
         return bi;
+    }
+
+    /**
+     * Unpacks a {@link HttpLifecycleObserver} into a list of its leaf observers.
+     * <p>
+     * If the provided {@code observer} was created using one of the {@link #combine(HttpLifecycleObserver,
+     * HttpLifecycleObserver) combine} methods, this method recursively extracts all individual observers that were
+     * combined. Otherwise, returns a singleton list containing the provided observer.
+     *
+     * @param observer {@link HttpLifecycleObserver} to unpack
+     * @return a {@link List} of leaf {@link HttpLifecycleObserver}s
+     * @see #combine(HttpLifecycleObserver, HttpLifecycleObserver)
+     * @see #combine(HttpLifecycleObserver, HttpLifecycleObserver, HttpLifecycleObserver...)
+     */
+    public static List<HttpLifecycleObserver> unpack(final HttpLifecycleObserver observer) {
+        if (observer instanceof BiHttpLifecycleObserver) {
+            final List<HttpLifecycleObserver> result = new ArrayList<>();
+            unpack(observer, result);
+            return Collections.unmodifiableList(result);
+        }
+        return Collections.singletonList(observer);
+    }
+
+    private static void unpack(final HttpLifecycleObserver observer, final List<HttpLifecycleObserver> result) {
+        if (observer instanceof BiHttpLifecycleObserver) {
+            final BiHttpLifecycleObserver bi = (BiHttpLifecycleObserver) observer;
+            unpack(bi.first(), result);
+            unpack(bi.second(), result);
+        } else {
+            result.add(observer);
+        }
     }
 }

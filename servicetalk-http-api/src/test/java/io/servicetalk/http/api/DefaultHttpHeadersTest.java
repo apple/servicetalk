@@ -15,7 +15,59 @@
  */
 package io.servicetalk.http.api;
 
-public class DefaultHttpHeadersTest extends AbstractHttpHeadersTest {
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+class DefaultHttpHeadersTest extends AbstractHttpHeadersTest {
+
+    @Test
+    void addHeadersValidatesNamesWhenSourceDoesNot() {
+        DefaultHttpHeaders source = newHeaders(false, false);
+        source.add("invalid name", "value");
+
+        DefaultHttpHeaders dest = newHeaders(true, false);
+        assertThrows(IllegalArgumentException.class, () -> dest.add(source));
+    }
+
+    @Test
+    void addHeadersValidatesValuesWhenSourceDoesNot() {
+        DefaultHttpHeaders source = newHeaders(false, false);
+        source.add("name", "invalid\0value");
+
+        DefaultHttpHeaders dest = newHeaders(false, true);
+        assertThrows(IllegalArgumentException.class, () -> dest.add(source));
+    }
+
+    @Test
+    void addHeadersSkipsNameValidationWhenSourceAlreadyValidates() {
+        // Load an invalid name into a source that claims to validate names.
+        DefaultHttpHeaders raw = newHeaders(false, false);
+        raw.add("invalid name", "value");
+        DefaultHttpHeaders source = newHeaders(true, false);
+        source.putAll(raw, false, false);
+
+        DefaultHttpHeaders dest = newHeaders(true, false);
+        assertDoesNotThrow(() -> dest.add(source));
+    }
+
+    @Test
+    void addHeadersSkipsValueValidationWhenSourceAlreadyValidates() {
+        // Load an invalid value into a source that claims to validate values.
+        DefaultHttpHeaders raw = newHeaders(false, false);
+        raw.add("name", "invalid\0value");
+        DefaultHttpHeaders source = newHeaders(false, true);
+        source.putAll(raw, false, false);
+
+        DefaultHttpHeaders dest = newHeaders(false, true);
+        assertDoesNotThrow(() -> dest.add(source));
+    }
+
+    private static DefaultHttpHeaders newHeaders(boolean validateNames, boolean validateValues) {
+        return new DefaultHttpHeaders(16, validateNames, false, validateValues);
+    }
+
     @Override
     protected HttpHeaders newHeaders() {
         return DefaultHttpHeadersFactory.INSTANCE.newHeaders();

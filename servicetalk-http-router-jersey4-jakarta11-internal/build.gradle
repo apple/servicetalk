@@ -1,0 +1,84 @@
+/*
+ * Copyright © 2026 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
+
+// Required version for module
+def javaLanguageVersion = JavaVersion.VERSION_17
+
+java {
+  sourceCompatibility = javaLanguageVersion
+  targetCompatibility = javaLanguageVersion
+}
+
+tasks.withType(JavaCompile).configureEach {
+  options.release = Integer.parseInt(javaLanguageVersion.getMajorVersion())
+}
+
+tasks.withType(Checkstyle).all {
+  enabled = false
+}
+
+tasks.withType(Pmd).all {
+  enabled = false
+}
+
+tasks.withType(com.github.spotbugs.snom.SpotBugsTask).all {
+  enabled = false
+}
+
+task cleanSources(type: Delete) {
+  delete 'src'
+}
+
+task copySourcesForJersey4(type: Copy) {
+  dependsOn tasks.cleanSources
+  from '../servicetalk-http-router-jersey-internal/src'
+  into 'src'
+  filter { line -> line.replaceAll('javax\\.ws\\.rs', 'jakarta.ws.rs') }
+  filter { line -> line.replaceAll('javax\\.inject', 'jakarta.inject') }
+}
+
+tasks.processResources.dependsOn(copySourcesForJersey4)
+tasks.sourcesJar.dependsOn(copySourcesForJersey4)
+tasks.compileJava.dependsOn(copySourcesForJersey4)
+tasks.processTestResources.dependsOn(copySourcesForJersey4)
+afterEvaluate {
+  if (tasks.findByName("projectHealth")) {
+    tasks.withType(com.autonomousapps.tasks.CodeSourceExploderTask) {
+      dependsOn(copySourcesForJersey4)
+    }
+  }
+}
+
+def actualJerseyVersion = "${jersey4VersionEE11}"
+def actualJaxRsVersion = "${jaxRsVersionEE11}"
+
+// Dependencies must remain consistent between servicetalk-http-router-jerseyX-internal modules
+dependencies {
+  api project(":servicetalk-buffer-api")
+  api project(":servicetalk-concurrent")
+  api project(":servicetalk-concurrent-api")
+  api project(":servicetalk-concurrent-api-internal")
+  api project(":servicetalk-http-api")
+  api "jakarta.ws.rs:jakarta.ws.rs-api:$actualJaxRsVersion"
+
+  implementation platform("org.glassfish.jersey:jersey-bom:$actualJerseyVersion")
+  implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-concurrent-internal")
+  implementation project(":servicetalk-transport-api")
+  implementation "org.glassfish.jersey.core:jersey-common"
+}
