@@ -91,31 +91,50 @@ final class StreamingConnectionFactory {
             final InetAddress inetAddress = socketAddress.getAddress();
             final String sniHostname = sslConfig.sniHostname();
             final String peerHost = sslConfig.peerHost();
+            final String origHostnameVerificationAlgorithm = sslConfig.hostnameVerificationAlgorithm();
             final String newPeerHost;
             final String newSniHostname;
             final String hostnameVerificationAlgorithm;
+            // We want to bundle the resolved IP into peerHost so the SSLSession cache key differentiates per-IP and
+            // hits the right cached session when a hostname resolves to multiple IPs. JSSE's endpoint identification
+            // would normally validate the cert against peerHost, which would fail once we mangle it. The trick is
+            // that JSSE prefers the SNI name (from SSLParameters.serverNames) over peerHost for verification — so
+            // when we have a name that's valid as an SNI hostname, we smuggle the real name through SNI and let
+            // peerHost carry a cache-friendly value.
             if (sniHostname == null) {
                 if (peerHost == null) {
                     newPeerHost = toHostAddress(inetAddress);
                     newSniHostname = null;
+                    // No hostname info at all — reset the algorithm to "" so Netty 4.2's "HTTPS" default doesn't
+                    // attempt (and fail) verification against the IP literal we just stuffed into peerHost.
                     hostnameVerificationAlgorithm = "";
                 } else {
-                    newPeerHost = toHostAndIpBundle(peerHost, inetAddress);
-                    // We are overriding the peerHost to make it qualified with the resolved address. If sniHostname is
-                    // not set and the hostnameVerificationAlgorithm is set, the SSLEngine will take the peerHost value
-                    // for validation, which will fail to match now that we have changed the value.
-                    if (isValidSniHostname(peerHost)) {
-                        newSniHostname = peerHost;
-                        hostnameVerificationAlgorithm = sslConfig.hostnameVerificationAlgorithm();
+                    // SNIHostName rejects trailing-dot FQDNs; strip so we can still smuggle absolute names via SNI.
+                    final String peerHostForSni = stripTrailingDot(peerHost);
+                    if (isValidSniHostname(peerHostForSni)) {
+                        // Smuggle peerHost through SNI for verification; peerHost is free to be mangled for cache.
+                        newPeerHost = toHostAndIpBundle(peerHostForSni, inetAddress);
+                        newSniHostname = peerHostForSni;
+                        hostnameVerificationAlgorithm = origHostnameVerificationAlgorithm;
+                    } else if (origHostnameVerificationAlgorithm != null &&
+                            !origHostnameVerificationAlgorithm.isEmpty()) {
+                        // Verification required and we can't smuggle the hostname via SNI, so we can't widen
+                        // peerHost to make the cache happy.
+                        newPeerHost = peerHost;
+                        newSniHostname = null;
+                        hostnameVerificationAlgorithm = origHostnameVerificationAlgorithm;
                     } else {
+                        // No verification requested — mangle freely, nothing to validate against.
+                        newPeerHost = toHostAndIpBundle(peerHost, inetAddress);
                         newSniHostname = null;
                         hostnameVerificationAlgorithm = "";
                     }
                 }
             } else {
+                // SNI is set; verification reads it, peerHost is free to be mangled.
                 newPeerHost = toHostAndIpBundle(sniHostname, inetAddress);
                 newSniHostname = sniHostname;
-                hostnameVerificationAlgorithm = sslConfig.hostnameVerificationAlgorithm();
+                hostnameVerificationAlgorithm = origHostnameVerificationAlgorithm;
             }
 
             return config.withSslConfigPeerHost(newPeerHost, socketAddress.getPort(), newSniHostname,
@@ -149,5 +168,10 @@ final class StreamingConnectionFactory {
         } catch (Throwable cause) {
             return false;
         }
+    }
+
+    private static String stripTrailingDot(String hostname) {
+        final int len = hostname.length();
+        return len > 1 && hostname.charAt(len - 1) == '.' ? hostname.substring(0, len - 1) : hostname;
     }
 }

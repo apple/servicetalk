@@ -15,20 +15,28 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
+import io.servicetalk.tcp.netty.internal.TcpClientConfig;
+import io.servicetalk.transport.api.ClientSslConfig;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.util.Enumeration;
 import java.util.stream.Stream;
 
 import static io.servicetalk.http.netty.StreamingConnectionFactory.toHostAndIpBundle;
+import static io.servicetalk.http.netty.StreamingConnectionFactory.withSslConfigPeerHost;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
@@ -82,5 +90,77 @@ class StreamingConnectionFactoryTest {
         assertThat(toHostAndIpBundle("192.168.1.1", loopbackAddress), is(equalTo("192.168.1.1")));
         assertThat(toHostAndIpBundle("::1", loopbackAddress), is(equalTo("::1")));
         assertThat(toHostAndIpBundle("2001:db8:0:1::1/64", loopbackAddress), is(equalTo("2001:db8:0:1::1/64")));
+    }
+
+    @Test
+    void trailingDotPeerHostIsSmuggledViaSniAndPeerHostIsMangled() throws Exception {
+        ClientSslConfig result = withSslConfig(
+                new ClientSslConfigBuilder().peerHost("example.com.").build(),
+                inetSocketAddress(new byte[] {1, 2, 3, 4}, 443));
+
+        // SNIHostName rejects trailing-dot FQDNs, so we strip it before smuggling.
+        assertThat(result.sniHostname(), is(equalTo("example.com")));
+        assertThat(result.peerHost(), is(equalTo("example.com-1.2.3.4")));
+        assertThat(result.hostnameVerificationAlgorithm(), equalTo("HTTPS"));
+    }
+
+    @Test
+    void regularPeerHostIsSmuggledViaSniAndPeerHostIsMangled() throws Exception {
+        ClientSslConfig result = withSslConfig(
+                new ClientSslConfigBuilder().peerHost("example.com").build(),
+                inetSocketAddress(new byte[] {1, 2, 3, 4}, 443));
+
+        assertThat(result.sniHostname(), is(equalTo("example.com")));
+        assertThat(result.peerHost(), is(equalTo("example.com-1.2.3.4")));
+    }
+
+    @Test
+    void sniInvalidPeerHostWithVerificationPreservesPeerHost() throws Exception {
+        // Underscore makes the name invalid for SNI, so we cannot smuggle it. With verification enabled, mangling
+        // peerHost would silently break verification — so we sacrifice the cache-key widening instead.
+        ClientSslConfig result = withSslConfig(
+                new ClientSslConfigBuilder().peerHost("under_score.example").build(),
+                inetSocketAddress(new byte[] {1, 2, 3, 4}, 443));
+
+        assertThat(result.sniHostname(), is(nullValue()));
+        assertThat(result.peerHost(), is(equalTo("under_score.example")));
+        assertThat(result.hostnameVerificationAlgorithm(), equalTo("HTTPS"));
+    }
+
+    @Test
+    void sniInvalidPeerHostWithoutVerificationIsMangled() throws Exception {
+        ClientSslConfig result = withSslConfig(
+                new ClientSslConfigBuilder()
+                        .peerHost("under_score.example")
+                        .hostnameVerificationAlgorithm("")
+                        .build(),
+                inetSocketAddress(new byte[] {1, 2, 3, 4}, 443));
+
+        assertThat(result.sniHostname(), is(nullValue()));
+        assertThat(result.peerHost(), is(equalTo("under_score.example-1.2.3.4")));
+        assertThat(result.hostnameVerificationAlgorithm(), is(equalTo("")));
+    }
+
+    @Test
+    void noPeerHostNoSniResetsVerificationAlgorithmToEmpty() throws Exception {
+        // Algorithm is reset to "" so Netty 4.2's "HTTPS" default doesn't try to verify against the IP literal.
+        ClientSslConfig result = withSslConfig(
+                new ClientSslConfigBuilder().build(),
+                inetSocketAddress(new byte[] {1, 2, 3, 4}, 443));
+
+        assertThat(result.sniHostname(), is(nullValue()));
+        assertThat(result.peerHost(), is(equalTo("1.2.3.4")));
+        assertThat(result.hostnameVerificationAlgorithm(), is(equalTo("")));
+    }
+
+    private static ClientSslConfig withSslConfig(ClientSslConfig sslConfig, InetSocketAddress resolved) {
+        TcpClientConfig tcpConfig = new TcpClientConfig();
+        tcpConfig.sslConfig(sslConfig);
+        ReadOnlyTcpClientConfig result = withSslConfigPeerHost(resolved, tcpConfig.asReadOnly());
+        return result.sslConfig();
+    }
+
+    private static InetSocketAddress inetSocketAddress(byte[] addr, int port) throws Exception {
+        return new InetSocketAddress(InetAddress.getByAddress(addr), port);
     }
 }
