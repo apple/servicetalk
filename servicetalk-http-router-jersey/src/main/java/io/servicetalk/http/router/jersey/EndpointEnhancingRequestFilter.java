@@ -65,6 +65,7 @@ import static io.servicetalk.http.router.jersey.internal.RequestProperties.setRe
 import static java.lang.Integer.MAX_VALUE;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
+import static javax.ws.rs.core.Response.Status.SERVICE_UNAVAILABLE;
 import static javax.ws.rs.core.Response.noContent;
 
 /**
@@ -96,8 +97,27 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
 
     @Override
     public void filter(final ContainerRequestContext requestCtx) {
+        // Guard against concurrent shutdown: RequestScope.isActive() is a volatile field set to false by
+        // requestScope.shutdown(), which runs during HK2's context-shutdown loop — outside the write lock
+        // and before state=SHUTDOWN is set. In that window, ctxRefProvider.get() throws
+        // "Could not find an active context for RequestScoped" instead of "has been shut down".
+        if (!requestScope.isActive()) {
+            requestCtx.abortWith(Response.status(SERVICE_UNAVAILABLE).build());
+            return;
+        }
         // If we don't have a ConnectionContext then the request isn't from ServiceTalk and need not be filtered.
-        if (ctxRefProvider.get().get() != null) {
+        final Ref<ConnectionContext> ctxRef;
+        try {
+            ctxRef = ctxRefProvider.get();
+        } catch (RuntimeException e) {
+            // TOCTOU: scope became inactive between the isActive() check and the HK2 lookup.
+            if (!requestScope.isActive()) {
+                requestCtx.abortWith(Response.status(SERVICE_UNAVAILABLE).build());
+                return;
+            }
+            throw e;
+        }
+        if (ctxRef.get() != null) {
             enhancedEndpointCache.enhance(requestScope, ctxRefProvider, routeStrategiesConfigProvider,
                     (UriRoutingContext) requestCtx.getUriInfo());
         }
