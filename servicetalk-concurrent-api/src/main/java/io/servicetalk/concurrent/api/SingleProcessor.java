@@ -35,7 +35,7 @@ final class SingleProcessor<T> extends SubscribableSingle<T> implements Processo
 
     @Override
     protected void handleSubscribe(final Subscriber<? super T> subscriber) {
-        // We must subscribe before adding subscriber the the queue. Otherwise it is possible that this
+        // We must subscribe before adding subscriber to the queue. Otherwise it is possible that this
         // Single has been terminated and the subscriber may be notified before onSubscribe is called.
         // We used a DelayedCancellable to avoid the case where the Subscriber will synchronously cancel and then
         // we would add the subscriber to the queue and possibly never (until termination) dereference the subscriber.

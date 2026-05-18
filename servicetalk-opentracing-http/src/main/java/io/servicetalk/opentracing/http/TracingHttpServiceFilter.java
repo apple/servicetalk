@@ -48,7 +48,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 /**
  * A {@link StreamingHttpService} that supports open tracing.
  * <p>
- * Append this filter before others that are expected to to see {@link Scope} for this request/response. Filters
+ * Append this filter before others that are expected to see {@link Scope} for this request/response. Filters
  * appended after this filter that use operators with the <strong>after*</strong> prefix on
  * {@link StreamingHttpService#handle(HttpServiceContext, StreamingHttpRequest, StreamingHttpResponseFactory)
  * response meta data} or the {@link StreamingHttpResponse#transformMessageBody(UnaryOperator) response message body}

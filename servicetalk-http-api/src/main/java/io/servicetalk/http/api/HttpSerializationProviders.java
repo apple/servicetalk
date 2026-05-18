@@ -64,7 +64,7 @@ public final class HttpSerializationProviders {
 
     /**
      * Creates an {@link HttpSerializer} that can serialize key-values {@link Map}s with the specified {@link Charset}
-     * to to urlencoded forms.
+     * to urlencoded forms.
      * @param charset {@link Charset} for the key-value {@link Map} that will be serialized.
      * @return {@link HttpSerializer} that could serialize from key-value {@link Map}.
      * @see <a

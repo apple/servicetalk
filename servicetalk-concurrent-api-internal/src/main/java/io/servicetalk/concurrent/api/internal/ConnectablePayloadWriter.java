@@ -259,7 +259,7 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
                 writerThread = null;
                 return (Subscriber<? super T>) currState;
             } else if (currState == State.TERMINATED || currState == State.TERMINATING) {
-                // If the subscriber is not handed off the the writer thread then the writer thread is not responsible
+                // If the subscriber is not handed off to the writer thread then the writer thread is not responsible
                 // for delivering the terminal event to the Subscriber (because it never has a reference to it), and
                 // the thread processing the subscribe(..) call will terminate the Subscriber instead of handing it off.
                 writerThread = null;
