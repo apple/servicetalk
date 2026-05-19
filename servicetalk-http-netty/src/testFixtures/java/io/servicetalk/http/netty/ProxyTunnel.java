@@ -16,7 +16,9 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpHeaderNames;
+import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.transport.api.HostAndPort;
 
 import org.slf4j.Logger;
@@ -28,10 +30,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
+import javax.net.ssl.SSLContext;
 
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
@@ -42,7 +45,6 @@ import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED;
-import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.Executors.newCachedThreadPool;
@@ -57,11 +59,14 @@ public final class ProxyTunnel implements AutoCloseable {
 
     private final ExecutorService executor = newCachedThreadPool(new DefaultThreadFactory("proxy-tunnel"));
     private final AtomicInteger connectCount = new AtomicInteger();
+    private final AtomicReference<HttpHeaders> lastConnectHeaders = new AtomicReference<>();
 
     @Nullable
     private ServerSocket serverSocket;
     @Nullable
     private volatile String authToken;
+    @Nullable
+    private volatile SSLContext sslContext;
     private volatile ProxyRequestHandler handler = this::handleRequest;
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -84,7 +89,14 @@ public final class ProxyTunnel implements AutoCloseable {
      * @throws IOException In case of any I/O exception
      */
     public HostAndPort startProxy() throws IOException {
-        serverSocket = new ServerSocket(0, 50, getLoopbackAddress());
+        final SSLContext sslCtx = this.sslContext;
+        if (sslCtx == null) {
+            serverSocket = new ServerSocket(0, 50, getLoopbackAddress());
+        } else {
+            // Terminate TLS on the proxy listener. The accepted Socket is an SSLSocket whose handshake is performed
+            // implicitly on first read/write; downstream code is plain InputStream/OutputStream and is unaffected.
+            serverSocket = sslCtx.getServerSocketFactory().createServerSocket(0, 50, getLoopbackAddress());
+        }
         executor.submit(() -> {
             while (!executor.isShutdown()) {
                 final Socket socket = serverSocket.accept();
@@ -103,14 +115,18 @@ public final class ProxyTunnel implements AutoCloseable {
                         final int port = Integer.parseInt(authority.substring(colon + 1));
                         final String protocol = initialLine.substring(end + 1);
 
-                        final Headers headers = readHeaders(in);
-                        if (!authority.equalsIgnoreCase(headers.host)) {
+                        final HttpHeaders headers = readHeaders(in);
+                        lastConnectHeaders.set(headers);
+                        final CharSequence hostHeader = headers.get(HOST);
+                        if (hostHeader == null || !authority.equalsIgnoreCase(hostHeader.toString())) {
                             badRequest(socket, "Host header value must be identical to authority " +
-                                    "component. Expected: " + authority + ", found: " + headers.host);
+                                    "component. Expected: " + authority + ", found: " + hostHeader);
                             return;
                         }
                         final String authToken = this.authToken;
-                        if (authToken != null && !("basic " + authToken).equals(headers.proxyAuthorization)) {
+                        final CharSequence proxyAuth = headers.get(PROXY_AUTHORIZATION);
+                        if (authToken != null && (proxyAuth == null
+                                || !("basic " + authToken).equals(proxyAuth.toString()))) {
                             proxyAuthRequired(socket, protocol);
                             return;
                         }
@@ -129,7 +145,10 @@ public final class ProxyTunnel implements AutoCloseable {
             return null;
         });
 
-        return serverHostAndPort(serverSocket.getLocalSocketAddress());
+        // Return "localhost" rather than the bound loopback IP so the returned HostAndPort matches the test
+        // certificate (which is issued for "localhost"). The socket binds to getLoopbackAddress(); DNS resolves
+        // "localhost" to that same address, so client connections still land here.
+        return HostAndPort.of("localhost", serverSocket.getLocalPort());
     }
 
     private static void badRequest(final Socket socket, final String cause) throws IOException {
@@ -179,12 +198,36 @@ public final class ProxyTunnel implements AutoCloseable {
     }
 
     /**
+     * Configures this proxy to terminate TLS on its listener using the provided {@link SSLContext}. The proxy then
+     * performs a TLS handshake before reading the {@code CONNECT} request. Must be called before {@link #startProxy()}.
+     * <p>
+     * Pass an {@link SSLContext} configured with {@code clientAuth=REQUIRE} (or equivalent via the underlying
+     * {@code SSLServerSocket}) to test mTLS-style proxies. Pass {@code null} (default) for a plaintext proxy listener.
+     *
+     * @param sslContext the {@link SSLContext} that will be used for the proxy listener, or {@code null} for plaintext
+     */
+    public void sslContext(@Nullable final SSLContext sslContext) {
+        this.sslContext = sslContext;
+    }
+
+    /**
      * Number of established connections to the proxy.
      *
      * @return Number of established connections to the proxy
      */
     public int connectCount() {
         return connectCount.get();
+    }
+
+    /**
+     * Returns the headers received on the most recent {@code CONNECT} request. Useful for tests that need to
+     * verify a header reached the proxy (e.g. {@code X-Proxy-Forwarded-For}) and was not forwarded to the origin.
+     *
+     * @return the most recent CONNECT headers, or {@code null} if no CONNECT has been received yet
+     */
+    @Nullable
+    public HttpHeaders lastConnectHeaders() {
+        return lastConnectHeaders.get();
     }
 
     private static String readLine(final InputStream in) throws IOException {
@@ -202,20 +245,20 @@ public final class ProxyTunnel implements AutoCloseable {
         }
     }
 
-    private static Headers readHeaders(final InputStream in) throws IOException {
-        String host = null;
-        String proxyAuthorization = null;
+    private static HttpHeaders readHeaders(final InputStream in) throws IOException {
+        final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         String line;
         while ((line = readLine(in)).length() > 0) {
-            final String lowerCaseLine = line.toLowerCase(Locale.ROOT);
-            if (lowerCaseLine.startsWith(HOST.toString())) {
-                host = line.substring(HOST.length() + 2 /* colon & space */);
-            } else if (lowerCaseLine.startsWith(PROXY_AUTHORIZATION.toString())) {
-                proxyAuthorization = line.substring(PROXY_AUTHORIZATION.length() + 2 /* colon & space */);
+            final int colon = line.indexOf(':');
+            if (colon > 0) {
+                final String name = line.substring(0, colon);
+                // Header value usually has a leading space after the colon; trim it.
+                final String value = colon + 1 < line.length() && line.charAt(colon + 1) == ' ' ?
+                        line.substring(colon + 2) : line.substring(colon + 1);
+                headers.add(name, value);
             }
-            // Ignore any other headers.
         }
-        return new Headers(host, proxyAuthorization);
+        return headers;
     }
 
     private void handleRequest(final Socket serverSocket, final String host, final int port,
@@ -281,17 +324,5 @@ public final class ProxyTunnel implements AutoCloseable {
          * @throws IOException if any exception happens while working with I/O
          */
         void handle(Socket socket, String host, int port, String protocol) throws IOException;
-    }
-
-    private static final class Headers {
-        @Nullable
-        final String host;
-        @Nullable
-        final String proxyAuthorization;
-
-        Headers(@Nullable final String host, @Nullable final String proxyAuthorization) {
-            this.host = host;
-            this.proxyAuthorization = proxyAuthorization;
-        }
     }
 }

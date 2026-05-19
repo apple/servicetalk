@@ -72,7 +72,9 @@ import java.net.SocketOption;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.IntConsumer;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -464,6 +466,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> proxyConfig(final ProxyConfig<U> proxyConfig) {
         this.proxyAddress = requireNonNull(proxyConfig.address());
+        // Capture proxy hostname/port as inference fallbacks for the proxy ClientSslConfig — mirrors how the
+        // origin ClientSslConfig defaults peerHost/peerPort/sniHostname from the origin address.
+        setFallbackHostAndPort(config::fallbackProxyPeerHost, config::fallbackProxyPeerPort, proxyConfig.address());
         config.proxyConfig(hostToCharSequenceFunctionOrToString(address), proxyConfig);
         return this;
     }
@@ -633,7 +638,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig) {
         // defer setting the fallback host/port so the user has a chance to configure hostToCharSequenceFunction.
-        setFallbackHostAndPort(config, address);
+        setFallbackHostAndPort(config::fallbackPeerHost, config::fallbackPeerPort, address);
         config.tcpConfig().sslConfig(sslConfig);
         return this;
     }
@@ -682,42 +687,42 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         return result != null ? result : address.toString();
     }
 
-    private void setFallbackHostAndPort(HttpClientConfig config, U address) {
+    private void setFallbackHostAndPort(Consumer<String> hostSetter, IntConsumer portSetter, U address) {
         if (address instanceof HostAndPort) {
             HostAndPort hostAndPort = (HostAndPort) address;
-            config.fallbackPeerHost(hostAndPort.hostName());
-            config.fallbackPeerPort(hostAndPort.port());
+            hostSetter.accept(hostAndPort.hostName());
+            portSetter.accept(hostAndPort.port());
         } else if (address instanceof InetSocketAddress) {
             InetSocketAddress inetSocketAddress = (InetSocketAddress) address;
-            config.fallbackPeerHost(inetSocketAddress.getHostString());
-            config.fallbackPeerPort(inetSocketAddress.getPort());
+            hostSetter.accept(inetSocketAddress.getHostString());
+            portSetter.accept(inetSocketAddress.getPort());
         } else {
             CharSequence cs = hostToCharSequenceFunction.apply(address);
             if (cs == null) {
-                config.fallbackPeerHost(null);
-                config.fallbackPeerPort(-1);
+                hostSetter.accept(null);
+                portSetter.accept(-1);
             } else {
                 int colon = CharSequences.indexOf(cs, ':', 0);
                 if (colon < 0) {
-                    config.fallbackPeerHost(cs.toString());
-                    config.fallbackPeerPort(-1);
+                    hostSetter.accept(cs.toString());
+                    portSetter.accept(-1);
                 } else if (cs.charAt(0) == '[') {
                     colon = CharSequences.indexOf(cs, ']', 1);
                     if (colon < 0) {
                         throw new IllegalArgumentException("unable to find end ']' of IPv6 address: " + cs);
                     }
-                    config.fallbackPeerHost(cs.subSequence(1, colon).toString());
+                    hostSetter.accept(cs.subSequence(1, colon).toString());
                     ++colon;
                     if (colon >= cs.length()) {
-                        config.fallbackPeerPort(-1);
+                        portSetter.accept(-1);
                     } else if (cs.charAt(colon) != ':') {
                         throw new IllegalArgumentException("':' expected after ']' for IPv6 address: " + cs);
                     } else {
-                        config.fallbackPeerPort(parseInt(cs.subSequence(colon + 1, cs.length()).toString()));
+                        portSetter.accept(parseInt(cs.subSequence(colon + 1, cs.length()).toString()));
                     }
                 } else {
-                    config.fallbackPeerHost(cs.subSequence(0, colon).toString());
-                    config.fallbackPeerPort(parseInt(cs.subSequence(colon + 1, cs.length()).toString()));
+                    hostSetter.accept(cs.subSequence(0, colon).toString());
+                    portSetter.accept(parseInt(cs.subSequence(colon + 1, cs.length()).toString()));
                 }
             }
         }

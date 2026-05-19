@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.netty.H2ProtocolConfig.KeepAlivePolicy;
 import io.servicetalk.transport.netty.internal.ChannelCloseUtils;
+import io.servicetalk.transport.netty.internal.NettyPipelineSslUtils;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
@@ -432,7 +433,9 @@ final class KeepAliveManager {
 
     private void closeNotifyAndShutdownOutput() {
         if (channel instanceof DuplexChannel) {
-            SslHandler sslHandler = channel.pipeline().get(SslHandler.class);
+            // Innermost SslHandler so close_notify targets the application-level (origin) session in layered TLS;
+            // outer (proxy) SslHandler re-encrypts before the wire.
+            SslHandler sslHandler = NettyPipelineSslUtils.innermostSslHandler(channel.pipeline());
             if (sslHandler != null) {
                 // send close_notify: https://tools.ietf.org/html/rfc5246#section-7.2.1
                 sslHandler.closeOutbound().addListener(f2 -> doShutdownOutput());

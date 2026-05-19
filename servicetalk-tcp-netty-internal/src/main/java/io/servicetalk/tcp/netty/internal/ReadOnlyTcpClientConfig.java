@@ -34,11 +34,17 @@ public final class ReadOnlyTcpClientConfig extends AbstractReadOnlyTcpConfig {
     private final SslContext sslContext;
     @Nullable
     private final ClientSslConfig sslConfig;
+    @Nullable
+    private final SslContext proxySslContext;
+    @Nullable
+    private final ClientSslConfig proxySslConfig;
 
     ReadOnlyTcpClientConfig(final TcpClientConfig from) {
         super(from);
         sslConfig = from.sslConfig();
         sslContext = sslConfig == null ? null : forClient(sslConfig);
+        proxySslConfig = from.proxySslConfig();
+        proxySslContext = proxySslConfig == null ? null : forClient(proxySslConfig);
     }
 
     private ReadOnlyTcpClientConfig(final ReadOnlyTcpClientConfig config, final String peerHost,
@@ -49,6 +55,9 @@ public final class ReadOnlyTcpClientConfig extends AbstractReadOnlyTcpConfig {
                 sniHostname, hostnameVerificationAlgorithm);
         // peerHost, peerPort, sniHostname do not impact the sslContext, so we can avoid the costly rebuilding.
         sslContext = config.sslContext;
+        // Proxy SSL config is bound to the proxy address; peer overrides are about the origin and do not apply.
+        proxySslConfig = config.proxySslConfig;
+        proxySslContext = config.proxySslContext;
     }
 
     /**
@@ -85,6 +94,26 @@ public final class ReadOnlyTcpClientConfig extends AbstractReadOnlyTcpConfig {
     @Override
     public ClientSslConfig sslConfig() {
         return sslConfig;
+    }
+
+    /**
+     * Get the {@link SslContext} used for the eager TLS handshake to a fronting proxy, if configured.
+     *
+     * @return the proxy {@link SslContext}, or {@code null} if not configured.
+     */
+    @Nullable
+    SslContext proxySslContext() {
+        return proxySslContext;
+    }
+
+    /**
+     * Get the {@link ClientSslConfig} used for the eager TLS handshake to a fronting proxy, if configured.
+     *
+     * @return the proxy {@link ClientSslConfig}, or {@code null} if not configured.
+     */
+    @Nullable
+    ClientSslConfig proxySslConfig() {
+        return proxySslConfig;
     }
 
     /**

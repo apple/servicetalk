@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.transport.api.ClientSslConfig;
 
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
 /**
  * Configuration for a proxy.
@@ -52,6 +53,33 @@ public interface ProxyConfig<A> {
      * <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-9.3.6">HTTP/1.1 CONNECT</a> request
      */
     Consumer<HttpHeaders> connectRequestHeadersInitializer();
+
+    /**
+     * {@link ClientSslConfig} used for the TLS handshake to the proxy itself.
+     * <p>
+     * This is independent of the {@link SingleAddressHttpClientBuilder#sslConfig(ClientSslConfig) origin SSL config}
+     * which applies to the inner TLS handshake performed after the {@code HTTP/1.1 CONNECT} tunnel is established.
+     * Setting this enables a "double-TLS" pattern where the connection to the proxy is secured with one
+     * certificate/trust configuration and the inner connection to the origin uses a different one — required for
+     * proxies that perform mTLS at their own front door).
+     * <p>
+     * When {@code null} (default) the connection to the proxy is not wrapped in an outer TLS layer; the existing
+     * single-TLS behavior (origin TLS only, performed inside the CONNECT tunnel) is unchanged.
+     * <p>
+     * {@link ClientSslConfig#peerHost() peerHost}, {@link ClientSslConfig#peerPort() peerPort}, and
+     * {@link ClientSslConfig#sniHostname() sniHostname} are inferred from {@link #address()} when unset on the
+     * returned config.
+     * <p>
+     * <b>ALPN restriction.</b> The proxy TLS session always carries an HTTP/1.1 {@code CONNECT} exchange. If this
+     * config advertises {@link ClientSslConfig#alpnProtocols() alpnProtocols} containing anything other than
+     * {@code http/1.1}, configuration will be rejected at builder time.
+     *
+     * @return the {@link ClientSslConfig} for the proxy TLS stage, or {@code null} for plaintext to the proxy.
+     */
+    @Nullable
+    default ClientSslConfig sslConfig() {
+        return null;
+    }
 
     /**
      * Returns a {@link ProxyConfig} for the specified {@code address}.
