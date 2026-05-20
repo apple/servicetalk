@@ -91,7 +91,8 @@ public final class NettyPipelineSslUtils {
                                                         final ChannelPipeline pipeline,
                                                         final ConnectionObserver connectionObserver) {
         if (sslConfig == null) {
-            assert noSslHandlers(pipeline) : "No SslConfig configured but SSL-related handler found in the pipeline";
+            assert noOriginSslHandlers(pipeline) :
+                    "No origin SslConfig configured but origin-stage SSL handler found in the pipeline";
             return null;
         }
         // DeferSslHandler still in pipeline → inner handshake not done. Even if a proxy SslHandler is realized,
@@ -200,9 +201,21 @@ public final class NettyPipelineSslUtils {
         return extractSslSessionAndReport(pipeline, sslEvent, failureConsumer, false);
     }
 
-    private static boolean noSslHandlers(final ChannelPipeline pipeline) {
-        return pipeline.get(SslHandler.class) == null && pipeline.get(DeferSslHandler.class) == null &&
-                pipeline.get(SniHandler.class) == null;
+    private static boolean noOriginSslHandlers(final ChannelPipeline pipeline) {
+        // The proxy SslHandler may be present without an origin SslConfig (TLS-to-proxy + plaintext origin
+        // configuration), so allow it by name. Any other SslHandler, DeferSslHandler, or SniHandler is illegal
+        // when origin SSL is not configured.
+        for (Map.Entry<String, ChannelHandler> entry : pipeline) {
+            final ChannelHandler h = entry.getValue();
+            if (h instanceof SslHandler) {
+                if (!PROXY_SSL_HANDLER_NAME.equals(entry.getKey())) {
+                    return false;
+                }
+            } else if (h instanceof DeferSslHandler || h instanceof SniHandler) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
