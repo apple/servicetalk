@@ -18,6 +18,7 @@ package io.servicetalk.http.utils;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -37,6 +38,7 @@ import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.parseLong;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
@@ -96,11 +98,9 @@ public final class PayloadSizeLimitingHttpRequesterFilter implements
             final PayloadTooLargeException ex = responseMayHaveBody(method, response) ?
                     checkContentLength(response.headers(), maxResponsePayloadSize) : null;
             if (ex != null) {
-                // Drain the payload before failing so the connection isn't abandoned with undrained bytes,
-                // which would typically force it closed.
-                return response.messageBody().ignoreElements()
-                        .concat(Single.<StreamingHttpResponse>failed(ex))
-                        .shareContextOnSubscribe();
+                // Drain the payload before failing so the connection isn't abandoned and a resource leak.
+                toSource(response.messageBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
+                return Single.<StreamingHttpResponse>failed(ex);
             }
             // We could use transformPayloadBody to convert into Buffers, but transformMessageBody has slightly
             // less overhead. Since this implementation is internal to ServiceTalk we take the more advanced route.
@@ -110,6 +110,7 @@ public final class PayloadSizeLimitingHttpRequesterFilter implements
     }
 
     private static boolean responseMayHaveBody(HttpRequestMethod method, StreamingHttpResponse response) {
+        // TODO: can we reuse HeaderUtils.serverMaySendPayloadBodyFor?
         if (HEAD.equals(method)) {
             return false;
         }

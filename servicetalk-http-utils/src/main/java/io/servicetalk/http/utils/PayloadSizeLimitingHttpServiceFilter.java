@@ -16,6 +16,7 @@
 package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.PayloadTooLargeException;
@@ -26,6 +27,7 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
 import static io.servicetalk.http.api.HttpHeaderValues.CONTINUE;
@@ -69,9 +71,8 @@ public final class PayloadSizeLimitingHttpServiceFilter implements StreamingHttp
                     // Drain the payload before failing so the connection isn't abandoned with undrained bytes,
                     // which would typically force it closed. The exception will be mapped to 413 by
                     // HttpExceptionMapperServiceFilter.
-                    return request.messageBody().ignoreElements()
-                            .concat(Single.<StreamingHttpResponse>failed(ex))
-                            .shareContextOnSubscribe();
+                    toSource(request.messageBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
+                    return Single.<StreamingHttpResponse>failed(ex);
                 }
                 return delegate().handle(ctx,
                         // We could use transformPayloadBody to convert into Buffers, but transformMessageBody has
