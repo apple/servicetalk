@@ -66,6 +66,10 @@ final class TcpClientConfigProxyAlpnTest {
 
     @Test
     void proxySslWithoutOriginSslProducesValidReadOnlyConfig() {
+        // The TCP config layer accepts proxy SSL without origin SSL. The combination is rejected
+        // higher up at the HTTP-client layer (HttpClientConfig.asReadOnly) — see
+        // HttpsProxyTest / HttpClientConfigTest for that check. This test just locks in that the TCP
+        // layer itself doesn't reject the combination, so the rejection lives in one place.
         final TcpClientConfig cfg = new TcpClientConfig();
         cfg.proxySslConfig(new ClientSslConfigBuilder().build());
         final ReadOnlyTcpClientConfig ro = cfg.asReadOnly();

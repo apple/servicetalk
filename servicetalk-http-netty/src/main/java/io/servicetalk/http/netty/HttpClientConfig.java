@@ -134,6 +134,17 @@ final class HttpClientConfig {
         if (roConfig.tcpConfig().sslContext() == null && roConfig.h1Config() != null && roConfig.h2Config() != null) {
             throw new IllegalStateException("Cleartext HTTP/1.1 -> HTTP/2 (h2c) upgrade is not supported");
         }
+        // Reject proxy-SSL-without-origin-SSL. With origin SSL unset, the client routes through
+        // forward-proxy mode (absolute-URI requests), where the proxy decrypts the TLS-encrypted client
+        // hop. That's a meaningful security difference from the CONNECT-tunneled case, and expressing it through the
+        // current API is too easy to do accidentally.
+        if (roConfig.tcpConfig().sslContext() == null && tcpConfig.proxySslConfig() != null) {
+            throw new IllegalStateException("Proxy SSL is configured but origin SSL is not. The " +
+                    "TLS-to-proxy + plaintext-origin configuration is not currently supported because the " +
+                    "path from the proxy to the origin is not under client control. Either set origin SSL " +
+                    "via SingleAddressHttpClientBuilder.sslConfig(...) or remove proxy SSL via " +
+                    "ProxyConfigBuilder.sslConfig(null).");
+        }
         return roConfig;
     }
 

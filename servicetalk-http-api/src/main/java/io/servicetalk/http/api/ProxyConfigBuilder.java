@@ -79,6 +79,22 @@ public final class ProxyConfigBuilder<A> {
      * performed after the {@code HTTP/1.1 CONNECT} tunnel is established. {@code peerHost}, {@code peerPort},
      * and {@code sniHostname} default from the proxy {@link ProxyConfig#address() address} when unset; ALPN is
      * restricted to {@code http/1.1}. See {@link ProxyConfig#sslConfig()} for details.
+     * <p>
+     * <strong>Note on proxy mode (CONNECT vs forward):</strong> ServiceTalk currently does not have an
+     * explicit knob for selecting CONNECT-proxy vs forward-proxy semantics. The choice is implicitly
+     * determined by whether the parent
+     * {@link SingleAddressHttpClientBuilder#sslConfig(ClientSslConfig) origin SSL} is set:
+     * setting it routes through {@code CONNECT}; leaving it unset routes through forward-proxy mode
+     * (absolute-URI request lines). Proxy SSL set here is orthogonal — it applies to the hop to the proxy
+     * regardless of which mode was inferred. Supported combinations:
+     * <ul>
+     *   <li>proxy SSL no, origin SSL no  → plaintext forward proxy</li>
+     *   <li>proxy SSL no, origin SSL yes → plaintext CONNECT, inner TLS to origin</li>
+     *   <li>proxy SSL yes, origin SSL yes → TLS to CONNECT proxy, inner TLS to origin (layered TLS)</li>
+     * </ul>
+     * <p>
+     * The combination "proxy SSL set + origin SSL unset" is rejected at build time
+     * ({@link IllegalStateException}) as this makes it difficult to reason about security.
      *
      * @param sslConfig the {@link ClientSslConfig} for the proxy TLS stage, or {@code null} for plaintext to the proxy.
      * @return {@code this}

@@ -247,6 +247,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             final ExecutionStrategy connectionFactoryStrategy =
                     ctx.builder.strategyComputation.buildForConnectionFactory();
 
+            // NOTE: proxy mode (CONNECT vs forward) is implicitly inferred from origin SSL state — set
+            // origin SSL ⇒ CONNECT (this branch); unset ⇒ forward proxy. Proxy SSL set via ProxyConfig.sslConfig()
+            // requires origin SSL to also be set; the proxy-SSL + no-origin-SSL combination is rejected at
+            // HttpClientConfig.asReadOnly() build time.
             if (roConfig.hasProxy() && sslContext != null) {
                 assert roConfig.proxyConfig() != null;
                 @SuppressWarnings("deprecation")
@@ -313,6 +317,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             ContextAwareStreamingHttpClientFilterFactory currClientFilterFactory = ctx.builder.clientFilterFactory;
 
             if (roConfig.hasProxy() && sslContext == null) {
+                // Forward-proxy branch. Only reachable with plain forward proxy (proxy SSL also unset);
+                // the proxy-SSL + no-origin-SSL combination is rejected at HttpClientConfig.asReadOnly()
+                // build time (see comment at the CONNECT branch above).
                 // If we're talking to a proxy over http (not https), rewrite the request-target to absolute-form, as
                 // specified by the RFC: https://tools.ietf.org/html/rfc7230#section-5.3.2
                 currClientFilterFactory = appendFilter(currClientFilterFactory,
