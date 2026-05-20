@@ -98,7 +98,7 @@ public final class PayloadSizeLimitingHttpRequesterFilter implements
             if (ex != null) {
                 // Drain the payload before failing so the connection isn't abandoned with undrained bytes,
                 // which would typically force it closed.
-                return response.payloadBody().ignoreElements()
+                return response.messageBody().ignoreElements()
                         .concat(Single.<StreamingHttpResponse>failed(ex))
                         .shareContextOnSubscribe();
             }

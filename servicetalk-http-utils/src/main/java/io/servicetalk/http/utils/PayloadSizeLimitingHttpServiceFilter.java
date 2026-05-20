@@ -69,7 +69,7 @@ public final class PayloadSizeLimitingHttpServiceFilter implements StreamingHttp
                     // Drain the payload before failing so the connection isn't abandoned with undrained bytes,
                     // which would typically force it closed. The exception will be mapped to 413 by
                     // HttpExceptionMapperServiceFilter.
-                    return request.payloadBody().ignoreElements()
+                    return request.messageBody().ignoreElements()
                             .concat(Single.<StreamingHttpResponse>failed(ex))
                             .shareContextOnSubscribe();
                 }
