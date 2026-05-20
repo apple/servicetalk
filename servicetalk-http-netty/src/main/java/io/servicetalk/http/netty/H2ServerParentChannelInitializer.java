@@ -27,12 +27,17 @@ import io.netty.handler.codec.http2.Http2CodecUtil;
 import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
 import io.netty.handler.codec.http2.Http2MultiplexHandler;
 import io.netty.handler.codec.http2.Http2StreamChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
 import static io.servicetalk.logging.slf4j.internal.Slf4jFixedLevelLoggers.newLogger;
+import static java.lang.Long.getLong;
 
 final class H2ServerParentChannelInitializer implements ChannelInitializer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(H2ServerParentChannelInitializer.class);
+
     /**
      * Default advertised {@code SETTINGS_MAX_CONCURRENT_STREAMS} when the user has not configured a value.
      * RFC 7540 §6.5.2 leaves this setting unbounded when absent; without an advertised cap a peer may open
@@ -41,7 +46,22 @@ final class H2ServerParentChannelInitializer implements ChannelInitializer {
      * value the ServiceTalk client assumes when a peer does not advertise this setting — keeping server and
      * client defaults symmetric.
      */
-    private static final long DEFAULT_MAX_CONCURRENT_STREAMS = 100L;
+    private static final long DEFAULT_MAX_CONCURRENT_STREAMS_VALUE = 100L;
+
+    // FIXME: 0.43 - remove this temporary property
+    static final String DEFAULT_MAX_CONCURRENT_STREAMS_PROPERTY =
+            "io.servicetalk.http.netty.defaultH2ServerMaxConcurrentStreams";
+    static final long DEFAULT_MAX_CONCURRENT_STREAMS =
+            getLong(DEFAULT_MAX_CONCURRENT_STREAMS_PROPERTY, DEFAULT_MAX_CONCURRENT_STREAMS_VALUE);
+
+    static {
+        if (DEFAULT_MAX_CONCURRENT_STREAMS != DEFAULT_MAX_CONCURRENT_STREAMS_VALUE) {
+            LOGGER.warn("-D{}: {}. This property will be removed in future releases. " +
+                            "Configure this value via H2ProtocolConfigBuilder#initialSettings(Http2Settings) with " +
+                            "Http2SettingsBuilder#maxConcurrentStreams(long) instead.",
+                    DEFAULT_MAX_CONCURRENT_STREAMS_PROPERTY, DEFAULT_MAX_CONCURRENT_STREAMS);
+        }
+    }
 
     private final H2ProtocolConfig config;
     private final io.netty.channel.ChannelInitializer<Http2StreamChannel> streamChannelInitializer;
