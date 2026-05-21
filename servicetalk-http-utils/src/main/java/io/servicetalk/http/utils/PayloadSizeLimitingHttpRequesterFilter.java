@@ -42,6 +42,9 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
+import static io.servicetalk.http.api.HttpResponseStatus.NOT_MODIFIED;
+import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 
 /**
@@ -94,7 +97,7 @@ public final class PayloadSizeLimitingHttpRequesterFilter implements
         return delegator.apply(request).flatMap(response -> {
             // HEAD and 1xx/204/304 responses may carry a Content-Length describing what a body would be,
             // but never deliver one (RFC 9110 §9.3.2, §15.3.5, §15.4.5). Skip the early check for these.
-            final PayloadTooLargeException ex = responseMayHaveBody(response.status().code(), method) ?
+            final PayloadTooLargeException ex = serverMaySendPayloadBodyFor(response.status().code(), method) ?
                     checkContentLength(response.headers(), maxResponsePayloadSize) : null;
             if (ex != null) {
                 // Cancel rather than drain — we have just decided the payload is too large to read.
@@ -107,15 +110,16 @@ public final class PayloadSizeLimitingHttpRequesterFilter implements
         });
     }
 
-    // Sibling of HeaderUtils.serverMaySendPayloadBodyFor in servicetalk-http-netty: that helper has the
-    // same intent (no body for HEAD, 1xx, 204, 2xx-CONNECT) but returns true for 304 because its
-    // status-code check delegates to isEmptyResponseStatus, which only covers 1xx and 204. This helper
-    // is the strict "may a body be delivered" check we need to gate the early Content-Length test.
-    // Keep the two in sync when changing status-code/method exclusions.
-    private static boolean responseMayHaveBody(final int statusCode, final HttpRequestMethod requestMethod) {
-        // 1xx (informational), 204 (No Content), and 304 (Not Modified) never have a body; neither does
-        // any response to HEAD. RFC 9110 §9.3.2, §15.3.5, §15.4.5.
-        return !HEAD.equals(requestMethod) && statusCode >= 200 && statusCode != 204 && statusCode != 304;
+    // Sibling of HeaderUtils.serverMaySendPayloadBodyFor in servicetalk-http-netty. The only difference is this doesn't
+    // consider CONNECT responses, since this isn't used in the context of CONNECT requests. Keep the two in sync when
+    // changing status-code/method exclusions.
+    private static boolean serverMaySendPayloadBodyFor(final int statusCode, final HttpRequestMethod requestMethod) {
+        // A server MUST NOT send a message body in a 1xx (Informational), 204 (No Content), or
+        // 304 (Not Modified) response. https://tools.ietf.org/html/rfc7230#section-3.3.3
+        return !HEAD.equals(requestMethod)
+                && !INFORMATIONAL_1XX.contains(statusCode)
+                && statusCode != NO_CONTENT.code()
+                && statusCode != NOT_MODIFIED.code();
     }
 
     /**
