@@ -111,6 +111,13 @@ final class HeaderUtils {
         return !TRACE.equals(requestMethod);
     }
 
+    // The name reads as "may a body be delivered", and that's nearly true: HEAD/1xx/204/2xx-CONNECT
+    // all correctly return false. The exception is 304, which never carries a body but returns true
+    // here — `isEmptyResponseStatus` only covers 1xx and 204. Callers (auto-derive Content-Length /
+    // Transfer-Encoding from body bytes, H2 codec setting CL=0) tolerate the 304 mismatch because
+    // CL=0 on 304 is technically allowed. For a strict "may a body be delivered" check, see
+    // PayloadSizeLimitingHttpRequesterFilter.responseMayHaveBody in servicetalk-http-utils; keep the
+    // two in sync when changing status-code/method exclusions.
     static boolean serverMaySendPayloadBodyFor(final int statusCode, final HttpRequestMethod requestMethod) {
         // (for HEAD) the server MUST NOT send a message body in the response.
         // https://tools.ietf.org/html/rfc7231#section-4.3.2

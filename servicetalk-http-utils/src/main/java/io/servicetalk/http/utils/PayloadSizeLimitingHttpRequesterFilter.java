@@ -94,7 +94,7 @@ public final class PayloadSizeLimitingHttpRequesterFilter implements
         return delegator.apply(request).flatMap(response -> {
             // HEAD and 1xx/204/304 responses may carry a Content-Length describing what a body would be,
             // but never deliver one (RFC 9110 §9.3.2, §15.3.5, §15.4.5). Skip the early check for these.
-            final PayloadTooLargeException ex = responseMayHaveBody(method, response) ?
+            final PayloadTooLargeException ex = responseMayHaveBody(response.status().code(), method) ?
                     checkContentLength(response.headers(), maxResponsePayloadSize) : null;
             if (ex != null) {
                 // Cancel rather than drain — we have just decided the payload is too large to read.
@@ -107,14 +107,15 @@ public final class PayloadSizeLimitingHttpRequesterFilter implements
         });
     }
 
-    private static boolean responseMayHaveBody(HttpRequestMethod method, StreamingHttpResponse response) {
-        // TODO: can we reuse HeaderUtils.serverMaySendPayloadBodyFor?
-        if (HEAD.equals(method)) {
-            return false;
-        }
-        final int code = response.status().code();
-        // 1xx (informational), 204 (No Content), and 304 (Not Modified) never have a body.
-        return code >= 200 && code != 204 && code != 304;
+    // Sibling of HeaderUtils.serverMaySendPayloadBodyFor in servicetalk-http-netty: that helper has the
+    // same intent (no body for HEAD, 1xx, 204, 2xx-CONNECT) but returns true for 304 because its
+    // status-code check delegates to isEmptyResponseStatus, which only covers 1xx and 204. This helper
+    // is the strict "may a body be delivered" check we need to gate the early Content-Length test.
+    // Keep the two in sync when changing status-code/method exclusions.
+    private static boolean responseMayHaveBody(final int statusCode, final HttpRequestMethod requestMethod) {
+        // 1xx (informational), 204 (No Content), and 304 (Not Modified) never have a body; neither does
+        // any response to HEAD. RFC 9110 §9.3.2, §15.3.5, §15.4.5.
+        return !HEAD.equals(requestMethod) && statusCode >= 200 && statusCode != 204 && statusCode != 304;
     }
 
     /**
