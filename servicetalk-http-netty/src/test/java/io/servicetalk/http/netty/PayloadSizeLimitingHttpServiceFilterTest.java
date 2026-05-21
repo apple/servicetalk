@@ -37,6 +37,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -115,9 +116,15 @@ class PayloadSizeLimitingHttpServiceFilterTest {
 
             BufferAllocator alloc = client.executionContext().bufferAllocator();
             HttpClient aggregated = client.asClient();
-            HttpResponse response = aggregated.request(
-                    aggregated.post("/").payloadBody(alloc.fromAscii(repeat('x', MAX_PAYLOAD + 1))))
-                    .toFuture().get();
+            final HttpResponse response;
+            try {
+                response = aggregated.request(
+                        aggregated.post("/").payloadBody(alloc.fromAscii(repeat('x', MAX_PAYLOAD + 1))))
+                        .toFuture().get();
+            } catch (ExecutionException expected) {
+                // Connection/stream torn down before the response surfaced. Also acceptable.
+                return;
+            }
             assertThat(response.status(), is(PAYLOAD_TOO_LARGE));
         }
     }

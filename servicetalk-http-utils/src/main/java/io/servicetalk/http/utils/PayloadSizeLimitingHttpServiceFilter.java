@@ -15,10 +15,8 @@
  */
 package io.servicetalk.http.utils;
 
-import io.servicetalk.concurrent.PublisherSource;
-import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.PayloadTooLargeException;
@@ -28,9 +26,6 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
-
-import java.time.Duration;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
@@ -72,8 +67,10 @@ public final class PayloadSizeLimitingHttpServiceFilter implements StreamingHttp
                         return Single.<StreamingHttpResponse>failed(ex).shareContextOnSubscribe();
                     }
                     // Cancel rather than drain — we have just decided the payload is too large to read.
-                    toSource(request.messageBody()).subscribe(DelayedCancellationSubscriber.INSTANCE);
-                    return Single.failed(ex);
+                    // The close handlers will tear down the channel as a side effect, so the mapped 413
+                    // won't reach the client; the exception is still surfaced to in-process observers.
+                    toSource(request.messageBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
+                    return Single.<StreamingHttpResponse>failed(ex);
                 }
                 return delegate().handle(ctx,
                         request.transformMessageBody(newLimiter(maxRequestPayloadSize)), responseFactory);
@@ -84,39 +81,5 @@ public final class PayloadSizeLimitingHttpServiceFilter implements StreamingHttp
     @Override
     public HttpExecutionStrategy requiredOffloads() {
         return offloadNone();
-    }
-
-    // This gives our server a grace period in which to send its response before we cancel the incoming stream which
-    // has the unfortunate side effect of causing the entire dispatch to be cancelled.
-    private static final class DelayedCancellationSubscriber implements PublisherSource.Subscriber<Object> {
-
-        static final PublisherSource.Subscriber<Object> INSTANCE = new DelayedCancellationSubscriber();
-
-        private final Duration delay = Duration.ofMillis(100);
-        private final Executor executor = Executors.global();
-
-        private DelayedCancellationSubscriber() {
-            // singleton.
-        }
-
-        @Override
-        public void onSubscribe(PublisherSource.Subscription subscription) {
-            executor.schedule(subscription::cancel, delay);
-        }
-
-        @Override
-        public void onNext(@Nullable Object o) {
-            // because we never request items we should never get one.
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            // don't care.
-        }
-
-        @Override
-        public void onComplete() {
-            // don't care.
-        }
     }
 }
