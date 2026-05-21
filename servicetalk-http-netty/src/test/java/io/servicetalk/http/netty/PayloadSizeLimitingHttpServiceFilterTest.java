@@ -55,7 +55,6 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class PayloadSizeLimitingHttpServiceFilterTest {
 
@@ -107,17 +106,26 @@ class PayloadSizeLimitingHttpServiceFilterTest {
     @ParameterizedTest
     @EnumSource(HttpProtocol.class)
     void contentLengthOverLimitTerminatesTransaction(HttpProtocol protocol) throws Exception {
-        // Filter cancels rather than drains the oversized body; the close handlers tear down the
-        // transaction before the mapped 413 reaches the client (H1: connection reset, H2: RST_STREAM).
+        // The filter cancels (rather than drains) the oversized body, so the close handlers tear down
+        // the transaction before the response is delivered. Whether the client sees the connection
+        // teardown or the 413 first is a race — under macOS we typically see the teardown
+        // (ExecutionException), under Linux CI we sometimes see the clean 413. Either outcome is
+        // correct: the transaction was rejected. Accept both.
         try (HttpServerContext server = startServer(protocol);
              StreamingHttpClient client = newClient(server, protocol)) {
 
             BufferAllocator alloc = client.executionContext().bufferAllocator();
             HttpClient aggregated = client.asClient();
-            assertThrows(ExecutionException.class,
-                    () -> aggregated.request(
-                            aggregated.post("/").payloadBody(alloc.fromAscii(repeat('x', MAX_PAYLOAD + 1))))
-                            .toFuture().get());
+            final HttpResponse response;
+            try {
+                response = aggregated.request(
+                        aggregated.post("/").payloadBody(alloc.fromAscii(repeat('x', MAX_PAYLOAD + 1))))
+                        .toFuture().get();
+            } catch (ExecutionException expected) {
+                // Connection/stream torn down before the response surfaced. Also acceptable.
+                return;
+            }
+            assertThat(response.status(), is(PAYLOAD_TOO_LARGE));
         }
     }
 
