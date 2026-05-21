@@ -66,6 +66,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpRequestMethod.PUT;
 import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static io.servicetalk.http.api.HttpResponseStatus.NOT_MODIFIED;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
@@ -167,6 +168,22 @@ class ContentHeadersTest extends AbstractNettyHttpServerTest {
                 new ResponseTest(aggregatedResponse(NO_CONTENT), OPTIONS, withoutPayload(), HAVE_NEITHER),
                 new ResponseTest(aggregatedResponse(NO_CONTENT), TRACE, withoutPayload(), HAVE_NEITHER),
                 new ResponseTest(aggregatedResponse(NO_CONTENT), PATCH, withoutPayload(), HAVE_NEITHER),
+
+                // 304 Not Modified: per RFC 7230 §3.3 the response cannot contain a message body, so neither
+                // Content-Length (auto-derived) nor Transfer-Encoding: chunked should be added by the framework.
+                new ResponseTest(aggregatedResponse(NOT_MODIFIED), GET, withoutPayload(), HAVE_NEITHER),
+                new ResponseTest(aggregatedResponse(NOT_MODIFIED), HEAD, withoutPayload(), HAVE_NEITHER),
+                new ResponseTest(aggregatedResponse(NOT_MODIFIED), POST, withoutPayload(), HAVE_NEITHER),
+                new ResponseTest(aggregatedResponse(NOT_MODIFIED), PUT, withoutPayload(), HAVE_NEITHER),
+                new ResponseTest(aggregatedResponse(NOT_MODIFIED), DELETE, withoutPayload(), HAVE_NEITHER),
+                new ResponseTest(aggregatedResponse(NOT_MODIFIED), CONNECT, withoutPayload(), HAVE_NEITHER),
+                new ResponseTest(aggregatedResponse(NOT_MODIFIED), OPTIONS, withoutPayload(), HAVE_NEITHER),
+                new ResponseTest(aggregatedResponse(NOT_MODIFIED), TRACE, withoutPayload(), HAVE_NEITHER),
+                new ResponseTest(aggregatedResponse(NOT_MODIFIED), PATCH, withoutPayload(), HAVE_NEITHER),
+                // Streaming 304 cases: the headline wire-level bug — chunked framing must not be added since 304
+                // cannot have a body. With a non-empty streaming payload, the body must also be \dropped.
+                new ResponseTest(streamingResponse(NOT_MODIFIED), GET, defaults(), HAVE_NEITHER),
+                new ResponseTest(streamingResponse(NOT_MODIFIED), GET, withoutPayload(), HAVE_NEITHER),
 
                 new ResponseTest(aggregatedResponse(OK), GET, transferEncodingGzip(), HAVE_CONTENT_LENGTH),
                 new ResponseTest(aggregatedResponse(OK), GET, transferEncodingChunked(),
