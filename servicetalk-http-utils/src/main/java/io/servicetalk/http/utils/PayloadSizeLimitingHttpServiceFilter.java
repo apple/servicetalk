@@ -62,22 +62,17 @@ public final class PayloadSizeLimitingHttpServiceFilter implements StreamingHttp
                 final PayloadTooLargeException ex = checkContentLength(request.headers(), maxRequestPayloadSize);
                 if (ex != null) {
                     if (request.headers().containsIgnoreCase(EXPECT, CONTINUE)) {
-                        // Client is waiting for 100 Continue before sending the body. By not subscribing to
-                        // the payload we prevent NettyHttpServer from writing 100 Continue, so the client will
-                        // receive the 413 response (from HttpExceptionMapperServiceFilter) without sending the
-                        // body at all.
+                        // Don't subscribe: that would cause NettyHttpServer to write 100 Continue and
+                        // the client to send the oversized body.
                         return Single.<StreamingHttpResponse>failed(ex).shareContextOnSubscribe();
                     }
-                    // Drain the payload before failing so the connection isn't abandoned with undrained bytes,
-                    // which would typically force it closed. The exception will be mapped to 413 by
-                    // HttpExceptionMapperServiceFilter.
+                    // Cancel rather than drain — we have just decided the payload is too large to read.
+                    // The close handlers will tear down the channel as a side effect, so the mapped 413
+                    // won't reach the client; the exception is still surfaced to in-process observers.
                     toSource(request.messageBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
                     return Single.<StreamingHttpResponse>failed(ex);
                 }
                 return delegate().handle(ctx,
-                        // We could use transformPayloadBody to convert into Buffers, but transformMessageBody has
-                        // slightly less overhead. Since this implementation is internal to ServiceTalk we take the more
-                        // advanced route.
                         request.transformMessageBody(newLimiter(maxRequestPayloadSize)), responseFactory);
             }
         };

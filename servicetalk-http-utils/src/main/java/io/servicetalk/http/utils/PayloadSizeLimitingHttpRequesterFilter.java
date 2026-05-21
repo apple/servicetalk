@@ -92,18 +92,16 @@ public final class PayloadSizeLimitingHttpRequesterFilter implements
             StreamingHttpRequest request, Function<StreamingHttpRequest, Single<StreamingHttpResponse>> delegator) {
         final HttpRequestMethod method = request.method();
         return delegator.apply(request).flatMap(response -> {
-            // HEAD responses and 1xx/204/304 responses carry Content-Length as metadata but have no body (RFC 9110
-            // sections 9.3.2 and 8.6). Skip the early check for these; the streaming limiter is a no-op here too
-            // because no payload bytes are delivered.
+            // HEAD and 1xx/204/304 responses may carry a Content-Length describing what a body would be,
+            // but never deliver one (RFC 9110 §9.3.2, §15.3.5, §15.4.5). Skip the early check for these.
             final PayloadTooLargeException ex = responseMayHaveBody(method, response) ?
                     checkContentLength(response.headers(), maxResponsePayloadSize) : null;
             if (ex != null) {
-                // Drain the payload before failing so the connection isn't abandoned and a resource leak.
+                // Cancel rather than drain — we have just decided the payload is too large to read.
+                // The close handlers will tear down the channel/stream as a side effect.
                 toSource(response.messageBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
                 return Single.<StreamingHttpResponse>failed(ex);
             }
-            // We could use transformPayloadBody to convert into Buffers, but transformMessageBody has slightly
-            // less overhead. Since this implementation is internal to ServiceTalk we take the more advanced route.
             return Single.succeeded(response.transformMessageBody(newLimiter(maxResponsePayloadSize)))
                     .shareContextOnSubscribe();
         });
