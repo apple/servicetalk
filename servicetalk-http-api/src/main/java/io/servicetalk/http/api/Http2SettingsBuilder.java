@@ -25,6 +25,28 @@ import static java.lang.Integer.toHexString;
 /**
  * Builder to help create a {@link Map} for
  * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.1">HTTP/2 Setting</a>.
+ * <p>
+ * Some default values deviate from the
+ * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">RFC 7540 §6.5.2</a> initial values to
+ * impose safer resource ceilings on peers.
+ * <p>
+ * Applied to both clients and servers:
+ * <ul>
+ *   <li>{@code SETTINGS_INITIAL_WINDOW_SIZE}: 1 MiB (RFC: 65535 bytes).</li>
+ *   <li>{@code SETTINGS_MAX_HEADER_LIST_SIZE}: 32 KiB (RFC: unlimited).</li>
+ * </ul>
+ * Applied to clients only:
+ * <ul>
+ *   <li>{@code SETTINGS_MAX_CONCURRENT_STREAMS}: when the server does not advertise this setting, the
+ *       client transport assumes {@code 100} as a per-connection cap rather than treating the peer as
+ *       unbounded. Not configurable through this builder.</li>
+ * </ul>
+ * Applied to servers only:
+ * <ul>
+ *   <li>{@code SETTINGS_MAX_CONCURRENT_STREAMS}: {@code 100} (RFC: unbounded). Applied by the server
+ *       transport when {@link #maxConcurrentStreams(long)} was not called, so
+ *       {@link Http2Settings#maxConcurrentStreams()} may still return {@code null} on the built settings.</li>
+ * </ul>
  */
 public final class Http2SettingsBuilder {
     private static final long MAX_UNSIGNED_INT = 0xffffffffL;
@@ -98,6 +120,10 @@ public final class Http2SettingsBuilder {
     /**
      * Set the value for
      * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">SETTINGS_MAX_CONCURRENT_STREAMS</a>.
+     * <p>
+     * See the class-level javadoc for the default applied by the server transport when this is not set.
+     * Clients always advertise {@code 0} regardless of the value configured here (server push is not
+     * supported).
      *
      * @param value The value.
      * @return {@code this}.

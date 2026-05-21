@@ -140,7 +140,7 @@ final class TcpClient {
                 .connect(address)
                 .sync().channel();
 
-        // Unregister it from the netty EventLoop as we want to to handle it via ST.
+        // Unregister it from the netty EventLoop as we want to handle it via ST.
         channel.deregister().sync();
         FileDescriptorSocketAddress fd = new FileDescriptorSocketAddress(channel.fd().intValue());
         NettyConnection<Buffer, Buffer> connection = connectBlocking(executionContext, fd);

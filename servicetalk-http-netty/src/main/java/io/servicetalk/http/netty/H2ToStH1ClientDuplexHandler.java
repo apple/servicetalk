@@ -51,7 +51,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h2HeadersSanitizeForH1;
 import static io.servicetalk.http.netty.HeaderUtils.REQ_EXPECT_CONTINUE;
-import static io.servicetalk.http.netty.HeaderUtils.responseMayHaveContent;
+import static io.servicetalk.http.netty.HeaderUtils.responseMayHaveContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.serverMaySendPayloadBodyFor;
 
 final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
@@ -200,7 +200,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                 if (serverMaySendPayloadBodyFor(statusCode, method) && fullResponse) {
                     h2Headers.set(CONTENT_LENGTH, ZERO);
                 }
-            } else if (!responseMayHaveContent(statusCode, method)) {
+            } else if (!responseMayHaveContentLength(statusCode, method)) {
                 throw protocolError(ctx, streamId, fullResponse, "content-length (" + h2Headers.get(CONTENT_LENGTH) +
                         ") header is not expected for status code " + statusCode + " in response to " + method.name() +
                         " request");

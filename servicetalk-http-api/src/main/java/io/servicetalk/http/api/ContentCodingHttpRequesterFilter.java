@@ -34,7 +34,7 @@ import static io.servicetalk.http.api.HeaderUtils.setAcceptEncoding;
  * respectively, as these are specified by the spec
  * <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.2">Content-Encoding</a>.
  * <p>
- * Append this filter before others that are expected to to see compressed content for this request/response, and after
+ * Append this filter before others that are expected to see compressed content for this request/response, and after
  * other filters that expect to manipulate the original payload.
  * @deprecated Use {@link ContentEncodingHttpRequesterFilter}.
  */

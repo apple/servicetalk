@@ -117,9 +117,17 @@ public final class PayloadSizeLimitingHttpRequesterFilter implements
         // A server MUST NOT send a message body in a 1xx (Informational), 204 (No Content), or
         // 304 (Not Modified) response. https://tools.ietf.org/html/rfc7230#section-3.3.3
         return !HEAD.equals(requestMethod)
-                && !INFORMATIONAL_1XX.contains(statusCode)
-                && statusCode != NO_CONTENT.code()
-                && statusCode != NOT_MODIFIED.code();
+                && statusCode != NOT_MODIFIED.code()
+                && responseMayHaveContentLength(statusCode);
+    }
+
+    private static boolean responseMayHaveContentLength(final int statusCode) {
+        // A server MUST NOT send a Content-Length header field in any response with a status code
+        // of 1xx (Informational) or 204 (No Content).
+        // https://tools.ietf.org/html/rfc7230#section-3.3.2
+        // Note that we don't care about CONNECT responses because this isn't used as part of a CONNECT proxy.
+        return !INFORMATIONAL_1XX.contains(statusCode)
+                && statusCode != NO_CONTENT.code();
     }
 
     /**

@@ -58,6 +58,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.PATCH;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpRequestMethod.PUT;
 import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
+import static io.servicetalk.http.api.HttpResponseStatus.NOT_MODIFIED;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
@@ -102,7 +103,11 @@ final class HeaderUtils {
 
     static boolean canAddResponseContentLength(final StreamingHttpResponse response,
                                                final HttpRequestMethod requestMethod) {
-        return canAddContentLength(response) && serverMaySendPayloadBodyFor(response.status().code(), requestMethod);
+        // Body-derived auto-CL only applies when a body is allowed. For body-forbidden responses
+        // (HEAD, 1xx, 204, 304, 2xx-CONNECT), CL=0 from an empty payload publisher would be
+        // fabricated (e.g. HEAD's CL should mirror GET's, not be 0).
+        return canAddContentLength(response) &&
+                serverMaySendPayloadBodyFor(response.status().code(), requestMethod);
     }
 
     static boolean clientMaySendPayloadBodyFor(final HttpRequestMethod requestMethod) {
@@ -111,17 +116,48 @@ final class HeaderUtils {
         return !TRACE.equals(requestMethod);
     }
 
-    // The name reads as "may a body be delivered", and that's nearly true: HEAD/1xx/204/2xx-CONNECT
-    // all correctly return false. The exception is 304, which never carries a body but returns true
-    // here — `isEmptyResponseStatus` only covers 1xx and 204. Callers (auto-derive Content-Length /
-    // Transfer-Encoding from body bytes, H2 codec setting CL=0) tolerate the 304 mismatch because
-    // CL=0 on 304 is technically allowed. For a strict "may a body be delivered" check, see
-    // PayloadSizeLimitingHttpRequesterFilter.responseMayHaveBody in servicetalk-http-utils; keep the
-    // two in sync when changing status-code/method exclusions.
+    /**
+     * Whether RFC framing rules permit a message body in this response.
+     * <p>
+     * False for HEAD requests and for status codes 1xx, 204, and 304, plus 2xx responses to CONNECT.
+     * <p>
+     * Used to gate framework auto-derivation of framing (CL from an aggregated payload, or
+     * {@code TE: chunked} from a streaming payload). Even though RFC 7230 §3.3.1 permits a
+     * server to send {@code Transfer-Encoding} on a 304/HEAD as a projection of what GET would
+     * have applied, ServiceTalk doesn't know what coding GET would use, so auto-fabricating it
+     * is meaningless.
+     * <p>
+     * See {@link #responseMayHaveContentLength} for the distinct CL-permitted question: HEAD and
+     * 304 forbid bodies but permit {@code Content-Length} (and {@code Transfer-Encoding}, by the
+     * same RFC).
+     */
     static boolean serverMaySendPayloadBodyFor(final int statusCode, final HttpRequestMethod requestMethod) {
-        // (for HEAD) the server MUST NOT send a message body in the response.
+        // See PayloadSizeLimitingHttpRequesterFilter.responseMayHaveBody in servicetalk-http-utils; keep the
+        // two in sync when changing status-code/method exclusions.
+        //
+        // A server MUST NOT send a message body in a HEAD response.
         // https://tools.ietf.org/html/rfc7231#section-4.3.2
-        return !HEAD.equals(requestMethod) && !isEmptyResponseStatus(statusCode)
+        // A server MUST NOT send a message body in a 1xx (Informational), 204 (No Content), or
+        // 304 (Not Modified) response. https://tools.ietf.org/html/rfc7230#section-3.3.3
+        return !HEAD.equals(requestMethod)
+                && statusCode != NOT_MODIFIED.code()
+                && responseMayHaveContentLength(statusCode, requestMethod);
+    }
+
+    /**
+     * Whether RFC framing rules permit a {@code Content-Length} header on this response.
+     * <p>
+     * False only for 1xx, 204, and 2xx responses to CONNECT. Notably 304 and HEAD permit CL:
+     * both are body-forbidden but CL is permitted (and meaningful). See
+     * {@link #serverMaySendPayloadBodyFor} for the body-allowed question.
+     */
+    static boolean responseMayHaveContentLength(final int statusCode,
+                                                final HttpRequestMethod requestMethod) {
+        // A server MUST NOT send a Content-Length header field in any response with a status code
+        // of 1xx (Informational) or 204 (No Content).
+        // https://tools.ietf.org/html/rfc7230#section-3.3.2
+        return !INFORMATIONAL_1XX.contains(statusCode)
+                && statusCode != NO_CONTENT.code()
                 && !isEmptyConnectResponse(requestMethod, statusCode);
     }
 
@@ -172,11 +208,6 @@ final class HeaderUtils {
         // payload body and the method semantics do not anticipate such a body.
         // https://tools.ietf.org/html/rfc7230#section-3.3.2
         return POST.equals(requestMethod) || PUT.equals(requestMethod) || PATCH.equals(requestMethod);
-    }
-
-    static boolean responseMayHaveContent(final int statusCode,
-                                          final HttpRequestMethod requestMethod) {
-        return !isEmptyResponseStatus(statusCode) && !isEmptyConnectResponse(requestMethod, statusCode);
     }
 
     static ScanMapper<Object, Object> appendTrailersMapper() {
@@ -346,6 +377,7 @@ final class HeaderUtils {
 
     static void addResponseTransferEncodingIfNecessary(final StreamingHttpResponse response,
                                                        final HttpRequestMethod requestMethod) {
+        // We can only add TE: chunked if we can actually send a payload.
         if (serverMaySendPayloadBodyFor(response.status().code(), requestMethod) &&
                 canAddTransferEncodingChunked(response)) {
             response.headers().add(TRANSFER_ENCODING, CHUNKED);
@@ -378,13 +410,6 @@ final class HeaderUtils {
         // to CONNECT.
         // https://tools.ietf.org/html/rfc7231#section-4.3.6
         return CONNECT.equals(requestMethod) && SUCCESSFUL_2XX.contains(statusCode);
-    }
-
-    private static boolean isEmptyResponseStatus(final int statusCode) {
-        // A server MUST NOT send a Content-Length header field in any response with a status code of
-        // 1xx (Informational) or 204 (No Content).
-        // https://tools.ietf.org/html/rfc7230#section-3.3.2
-        return INFORMATIONAL_1XX.contains(statusCode) || statusCode == NO_CONTENT.code();
     }
 
     /**
