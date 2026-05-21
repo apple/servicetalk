@@ -16,6 +16,7 @@
 package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.PayloadTooLargeException;
@@ -26,13 +27,19 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
+import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
+import static io.servicetalk.http.api.HttpHeaderValues.CONTINUE;
+import static io.servicetalk.http.utils.PayloadSizeLimitingHttpRequesterFilter.checkContentLength;
 import static io.servicetalk.http.utils.PayloadSizeLimitingHttpRequesterFilter.newLimiter;
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 
 /**
  * Limits the request payload size. The filter will throw an exception which may result in stream/connection closure.
- * A {@link PayloadTooLargeException} will be thrown when the maximum payload size is exceeded.
+ * A {@link PayloadTooLargeException} will be thrown when the maximum payload size is exceeded. The
+ * {@code Content-Length} request header (when present) is inspected before the body is read so oversized requests
+ * that declare their size fail early; otherwise the streaming body is bounded as bytes arrive.
  */
 public final class PayloadSizeLimitingHttpServiceFilter implements StreamingHttpServiceFilterFactory {
     private final int maxRequestPayloadSize;
@@ -52,10 +59,20 @@ public final class PayloadSizeLimitingHttpServiceFilter implements StreamingHttp
             public Single<StreamingHttpResponse> handle(
                     final HttpServiceContext ctx, final StreamingHttpRequest request,
                     final StreamingHttpResponseFactory responseFactory) {
+                final PayloadTooLargeException ex = checkContentLength(request.headers(), maxRequestPayloadSize);
+                if (ex != null) {
+                    if (request.headers().containsIgnoreCase(EXPECT, CONTINUE)) {
+                        // Don't subscribe: that would cause NettyHttpServer to write 100 Continue and
+                        // the client to send the oversized body.
+                        return Single.<StreamingHttpResponse>failed(ex).shareContextOnSubscribe();
+                    }
+                    // Cancel rather than drain — we have just decided the payload is too large to read.
+                    // The close handlers will tear down the channel as a side effect, so the mapped 413
+                    // won't reach the client; the exception is still surfaced to in-process observers.
+                    toSource(request.messageBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
+                    return Single.<StreamingHttpResponse>failed(ex);
+                }
                 return delegate().handle(ctx,
-                        // We could use transformPayloadBody to convert into Buffers, but transformMessageBody has
-                        // slightly less overhead. Since this implementation is internal to ServiceTalk we take the more
-                        // advanced route.
                         request.transformMessageBody(newLimiter(maxRequestPayloadSize)), responseFactory);
             }
         };

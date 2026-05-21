@@ -132,6 +132,9 @@ final class HeaderUtils {
      * same RFC).
      */
     static boolean serverMaySendPayloadBodyFor(final int statusCode, final HttpRequestMethod requestMethod) {
+        // See PayloadSizeLimitingHttpRequesterFilter.serverMaySendPayloadBodyFor in servicetalk-http-utils; keep the
+        // two in sync when changing status-code/method exclusions.
+        //
         // A server MUST NOT send a message body in a HEAD response.
         // https://tools.ietf.org/html/rfc7231#section-4.3.2
         // A server MUST NOT send a message body in a 1xx (Informational), 204 (No Content), or
