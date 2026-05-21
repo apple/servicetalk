@@ -137,10 +137,8 @@ final class HeaderUtils {
         // A server MUST NOT send a message body in a 1xx (Informational), 204 (No Content), or
         // 304 (Not Modified) response. https://tools.ietf.org/html/rfc7230#section-3.3.3
         return !HEAD.equals(requestMethod)
-                && !INFORMATIONAL_1XX.contains(statusCode)
-                && statusCode != NO_CONTENT.code()
                 && statusCode != NOT_MODIFIED.code()
-                && !isEmptyConnectResponse(requestMethod, statusCode);
+                && responseMayHaveContentLength(statusCode, requestMethod);
     }
 
     /**
