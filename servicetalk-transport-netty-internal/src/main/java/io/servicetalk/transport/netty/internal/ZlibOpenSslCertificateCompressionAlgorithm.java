@@ -88,10 +88,28 @@ final class ZlibOpenSslCertificateCompressionAlgorithm implements OpenSslCertifi
             while (!inflater.finished()) {
                 int decompressedBytes = inflater.inflate(output, bytesWritten, uncompressedLen - bytesWritten);
                 bytesWritten += decompressedBytes;
-                if (bytesWritten > uncompressedLen) {
-                    throw new CertificateCompressionException("Number of bytes written (" + bytesWritten + ") " +
-                            "exceeds the uncompressed certificate length (" + uncompressedLen + ")");
+                // Inflater.inflate() can return 0 without setting finished() in three bad scenarios:
+                // truncated input (needsInput), an FDICT zlib header (needsDictionary), or the output buffer
+                // being full while more compressed input remains.
+                if (decompressedBytes == 0) {
+                    if (inflater.needsDictionary()) {
+                        throw new CertificateCompressionException(
+                                "Compressed certificate requires a preset dictionary (FDICT)");
+                    }
+                    if (inflater.needsInput()) {
+                        throw new CertificateCompressionException("Truncated compressed certificate stream");
+                    }
+                    // Must have overflowed the output buffer
+                    assert bytesWritten == uncompressedLen;
+                    throw new CertificateCompressionException("Compressed certificate decompresses to more than " +
+                            "the declared uncompressed length (" + uncompressedLen + ")");
                 }
+            }
+            // RFC 8879 declares uncompressed_length as the exact size; a short stream would also leave
+            // trailing zero bytes in the returned buffer that we'd hand to BoringSSL.
+            if (bytesWritten != uncompressedLen) {
+                throw new CertificateCompressionException("Decompressed certificate length (" + bytesWritten +
+                        ") does not match declared uncompressed length (" + uncompressedLen + ")");
             }
             return output;
         } catch (Exception cause) {
