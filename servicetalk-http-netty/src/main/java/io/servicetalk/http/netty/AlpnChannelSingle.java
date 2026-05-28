@@ -67,13 +67,15 @@ final class AlpnChannelSingle extends ChannelInitSingle<String> {
 
         private static final Logger LOGGER = LoggerFactory.getLogger(AlpnChannelHandler.class);
 
+        private static final String FALLBACK_PROTOCOL = HTTP_1_1;
+
         @Nullable
         private SingleSource.Subscriber<? super String> subscriber;
         private final Consumer<ChannelHandlerContext> onHandlerAdded;
 
         AlpnChannelHandler(final SingleSource.Subscriber<? super String> subscriber,
                            final Consumer<ChannelHandlerContext> onHandlerAdded) {
-            super(HTTP_1_1);
+            super(FALLBACK_PROTOCOL);
             this.subscriber = subscriber;
             this.onHandlerAdded = onHandlerAdded;
         }
@@ -93,13 +95,13 @@ final class AlpnChannelSingle extends ChannelInitSingle<String> {
             // ChannelInputShutdownEvent, unrelated user events — delegates to super to inherit parent behavior.
             if (evt instanceof SslHandshakeCompletionEvent && ((SslHandshakeCompletionEvent) evt).isSuccess()) {
                 try {
-                    final SslHandler sslHandler = NettyPipelineSslUtils.innermostSslHandler(ctx.pipeline());
+                    final SslHandler sslHandler = NettyPipelineSslUtils.applicationSslHandler(ctx.pipeline());
                     if (sslHandler == null) {
                         throw new IllegalStateException("cannot find an SslHandler in the pipeline (required for "
                                 + "application-level protocol negotiation)");
                     }
                     final String protocol = sslHandler.applicationProtocol();
-                    configurePipeline(ctx, protocol != null ? protocol : HTTP_1_1);
+                    configurePipeline(ctx, protocol != null ? protocol : FALLBACK_PROTOCOL);
                 } catch (Throwable cause) {
                     exceptionCaught(ctx, cause);
                 } finally {

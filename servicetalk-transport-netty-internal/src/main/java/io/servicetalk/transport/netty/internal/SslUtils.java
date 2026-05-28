@@ -60,20 +60,6 @@ final class SslUtils {
      * @param context the {@link SslContext} which will be used to create the {@link SslHandler}
      * @param sslConfig used to obtain configuration for the {@link SslHandler}.
      * @param channel the {@link Channel} if there is a need to report to {@link SecurityHandshakeObserver}
-     * @return a {@link SslHandler}
-     */
-    static SslHandler newClientSslHandler(final SslContext context, final ClientSslConfig sslConfig,
-                                          final Channel channel) {
-        return newClientSslHandler(context, sslConfig, channel, true);
-    }
-
-    /**
-     * Creates a new {@link SslHandler} for the client-side which will support SNI if the {@link InetSocketAddress} was
-     * created from a hostname. It will use {@link CopyByteBufHandlerChannelInitializer#POOLED_ALLOCATOR} if required.
-     *
-     * @param context the {@link SslContext} which will be used to create the {@link SslHandler}
-     * @param sslConfig used to obtain configuration for the {@link SslHandler}.
-     * @param channel the {@link Channel} if there is a need to report to {@link SecurityHandshakeObserver}
      * @param reportHandshakeToObserver if {@code true}, register the handshake-future listener that reports to the
      * {@link SecurityHandshakeObserver}. The first {@link SslHandler} on a connection should report; secondary
      * handshakes (e.g. an outer proxy TLS handshake fronting an inner origin TLS) currently must not, since the

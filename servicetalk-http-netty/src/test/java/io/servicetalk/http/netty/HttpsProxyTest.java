@@ -68,7 +68,6 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -92,7 +91,6 @@ import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -233,7 +231,7 @@ class HttpsProxyTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
-    @MethodSource("io.servicetalk.http.netty.HttpsProxyTest#protocolsAndProxyTls")
+    @MethodSource("protocolsAndProxyTls")
     void testClientRequest(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
         setUp(protocols, proxyTls);
         assert client != null;
@@ -241,7 +239,7 @@ class HttpsProxyTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
-    @MethodSource("io.servicetalk.http.netty.HttpsProxyTest#protocolsAndProxyTls")
+    @MethodSource("protocolsAndProxyTls")
     void testConnectionRequest(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
         setUp(protocols, proxyTls);
         assert client != null;
@@ -280,7 +278,7 @@ class HttpsProxyTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
-    @MethodSource("io.servicetalk.http.netty.HttpsProxyTest#protocolsAndProxyTls")
+    @MethodSource("protocolsAndProxyTls")
     void testProxyAuthRequired(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
         setUp(protocols, proxyTls);
         proxyTunnel.basicAuthToken(AUTH_TOKEN);
@@ -294,7 +292,7 @@ class HttpsProxyTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
-    @MethodSource("io.servicetalk.http.netty.HttpsProxyTest#protocolsAndProxyTls")
+    @MethodSource("protocolsAndProxyTls")
     void testProxyAuthRequiredWithAuthInfo(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
         setUp(protocols, false, headers -> headers.set(PROXY_AUTHORIZATION, "basic " + AUTH_TOKEN), proxyTls);
         proxyTunnel.basicAuthToken(AUTH_TOKEN);
@@ -354,13 +352,15 @@ class HttpsProxyTest {
             clientSslConfigBuilder.peerHost(serverPemHostname());
         }
 
+        // NB: deliberately call .sslConfig(...) BEFORE .proxyConfig(...) here. Most tests in this file use the
+        // opposite order; this one proves the two builder methods don't have an order dependency on each other.
         client = BuilderUtils.newClientBuilder(serverContext, CLIENT_CTX, HttpProtocol.HTTP_1)
+                .sslConfig(clientSslConfigBuilder.build())
                 .proxyConfig(new ProxyConfigBuilder<>(proxyAtIp)
                         .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                                 .peerHost(serverPemHostname())
                                 .build())
                         .build())
-                .sslConfig(clientSslConfigBuilder.build())
                 .buildBlocking();
 
         if (setCorrectPeerHost) {
@@ -371,7 +371,7 @@ class HttpsProxyTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
-    @MethodSource("io.servicetalk.http.netty.HttpsProxyTest#protocolsAndProxyTls")
+    @MethodSource("protocolsAndProxyTls")
     void testHeadersInitializerThrows(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
         setUp(protocols, false, headers -> {
             throw DELIBERATE_EXCEPTION;
@@ -388,7 +388,7 @@ class HttpsProxyTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
-    @MethodSource("io.servicetalk.http.netty.HttpsProxyTest#protocolsAndProxyTls")
+    @MethodSource("protocolsAndProxyTls")
     void testBadProxyResponse(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
         setUp(protocols, proxyTls);
         proxyTunnel.badResponseProxy();
@@ -402,7 +402,7 @@ class HttpsProxyTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
-    @MethodSource("io.servicetalk.http.netty.HttpsProxyTest#protocolsAndProxyTls")
+    @MethodSource("protocolsAndProxyTls")
     void testBadRequest(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
         setUp(protocols, proxyTls);
         proxyTunnel.proxyRequestHandler((socket, host, port, protocol) -> {
@@ -420,7 +420,7 @@ class HttpsProxyTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
-    @MethodSource("io.servicetalk.http.netty.HttpsProxyTest#protocolsAndProxyTls")
+    @MethodSource("protocolsAndProxyTls")
     void testProxyClosesConnection(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
         setUp(protocols, proxyTls);
         proxyTunnel.proxyRequestHandler((socket, host, port, protocol) -> {
@@ -430,20 +430,13 @@ class HttpsProxyTest {
         ProxyConnectException e = assertThrows(ProxyConnectException.class,
                 () -> client.request(client.get("/path")));
         assertThat(e, is(instanceOf(RetryableException.class)));
-        // Under TLS proxy the abrupt close may surface as SSLException (close_notify mismatch) rather than
-        // ClosedChannelException; under plaintext proxy keep the original strict matcher.
-        if (proxyTls) {
-            assertThat(e.getCause(), is(anyOf(nullValue(),
-                    instanceOf(ClosedChannelException.class), instanceOf(SSLException.class))));
-        } else {
-            assertThat(e.getCause(), is(anyOf(nullValue(), instanceOf(ClosedChannelException.class))));
-        }
+        assertThat(e.getCause(), is(nullValue()));
         assertTargetAddress();
         verifyProxyConnectFailed(e);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
-    @MethodSource("io.servicetalk.http.netty.HttpsProxyTest#protocolsAndProxyTls")
+    @MethodSource("protocolsAndProxyTls")
     void testProxyRespondsWithConnectionCloseHeader(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
         setUp(protocols, proxyTls);
         proxyTunnel.proxyRequestHandler((socket, host, port, protocol) -> {
@@ -463,7 +456,7 @@ class HttpsProxyTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
-    @MethodSource("io.servicetalk.http.netty.HttpsProxyTest#protocolsAndProxyTls")
+    @MethodSource("protocolsAndProxyTls")
     void testProxyRespondsAndClosesConnection(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
         setUp(protocols, proxyTls);
         proxyTunnel.proxyRequestHandler((socket, host, port, protocol) -> {
@@ -482,7 +475,7 @@ class HttpsProxyTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
-    @MethodSource("io.servicetalk.http.netty.HttpsProxyTest#protocolsAndProxyTls")
+    @MethodSource("protocolsAndProxyTls")
     void testProxyRespondsWithPayloadBody(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
         setUp(protocols, proxyTls);
         String content = "content";
@@ -502,7 +495,7 @@ class HttpsProxyTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
-    @MethodSource("io.servicetalk.http.netty.HttpsProxyTest#protocolsAndProxyTls")
+    @MethodSource("protocolsAndProxyTls")
     void testHandshakeFailed(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
         setUp(protocols, true, proxyTls);
         assert client != null;

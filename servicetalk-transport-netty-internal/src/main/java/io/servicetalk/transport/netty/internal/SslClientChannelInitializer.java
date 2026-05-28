@@ -28,6 +28,10 @@ import static java.util.Objects.requireNonNull;
  * SSL {@link ChannelInitializer} for clients.
  */
 public class SslClientChannelInitializer implements ChannelInitializer {
+
+    // Pipeline handler name for the origin {@link SslHandler}.
+    private static final String ORIGIN_SSL_HANDLER_NAME = "originSslHandler";
+
     private final SslContext sslContext;
     private final ClientSslConfig sslConfig;
     private final boolean deferSslHandler;
@@ -46,7 +50,8 @@ public class SslClientChannelInitializer implements ChannelInitializer {
 
     @Override
     public void init(Channel channel) {
-        final SslHandler sslHandler = newClientSslHandler(sslContext, sslConfig, channel);
-        channel.pipeline().addLast(deferSslHandler ? new DeferSslHandler(channel, sslHandler, sslConfig) : sslHandler);
+        final SslHandler sslHandler = newClientSslHandler(sslContext, sslConfig, channel, true);
+        channel.pipeline().addLast(ORIGIN_SSL_HANDLER_NAME,
+                deferSslHandler ? new DeferSslHandler(channel, sslHandler, sslConfig) : sslHandler);
     }
 }

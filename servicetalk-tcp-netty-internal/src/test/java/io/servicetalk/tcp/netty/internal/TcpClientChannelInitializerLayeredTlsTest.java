@@ -18,7 +18,6 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
-import io.servicetalk.transport.netty.internal.NettyPipelineSslUtils;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -29,7 +28,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.mock;
 
 /**
@@ -42,7 +40,7 @@ import static org.mockito.Mockito.mock;
 final class TcpClientChannelInitializerLayeredTlsTest {
 
     // mirrored from NettyPipelineSslUtils
-    private static final String PROXY_SSL_HANDLER_NAME = "proxySsl";
+    private static final String PROXY_SSL_HANDLER_NAME = "proxySslHandler";
 
     @Test
     void layeredTlsHasProxyAndDeferredOrigin() {
@@ -51,25 +49,12 @@ final class TcpClientChannelInitializerLayeredTlsTest {
         cfg.sslConfig(new ClientSslConfigBuilder().build());
 
         final EmbeddedChannel ch = runInitializer(cfg, true);
-
-        assertThat(ch.pipeline().get(PROXY_SSL_HANDLER_NAME), is(instanceOf(SslHandler.class)));
-        assertThat(ch.pipeline().get(DeferSslHandler.class), is(notNullValue()));
-    }
-
-    @Test
-    void proxyOnlyTlsHasProxyButNoDeferredOrigin() {
-        // Proxy SSL set, origin SSL not set. innermostSslHandler must return the proxy stage,
-        // which is what RequestResponseCloseHandler / KeepAliveManager rely on for graceful close.
-        final TcpClientConfig cfg = new TcpClientConfig();
-        cfg.proxySslConfig(new ClientSslConfigBuilder().build());
-
-        final EmbeddedChannel ch = runInitializer(cfg, false);
-
-        assertThat(ch.pipeline().get(PROXY_SSL_HANDLER_NAME),
-                is(instanceOf(SslHandler.class)));
-        assertThat(ch.pipeline().get(DeferSslHandler.class), is(nullValue()));
-        assertThat(NettyPipelineSslUtils.innermostSslHandler(ch.pipeline()),
-                is(ch.pipeline().get(PROXY_SSL_HANDLER_NAME)));
+        try {
+            assertThat(ch.pipeline().get(PROXY_SSL_HANDLER_NAME), is(instanceOf(SslHandler.class)));
+            assertThat(ch.pipeline().get(DeferSslHandler.class), is(notNullValue()));
+        } finally {
+            ch.close();
+        }
     }
 
     private static EmbeddedChannel runInitializer(final TcpClientConfig cfg, final boolean deferSslHandler) {

@@ -49,7 +49,7 @@ import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 public final class NettyPipelineSslUtils {
 
     // Pipeline handler name for the outer (proxy) {@link SslHandler} in a layered-TLS / proxy-CONNECT setup.
-    static final String PROXY_SSL_HANDLER_NAME = "proxySsl";
+    static final String PROXY_SSL_HANDLER_NAME = "proxySslHandler";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NettyPipelineSslUtils.class);
 
@@ -91,8 +91,7 @@ public final class NettyPipelineSslUtils {
                                                         final ChannelPipeline pipeline,
                                                         final ConnectionObserver connectionObserver) {
         if (sslConfig == null) {
-            assert noOriginSslHandlers(pipeline) :
-                    "No origin SslConfig configured but origin-stage SSL handler found in the pipeline";
+            assert noSslHandlers(pipeline) : "No SslConfig configured but SSL-related handler found in the pipeline";
             return null;
         }
         // DeferSslHandler still in pipeline → inner handshake not done. Even if a proxy SslHandler is realized,
@@ -100,7 +99,7 @@ public final class NettyPipelineSslUtils {
         if (pipeline.get(DeferSslHandler.class) != null) {
             return null;
         }
-        final SslHandler sslHandler = innermostSslHandler(pipeline);
+        final SslHandler sslHandler = applicationSslHandler(pipeline);
         if (sslHandler == null) {
             throw unableToFindSslHandler();
         }
@@ -157,7 +156,7 @@ public final class NettyPipelineSslUtils {
         final SecurityHandshakeObserver observer = lookForHandshakeObserver(pipeline, shouldReport);
         final Throwable cause = wrapIfRetryable(sslEvent.cause(), pipeline.channel().parent() == null);
         if (cause == null) {
-            final SslHandler sslHandler = innermostSslHandler(pipeline);
+            final SslHandler sslHandler = applicationSslHandler(pipeline);
             if (sslHandler != null) {
                 return getSslSession(sslHandler, observer);
             } else {
@@ -201,37 +200,25 @@ public final class NettyPipelineSslUtils {
         return extractSslSessionAndReport(pipeline, sslEvent, failureConsumer, false);
     }
 
-    private static boolean noOriginSslHandlers(final ChannelPipeline pipeline) {
-        // The proxy SslHandler may be present without an origin SslConfig (TLS-to-proxy + plaintext origin
-        // configuration), so allow it by name. Any other SslHandler, DeferSslHandler, or SniHandler is illegal
-        // when origin SSL is not configured.
-        for (Map.Entry<String, ChannelHandler> entry : pipeline) {
-            final ChannelHandler h = entry.getValue();
-            if (h instanceof SslHandler) {
-                if (!PROXY_SSL_HANDLER_NAME.equals(entry.getKey())) {
-                    return false;
-                }
-            } else if (h instanceof DeferSslHandler || h instanceof SniHandler) {
-                return false;
-            }
-        }
-        return true;
+    private static boolean noSslHandlers(final ChannelPipeline pipeline) {
+        return pipeline.get(SslHandler.class) == null && pipeline.get(DeferSslHandler.class) == null &&
+                pipeline.get(SniHandler.class) == null;
     }
 
     /**
-     * Returns the innermost (last in pipeline order) {@link SslHandler}, or {@code null} if none is present.
+     * Returns the application (last in pipeline order) {@link SslHandler}, or {@code null} if none is present.
      * <p>
      * For a single TLS connection this is the same as {@code pipeline.get(SslHandler.class)}. With layered TLS
      * (e.g. an outer proxy TLS stage plus an inner origin TLS stage on the same {@link Channel}) the origin
-     * handler is added later and is the one whose {@link SSLSession} represents the application-visible session.
-     * Callers that operate on the application-level session (e.g. {@code closeOutbound()} for graceful close,
+     * handler is the one whose {@link SSLSession} represents the application-visible session. Callers that
+     * operate on the application-level session (e.g. {@code closeOutbound()} for graceful close,
      * {@link SSLSession} extraction) should use this helper instead of {@code pipeline.get(SslHandler.class)}.
      *
      * @param pipeline the pipeline to inspect for a {@link SslHandler}.
      * @return the innermost (last in pipeline order) {@link SslHandler}, or {@code null} if none is present.
      */
     @Nullable
-    public static SslHandler innermostSslHandler(final ChannelPipeline pipeline) {
+    public static SslHandler applicationSslHandler(final ChannelPipeline pipeline) {
         SslHandler innermost = null;
         for (Map.Entry<String, ChannelHandler> entry : pipeline) {
             final ChannelHandler h = entry.getValue();
@@ -258,7 +245,8 @@ public final class NettyPipelineSslUtils {
         final SslHandler sslHandler = SslUtils.newClientSslHandler(sslContext, sslConfig, channel, false);
         channel.pipeline()
                 .addLast(PROXY_SSL_HANDLER_NAME, sslHandler)
-                .addLast(OuterTlsEventIsolator.HANDLER_NAME, OuterTlsEventIsolator.INSTANCE);
+                .addLast(ProxySslHandlerEventsIsolatorHandler.HANDLER_NAME,
+                        ProxySslHandlerEventsIsolatorHandler.INSTANCE);
     }
 
     // FIXME: 0.43 - remove method that won't be used after deprecations removed

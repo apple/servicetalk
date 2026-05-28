@@ -23,6 +23,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
@@ -35,23 +36,28 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
-/**
- * Tests for {@link NettyPipelineSslUtils}: innermost-handler lookup and the proxy-TLS install helper that the
- * layered-TLS proxy CONNECT path uses.
- */
 final class NettyPipelineSslUtilsTest {
 
     @Test
     void returnsNullWhenNoSslHandlerInPipeline() {
         final EmbeddedChannel ch = new EmbeddedChannel();
-        assertThat(NettyPipelineSslUtils.innermostSslHandler(ch.pipeline()), is(nullValue()));
+        try {
+            assertThat(NettyPipelineSslUtils.applicationSslHandler(ch.pipeline()), is(nullValue()));
+        } finally {
+            ch.close();
+        }
     }
 
     @Test
     void returnsSingleSslHandler() throws Exception {
-        final SslHandler only = newClientSslHandler(ch());
-        final EmbeddedChannel ch = new EmbeddedChannel(only);
-        assertThat(NettyPipelineSslUtils.innermostSslHandler(ch.pipeline()), is(sameInstance(only)));
+        final EmbeddedChannel ch = new EmbeddedChannel();
+        try {
+            final SslHandler only = newClientSslHandler(ch);
+            ch.pipeline().addLast(only);
+            assertThat(NettyPipelineSslUtils.applicationSslHandler(ch.pipeline()), is(sameInstance(only)));
+        } finally {
+            ch.close();
+        }
     }
 
     @Test
@@ -59,46 +65,51 @@ final class NettyPipelineSslUtilsTest {
         // Layered TLS shape: outer (proxy) SslHandler added first, inner (origin) added later.
         // innermost lookup must return the inner one — that's the application-visible session.
         final EmbeddedChannel ch = new EmbeddedChannel();
-        final SslHandler outer = newClientSslHandler(ch);
-        final SslHandler inner = newClientSslHandler(ch);
-        ch.pipeline().addLast("proxySsl", outer);
-        ch.pipeline().addLast("ssl", inner);
+        try {
+            final SslHandler outer = newClientSslHandler(ch);
+            final SslHandler inner = newClientSslHandler(ch);
+            ch.pipeline().addLast(NettyPipelineSslUtils.PROXY_SSL_HANDLER_NAME, outer);
+            ch.pipeline().addLast(inner);
 
-        final SslHandler found = NettyPipelineSslUtils.innermostSslHandler(ch.pipeline());
-        assertThat(found, is(notNullValue()));
-        assertThat(found, is(sameInstance(inner)));
-        // Sanity check: Netty's pipeline.get(SslHandler.class) returns the head-most (the proxy) — the very
-        // bug the helper exists to work around.
-        assertThat(ch.pipeline().get(SslHandler.class), is(sameInstance(outer)));
+            final SslHandler found = NettyPipelineSslUtils.applicationSslHandler(ch.pipeline());
+            assertThat(found, is(notNullValue()));
+            assertThat(found, is(sameInstance(inner)));
+            // Sanity check: Netty's pipeline.get(SslHandler.class) returns the head-most (the proxy) — the very
+            // bug the helper exists to work around.
+            assertThat(ch.pipeline().get(SslHandler.class), is(sameInstance(outer)));
+        } finally {
+            ch.close();
+        }
     }
 
     @Test
     void installProxyTlsStageAddsHandlerThenIsolator() {
         final EmbeddedChannel ch = new EmbeddedChannel();
-        final ClientSslConfig config = new ClientSslConfigBuilder().build();
-        final SslContext sslCtx = SslContextFactory.forClient(config);
+        try {
+            final ClientSslConfig config = new ClientSslConfigBuilder().build();
+            final SslContext sslCtx = SslContextFactory.forClient(config);
 
-        NettyPipelineSslUtils.installProxyTlsStage(ch, sslCtx, config);
+            NettyPipelineSslUtils.installProxyTlsStage(ch, sslCtx, config);
 
-        // Check the names
-        assertThat(ch.pipeline().get(NettyPipelineSslUtils.PROXY_SSL_HANDLER_NAME), is(instanceOf(SslHandler.class)));
-        assertThat(ch.pipeline().get(OuterTlsEventIsolator.HANDLER_NAME),
-                is(sameInstance(OuterTlsEventIsolator.INSTANCE)));
-        // check the order
-        Iterator<Map.Entry<String, ChannelHandler>> iterator = ch.pipeline().iterator();
-        assertThat(iterator.next().getValue(), instanceOf(SslHandler.class));
-        assertThat(iterator.next().getValue(), sameInstance(OuterTlsEventIsolator.INSTANCE));
-    }
-
-    private static EmbeddedChannel ch() {
-        return new EmbeddedChannel();
+            // Check the names
+            assertThat(ch.pipeline().get(NettyPipelineSslUtils.PROXY_SSL_HANDLER_NAME),
+                    is(instanceOf(SslHandler.class)));
+            assertThat(ch.pipeline().get(ProxySslHandlerEventsIsolatorHandler.HANDLER_NAME),
+                    is(sameInstance(ProxySslHandlerEventsIsolatorHandler.INSTANCE)));
+            // check the order
+            Iterator<Map.Entry<String, ChannelHandler>> iterator = ch.pipeline().iterator();
+            assertThat(iterator.next().getValue(), instanceOf(SslHandler.class));
+            assertThat(iterator.next().getValue(), sameInstance(ProxySslHandlerEventsIsolatorHandler.INSTANCE));
+        } finally {
+            ch.close();
+        }
     }
 
     private static SslHandler newClientSslHandler(final EmbeddedChannel channel) throws Exception {
         // Use Netty's insecure trust manager — handshake never runs in these tests, we just need real handler
         // instances in the pipeline.
         final SslContext ctx = SslContextBuilder.forClient()
-                .trustManager(io.netty.handler.ssl.util.InsecureTrustManagerFactory.INSTANCE)
+                .trustManager(InsecureTrustManagerFactory.INSTANCE)
                 .build();
         return ctx.newHandler(channel.alloc(), "host", 443);
     }

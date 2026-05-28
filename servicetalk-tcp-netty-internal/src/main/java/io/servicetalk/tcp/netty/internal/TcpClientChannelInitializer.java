@@ -108,6 +108,8 @@ public class TcpClientChannelInitializer implements ChannelInitializer {    // F
         // Proxy TLS is eager and goes BEFORE the deferred origin SslHandler: outer-then-inner decryption.
         // Helper installs proxy SslHandler + paired event isolator.
         if (proxySslConfig != null) {
+            assert deferSslHandler : "Proxy SSL requires deferSslHandler=true so the origin handshake runs after " +
+                    "the CONNECT exchange completes.";
             final SslContext proxySslContext = config.proxySslContext();
             assert proxySslContext != null;
             delegate = delegate.andThen(channel ->
@@ -117,7 +119,6 @@ public class TcpClientChannelInitializer implements ChannelInitializer {    // F
         if (sslConfig != null) {
             final SslContext sslContext = config.sslContext();
             assert sslContext != null;
-            // Origin SslHandler keeps the default pipeline name so existing single-TLS lookups still find it.
             delegate = delegate.andThen(new SslClientChannelInitializer(sslContext, sslConfig, deferSslHandler));
         }
 
