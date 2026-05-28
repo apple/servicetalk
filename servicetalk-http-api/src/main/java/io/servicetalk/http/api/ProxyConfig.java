@@ -69,10 +69,6 @@ public interface ProxyConfig<A> {
      * {@link ClientSslConfig#peerHost() peerHost}, {@link ClientSslConfig#peerPort() peerPort}, and
      * {@link ClientSslConfig#sniHostname() sniHostname} are inferred from {@link #address()} when unset on the
      * returned config.
-     * <p>
-     * <b>ALPN restriction.</b> The proxy TLS session always carries an HTTP/1.1 {@code CONNECT} exchange. If this
-     * config advertises {@link ClientSslConfig#alpnProtocols() alpnProtocols} containing anything other than
-     * {@code http/1.1}, configuration will be rejected at builder time.
      *
      * @return the {@link ClientSslConfig} for the proxy TLS stage, or {@code null} for plaintext to the proxy.
      */

@@ -15,6 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.ssl.SslCloseCompletionEvent;
@@ -34,6 +35,7 @@ import io.netty.handler.ssl.SslHandshakeCompletionEvent;
  * {@code exceptionCaught} from the outer stage propagates so failures still tear the channel down through the
  * standard error path.
  */
+@ChannelHandler.Sharable
 final class OuterTlsEventIsolator extends ChannelInboundHandlerAdapter {
 
     static final String HANDLER_NAME = "outerTlsEventIsolator";
@@ -58,10 +60,5 @@ final class OuterTlsEventIsolator extends ChannelInboundHandlerAdapter {
             return;
         }
         ctx.fireUserEventTriggered(evt);
-    }
-
-    @Override
-    public boolean isSharable() {
-        return true;
     }
 }

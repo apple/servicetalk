@@ -17,7 +17,6 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.transport.api.ClientSslConfig;
 
-import java.util.List;
 import javax.annotation.Nullable;
 
 /**
@@ -90,29 +89,10 @@ public final class TcpClientConfig extends AbstractTcpConfig {
 
     /**
      * Add SSL/TLS config used for the proxy hop (eager handshake performed before CONNECT).
-     * <p>
-     * The proxy TLS session always carries an HTTP/1.1 CONNECT exchange, so any non-{@code http/1.1} ALPN
-     * advertised here would risk the proxy negotiating a protocol on which CONNECT is not defined and wedging
-     * the connection. Misconfiguration is rejected at builder time rather than on first connect.
      *
      * @param proxySslConfig the {@link ClientSslConfig} used for the proxy TLS stage.
-     * @throws IllegalArgumentException if {@code proxySslConfig} advertises any ALPN protocol other than
-     * {@code http/1.1}.
      */
     public void proxySslConfig(final @Nullable ClientSslConfig proxySslConfig) {
-        if (proxySslConfig != null) {
-            // Only http/1.1 on the proxy hop; revisit if other protocols become CONNECT-capable.
-            final List<String> proxyAlpn = proxySslConfig.alpnProtocols();
-            if (proxyAlpn != null && !proxyAlpn.isEmpty()) {
-                for (final String p : proxyAlpn) {
-                    // String literal: AlpnIds.HTTP_1_1 lives in a downstream module.
-                    if (!"http/1.1".equals(p)) {
-                        throw new IllegalArgumentException("Proxy ClientSslConfig advertises ALPN protocol '" + p +
-                                "' but only 'http/1.1' is supported on the proxy stage; full list=" + proxyAlpn);
-                    }
-                }
-            }
-        }
         this.proxySslConfig = proxySslConfig;
     }
 }

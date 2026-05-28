@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.transport.api.ClientSslConfig;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
@@ -98,9 +99,23 @@ public final class ProxyConfigBuilder<A> {
      *
      * @param sslConfig the {@link ClientSslConfig} for the proxy TLS stage, or {@code null} for plaintext to the proxy.
      * @return {@code this}
+     * @throws IllegalArgumentException if {@code sslConfig} advertises any ALPN protocol other than {@code http/1.1}.
+     * The proxy TLS session always carries an HTTP/1.1 CONNECT exchange, so any non-{@code http/1.1} ALPN advertised
+     * here would risk the proxy negotiating a protocol on which CONNECT is not defined.
      * @see ProxyConfig#sslConfig()
      */
     public ProxyConfigBuilder<A> sslConfig(@Nullable final ClientSslConfig sslConfig) {
+        if (sslConfig != null) {
+            final List<String> alpn = sslConfig.alpnProtocols();
+            if (alpn != null) {
+                for (final String p : alpn) {
+                    if (!"http/1.1".equals(p)) {
+                        throw new IllegalArgumentException("Proxy ClientSslConfig advertises ALPN protocol '" + p +
+                                "' but only 'http/1.1' is supported on the proxy stage; full list=" + alpn);
+                    }
+                }
+            }
+        }
         this.sslConfig = sslConfig;
         return this;
     }
