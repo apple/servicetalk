@@ -43,7 +43,10 @@ import org.junit.platform.suite.api.SuiteDisplayName;
         MixedModeResourceTest.class,
 
         // AsyncContext
-        AsyncContextTest.class
+        AsyncContextTest.class,
+
+        // Shutdown-race reproducer
+        RouterConcurrentShutdownTest.class
 })
 public abstract class BaseJerseyRouterTestSuite {
     // NOOP

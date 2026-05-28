@@ -65,6 +65,7 @@ import static io.servicetalk.http.router.jersey.internal.RequestProperties.setRe
 import static java.lang.Integer.MAX_VALUE;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
+import static javax.ws.rs.core.Response.Status.SERVICE_UNAVAILABLE;
 import static javax.ws.rs.core.Response.noContent;
 
 /**
@@ -97,7 +98,27 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
     @Override
     public void filter(final ContainerRequestContext requestCtx) {
         // If we don't have a ConnectionContext then the request isn't from ServiceTalk and need not be filtered.
-        if (ctxRefProvider.get().get() != null) {
+        final Ref<ConnectionContext> ctxRef;
+        try {
+            ctxRef = ctxRefProvider.get();
+        } catch (RuntimeException e) {
+            // HK2 ServiceLocatorImpl.shutdown() (observed through 4.0.1) deactivates request-scope contexts
+            // outside its write lock before flipping its own state to SHUTDOWN, so an in-flight request can
+            // hit two failure modes:
+            //   1) MultiException wrapping ISE("Could not find an active context for RequestScoped"),
+            //      thrown by Utilities.createService while locator state is still RUNNING.
+            //   2) Raw ISE("<locator> has been shut down"), thrown by ServiceLocatorImpl.checkState()
+            //      once state == SHUTDOWN.
+            // RequestScope.isActive is a one-way latch flipped during shutdown, so it is the authoritative
+            // signal that we are racing against locator teardown — it covers both windows. If false, abort
+            // with 503; otherwise re-throw, the failure was unrelated.
+            if (!requestScope.isActive()) {
+                requestCtx.abortWith(Response.status(SERVICE_UNAVAILABLE).build());
+                return;
+            }
+            throw e;
+        }
+        if (ctxRef.get() != null) {
             enhancedEndpointCache.enhance(requestScope, ctxRefProvider, routeStrategiesConfigProvider,
                     (UriRoutingContext) requestCtx.getUriInfo());
         }
