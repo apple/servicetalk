@@ -109,6 +109,8 @@ final class AlpnChannelSingle extends ChannelInitSingle<String> {
                 }
                 ctx.fireUserEventTriggered(evt);
             } else {
+                // The super call is deliberate as we leverage the logic in the super implementation to handle
+                // the unsuccessful path.
                 super.userEventTriggered(ctx, evt);
             }
         }
