@@ -32,7 +32,6 @@ import java.util.Map;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
@@ -53,7 +52,7 @@ final class NettyPipelineSslUtilsTest {
         final EmbeddedChannel ch = new EmbeddedChannel();
         try {
             final SslHandler only = newClientSslHandler(ch);
-            ch.pipeline().addLast(only);
+            ch.pipeline().addLast(NettyPipelineSslUtils.APPLICATION_SSL_HANDLER_NAME, only);
             assertThat(NettyPipelineSslUtils.applicationSslHandler(ch.pipeline()), is(sameInstance(only)));
         } finally {
             ch.close();
@@ -61,18 +60,17 @@ final class NettyPipelineSslUtilsTest {
     }
 
     @Test
-    void returnsTailMostWhenMultipleSslHandlersExist() throws Exception {
-        // Layered TLS shape: outer (proxy) SslHandler added first, inner (origin) added later.
-        // innermost lookup must return the inner one — that's the application-visible session.
+    void returnsApplicationHandlerWhenLayered() throws Exception {
+        // Layered TLS shape: outer (proxy) SslHandler added first, inner (origin) added later under the application
+        // name. applicationSslHandler must return the inner one — that's the application-visible session.
         final EmbeddedChannel ch = new EmbeddedChannel();
         try {
             final SslHandler outer = newClientSslHandler(ch);
             final SslHandler inner = newClientSslHandler(ch);
             ch.pipeline().addLast(NettyPipelineSslUtils.PROXY_SSL_HANDLER_NAME, outer);
-            ch.pipeline().addLast(inner);
+            ch.pipeline().addLast(NettyPipelineSslUtils.APPLICATION_SSL_HANDLER_NAME, inner);
 
             final SslHandler found = NettyPipelineSslUtils.applicationSslHandler(ch.pipeline());
-            assertThat(found, is(notNullValue()));
             assertThat(found, is(sameInstance(inner)));
             // Sanity check: Netty's pipeline.get(SslHandler.class) returns the head-most (the proxy) — the very
             // bug the helper exists to work around.

@@ -51,6 +51,10 @@ public final class NettyPipelineSslUtils {
     // Pipeline handler name for the outer (proxy) {@link SslHandler} in a layered-TLS / proxy-CONNECT setup.
     static final String PROXY_SSL_HANDLER_NAME = "proxySslHandler";
 
+    // Pipeline handler name for the application-tier {@link SslHandler} installed by our channel initializers —
+    // the origin handler on the client, the server-side handler on the server.
+    static final String APPLICATION_SSL_HANDLER_NAME = "applicationSslHandler";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(NettyPipelineSslUtils.class);
 
     private NettyPipelineSslUtils() {
@@ -206,23 +210,25 @@ public final class NettyPipelineSslUtils {
     }
 
     /**
-     * Returns the application (last in pipeline order) {@link SslHandler}, or {@code null} if none is present.
+     * Returns the application-tier {@link SslHandler}, or {@code null} if none is present.
      * <p>
-     * For a single TLS connection this is the same as {@code pipeline.get(SslHandler.class)}. With layered TLS
-     * (e.g. an outer proxy TLS stage plus an inner origin TLS stage on the same {@link Channel}) the origin
-     * handler is the one whose {@link SSLSession} represents the application-visible session. Callers that
-     * operate on the application-level session (e.g. {@code closeOutbound()} for graceful close,
-     * {@link SSLSession} extraction) should use this helper instead of {@code pipeline.get(SslHandler.class)}.
+     * With layered TLS (e.g. an outer proxy TLS stage plus an inner origin TLS stage on the same {@link Channel})
+     * the origin handler is the one whose {@link SSLSession} represents the application-visible session. Callers
+     * that operate on the application-level session should use this helper instead of
+     * {@code pipeline.get(SslHandler.class)}, which returns the head-most handler — the wrong one for layered TLS.
+     * <p>
+     * Iterates rather than looking up by {@link #APPLICATION_SSL_HANDLER_NAME} because not every {@link SslHandler}
+     * is installed under that name (e.g. handlers installed by third-party Netty code).
      *
      * @param pipeline the pipeline to inspect for a {@link SslHandler}.
-     * @return the innermost (last in pipeline order) {@link SslHandler}, or {@code null} if none is present.
+     * @return the application-tier (last-in-pipeline-order) {@link SslHandler}, or {@code null} if none is present.
      */
     @Nullable
     public static SslHandler applicationSslHandler(final ChannelPipeline pipeline) {
         SslHandler innermost = null;
         for (Map.Entry<String, ChannelHandler> entry : pipeline) {
             final ChannelHandler h = entry.getValue();
-            if (h instanceof SslHandler) {
+            if (h instanceof SslHandler && !PROXY_SSL_HANDLER_NAME.equals(entry.getKey())) {
                 innermost = (SslHandler) h;
             }
         }

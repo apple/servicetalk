@@ -21,6 +21,7 @@ import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 
+import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.APPLICATION_SSL_HANDLER_NAME;
 import static io.servicetalk.transport.netty.internal.SslUtils.newClientSslHandler;
 import static java.util.Objects.requireNonNull;
 
@@ -28,9 +29,6 @@ import static java.util.Objects.requireNonNull;
  * SSL {@link ChannelInitializer} for clients.
  */
 public class SslClientChannelInitializer implements ChannelInitializer {
-
-    // Pipeline handler name for the origin {@link SslHandler}.
-    private static final String ORIGIN_SSL_HANDLER_NAME = "originSslHandler";
 
     private final SslContext sslContext;
     private final ClientSslConfig sslConfig;
@@ -51,7 +49,8 @@ public class SslClientChannelInitializer implements ChannelInitializer {
     @Override
     public void init(Channel channel) {
         final SslHandler sslHandler = newClientSslHandler(sslContext, sslConfig, channel, true);
-        channel.pipeline().addLast(ORIGIN_SSL_HANDLER_NAME,
-                deferSslHandler ? new DeferSslHandler(channel, sslHandler, sslConfig) : sslHandler);
+        channel.pipeline().addLast(APPLICATION_SSL_HANDLER_NAME,
+                deferSslHandler ? new DeferSslHandler(channel, sslHandler, sslConfig, APPLICATION_SSL_HANDLER_NAME)
+                        : sslHandler);
     }
 }

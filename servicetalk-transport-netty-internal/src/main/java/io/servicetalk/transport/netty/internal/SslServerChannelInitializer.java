@@ -18,6 +18,7 @@ package io.servicetalk.transport.netty.internal;
 import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 
+import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.APPLICATION_SSL_HANDLER_NAME;
 import static io.servicetalk.transport.netty.internal.SslUtils.newServerSslHandler;
 import static java.util.Objects.requireNonNull;
 
@@ -37,6 +38,6 @@ public final class SslServerChannelInitializer implements ChannelInitializer {
 
     @Override
     public void init(Channel channel) {
-        channel.pipeline().addLast(newServerSslHandler(sslContext, channel));
+        channel.pipeline().addLast(APPLICATION_SSL_HANDLER_NAME, newServerSslHandler(sslContext, channel));
     }
 }
