@@ -24,8 +24,10 @@ import io.servicetalk.transport.netty.internal.ConnectionObserverInitializer.Con
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.ssl.SniHandler;
+import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 import io.netty.util.concurrent.Future;
@@ -33,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.channels.ClosedChannelException;
+import java.util.Map;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLHandshakeException;
@@ -44,6 +47,13 @@ import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
  * Utilities for {@link ChannelPipeline} and SSL/TLS.
  */
 public final class NettyPipelineSslUtils {
+
+    // Pipeline handler name for the outer (proxy) {@link SslHandler} in a layered-TLS / proxy-CONNECT setup.
+    static final String PROXY_SSL_HANDLER_NAME = "proxySslHandler";
+
+    // Pipeline handler name for the application-tier {@link SslHandler} installed by our channel initializers —
+    // the origin handler on the client, the server-side handler on the server.
+    static final String APPLICATION_SSL_HANDLER_NAME = "applicationSslHandler";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NettyPipelineSslUtils.class);
 
@@ -88,11 +98,13 @@ public final class NettyPipelineSslUtils {
             assert noSslHandlers(pipeline) : "No SslConfig configured but SSL-related handler found in the pipeline";
             return null;
         }
-        final SslHandler sslHandler = pipeline.get(SslHandler.class);
+        // DeferSslHandler still in pipeline → inner handshake not done. Even if a proxy SslHandler is realized,
+        // its session isn't what callers of ConnectionInfo#sslSession() want.
+        if (pipeline.get(DeferSslHandler.class) != null) {
+            return null;
+        }
+        final SslHandler sslHandler = applicationSslHandler(pipeline);
         if (sslHandler == null) {
-            if (pipeline.get(DeferSslHandler.class) != null) {
-                return null;
-            }
             throw unableToFindSslHandler();
         }
         final Future<Channel> handshakeFuture = sslHandler.handshakeFuture();
@@ -148,7 +160,7 @@ public final class NettyPipelineSslUtils {
         final SecurityHandshakeObserver observer = lookForHandshakeObserver(pipeline, shouldReport);
         final Throwable cause = wrapIfRetryable(sslEvent.cause(), pipeline.channel().parent() == null);
         if (cause == null) {
-            final SslHandler sslHandler = pipeline.get(SslHandler.class);
+            final SslHandler sslHandler = applicationSslHandler(pipeline);
             if (sslHandler != null) {
                 return getSslSession(sslHandler, observer);
             } else {
@@ -195,6 +207,52 @@ public final class NettyPipelineSslUtils {
     private static boolean noSslHandlers(final ChannelPipeline pipeline) {
         return pipeline.get(SslHandler.class) == null && pipeline.get(DeferSslHandler.class) == null &&
                 pipeline.get(SniHandler.class) == null;
+    }
+
+    /**
+     * Returns the application-tier {@link SslHandler}, or {@code null} if none is present.
+     * <p>
+     * With layered TLS (e.g. an outer proxy TLS stage plus an inner origin TLS stage on the same {@link Channel})
+     * the origin handler is the one whose {@link SSLSession} represents the application-visible session. Callers
+     * that operate on the application-level session should use this helper instead of
+     * {@code pipeline.get(SslHandler.class)}, which returns the head-most handler — the wrong one for layered TLS.
+     * <p>
+     * Iterates rather than looking up by {@link #APPLICATION_SSL_HANDLER_NAME} because not every {@link SslHandler}
+     * is installed under that name (e.g. handlers installed by third-party Netty code).
+     *
+     * @param pipeline the pipeline to inspect for a {@link SslHandler}.
+     * @return the application-tier (last-in-pipeline-order) {@link SslHandler}, or {@code null} if none is present.
+     */
+    @Nullable
+    public static SslHandler applicationSslHandler(final ChannelPipeline pipeline) {
+        SslHandler innermost = null;
+        for (Map.Entry<String, ChannelHandler> entry : pipeline) {
+            final ChannelHandler h = entry.getValue();
+            if (h instanceof SslHandler && !PROXY_SSL_HANDLER_NAME.equals(entry.getKey())) {
+                innermost = (SslHandler) h;
+            }
+        }
+        return innermost;
+    }
+
+    /**
+     * Install the outer (proxy) TLS stage of a layered-TLS pipeline. Adds an eager proxy {@link SslHandler}
+     * named {@link #PROXY_SSL_HANDLER_NAME} followed by an internal isolator that drops outer-stage
+     * {@link SslHandshakeCompletionEvent} and {@link io.netty.handler.ssl.SslCloseCompletionEvent} from
+     * reaching handlers downstream (which expect inner-stage events). The proxy stage's handshake is
+     * intentionally not reported to the connection-level {@code SecurityHandshakeObserver}.
+     *
+     * @param channel the channel whose pipeline to install on
+     * @param sslContext the {@link SslContext} for the proxy TLS stage
+     * @param sslConfig the {@link ClientSslConfig} for the proxy TLS stage
+     */
+    public static void installProxyTlsStage(final Channel channel, final SslContext sslContext,
+                                            final ClientSslConfig sslConfig) {
+        final SslHandler sslHandler = SslUtils.newClientSslHandler(sslContext, sslConfig, channel, false);
+        channel.pipeline()
+                .addLast(PROXY_SSL_HANDLER_NAME, sslHandler)
+                .addLast(ProxySslHandlerEventsIsolatorHandler.HANDLER_NAME,
+                        ProxySslHandlerEventsIsolatorHandler.INSTANCE);
     }
 
     // FIXME: 0.43 - remove method that won't be used after deprecations removed

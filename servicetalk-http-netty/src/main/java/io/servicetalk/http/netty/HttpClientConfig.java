@@ -44,6 +44,9 @@ final class HttpClientConfig {
     private boolean inferPeerHost = true;
     private boolean inferPeerPort = true;
     private boolean inferSniHostname = true;
+    @Nullable
+    private String fallbackProxyPeerHost;
+    private int fallbackProxyPeerPort = -1;
 
     HttpClientConfig() {
         tcpConfig = new TcpClientConfig();
@@ -71,6 +74,8 @@ final class HttpClientConfig {
         inferPeerHost = from.inferPeerHost;
         inferPeerPort = from.inferPeerPort;
         inferSniHostname = from.inferSniHostname;
+        fallbackProxyPeerHost = from.fallbackProxyPeerHost;
+        fallbackProxyPeerPort = from.fallbackProxyPeerPort;
     }
 
     TcpClientConfig tcpConfig() {
@@ -91,6 +96,8 @@ final class HttpClientConfig {
         // ProxyConnectLBHttpConnectionFactory, we need only "connectAddress". To simplify internal state, we override
         // ProxyConfig.address() with "connectAddress" and delegate all other methods to original ProxyConfig.
         this.proxyConfig = new DelegatingProxyConfig(connectAddress.toString(), proxyConfig);
+        // Push proxy-side SSL into TcpClientConfig so the TCP layer can install an eager SslHandler before CONNECT.
+        tcpConfig.proxySslConfig(proxyConfig.sslConfig());
     }
 
     void fallbackPeerHost(@Nullable String fallbackPeerHost) {
@@ -113,11 +120,30 @@ final class HttpClientConfig {
         this.inferSniHostname = shouldInfer;
     }
 
+    void fallbackProxyPeerHost(@Nullable String fallbackProxyPeerHost) {
+        this.fallbackProxyPeerHost = fallbackProxyPeerHost;
+    }
+
+    void fallbackProxyPeerPort(int fallbackProxyPeerPort) {
+        this.fallbackProxyPeerPort = fallbackProxyPeerPort;
+    }
+
     ReadOnlyHttpClientConfig asReadOnly() {
         applySslConfigOverrides();
         final ReadOnlyHttpClientConfig roConfig = new ReadOnlyHttpClientConfig(this);
         if (roConfig.tcpConfig().sslContext() == null && roConfig.h1Config() != null && roConfig.h2Config() != null) {
             throw new IllegalStateException("Cleartext HTTP/1.1 -> HTTP/2 (h2c) upgrade is not supported");
+        }
+        // Reject proxy-SSL-without-origin-SSL. With origin SSL unset, the client routes through
+        // forward-proxy mode (absolute-URI requests), where the proxy decrypts the TLS-encrypted client
+        // hop. That's a meaningful security difference from the CONNECT-tunneled case, and expressing it through the
+        // current API is too easy to do accidentally.
+        if (roConfig.tcpConfig().sslContext() == null && tcpConfig.proxySslConfig() != null) {
+            throw new IllegalStateException("Proxy SSL is configured but origin SSL is not. The " +
+                    "TLS-to-proxy + plaintext-origin configuration is not currently supported because the " +
+                    "path from the proxy to the origin is not under client control. Either set origin SSL " +
+                    "via SingleAddressHttpClientBuilder.sslConfig(...) or remove proxy SSL via " +
+                    "ProxyConfigBuilder.sslConfig(null).");
         }
         return roConfig;
     }
@@ -167,6 +193,41 @@ final class HttpClientConfig {
                 }
             });
         }
+        // Mirror the origin-side inference for the proxy ClientSslConfig: when peerHost / peerPort / sniHostname
+        // are unset, fall back to the proxy address. ALPN is constrained to http/1.1 at builder time, so
+        // re-asserting the singleton list here keeps it stable even if a default isn't supplied.
+        final ClientSslConfig proxySslConfig = tcpConfig.proxySslConfig();
+        if (proxySslConfig != null) {
+            final String configPeerHost = proxySslConfig.peerHost();
+            final int configPeerPort = proxySslConfig.peerPort();
+            final String configSni = proxySslConfig.sniHostname();
+            tcpConfig.proxySslConfig(new DelegatingClientSslConfig(proxySslConfig) {
+                @Nullable
+                private final String peerHost = configPeerHost == null ? fallbackProxyPeerHost : configPeerHost;
+
+                private final int peerPort = configPeerPort < 0 ? fallbackProxyPeerPort : configPeerPort;
+
+                @Nullable
+                private final String sniHostname =
+                        configSni == null ? filterSniName(fallbackProxyPeerHost) : configSni;
+
+                @Nullable
+                @Override
+                public String peerHost() {
+                    return peerHost;
+                }
+
+                @Override
+                public int peerPort() {
+                    return peerPort;
+                }
+
+                @Override
+                public String sniHostname() {
+                    return sniHostname;
+                }
+            });
+        }
     }
 
     @Nullable
@@ -194,6 +255,12 @@ final class HttpClientConfig {
         @Override
         public Consumer<HttpHeaders> connectRequestHeadersInitializer() {
             return delegate.connectRequestHeadersInitializer();
+        }
+
+        @Nullable
+        @Override
+        public ClientSslConfig sslConfig() {
+            return delegate.sslConfig();
         }
 
         @Override

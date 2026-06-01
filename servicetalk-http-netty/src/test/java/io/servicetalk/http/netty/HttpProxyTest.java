@@ -19,12 +19,15 @@ import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.ProxyConfigBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.netty.HttpsProxyTest.TargetAddressCheckConnectionFactoryFilter;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -50,8 +53,10 @@ import static io.servicetalk.transport.netty.internal.CloseUtils.safeClose;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class HttpProxyTest {
 
@@ -182,5 +187,21 @@ class HttpProxyTest {
         assertThat(proxyRequestCount.get(), is(1));
         assertThat(httpResponse.payloadBody().toString(US_ASCII), is("host: " + serverAddress));
         assertThat(targetAddress.get(), is(equalTo(serverAddress.toString())));
+    }
+
+    @Test
+    void buildClientWithProxySslButNoOriginSslThrows() {
+        // "Proxy SSL + no origin SSL" is rejected at HTTP-client build time. With origin SSL unset the client would
+        // otherwise route through forward-proxy mode, where the proxy decrypts the TLS-encrypted client hop and
+        // forwards plaintext to the origin — the path from proxy to origin is no longer under client control.
+        // Rejecting the combination explicitly removes a security foot-gun.
+        final IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> HttpClients.forSingleAddress(HostAndPort.of("example.com", 443))
+                        .proxyConfig(new ProxyConfigBuilder<>(HostAndPort.of("proxy.example.com", 8443))
+                                .sslConfig(new ClientSslConfigBuilder().build())
+                                .build())
+                        // NB: no .sslConfig(...) on the client builder — this is the rejected case.
+                        .buildBlocking());
+        assertThat(ex.getMessage(), containsString("Proxy SSL is configured but origin SSL is not"));
     }
 }

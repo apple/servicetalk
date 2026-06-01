@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.netty.internal.ChannelCloseUtils;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.NettyPipelineSslUtils;
 import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
 
 import io.netty.channel.Channel;
@@ -28,6 +29,7 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.ssl.ApplicationProtocolNegotiationHandler;
 import io.netty.handler.ssl.SslHandler;
+import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,13 +67,15 @@ final class AlpnChannelSingle extends ChannelInitSingle<String> {
 
         private static final Logger LOGGER = LoggerFactory.getLogger(AlpnChannelHandler.class);
 
+        private static final String FALLBACK_PROTOCOL = HTTP_1_1;
+
         @Nullable
         private SingleSource.Subscriber<? super String> subscriber;
         private final Consumer<ChannelHandlerContext> onHandlerAdded;
 
         AlpnChannelHandler(final SingleSource.Subscriber<? super String> subscriber,
                            final Consumer<ChannelHandlerContext> onHandlerAdded) {
-            super(HTTP_1_1);
+            super(FALLBACK_PROTOCOL);
             this.subscriber = subscriber;
             this.onHandlerAdded = onHandlerAdded;
         }
@@ -80,6 +84,37 @@ final class AlpnChannelSingle extends ChannelInitSingle<String> {
         public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
             super.handlerAdded(ctx);
             onHandlerAdded.accept(ctx);
+        }
+
+        @Override
+        public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) throws Exception {
+            // Intercept only the *successful* SslHandshakeCompletionEvent. The parent's implementation looks up
+            // the SslHandler via pipeline.get(SslHandler.class), which in a layered-TLS pipeline returns the
+            // head-most (proxy) handler whose applicationProtocol() is null, causing a fallback to HTTP/1.1
+            // even when the inner handshake actually negotiated h2. Everything else — failure events,
+            // ChannelInputShutdownEvent, unrelated user events — delegates to super to inherit parent behavior.
+            if (evt instanceof SslHandshakeCompletionEvent && ((SslHandshakeCompletionEvent) evt).isSuccess()) {
+                try {
+                    final SslHandler sslHandler = NettyPipelineSslUtils.applicationSslHandler(ctx.pipeline());
+                    if (sslHandler == null) {
+                        throw new IllegalStateException("cannot find an SslHandler in the pipeline (required for "
+                                + "application-level protocol negotiation)");
+                    }
+                    final String protocol = sslHandler.applicationProtocol();
+                    configurePipeline(ctx, protocol != null ? protocol : FALLBACK_PROTOCOL);
+                } catch (Throwable cause) {
+                    exceptionCaught(ctx, cause);
+                } finally {
+                    if (!ctx.isRemoved()) {
+                        ctx.pipeline().remove(this);
+                    }
+                }
+                ctx.fireUserEventTriggered(evt);
+            } else {
+                // The super call is deliberate as we leverage the logic in the super implementation to handle
+                // the unsuccessful path.
+                super.userEventTriggered(ctx, evt);
+            }
         }
 
         @Override

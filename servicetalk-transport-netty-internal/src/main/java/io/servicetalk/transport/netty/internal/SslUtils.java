@@ -60,12 +60,18 @@ final class SslUtils {
      * @param context the {@link SslContext} which will be used to create the {@link SslHandler}
      * @param sslConfig used to obtain configuration for the {@link SslHandler}.
      * @param channel the {@link Channel} if there is a need to report to {@link SecurityHandshakeObserver}
+     * @param reportHandshakeToObserver if {@code true}, register the handshake-future listener that reports to the
+     * {@link SecurityHandshakeObserver}. The first {@link SslHandler} on a connection should report; secondary
+     * handshakes (e.g. an outer proxy TLS handshake fronting an inner origin TLS) currently must not, since the
+     * connection-level observer can only track a single handshake.
      * @return a {@link SslHandler}
      */
     static SslHandler newClientSslHandler(final SslContext context, final ClientSslConfig sslConfig,
-                                          final Channel channel) {
+                                          final Channel channel, final boolean reportHandshakeToObserver) {
         SslHandler handler = context.newHandler(POOLED_ALLOCATOR, sslConfig.peerHost(), sslConfig.peerPort());
-        observeHandshakeCompletion(handler, channel);
+        if (reportHandshakeToObserver) {
+            observeHandshakeCompletion(handler, channel);
+        }
         setHandshakeTimeout(handler, context);
         SSLEngine engine = handler.engine();
         try {

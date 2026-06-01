@@ -46,19 +46,28 @@ import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InOrder;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
+import java.security.KeyStore;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -78,10 +87,10 @@ import static io.servicetalk.http.netty.HttpProtocol.toConfigs;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.CloseUtils.safeClose;
+import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -127,20 +136,49 @@ class HttpsProxyTest {
     @Nullable
     private BlockingHttpClient client;
 
-    void setUp(List<HttpProtocol> protocols) throws Exception {
-        setUp(protocols, false);
+    private static final char[] KEYSTORE_PASSWORD = "changeit".toCharArray();
+
+    void setUp(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
+        setUp(protocols, false, proxyTls);
     }
 
-    void setUp(List<HttpProtocol> protocols, boolean failHandshake) throws Exception {
-        setUp(protocols, failHandshake, __ -> { /* noop */ });
+    void setUp(List<HttpProtocol> protocols, boolean failHandshake, boolean proxyTls) throws Exception {
+        setUp(protocols, failHandshake, __ -> { /* noop */ }, proxyTls);
     }
 
     void setUp(List<HttpProtocol> protocols, boolean failHandshake,
-               Consumer<HttpHeaders> connectRequestHeadersInitializer) throws Exception {
+               Consumer<HttpHeaders> connectRequestHeadersInitializer, boolean proxyTls) throws Exception {
         initMocks();
+        if (proxyTls) {
+            proxyTunnel.sslContext(buildProxySslContext());
+        }
         proxyAddress = proxyTunnel.startProxy();
         startServer(protocols);
-        createClient(protocols, failHandshake, connectRequestHeadersInitializer);
+        createClient(protocols, failHandshake, connectRequestHeadersInitializer, proxyTls);
+    }
+
+    /**
+     * Cross-product of {@link HttpProtocol#allCombinations()} with the proxy-TLS axis (plaintext vs TLS).
+     * Used by every parameterized test in this class to exercise the existing CONNECT test surface under both
+     * the legacy plaintext-proxy path and the new TLS-terminating proxy path.
+     */
+    static Stream<Arguments> protocolsAndProxyTls() {
+        return HttpProtocol.allCombinations().stream()
+                .flatMap(p -> Stream.of(Arguments.of(p, false), Arguments.of(p, true)));
+    }
+
+    private static SSLContext buildProxySslContext() throws Exception {
+        // Reuse the standard test server cert for the proxy listener too. Two independent TLS sessions are still
+        // produced — different handshakes, separate SSLSession instances — even when the leaf cert is shared.
+        final KeyStore ks = KeyStore.getInstance("PKCS12");
+        try (InputStream is = DefaultTestCerts.loadServerP12()) {
+            ks.load(is, KEYSTORE_PASSWORD);
+        }
+        final KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        kmf.init(ks, KEYSTORE_PASSWORD);
+        final SSLContext ctx = SSLContext.getInstance("TLS");
+        ctx.init(kmf.getKeyManagers(), null, null);
+        return ctx;
     }
 
     @AfterEach
@@ -173,12 +211,17 @@ class HttpsProxyTest {
     }
 
     private void createClient(List<HttpProtocol> protocols, boolean failHandshake,
-                              Consumer<HttpHeaders> connectRequestHeadersInitializer) {
+                              Consumer<HttpHeaders> connectRequestHeadersInitializer, boolean proxyTls) {
         assert serverContext != null && proxyAddress != null;
+        final ProxyConfigBuilder<HostAndPort> proxyBuilder = new ProxyConfigBuilder<>(proxyAddress)
+                .connectRequestHeadersInitializer(connectRequestHeadersInitializer);
+        if (proxyTls) {
+            // No explicit peerHost — let inference fill it in from the proxy address.  We test the explicit case via
+            // testProxySslConfigExplicitPeerHostOverridesInference.
+            proxyBuilder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build());
+        }
         client = BuilderUtils.newClientBuilder(serverContext, CLIENT_CTX)
-                .proxyConfig(new ProxyConfigBuilder<>(proxyAddress)
-                        .connectRequestHeadersInitializer(connectRequestHeadersInitializer)
-                        .build())
+                .proxyConfig(proxyBuilder.build())
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         .peerHost(failHandshake ? "unknown" : serverPemHostname()).build())
                 .protocols(toConfigs(protocols))
@@ -187,18 +230,18 @@ class HttpsProxyTest {
                 .buildBlocking();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
-    @MethodSource("io.servicetalk.http.netty.HttpProtocol#allCombinations")
-    void testClientRequest(List<HttpProtocol> protocols) throws Exception {
-        setUp(protocols);
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
+    @MethodSource("protocolsAndProxyTls")
+    void testClientRequest(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
+        setUp(protocols, proxyTls);
         assert client != null;
         assertResponse(client.request(client.get("/path")), protocols.get(0).version);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
-    @MethodSource("io.servicetalk.http.netty.HttpProtocol#allCombinations")
-    void testConnectionRequest(List<HttpProtocol> protocols) throws Exception {
-        setUp(protocols);
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
+    @MethodSource("protocolsAndProxyTls")
+    void testConnectionRequest(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
+        setUp(protocols, proxyTls);
         assert client != null;
         assert proxyAddress != null;
         HttpProtocolVersion expectedVersion = protocols.get(0).version;
@@ -234,10 +277,10 @@ class HttpsProxyTest {
         verifyNoMoreInteractions(transportObserver, proxyConnectObserver, securityHandshakeObserver);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
-    @MethodSource("io.servicetalk.http.netty.HttpProtocol#allCombinations")
-    void testProxyAuthRequired(List<HttpProtocol> protocols) throws Exception {
-        setUp(protocols);
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
+    @MethodSource("protocolsAndProxyTls")
+    void testProxyAuthRequired(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
+        setUp(protocols, proxyTls);
         proxyTunnel.basicAuthToken(AUTH_TOKEN);
         assert client != null;
         ProxyConnectResponseException e = assertThrows(ProxyConnectResponseException.class,
@@ -248,21 +291,91 @@ class HttpsProxyTest {
         verifyProxyConnectFailed(e);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
-    @MethodSource("io.servicetalk.http.netty.HttpProtocol#allCombinations")
-    void testProxyAuthRequiredWithAuthInfo(List<HttpProtocol> protocols) throws Exception {
-        setUp(protocols, false, headers -> headers.set(PROXY_AUTHORIZATION, "basic " + AUTH_TOKEN));
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
+    @MethodSource("protocolsAndProxyTls")
+    void testProxyAuthRequiredWithAuthInfo(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
+        setUp(protocols, false, headers -> headers.set(PROXY_AUTHORIZATION, "basic " + AUTH_TOKEN), proxyTls);
         proxyTunnel.basicAuthToken(AUTH_TOKEN);
         assert client != null;
         assertResponse(client.request(client.get("/path")), protocols.get(0).version);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
-    @MethodSource("io.servicetalk.http.netty.HttpProtocol#allCombinations")
-    void testHeadersInitializerThrows(List<HttpProtocol> protocols) throws Exception {
+    @Test
+    void testConnectRequestHeadersReachProxyNotOrigin() throws Exception {
+        // A header set via connectRequestHeadersInitializer must reach the proxy on the CONNECT request and
+        // must NOT be forwarded to the origin. Structurally enforced by ServiceTalk (CONNECT and origin requests
+        // carry separate HttpHeaders instances) but worth a guard test. One-off — the property is generic across
+        // protocols and proxy-TLS modes so a single representative configuration is sufficient.
+        final String forwardedFor = "X-Proxy-Forwarded-For";
+        final String forwardedForValue = "edge-td-sre:testapp";
+        initMocks();
+        proxyAddress = proxyTunnel.startProxy();
+        // Custom origin server that echoes whether it received the proxy-only header.
+        serverContext = BuilderUtils.newServerBuilder(SERVER_CTX, HttpProtocol.HTTP_1)
+                .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
+                        DefaultTestCerts::loadServerKey).build())
+                .listenAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()
+                        .payloadBody("forwardedFor=" + request.headers().get(forwardedFor),
+                                textSerializerUtf8())));
+        serverAddress = serverHostAndPort(serverContext);
+        client = BuilderUtils.newClientBuilder(serverContext, CLIENT_CTX, HttpProtocol.HTTP_1)
+                .proxyConfig(new ProxyConfigBuilder<>(proxyAddress)
+                        .connectRequestHeadersInitializer(headers -> headers.set(forwardedFor, forwardedForValue))
+                        .build())
+                .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                        .peerHost(serverPemHostname()).build())
+                .buildBlocking();
+
+        final HttpResponse response = client.request(client.get("/path"));
+        assertThat(response.status(), is(OK));
+        // Proxy received the header on the CONNECT request.
+        assertThat(proxyTunnel.lastConnectHeaders(), is(notNullValue()));
+        assertThat(proxyTunnel.lastConnectHeaders().get(forwardedFor), is(forwardedForValue));
+        // Origin did NOT receive the header — the response payload echoes the value the origin saw.
+        assertThat(response.payloadBody().toString(US_ASCII), is("forwardedFor=null"));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] setCorrectPeerHost={0}")
+    @ValueSource(booleans = {true, false})
+    void testProxySslConfigExplicitPeerHostOverridesInference(boolean setCorrectPeerHost) throws Exception {
+        // Configure the proxy address with a hostname the cert would NOT validate (the loopback IP). We test
+        // both setting the peerHost explicitly to make sure it can work and failing to set it to ensure that
+        // by default we properly validate the certificates.
+        initMocks();
+        proxyTunnel.sslContext(buildProxySslContext());
+        final HostAndPort bound = proxyTunnel.startProxy();
+        final HostAndPort proxyAtIp = HostAndPort.of(getLoopbackAddress().getHostAddress(), bound.port());
+
+        startServer(Collections.singletonList(HttpProtocol.HTTP_1));
+        ClientSslConfigBuilder clientSslConfigBuilder = new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem);
+        if (setCorrectPeerHost) {
+            clientSslConfigBuilder.peerHost(serverPemHostname());
+        }
+
+        // NB: deliberately call .sslConfig(...) BEFORE .proxyConfig(...) here. Most tests in this file use the
+        // opposite order; this one proves the two builder methods don't have an order dependency on each other.
+        client = BuilderUtils.newClientBuilder(serverContext, CLIENT_CTX, HttpProtocol.HTTP_1)
+                .sslConfig(clientSslConfigBuilder.build())
+                .proxyConfig(new ProxyConfigBuilder<>(proxyAtIp)
+                        .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                                .peerHost(serverPemHostname())
+                                .build())
+                        .build())
+                .buildBlocking();
+
+        if (setCorrectPeerHost) {
+            assertThat(client.request(client.get("/path")).status(), is(OK));
+        } else {
+            assertThrows(SSLHandshakeException.class, () -> client.request(client.get("/path")));
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
+    @MethodSource("protocolsAndProxyTls")
+    void testHeadersInitializerThrows(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
         setUp(protocols, false, headers -> {
             throw DELIBERATE_EXCEPTION;
-        });
+        }, proxyTls);
         proxyTunnel.basicAuthToken(AUTH_TOKEN);
         assert client != null;
         ProxyConnectException e = assertThrows(ProxyConnectException.class,
@@ -274,10 +387,10 @@ class HttpsProxyTest {
         verifyNoMoreInteractions(transportObserver, proxyConnectObserver, securityHandshakeObserver);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
-    @MethodSource("io.servicetalk.http.netty.HttpProtocol#allCombinations")
-    void testBadProxyResponse(List<HttpProtocol> protocols) throws Exception {
-        setUp(protocols);
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
+    @MethodSource("protocolsAndProxyTls")
+    void testBadProxyResponse(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
+        setUp(protocols, proxyTls);
         proxyTunnel.badResponseProxy();
         assert client != null;
         ProxyConnectResponseException e = assertThrows(ProxyConnectResponseException.class,
@@ -288,10 +401,10 @@ class HttpsProxyTest {
         verifyProxyConnectFailed(e);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
-    @MethodSource("io.servicetalk.http.netty.HttpProtocol#allCombinations")
-    void testBadRequest(List<HttpProtocol> protocols) throws Exception {
-        setUp(protocols);
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
+    @MethodSource("protocolsAndProxyTls")
+    void testBadRequest(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
+        setUp(protocols, proxyTls);
         proxyTunnel.proxyRequestHandler((socket, host, port, protocol) -> {
             final OutputStream os = socket.getOutputStream();
             os.write((protocol + ' ' + BAD_REQUEST + "\r\n\r\n").getBytes(UTF_8));
@@ -306,10 +419,10 @@ class HttpsProxyTest {
         verifyProxyConnectFailed(e);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
-    @MethodSource("io.servicetalk.http.netty.HttpProtocol#allCombinations")
-    void testProxyClosesConnection(List<HttpProtocol> protocols) throws Exception {
-        setUp(protocols);
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
+    @MethodSource("protocolsAndProxyTls")
+    void testProxyClosesConnection(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
+        setUp(protocols, proxyTls);
         proxyTunnel.proxyRequestHandler((socket, host, port, protocol) -> {
             socket.close();
         });
@@ -317,15 +430,15 @@ class HttpsProxyTest {
         ProxyConnectException e = assertThrows(ProxyConnectException.class,
                 () -> client.request(client.get("/path")));
         assertThat(e, is(instanceOf(RetryableException.class)));
-        assertThat(e.getCause(), is(anyOf(nullValue(), instanceOf(ClosedChannelException.class))));
+        assertThat(e.getCause(), is(nullValue()));
         assertTargetAddress();
         verifyProxyConnectFailed(e);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
-    @MethodSource("io.servicetalk.http.netty.HttpProtocol#allCombinations")
-    void testProxyRespondsWithConnectionCloseHeader(List<HttpProtocol> protocols) throws Exception {
-        setUp(protocols);
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
+    @MethodSource("protocolsAndProxyTls")
+    void testProxyRespondsWithConnectionCloseHeader(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
+        setUp(protocols, proxyTls);
         proxyTunnel.proxyRequestHandler((socket, host, port, protocol) -> {
             final OutputStream os = socket.getOutputStream();
             os.write((protocol + ' ' + OK + "\r\n" +
@@ -342,10 +455,10 @@ class HttpsProxyTest {
         verifyProxyConnectComplete();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
-    @MethodSource("io.servicetalk.http.netty.HttpProtocol#allCombinations")
-    void testProxyRespondsAndClosesConnection(List<HttpProtocol> protocols) throws Exception {
-        setUp(protocols);
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
+    @MethodSource("protocolsAndProxyTls")
+    void testProxyRespondsAndClosesConnection(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
+        setUp(protocols, proxyTls);
         proxyTunnel.proxyRequestHandler((socket, host, port, protocol) -> {
             final OutputStream os = socket.getOutputStream();
             os.write((protocol + ' ' + OK + "\r\n\r\n").getBytes(UTF_8));
@@ -361,10 +474,10 @@ class HttpsProxyTest {
         verifyProxyConnectComplete();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
-    @MethodSource("io.servicetalk.http.netty.HttpProtocol#allCombinations")
-    void testProxyRespondsWithPayloadBody(List<HttpProtocol> protocols) throws Exception {
-        setUp(protocols);
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
+    @MethodSource("protocolsAndProxyTls")
+    void testProxyRespondsWithPayloadBody(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
+        setUp(protocols, proxyTls);
         String content = "content";
         proxyTunnel.proxyRequestHandler((socket, host, port, protocol) -> {
             final OutputStream os = socket.getOutputStream();
@@ -381,10 +494,10 @@ class HttpsProxyTest {
         verifyProxyConnectComplete();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
-    @MethodSource("io.servicetalk.http.netty.HttpProtocol#allCombinations")
-    void testHandshakeFailed(List<HttpProtocol> protocols) throws Exception {
-        setUp(protocols, true);
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
+    @MethodSource("protocolsAndProxyTls")
+    void testHandshakeFailed(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
+        setUp(protocols, true, proxyTls);
         assert client != null;
         SSLHandshakeException e = assertThrows(SSLHandshakeException.class,
                 () -> client.request(client.get("/path")));

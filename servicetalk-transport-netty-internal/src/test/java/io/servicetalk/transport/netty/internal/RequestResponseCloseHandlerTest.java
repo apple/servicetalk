@@ -61,6 +61,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -316,6 +317,7 @@ class RequestResponseCloseHandlerTest {
             when(loop.inEventLoop()).thenReturn(true);
             when(scc.getOption(ALLOW_HALF_CLOSURE)).thenReturn(TRUE);
             pipeline = mock(ChannelPipeline.class);
+            when(pipeline.iterator()).thenReturn(Collections.emptyIterator());
             when(ctx.pipeline()).thenReturn(pipeline);
             when(channel.pipeline()).thenReturn(pipeline);
 

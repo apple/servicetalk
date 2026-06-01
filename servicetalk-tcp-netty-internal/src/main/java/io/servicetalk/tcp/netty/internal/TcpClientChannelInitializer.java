@@ -23,6 +23,7 @@ import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.ConnectionObserverInitializer;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
+import io.servicetalk.transport.netty.internal.NettyPipelineSslUtils;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 import io.servicetalk.transport.netty.internal.SslClientChannelInitializer;
 
@@ -89,6 +90,9 @@ public class TcpClientChannelInitializer implements ChannelInitializer {    // F
         delegate = delegate.andThen(new TransportConfigInitializer(config.transportConfig()));
 
         final ClientSslConfig sslConfig = config.sslConfig();
+        final ClientSslConfig proxySslConfig = config.proxySslConfig();
+        // Observer tracks the inner (origin) handshake only; observability for the proxy stage is intentionally
+        // not surfaced via the connection-level SecurityHandshakeObserver in this version.
         if (observer != NoopConnectionObserver.INSTANCE) {
             delegate = delegate.andThen(new ConnectionObserverInitializer(observer,
                     channel -> new EarlyConnectionContext(channel,
@@ -99,6 +103,17 @@ public class TcpClientChannelInitializer implements ChannelInitializer {    // F
 
         if (config.idleTimeoutMs() > 0L) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));
+        }
+
+        // Proxy TLS is eager and goes BEFORE the deferred origin SslHandler: outer-then-inner decryption.
+        // Helper installs proxy SslHandler + paired event isolator.
+        if (proxySslConfig != null) {
+            assert deferSslHandler : "Proxy SSL requires deferSslHandler=true so the origin handshake runs after " +
+                    "the CONNECT exchange completes.";
+            final SslContext proxySslContext = config.proxySslContext();
+            assert proxySslContext != null;
+            delegate = delegate.andThen(channel ->
+                    NettyPipelineSslUtils.installProxyTlsStage(channel, proxySslContext, proxySslConfig));
         }
 
         if (sslConfig != null) {

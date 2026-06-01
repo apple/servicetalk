@@ -463,7 +463,9 @@ final class RequestResponseCloseHandler extends CloseHandler {
     }
 
     private void halfCloseOutbound(final Channel channel, final boolean registerOnHalfClosed) {
-        SslHandler sslHandler = channel.pipeline().get(SslHandler.class);
+        // Innermost SslHandler so close_notify targets the application-level (origin) session in layered TLS;
+        // outer (proxy) SslHandler re-encrypts before the wire.
+        SslHandler sslHandler = NettyPipelineSslUtils.applicationSslHandler(channel.pipeline());
         if (sslHandler != null) {
             // send close_notify: https://tools.ietf.org/html/rfc5246#section-7.2.1
             sslHandler.closeOutbound().addListener(f -> {

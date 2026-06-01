@@ -15,7 +15,12 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.transport.api.ClientSslConfig;
+
+import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
@@ -39,6 +44,8 @@ public final class ProxyConfigBuilder<A> {
 
     private final A address;
     private Consumer<HttpHeaders> connectRequestHeadersInitializer = NOOP_HEADERS_CONSUMER;
+    @Nullable
+    private ClientSslConfig sslConfig;
 
     /**
      * Creates a new instance.
@@ -66,22 +73,74 @@ public final class ProxyConfigBuilder<A> {
     }
 
     /**
+     * Sets the {@link ClientSslConfig} for the TLS handshake to the proxy itself.
+     * <p>
+     * Distinct from the origin SSL config configured via
+     * {@link SingleAddressHttpClientBuilder#sslConfig(ClientSslConfig)}, which applies to the inner TLS handshake
+     * performed after the {@code HTTP/1.1 CONNECT} tunnel is established. {@code peerHost}, {@code peerPort},
+     * and {@code sniHostname} default from the proxy {@link ProxyConfig#address() address} when unset; ALPN is
+     * restricted to {@code http/1.1}. See {@link ProxyConfig#sslConfig()} for details.
+     * <p>
+     * <strong>Note on proxy mode (CONNECT vs forward):</strong> ServiceTalk currently does not have an
+     * explicit knob for selecting CONNECT-proxy vs forward-proxy semantics. The choice is implicitly
+     * determined by whether the parent
+     * {@link SingleAddressHttpClientBuilder#sslConfig(ClientSslConfig) origin SSL} is set:
+     * setting it routes through {@code CONNECT}; leaving it unset routes through forward-proxy mode
+     * (absolute-URI request lines). Proxy SSL set here is orthogonal — it applies to the hop to the proxy
+     * regardless of which mode was inferred. Supported combinations:
+     * <ul>
+     *   <li>proxy SSL no, origin SSL no  → plaintext forward proxy</li>
+     *   <li>proxy SSL no, origin SSL yes → plaintext CONNECT, inner TLS to origin</li>
+     *   <li>proxy SSL yes, origin SSL yes → TLS to CONNECT proxy, inner TLS to origin (layered TLS)</li>
+     * </ul>
+     * <p>
+     * The combination "proxy SSL set + origin SSL unset" is rejected at build time
+     * ({@link IllegalStateException}) as this makes it difficult to reason about security.
+     *
+     * @param sslConfig the {@link ClientSslConfig} for the proxy TLS stage, or {@code null} for plaintext to the proxy.
+     * @return {@code this}
+     * @throws IllegalArgumentException if {@code sslConfig} advertises any ALPN protocol other than {@code http/1.1}.
+     * The proxy TLS session always carries an HTTP/1.1 CONNECT exchange, so any non-{@code http/1.1} ALPN advertised
+     * here would risk the proxy negotiating a protocol on which CONNECT is not defined.
+     * @see ProxyConfig#sslConfig()
+     */
+    public ProxyConfigBuilder<A> sslConfig(@Nullable final ClientSslConfig sslConfig) {
+        if (sslConfig != null) {
+            final List<String> alpn = sslConfig.alpnProtocols();
+            if (alpn != null) {
+                for (final String p : alpn) {
+                    if (!"http/1.1".equals(p)) {
+                        throw new IllegalArgumentException("Proxy ClientSslConfig advertises ALPN protocol '" + p +
+                                "' but only 'http/1.1' is supported on the proxy stage; full list=" + alpn);
+                    }
+                }
+            }
+        }
+        this.sslConfig = sslConfig;
+        return this;
+    }
+
+    /**
      * Builds a new {@link ProxyConfig}.
      *
      * @return a new {@link ProxyConfig}.
      */
     public ProxyConfig<A> build() {
-        return new DefaultProxyConfig<>(address, connectRequestHeadersInitializer);
+        return new DefaultProxyConfig<>(address, connectRequestHeadersInitializer, sslConfig);
     }
 
     private static final class DefaultProxyConfig<A> implements ProxyConfig<A> {
 
         private final A address;
         private final Consumer<HttpHeaders> connectRequestHeadersInitializer;
+        @Nullable
+        private final ClientSslConfig sslConfig;
 
-        private DefaultProxyConfig(final A address, final Consumer<HttpHeaders> connectRequestHeadersInitializer) {
+        private DefaultProxyConfig(final A address, final Consumer<HttpHeaders> connectRequestHeadersInitializer,
+                                   @Nullable final ClientSslConfig sslConfig) {
             this.address = address;
             this.connectRequestHeadersInitializer = connectRequestHeadersInitializer;
+            this.sslConfig = sslConfig;
         }
 
         @Override
@@ -94,6 +153,12 @@ public final class ProxyConfigBuilder<A> {
             return connectRequestHeadersInitializer;
         }
 
+        @Nullable
+        @Override
+        public ClientSslConfig sslConfig() {
+            return sslConfig;
+        }
+
         @Override
         public boolean equals(final Object o) {
             if (this == o) {
@@ -104,17 +169,14 @@ public final class ProxyConfigBuilder<A> {
             }
 
             final DefaultProxyConfig<?> that = (DefaultProxyConfig<?>) o;
-            if (!address.equals(that.address)) {
-                return false;
-            }
-            return connectRequestHeadersInitializer.equals(that.connectRequestHeadersInitializer);
+            return address.equals(that.address) &&
+                    connectRequestHeadersInitializer.equals(that.connectRequestHeadersInitializer) &&
+                    Objects.equals(sslConfig, that.sslConfig);
         }
 
         @Override
         public int hashCode() {
-            int result = address.hashCode();
-            result = 31 * result + connectRequestHeadersInitializer.hashCode();
-            return result;
+            return Objects.hash(address, connectRequestHeadersInitializer, sslConfig);
         }
 
         @Override
@@ -122,6 +184,7 @@ public final class ProxyConfigBuilder<A> {
             return getClass().getSimpleName() +
                     "{address=" + address +
                     ", connectRequestHeadersInitializer=" + connectRequestHeadersInitializer +
+                    ", sslConfig=" + sslConfig +
                     '}';
         }
     }

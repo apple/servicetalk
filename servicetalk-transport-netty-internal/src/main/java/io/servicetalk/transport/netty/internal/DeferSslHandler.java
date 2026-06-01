@@ -24,6 +24,8 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.ssl.SslHandler;
 
+import javax.annotation.Nullable;
+
 /**
  * A {@link ChannelHandler} that holds a place in a pipeline, allowing us to defer adding the {@link SslHandler}.
  */
@@ -31,11 +33,24 @@ public class DeferSslHandler extends ChannelDuplexHandler {
     private final Channel channel;
     private final SslHandler handler;
     private final SslConfig sslConfig;
+    @Nullable
+    private final String handlerName;
 
+    /**
+     * @deprecated use {@link #DeferSslHandler(Channel, SslHandler, SslConfig, String)} so the replacement
+     * {@link SslHandler} can be installed under a stable, caller-chosen name.
+     */
+    @Deprecated // FIXME: 0.43 - remove deprecated constructor
     DeferSslHandler(final Channel channel, final SslHandler handler, final SslConfig sslConfig) {
+        this(channel, handler, sslConfig, null);
+    }
+
+    DeferSslHandler(final Channel channel, final SslHandler handler, final SslConfig sslConfig,
+                    @Nullable final String handlerName) {
         this.channel = channel;
         this.handler = handler;
         this.sslConfig = sslConfig;
+        this.handlerName = handlerName;
     }
 
     /**
@@ -48,6 +63,6 @@ public class DeferSslHandler extends ChannelDuplexHandler {
         if (observerHandler != null) {
             observerHandler.reportSecurityHandshakeStarting(sslConfig);
         }
-        pipeline.replace(this, null, handler);
+        pipeline.replace(this, handlerName, handler);
     }
 }

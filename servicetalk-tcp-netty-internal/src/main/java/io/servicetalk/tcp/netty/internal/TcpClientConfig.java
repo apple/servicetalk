@@ -26,6 +26,8 @@ public final class TcpClientConfig extends AbstractTcpConfig {
 
     @Nullable
     private ClientSslConfig sslConfig;
+    @Nullable
+    private ClientSslConfig proxySslConfig;
 
     /**
      * New instance.
@@ -41,6 +43,7 @@ public final class TcpClientConfig extends AbstractTcpConfig {
     public TcpClientConfig(final TcpClientConfig from) {
         super(from);
         sslConfig = from.sslConfig;
+        proxySslConfig = from.proxySslConfig;
     }
 
     /**
@@ -51,6 +54,20 @@ public final class TcpClientConfig extends AbstractTcpConfig {
     @Nullable
     public ClientSslConfig sslConfig() {
         return sslConfig;
+    }
+
+    /**
+     * Get the {@link ClientSslConfig} used for the TLS handshake to a proxy that fronts the connection.
+     * <p>
+     * Distinct from {@link #sslConfig()}, which applies to the inner (origin) TLS handshake performed after the
+     * proxy CONNECT tunnel is established. When non-{@code null}, an eager TLS handshake is performed against the
+     * proxy before any CONNECT exchange.
+     *
+     * @return the proxy {@link ClientSslConfig}, or {@code null} for plaintext to the proxy.
+     */
+    @Nullable
+    public ClientSslConfig proxySslConfig() {
+        return proxySslConfig;
     }
 
     /**
@@ -68,5 +85,14 @@ public final class TcpClientConfig extends AbstractTcpConfig {
      */
     public void sslConfig(final @Nullable ClientSslConfig sslConfig) {
         this.sslConfig = sslConfig;
+    }
+
+    /**
+     * Add SSL/TLS config used for the proxy hop (eager handshake performed before CONNECT).
+     *
+     * @param proxySslConfig the {@link ClientSslConfig} used for the proxy TLS stage.
+     */
+    public void proxySslConfig(final @Nullable ClientSslConfig proxySslConfig) {
+        this.proxySslConfig = proxySslConfig;
     }
 }
