@@ -115,6 +115,13 @@ final class CatchAllTransportObserver implements TransportObserver {
         }
 
         @Override
+        public SecurityHandshakeObserver onProxySecurityHandshake(final SslConfig sslConfig) {
+            return safeReport(() -> observer.onProxySecurityHandshake(sslConfig), observer,
+                    "proxy security handshake",
+                    CatchAllSecurityHandshakeObserver::new, NoopSecurityHandshakeObserver.INSTANCE);
+        }
+
+        @Override
         public DataObserver connectionEstablished(final ConnectionInfo info) {
             return safeReport(() -> observer.connectionEstablished(info), observer, "connection established",
                     CatchAllDataObserver::new, NoopDataObserver.INSTANCE);

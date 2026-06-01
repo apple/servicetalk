@@ -54,6 +54,8 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
     private final boolean client;
     @Nullable
     private final SslConfig sslConfig;
+    @Nullable
+    private final SslConfig proxySslConfig;
 
     /**
      * Creates a new instance.
@@ -91,7 +93,7 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
     }
 
     /**
-     * Creates a new instance.
+     * Creates a new instance for a connection without a proxy TLS hop.
      *
      * @param observer {@link ConnectionObserver} to report network events
      * @param connectionInfoFactory {@link Function} that creates {@link ConnectionInfo} from the provided
@@ -103,17 +105,37 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
                                          final Function<Channel, ConnectionInfo> connectionInfoFactory,
                                          final boolean client,
                                          @Nullable final SslConfig sslConfig) {
+        this(observer, connectionInfoFactory, client, sslConfig, null);
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param observer {@link ConnectionObserver} to report network events
+     * @param connectionInfoFactory {@link Function} that creates {@link ConnectionInfo} from the provided
+     * {@link Channel} to report {@link ConnectionObserver#onTransportHandshakeComplete(ConnectionInfo)}
+     * @param client {@code true} if this initializer is used on the client-side
+     * @param sslConfig the {@link SslConfig} to supply to the observer for the application handshake.
+     * @param proxySslConfig the {@link SslConfig} to supply to the observer for the proxy handshake,
+     * or {@code null} if there is no proxy TLS hop.
+     */
+    public ConnectionObserverInitializer(final ConnectionObserver observer,
+                                         final Function<Channel, ConnectionInfo> connectionInfoFactory,
+                                         final boolean client,
+                                         @Nullable final SslConfig sslConfig,
+                                         @Nullable final SslConfig proxySslConfig) {
         this.observer = requireNonNull(observer);
         this.connectionInfoFactory = requireNonNull(connectionInfoFactory);
         this.client = client;
         this.sslConfig = sslConfig;
+        this.proxySslConfig = proxySslConfig;
     }
 
     @Override
     public void init(final Channel channel) {
         assert channel.eventLoop().inEventLoop();
         channel.pipeline().addLast(new ConnectionObserverHandler(observer, connectionInfoFactory,
-                sslConfig != null, isFastOpen(channel), sslConfig));
+                sslConfig != null, isFastOpen(channel), sslConfig, proxySslConfig));
     }
 
     private boolean isFastOpen(final Channel channel) {
@@ -128,21 +150,27 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
         private final boolean handshakeOnActive;
         @Nullable
         private final SslConfig sslConfig;
+        @Nullable
+        private final SslConfig proxySslConfig;
 
         private boolean tcpHandshakeComplete;
         private boolean addedCloseListener;
         @Nullable
         private SecurityHandshakeObserver handshakeObserver;
+        @Nullable
+        private SecurityHandshakeObserver proxyHandshakeObserver;
 
         ConnectionObserverHandler(final ConnectionObserver observer,
                                   final Function<Channel, ConnectionInfo> connectionInfoFactory,
                                   final boolean handshakeOnActive,
                                   final boolean fastOpen,
-                                  @Nullable final SslConfig sslConfig) {
+                                  @Nullable final SslConfig sslConfig,
+                                  @Nullable final SslConfig proxySslConfig) {
             this.observer = observer;
             this.connectionInfoFactory = connectionInfoFactory;
             this.handshakeOnActive = handshakeOnActive;
             this.sslConfig = sslConfig;
+            this.proxySslConfig = proxySslConfig;
             if (fastOpen) {
                 reportSecurityHandshakeStarting(sslConfig);
             }
@@ -191,6 +219,7 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
             assert channel.eventLoop().inEventLoop();
             maybeAddChannelClosedListener(channel);
             reportTcpHandshakeComplete(channel);
+            reportProxySecurityHandshakeStarting();
             if (handshakeOnActive) {
                 reportSecurityHandshakeStarting(sslConfig);
             }
@@ -228,6 +257,17 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
         @Nullable
         SecurityHandshakeObserver handshakeObserver() {
             return handshakeObserver;
+        }
+
+        private void reportProxySecurityHandshakeStarting() {
+            if (proxySslConfig != null && proxyHandshakeObserver == null) {
+                proxyHandshakeObserver = observer.onProxySecurityHandshake(proxySslConfig);
+            }
+        }
+
+        @Nullable
+        SecurityHandshakeObserver proxyHandshakeObserver() {
+            return proxyHandshakeObserver;
         }
 
         @Override

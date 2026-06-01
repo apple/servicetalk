@@ -91,14 +91,15 @@ public class TcpClientChannelInitializer implements ChannelInitializer {    // F
 
         final ClientSslConfig sslConfig = config.sslConfig();
         final ClientSslConfig proxySslConfig = config.proxySslConfig();
-        // Observer tracks the inner (origin) handshake only; observability for the proxy stage is intentionally
-        // not surfaced via the connection-level SecurityHandshakeObserver in this version.
+        // proxySslConfig is non-null only for a TLS proxy hop; it drives onProxySecurityHandshake, separate
+        // from the application handshake reported via onSecurityHandshake.
         if (observer != NoopConnectionObserver.INSTANCE) {
             delegate = delegate.andThen(new ConnectionObserverInitializer(observer,
                     channel -> new EarlyConnectionContext(channel,
                             // ExecutionContext can be null if users used deprecated ctor
                             executionContext == null ? null : channelExecutionContext(channel, executionContext),
-                            sslConfig, config.idleTimeoutMs()), true, deferSslHandler ? null : sslConfig));
+                            sslConfig, config.idleTimeoutMs()), true, deferSslHandler ? null : sslConfig,
+                    proxySslConfig));
         }
 
         if (config.idleTimeoutMs() > 0L) {

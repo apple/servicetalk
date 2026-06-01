@@ -414,6 +414,13 @@ public final class TcpConnector {
         }
 
         @Override
+        public SecurityHandshakeObserver onProxySecurityHandshake(SslConfig sslConfig) {
+            try (Scope unused = attachContext()) {
+                return delegate.onProxySecurityHandshake(sslConfig);
+            }
+        }
+
+        @Override
         public ProxyConnectObserver onProxyConnect(Object connectMsg) {
             try (Scope unused = attachContext()) {
                 return delegate.onProxyConnect(connectMsg);

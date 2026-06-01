@@ -58,6 +58,9 @@ public interface ConnectionInfo {
 
     /**
      * The {@link SocketAddress} to which the associated connection is connected.
+     * <p>
+     * On the client side, when a proxy is configured, this describes the TCP peer (i.e. the proxy), not
+     * the target server the application is communicating with.
      *
      * @return The {@link SocketAddress} to which the associated connection is connected.
      */
@@ -65,6 +68,9 @@ public interface ConnectionInfo {
 
     /**
      * Get the {@link SslConfig} for this connection.
+     * <p>
+     * On the client side, when the connection runs through a TLS proxy, this describes the application SSL
+     * configuration (the handshake performed with the target server), not the proxy SSL configuration.
      *
      * @return The {@link SslConfig} if SSL/TLS is configured, or {@code null} otherwise.
      */
@@ -75,6 +81,9 @@ public interface ConnectionInfo {
 
     /**
      * Get the {@link SSLSession} for this connection.
+     * <p>
+     * On the client side, when the connection runs through a TLS proxy, this describes the application SSL
+     * session (the handshake performed with the target server), not the proxy SSL session.
      *
      * @return The {@link SSLSession} if SSL/TLS is enabled, or {@code null} otherwise.
      */

@@ -260,8 +260,9 @@ public final class NettyPipelineSslUtils {
      * Install the outer (proxy) TLS stage of a layered-TLS pipeline. Adds an eager proxy {@link SslHandler}
      * named {@link #PROXY_SSL_HANDLER_NAME} followed by an internal isolator that drops outer-stage
      * {@link SslHandshakeCompletionEvent} and {@link io.netty.handler.ssl.SslCloseCompletionEvent} from
-     * reaching handlers downstream (which expect inner-stage events). The proxy stage's handshake is
-     * intentionally not reported to the connection-level {@code SecurityHandshakeObserver}.
+     * reaching handlers downstream (which expect application-level TLS events). The proxy handshake is reported to
+     * the {@code SecurityHandshakeObserver} returned by {@link ConnectionObserver#onProxySecurityHandshake(SslConfig)},
+     * separate from the application-level {@link ConnectionObserver#onSecurityHandshake(SslConfig)}.
      *
      * @param channel the channel whose pipeline to install on
      * @param sslContext the {@link SslContext} for the proxy TLS stage
@@ -269,7 +270,7 @@ public final class NettyPipelineSslUtils {
      */
     public static void installProxyTlsStage(final Channel channel, final SslContext sslContext,
                                             final ClientSslConfig sslConfig) {
-        final SslHandler sslHandler = SslUtils.newClientSslHandler(sslContext, sslConfig, channel, false);
+        final SslHandler sslHandler = SslUtils.newClientProxySslHandler(sslContext, sslConfig, channel);
         channel.pipeline()
                 .addLast(PROXY_SSL_HANDLER_NAME, sslHandler)
                 .addLast(ProxySslHandlerEventsIsolatorHandler.HANDLER_NAME,
