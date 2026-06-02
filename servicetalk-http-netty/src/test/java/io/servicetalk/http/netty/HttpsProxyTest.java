@@ -68,6 +68,7 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -99,9 +100,12 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -368,6 +372,38 @@ class HttpsProxyTest {
         } else {
             assertThrows(SSLHandshakeException.class, () -> client.request(client.get("/path")));
         }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
+    @MethodSource("io.servicetalk.http.netty.HttpProtocol#allCombinations")
+    void testProxyConnectNotInitiatedWhenProxyTlsHandshakeFails(List<HttpProtocol> protocols) throws Exception {
+        // The proxy uses TLS, but the client's proxy trust store omits the test CA, so the proxy certificate is
+        // rejected during the proxy TLS handshake. Because the CONNECT request is only sent inside the established
+        // tunnel, the handshake failure must abort the attempt before any CONNECT is initiated.
+        initMocks();
+        proxyTunnel.sslContext(buildProxySslContext());
+        proxyAddress = proxyTunnel.startProxy();
+        startServer(protocols);
+        client = BuilderUtils.newClientBuilder(serverContext, CLIENT_CTX)
+                .proxyConfig(new ProxyConfigBuilder<>(proxyAddress)
+                        // Default (system) trust store does not trust the test CA -> proxy cert is rejected.
+                        .sslConfig(new ClientSslConfigBuilder().build())
+                        .build())
+                .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                        .peerHost(serverPemHostname()).build())
+                .protocols(toConfigs(protocols))
+                .appendConnectionFactoryFilter(new TransportObserverConnectionFactoryFilter<>(transportObserver))
+                .buildBlocking();
+
+        // Non-retryable SSL failure surfaced as-is (no LB retry, no transport-level wrapping).
+        assertThrows(SSLException.class, () -> client.request(client.get("/path")));
+
+        // TCP connected, but the CONNECT exchange was never initiated because the tunnel handshake failed.
+        verify(connectionObserver, atLeastOnce()).onTransportHandshakeComplete(any());
+        verify(connectionObserver, never()).onProxyConnect(any());
+        verify(proxyConnectObserver, never()).proxyConnectComplete(any());
+        verify(proxyConnectObserver, never()).proxyConnectFailed(any());
+        assertThat(proxyTunnel.connectCount(), is(0));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
