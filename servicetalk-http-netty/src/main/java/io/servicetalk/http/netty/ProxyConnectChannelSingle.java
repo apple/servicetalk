@@ -29,12 +29,14 @@ import io.servicetalk.transport.api.ConnectionObserver.ProxyConnectObserver;
 import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler.InboundDataEndEvent;
+import io.servicetalk.transport.netty.internal.NettyPipelineSslUtils;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
+import io.netty.handler.ssl.SslHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,14 +108,42 @@ final class ProxyConnectChannelSingle extends ChannelInitSingle<Channel> {
         @Override
         public void handlerAdded(final ChannelHandlerContext ctx) {
             if (ctx.channel().isActive()) {
-                sendConnectRequest(ctx);
+                onChannelActive(ctx);
             }
         }
 
         @Override
         public void channelActive(final ChannelHandlerContext ctx) {
-            sendConnectRequest(ctx);
+            onChannelActive(ctx);
             ctx.fireChannelActive();
+        }
+
+        private void onChannelActive(final ChannelHandlerContext ctx) {
+            // For a TLS proxy hop the CONNECT belongs inside the tunnel, so defer it until the proxy handshake
+            // completes; a null proxy handler means a plaintext proxy and the CONNECT can be sent immediately.
+            final SslHandler proxySslHandler = NettyPipelineSslUtils.proxySslHandler(ctx.pipeline());
+            if (proxySslHandler == null) {
+                sendConnectRequest(ctx);
+                return;
+            }
+            proxySslHandler.handshakeFuture().addListener(future -> {
+                if (subscriber == null) {
+                    return;
+                }
+                if (future.isSuccess()) {
+                    // Try catch here because we can't lean on the pipeline to catch it.
+                    try {
+                        sendConnectRequest(ctx);
+                    } catch (Throwable t) {
+                        // User code (headers initializer) thrown from a listener would otherwise be swallowed.
+                        failSubscriber(ctx, new ProxyConnectException(ctx.channel() +
+                                " Unexpected exception before proxy CONNECT finished", t));
+                    }
+                } else {
+                    // Surface the SSLException as-is; onProxyConnect is not invoked since no CONNECT was sent.
+                    failSubscriber(ctx, future.cause());
+                }
+            });
         }
 
         private void sendConnectRequest(final ChannelHandlerContext ctx) {

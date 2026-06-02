@@ -236,6 +236,27 @@ public final class NettyPipelineSslUtils {
     }
 
     /**
+     * Returns the proxy {@link SslHandler} installed by {@link #installProxyTlsStage}, or {@code null} if none is
+     * present (a plaintext proxy hop or a non-proxy connection).
+     *
+     * @param pipeline the pipeline to inspect for the proxy {@link SslHandler}.
+     * @return the proxy {@link SslHandler}, or {@code null} if none is present.
+     */
+    @Nullable
+    public static SslHandler proxySslHandler(final ChannelPipeline pipeline) {
+        final ChannelHandler handler = pipeline.get(PROXY_SSL_HANDLER_NAME);
+        if (handler == null) {
+            return null;
+        }
+        if (!(handler instanceof SslHandler)) {
+            throw new IllegalStateException("Expected an " + SslHandler.class.getName() + " under the reserved '" +
+                    PROXY_SSL_HANDLER_NAME + "' name but found " + handler.getClass().getName() +
+                    ". This is a bug: please report this to the ServiceTalk team.");
+        }
+        return (SslHandler) handler;
+    }
+
+    /**
      * Install the outer (proxy) TLS stage of a layered-TLS pipeline. Adds an eager proxy {@link SslHandler}
      * named {@link #PROXY_SSL_HANDLER_NAME} followed by an internal isolator that drops outer-stage
      * {@link SslHandshakeCompletionEvent} and {@link io.netty.handler.ssl.SslCloseCompletionEvent} from
