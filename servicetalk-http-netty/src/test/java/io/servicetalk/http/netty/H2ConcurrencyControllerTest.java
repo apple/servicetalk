@@ -37,9 +37,12 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http2.DefaultHttp2SettingsFrame;
+import io.netty.handler.codec.http2.Http2FrameLogger;
+import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2HeadersFrame;
 import io.netty.handler.codec.http2.Http2Settings;
 import io.netty.handler.codec.http2.Http2StreamChannel;
+import io.netty.handler.logging.LogLevel;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.RepeatedTest;
@@ -52,7 +55,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -81,7 +86,6 @@ import static java.time.Duration.ofMillis;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -92,7 +96,9 @@ class H2ConcurrencyControllerTest {
 
     private static final int N_ITERATIONS = 3;
     private static final int STEP = 4;
-    private static final int REPEATED_TEST_ITERATIONS = 16;
+    private static final int REPEATED_TEST_ITERATIONS = 1024;
+    // REFUSED_STREAM error code per RFC 7540 section 7.
+    private static final long REFUSED_STREAM_CODE = 7L;
 
     @RegisterExtension
     static final ExecutionContextExtension CLIENT_CTX =
@@ -102,6 +108,7 @@ class H2ConcurrencyControllerTest {
     private final CountDownLatch[] latches = new CountDownLatch[N_ITERATIONS];
     private final AtomicReference<Channel> serverParentChannel = new AtomicReference<>();
     private final AtomicBoolean alwaysEcho = new AtomicBoolean(false);
+    private final RecordingFrameLogger serverFrameLog = new RecordingFrameLogger();
     @Nullable
     private EventLoopGroup serverEventLoopGroup;
     @Nullable
@@ -138,6 +145,7 @@ class H2ConcurrencyControllerTest {
         parentPipeline -> serverParentChannel.set(parentPipeline.channel()),
         h2Builder -> {
             h2Builder.initialSettings().maxConcurrentStreams(maxConcurrentStreams);
+            h2Builder.frameLogger(serverFrameLog);
             return h2Builder;
         });
 
@@ -155,7 +163,7 @@ class H2ConcurrencyControllerTest {
     }
 
     @RepeatedTest(REPEATED_TEST_ITERATIONS)
-    void noMaxActiveStreamsViolatedErrorAfterCancel() throws Exception {
+    void noMaxActiveStreamsViolatedErrorAfterCancel() throws Exception { // the flaky test.
         int serverMaxConcurrentStreams = 1;
         setUp(serverMaxConcurrentStreams);
         assert serverAddress != null;
@@ -208,8 +216,113 @@ class H2ConcurrencyControllerTest {
                     latches[i].await();
                     cancellable.cancel();
                 }
-                assertThat(exceptions, is(empty()));
+                if (!exceptions.isEmpty()) {
+                    throw new AssertionError(diagnoseRefusal(exceptions, serverFrameLog.events));
+                }
             }
+        }
+    }
+
+    private static String diagnoseRefusal(BlockingQueue<Throwable> exceptions, Queue<FrameEvent> events) {
+        StringBuilder sb = new StringBuilder("Unexpected exceptions: ").append(exceptions);
+        List<FrameEvent> trace = new ArrayList<>(events);
+        sb.append("\nServer-side HTTP/2 frame trace (in codec processing order):");
+        for (FrameEvent e : trace) {
+            sb.append("\n  ").append(e);
+        }
+        // Find each stream the server refused, and check whether the previous client stream's RST arrived first.
+        for (FrameEvent refused : trace) {
+            if (refused.direction == Http2FrameLogger.Direction.OUTBOUND && "RST_STREAM".equals(refused.type)
+                    && refused.errorCode == REFUSED_STREAM_CODE) {
+                int refusedId = refused.streamId;
+                int prevId = refusedId - 2; // previous client-initiated (odd) stream
+                int inboundHeadersRefusedIdx = indexOf(trace, Http2FrameLogger.Direction.INBOUND, "HEADERS", refusedId);
+                int inboundRstPrevIdx = indexOf(trace, Http2FrameLogger.Direction.INBOUND, "RST_STREAM", prevId);
+                sb.append("\nVERDICT for refused streamId=").append(refusedId).append(':');
+                if (inboundRstPrevIdx >= 0 && inboundHeadersRefusedIdx >= 0
+                        && inboundRstPrevIdx < inboundHeadersRefusedIdx) {
+                    sb.append("\n  Server received INBOUND RST_STREAM(streamId=").append(prevId)
+                            .append(") BEFORE INBOUND HEADERS(streamId=").append(refusedId)
+                            .append("), yet still replied REFUSED_STREAM.")
+                            .append("\n  => Client accounting was correct; the server refused an in-order stream "
+                                    + "(Netty server-side bug).");
+                } else if (inboundHeadersRefusedIdx >= 0 && inboundRstPrevIdx > inboundHeadersRefusedIdx) {
+                    sb.append("\n  Server received INBOUND HEADERS(streamId=").append(refusedId)
+                            .append(") BEFORE INBOUND RST_STREAM(streamId=").append(prevId)
+                            .append(") => frames arrived out of order on the wire (client-side write ordering).");
+                } else {
+                    sb.append("\n  Could not locate both INBOUND RST_STREAM(streamId=").append(prevId)
+                            .append(") and INBOUND HEADERS(streamId=").append(refusedId)
+                            .append(") in the trace (rstPrevIdx=").append(inboundRstPrevIdx)
+                            .append(", headersRefusedIdx=").append(inboundHeadersRefusedIdx).append(").");
+                }
+            }
+        }
+        return sb.toString();
+    }
+
+    private static int indexOf(List<FrameEvent> trace, Http2FrameLogger.Direction direction, String type,
+                               int streamId) {
+        for (int i = 0; i < trace.size(); i++) {
+            FrameEvent e = trace.get(i);
+            if (e.direction == direction && e.type.equals(type) && e.streamId == streamId) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static final class FrameEvent {
+        final Http2FrameLogger.Direction direction;
+        final String type;
+        final int streamId;
+        final long errorCode; // -1 when not applicable
+
+        FrameEvent(Http2FrameLogger.Direction direction, String type, int streamId, long errorCode) {
+            this.direction = direction;
+            this.type = type;
+            this.streamId = streamId;
+            this.errorCode = errorCode;
+        }
+
+        @Override
+        public String toString() {
+            return direction + " " + type + " streamId=" + streamId + (errorCode >= 0 ? " errorCode=" + errorCode : "");
+        }
+    }
+
+    /**
+     * Records the order of HEADERS and RST_STREAM frames as observed by the server's codec. The frame logger is
+     * invoked by the frame reader/writer wrappers in codec processing order, so INBOUND entries reflect the order
+     * frames were decoded off the wire (including a HEADERS frame that is subsequently refused), and OUTBOUND
+     * entries reflect frames the server emits (including a REFUSED_STREAM RST).
+     */
+    private static final class RecordingFrameLogger extends Http2FrameLogger {
+        final Queue<FrameEvent> events = new ConcurrentLinkedQueue<>();
+
+        RecordingFrameLogger() {
+            super(LogLevel.DEBUG, "H2-SERVER");
+        }
+
+        @Override
+        public void logHeaders(Direction direction, ChannelHandlerContext ctx, int streamId, Http2Headers headers,
+                               int padding, boolean endStream) {
+            events.add(new FrameEvent(direction, "HEADERS", streamId, -1));
+            super.logHeaders(direction, ctx, streamId, headers, padding, endStream);
+        }
+
+        @Override
+        public void logHeaders(Direction direction, ChannelHandlerContext ctx, int streamId, Http2Headers headers,
+                               int streamDependency, short weight, boolean exclusive, int padding, boolean endStream) {
+            events.add(new FrameEvent(direction, "HEADERS", streamId, -1));
+            super.logHeaders(direction, ctx, streamId, headers, streamDependency, weight, exclusive, padding,
+                    endStream);
+        }
+
+        @Override
+        public void logRstStream(Direction direction, ChannelHandlerContext ctx, int streamId, long errorCode) {
+            events.add(new FrameEvent(direction, "RST_STREAM", streamId, errorCode));
+            super.logRstStream(direction, ctx, streamId, errorCode);
         }
     }
 
