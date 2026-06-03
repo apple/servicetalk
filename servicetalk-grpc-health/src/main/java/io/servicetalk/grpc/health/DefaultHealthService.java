@@ -60,7 +60,7 @@ public final class DefaultHealthService implements Health.HealthService {
     private final Map<String, HealthValue> serviceToStatusMap = new ConcurrentHashMap<>();
     private final Predicate<String> watchAllowed;
     private final int maxServices;
-    private final Lock lock = new ReentrantLock();
+    private final ReentrantLock lock = new ReentrantLock();
     private boolean terminated;
 
     /**
@@ -69,8 +69,7 @@ public final class DefaultHealthService implements Health.HealthService {
      * Watches are permitted for any service name. The number of tracked services is bounded by a default limit of
      * {@code 1000}; once reached, a {@link #watch(GrpcServiceContext, HealthCheckRequest)} for a service that isn't
      * already known fails with {@link GrpcStatusCode#RESOURCE_EXHAUSTED}. Use {@link #DefaultHealthService(Predicate)}
-     * to restrict which service names may be watched, or {@link #DefaultHealthService(Predicate, int)} to also
-     * configure the limit.
+     * to restrict which service names may be watched.
      */
     public DefaultHealthService() {
         this(service -> true, DEFAULT_MAX_SERVICES);
@@ -121,7 +120,7 @@ public final class DefaultHealthService implements Health.HealthService {
                     }
                     if (serviceToStatusMap.size() >= maxServices) {
                         return Publisher.failed(new GrpcStatusException(new GrpcStatus(RESOURCE_EXHAUSTED,
-                                "max number of watched services reached: " + maxServices)));
+                                "max number of watched services reached")));
                     }
                     healthValue = HealthValue.newWatchOnly();
                     serviceToStatusMap.put(service, healthValue);
