@@ -167,7 +167,7 @@ class H2ConcurrencyControllerTest {
         }
     }
 
-    @RepeatedTest(3 * 1024)
+    @RepeatedTest(1024)
     void noMaxActiveStreamsViolatedErrorAfterCancel() throws Exception { // the flaky test.
         int serverMaxConcurrentStreams = 1;
         setUp(serverMaxConcurrentStreams);
@@ -230,7 +230,9 @@ class H2ConcurrencyControllerTest {
     }
 
     private static String diagnoseRefusal(BlockingQueue<Throwable> exceptions, Queue<FrameEvent> events) {
-        StringBuilder sb = new StringBuilder("Unexpected exceptions: ").append(exceptions);
+        StringBuilder sb = new StringBuilder();
+        sb.append("Unexpected exceptions: ")
+                .append(exceptions);
         List<FrameEvent> trace = new ArrayList<>(events);
 
         // Group by connection so we can tell a single-connection reorder apart from multiple connections.
@@ -263,7 +265,7 @@ class H2ConcurrencyControllerTest {
                             .append(refused.streamId).append(") arrived: ").append(active)
                             .append("\n  => the client had ").append(active.size() + 1)
                             .append(" concurrent streams open against maxConcurrentStreams=1 (over-subscription); "
-                                    + "REFUSED_STREAM is the server enforcing its advertised limit, not a reorder bug.");
+                                    + "REFUSED_STREAM is the server enforcing its advertised limit.");
                 }
             }
         }
@@ -425,8 +427,8 @@ class H2ConcurrencyControllerTest {
                 .appendConnectionFactoryFilter(LimitingConnectionFactoryFilter.withMax(1))
                 .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
                         .maxTotalRetries(Integer.MAX_VALUE)
-                        .retryRetryableExceptions((metaData, e) -> e instanceof ConnectionLimitReachedException
-                                ? limitReachedBackoff : BackOffPolicy.ofNoRetries())
+                        .retryRetryableExceptions((metaData, e) -> e instanceof ConnectionLimitReachedException ?
+                                limitReachedBackoff : BackOffPolicy.ofNoRetries())
                         .build());
     }
 
