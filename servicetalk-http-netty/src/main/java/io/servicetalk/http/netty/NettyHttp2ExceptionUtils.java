@@ -135,7 +135,7 @@ final class NettyHttp2ExceptionUtils {
     /**
      * <a href="https://tools.ietf.org/html/rfc7540#section-8.1.4">REFUSED_STREAM</a> is always retryable.
      */
-    static final class H2StreamRefusedException extends H2StreamResetException implements RetryableException {
+    private static final class H2StreamRefusedException extends H2StreamResetException implements RetryableException {
         private static final long serialVersionUID = -2151927266051609262L;
 
         H2StreamRefusedException(int streamId) {
