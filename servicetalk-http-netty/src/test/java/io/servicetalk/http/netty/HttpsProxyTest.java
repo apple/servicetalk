@@ -86,11 +86,13 @@ import static io.servicetalk.http.api.HttpResponseStatus.PROXY_AUTHENTICATION_RE
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.HttpProtocol.toConfigs;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
+import static io.servicetalk.transport.api.ServiceTalkSocketOptions.TCP_FASTOPEN_CONNECT;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.CloseUtils.safeClose;
 import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -428,6 +430,28 @@ class HttpsProxyTest {
         verify(connectionObserver, never()).onSecurityHandshake(any(SslConfig.class));
         verify(securityHandshakeObserver, never()).handshakeComplete(any());
         verify(securityHandshakeObserver, never()).handshakeFailed(any());
+    }
+
+    @Test
+    void testFastOpenWithProxyTlsReportsProxySecurityHandshake() throws Exception {
+        final List<HttpProtocol> protocols = singletonList(HttpProtocol.HTTP_1);
+        initMocks();
+        proxyTunnel.sslContext(buildProxySslContext());
+        proxyAddress = proxyTunnel.startProxy();
+        startServer(protocols);
+        client = BuilderUtils.newClientBuilder(serverContext, CLIENT_CTX)
+                .proxyConfig(new ProxyConfigBuilder<>(proxyAddress)
+                        .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build())
+                        .build())
+                .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                        .peerHost(serverPemHostname()).build())
+                .protocols(toConfigs(protocols))
+                .socketOption(TCP_FASTOPEN_CONNECT, true)
+                .appendConnectionFactoryFilter(new TransportObserverConnectionFactoryFilter<>(transportObserver))
+                .buildBlocking();
+        assertThat(client.request(client.get("/path")).status(), is(OK));
+        verify(connectionObserver, atLeastOnce()).onProxySecurityHandshake(any(SslConfig.class));
+        verify(proxySecurityHandshakeObserver, atLeastOnce()).handshakeComplete(any());
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")

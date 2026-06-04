@@ -135,11 +135,12 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
     public void init(final Channel channel) {
         assert channel.eventLoop().inEventLoop();
         channel.pipeline().addLast(new ConnectionObserverHandler(observer, connectionInfoFactory,
-                sslConfig != null, isFastOpen(channel), sslConfig, proxySslConfig));
+                isFastOpen(channel), sslConfig, proxySslConfig));
     }
 
     private boolean isFastOpen(final Channel channel) {
-        return client && sslConfig != null && Boolean.TRUE.equals(channel.config().getOption(TCP_FASTOPEN_CONNECT)) &&
+        return client && (sslConfig != null || proxySslConfig != null) &&
+                Boolean.TRUE.equals(channel.config().getOption(TCP_FASTOPEN_CONNECT)) &&
                 (Epoll.isTcpFastOpenClientSideAvailable() || KQueue.isTcpFastOpenClientSideAvailable());
     }
 
@@ -147,7 +148,6 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
 
         private final ConnectionObserver observer;
         private final Function<Channel, ConnectionInfo> connectionInfoFactory;
-        private final boolean handshakeOnActive;
         @Nullable
         private final SslConfig sslConfig;
         @Nullable
@@ -162,17 +162,25 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
 
         ConnectionObserverHandler(final ConnectionObserver observer,
                                   final Function<Channel, ConnectionInfo> connectionInfoFactory,
-                                  final boolean handshakeOnActive,
                                   final boolean fastOpen,
                                   @Nullable final SslConfig sslConfig,
                                   @Nullable final SslConfig proxySslConfig) {
             this.observer = observer;
             this.connectionInfoFactory = connectionInfoFactory;
-            this.handshakeOnActive = handshakeOnActive;
             this.sslConfig = sslConfig;
             this.proxySslConfig = proxySslConfig;
             if (fastOpen) {
-                reportSecurityHandshakeStarting(sslConfig);
+                // Whichever TLS ClientHello piggybacks the SYN is the handshake that's already started by the
+                // time channelActive fires; report it now so the observer measures it from the correct moment.
+                // proxySslConfig non-null → TLS to a CONNECT proxy: proxy ClientHello goes in the SYN.
+                // sslConfig non-null     → direct TLS to the origin: origin ClientHello goes in the SYN.
+                // both null              → no TLS on the wire yet (plaintext direct, forward proxy, or CONNECT
+                //                          proxy with plaintext to the proxy); nothing to report here.
+                if (proxySslConfig != null) {
+                    reportProxySecurityHandshakeStarting();
+                } else if (sslConfig != null) {
+                    reportSecurityHandshakeStarting(sslConfig);
+                }
             }
         }
 
@@ -220,7 +228,7 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
             maybeAddChannelClosedListener(channel);
             reportTcpHandshakeComplete(channel);
             reportProxySecurityHandshakeStarting();
-            if (handshakeOnActive) {
+            if (sslConfig != null) {
                 reportSecurityHandshakeStarting(sslConfig);
             }
         }
