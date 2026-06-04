@@ -25,6 +25,7 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.ReservedHttpConnection;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -80,7 +81,6 @@ import static io.servicetalk.http.netty.BuilderUtils.newClientBuilder;
 import static io.servicetalk.http.netty.H2PriorKnowledgeFeatureParityTest.EchoHttp2Handler;
 import static io.servicetalk.http.netty.H2PriorKnowledgeFeatureParityTest.bindH2Server;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
-import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.disableAutoRetries;
 import static io.servicetalk.transport.api.HostAndPort.of;
 import static io.servicetalk.transport.netty.internal.CloseUtils.safeSync;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
@@ -167,8 +167,9 @@ class H2ConcurrencyControllerTest {
         int serverMaxConcurrentStreams = 1;
         setUp(serverMaxConcurrentStreams);
         assert serverAddress != null;
-        try (HttpClient client = newClientBuilder(serverAddress, CLIENT_CTX, HTTP_2)
-                .appendClientFilter(disableAutoRetries())   // All exceptions should be propagated
+        try (HttpClient client = configureSingleConnection(newClientBuilder(serverAddress, CLIENT_CTX, HTTP_2),
+                // The deferred cancel holds the only slot ~100ms, so wait for it rather than spin.
+                BackOffPolicy.ofConstantBackoffFullJitter(ofMillis(10), 128))
                 .appendConnectionFilter(connection -> new StreamingHttpConnectionFilter(connection) {
                     @Override
                     public Single<StreamingHttpResponse> request(StreamingHttpRequest request) {
@@ -221,6 +222,21 @@ class H2ConcurrencyControllerTest {
         }
     }
 
+    // Pins the client to a single connection so the concurrency controller (not a second, not-yet-settings-synced
+    // connection) is what's under test. A request that can't get the in-use connection's only slot fails with
+    // {@link ConnectionLimitReachedException} and is retried with {@code limitReachedBackoff}; real stream errors are
+    // never retried, so a genuine "max concurrent streams violated" still reaches the assertion.
+    private static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> configureSingleConnection(
+            SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder, BackOffPolicy limitReachedBackoff) {
+        return builder
+                .appendConnectionFactoryFilter(LimitingConnectionFactoryFilter.withMax(1))
+                .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
+                        .maxTotalRetries(Integer.MAX_VALUE)
+                        .retryRetryableExceptions((metaData, e) -> e instanceof ConnectionLimitReachedException ?
+                                limitReachedBackoff : BackOffPolicy.ofNoRetries())
+                        .build());
+    }
+
     private static List<Arguments> params() {
         List<Arguments> params = new ArrayList<>();
         for (Named<HttpExecutionStrategy> strategy : asList(
@@ -256,21 +272,10 @@ class H2ConcurrencyControllerTest {
         setUp(serverMaxConcurrentStreams);
         alwaysEcho.set(true);   // server should always respond
         assert serverAddress != null;
-        try (HttpClient client = newClientBuilder(serverAddress, CLIENT_CTX, HTTP_2)
-                .executionStrategy(strategy)
-                // Don't allow more than 1 connection:
-                .appendConnectionFactoryFilter(LimitingConnectionFactoryFilter.withMax(1))
-                // Retry all ConnectionLimitReachedException(s), don't retry RetryableException(s):
-                .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
-                        .maxTotalRetries(Integer.MAX_VALUE)
-                        .retryRetryableExceptions((metaData, e) -> {
-                            if (e instanceof ConnectionLimitReachedException) {
-                                // Use a limit of 128 to avoid StackOverflow
-                                return BackOffPolicy.ofImmediate(128);
-                            }
-                            return BackOffPolicy.ofNoRetries();
-                        })
-                        .build())
+        try (HttpClient client = configureSingleConnection(newClientBuilder(serverAddress, CLIENT_CTX, HTTP_2)
+                .executionStrategy(strategy),
+                // Spin to densely probe the limit-change race; echoed streams free the slot near-instantly.
+                BackOffPolicy.ofImmediate(128))
                 .protocols(HTTP_2.config)
                 .build()) {
 
