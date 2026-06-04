@@ -322,7 +322,10 @@ final class ReservableRequestConcurrencyControllers {
                     return delegate.request(request)
                             // Retry reasonable number of times to avoid infinite loops internally.
                             .retry((count, t) -> {
-                                if (count <= 32 && t instanceof MaxConcurrentStreamsViolatedStacklessHttp2Exception) {
+                                if (count <= 32 && (
+                                        t instanceof MaxConcurrentStreamsViolatedStacklessHttp2Exception ||
+                                        t instanceof NettyHttp2ExceptionUtils.H2StreamRefusedException)) {
+                                    // Retry on both client-side and server-side REFUSED_STREAM.
                                     LOGGER.debug("Retrying {} for the {} time", t, count);
                                     return true;
                                 }

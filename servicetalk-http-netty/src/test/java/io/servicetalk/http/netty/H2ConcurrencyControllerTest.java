@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.ReservedHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
@@ -36,10 +37,14 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
+import io.netty.handler.codec.http2.DefaultHttp2ResetFrame;
 import io.netty.handler.codec.http2.DefaultHttp2SettingsFrame;
+import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2HeadersFrame;
 import io.netty.handler.codec.http2.Http2Settings;
 import io.netty.handler.codec.http2.Http2StreamChannel;
+import io.netty.handler.codec.http2.DefaultHttp2Headers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.RepeatedTest;
@@ -56,11 +61,14 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http2.Http2CodecUtil.MAX_UNSIGNED_INT;
+import static io.netty.handler.codec.http2.Http2Error.REFUSED_STREAM;
 import static io.servicetalk.concurrent.api.internal.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
@@ -333,6 +341,40 @@ class H2ConcurrencyControllerTest {
                 // The value is expected to be adjusted to avoid int overflow
                 awaitMaxConcurrentStreamsSettingsUpdate(connection, maxConcurrentStreams, Integer.MAX_VALUE);
             }
+        }
+    }
+
+    @Test
+    void serverSentRefusedStreamIsInternallyRetried() throws Exception {
+        AtomicInteger streamCount = new AtomicInteger();
+        serverEventLoopGroup = createIoExecutor(1, "server-io").eventLoopGroup();
+        serverAcceptorChannel = bindH2Server(serverEventLoopGroup, new ChannelInitializer<Http2StreamChannel>() {
+            @Override
+            protected void initChannel(Http2StreamChannel ch) {
+                ch.pipeline().addLast(new SimpleChannelInboundHandler<Http2HeadersFrame>() {
+                    @Override
+                    protected void channelRead0(ChannelHandlerContext ctx, Http2HeadersFrame msg) {
+                        if (streamCount.getAndIncrement() == 0) {
+                            // Refuse the first stream in order to deterministically cause a retry on the client.
+                            ctx.writeAndFlush(new DefaultHttp2ResetFrame(REFUSED_STREAM));
+                        } else {
+                            Http2Headers headers = new DefaultHttp2Headers().status(OK.codeAsCharSequence());
+                            ctx.writeAndFlush(new DefaultHttp2HeadersFrame(headers, true));
+                        }
+                    }
+                });
+            }
+        }, parentPipeline -> { }, UnaryOperator.identity());
+        serverAddress = of((InetSocketAddress) serverAcceptorChannel.localAddress());
+
+        try (HttpClient client = newClientBuilder(serverAddress, CLIENT_CTX, HTTP_2)
+                .appendClientFilter(disableAutoRetries())
+                .protocols(HTTP_2.config)
+                .build()) {
+            HttpRequest request = client.get("/");
+            HttpResponse response = client.request(request).toFuture().get();
+            assertThat(response.status(), is(OK));
+            assertThat(streamCount.get(), is(2)); // Sanity check that the client did a retry
         }
     }
 
