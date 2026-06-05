@@ -46,5 +46,6 @@ dependencies {
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation project(":servicetalk-test-resources")
+  testImplementation "org.hamcrest:hamcrest"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
 }
