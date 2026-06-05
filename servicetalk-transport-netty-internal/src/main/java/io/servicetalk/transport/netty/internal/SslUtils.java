@@ -30,6 +30,7 @@ import io.netty.util.ReferenceCountUtil;
 
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SSLEngine;
@@ -54,24 +55,42 @@ final class SslUtils {
     }
 
     /**
-     * Creates a new {@link SslHandler} for the client-side which will support SNI if the {@link InetSocketAddress} was
-     * created from a hostname. It will use {@link CopyByteBufHandlerChannelInitializer#POOLED_ALLOCATOR} if required.
+     * Creates a new {@link SslHandler} for the client-side application TLS handshake which will support SNI
+     * if the {@link InetSocketAddress} was created from a hostname. It will use
+     * {@link CopyByteBufHandlerChannelInitializer#POOLED_ALLOCATOR} if required. The handshake is reported to the
+     * application-level {@link SecurityHandshakeObserver}.
      *
      * @param context the {@link SslContext} which will be used to create the {@link SslHandler}
      * @param sslConfig used to obtain configuration for the {@link SslHandler}.
      * @param channel the {@link Channel} if there is a need to report to {@link SecurityHandshakeObserver}
-     * @param reportHandshakeToObserver if {@code true}, register the handshake-future listener that reports to the
-     * {@link SecurityHandshakeObserver}. The first {@link SslHandler} on a connection should report; secondary
-     * handshakes (e.g. an outer proxy TLS handshake fronting an inner origin TLS) currently must not, since the
-     * connection-level observer can only track a single handshake.
      * @return a {@link SslHandler}
      */
     static SslHandler newClientSslHandler(final SslContext context, final ClientSslConfig sslConfig,
-                                          final Channel channel, final boolean reportHandshakeToObserver) {
+                                          final Channel channel) {
+        return newClientSslHandler(context, sslConfig, channel, ConnectionObserverHandler::handshakeObserver);
+    }
+
+    /**
+     * Creates a new {@link SslHandler} for the client-side proxy TLS handshake (the proxy stage of a layered-TLS
+     * pipeline) which will support SNI if the {@link InetSocketAddress} was created from a hostname. It will use
+     * {@link CopyByteBufHandlerChannelInitializer#POOLED_ALLOCATOR} if required. The handshake is reported to the
+     * proxy-stage {@link SecurityHandshakeObserver}.
+     *
+     * @param context the {@link SslContext} which will be used to create the {@link SslHandler}
+     * @param sslConfig used to obtain configuration for the {@link SslHandler}.
+     * @param channel the {@link Channel} if there is a need to report to {@link SecurityHandshakeObserver}
+     * @return a {@link SslHandler}
+     */
+    static SslHandler newClientProxySslHandler(final SslContext context, final ClientSslConfig sslConfig,
+                                               final Channel channel) {
+        return newClientSslHandler(context, sslConfig, channel, ConnectionObserverHandler::proxyHandshakeObserver);
+    }
+
+    private static SslHandler newClientSslHandler(final SslContext context, final ClientSslConfig sslConfig,
+            final Channel channel,
+            final Function<ConnectionObserverHandler, SecurityHandshakeObserver> observerExtractor) {
         SslHandler handler = context.newHandler(POOLED_ALLOCATOR, sslConfig.peerHost(), sslConfig.peerPort());
-        if (reportHandshakeToObserver) {
-            observeHandshakeCompletion(handler, channel);
-        }
+        observeHandshakeCompletion(handler, channel, observerExtractor);
         setHandshakeTimeout(handler, context);
         SSLEngine engine = handler.engine();
         try {
@@ -104,18 +123,27 @@ final class SslUtils {
      */
     static SslHandler newServerSslHandler(final SslContext context, final Channel channel) {
         SslHandler handler = context.newHandler(POOLED_ALLOCATOR);
-        observeHandshakeCompletion(handler, channel);
+        observeHandshakeCompletion(handler, channel, ConnectionObserverHandler::handshakeObserver);
         setHandshakeTimeout(handler, context);
         return handler;
     }
 
-    private static void observeHandshakeCompletion(final SslHandler sslHandler, final Channel channel) {
+    private static void observeHandshakeCompletion(final SslHandler sslHandler, final Channel channel,
+            final Function<ConnectionObserverHandler, SecurityHandshakeObserver> observerExtractor) {
+        // In production the ConnectionObserverHandler is installed earlier in the pipeline (the proxy stage is
+        // only installed by TcpClientChannelInitializer, which installs it first); tolerate a bare pipeline
+        // (unit tests) with a no-op.
         final ConnectionObserverHandler observerHandler = channel.pipeline().get(ConnectionObserverHandler.class);
         if (observerHandler == null) {
             return;
         }
         sslHandler.handshakeFuture().addListener(f -> {
-            SecurityHandshakeObserver handshakeObserver = getHandshakeObserver(observerHandler);
+            SecurityHandshakeObserver handshakeObserver = observerExtractor.apply(observerHandler);
+            if (handshakeObserver == null) {
+                // Fallback to NOOP variant because any issues with observability should not break users runtime.
+                // Correctness of reporting is verified by our tests.
+                handshakeObserver = NoopSecurityHandshakeObserver.INSTANCE;
+            }
             final Throwable cause = wrapIfRetryable(f.cause(), channel.parent() == null);
             if (cause == null) {
                 handshakeObserver.handshakeComplete(sslHandler.engine().getSession());
@@ -124,16 +152,6 @@ final class SslUtils {
                 handshakeObserver.handshakeFailed(cause);
             }
         });
-    }
-
-    private static SecurityHandshakeObserver getHandshakeObserver(final ConnectionObserverHandler handler) {
-        final SecurityHandshakeObserver handshakeObserver = handler.handshakeObserver();
-        if (handshakeObserver == null) {
-            // Fallback to NOOP variant because any issues with observability should not break users runtime.
-            // Correctness of reporting is verified by our tests.
-            return NoopSecurityHandshakeObserver.INSTANCE;
-        }
-        return handshakeObserver;
     }
 
     private static void setHandshakeTimeout(SslHandler handler, SslContext context) {

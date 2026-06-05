@@ -48,7 +48,7 @@ public class SslClientChannelInitializer implements ChannelInitializer {
 
     @Override
     public void init(Channel channel) {
-        final SslHandler sslHandler = newClientSslHandler(sslContext, sslConfig, channel, true);
+        final SslHandler sslHandler = newClientSslHandler(sslContext, sslConfig, channel);
         channel.pipeline().addLast(APPLICATION_SSL_HANDLER_NAME,
                 deferSslHandler ? new DeferSslHandler(channel, sslHandler, sslConfig, APPLICATION_SSL_HANDLER_NAME)
                         : sslHandler);

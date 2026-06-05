@@ -129,7 +129,12 @@ public interface ConnectionObserver {
     }
 
     /**
-     * Callback when a security handshake is initiated.
+     * Callback when the application security handshake is initiated.
+     * <p>
+     * This reports the handshake whose {@link SSLSession} backs the connection used by the application. When
+     * the connection is established through a TLS proxy, the handshake with the proxy itself is reported
+     * separately via {@link #onProxySecurityHandshake(SslConfig)}, and this callback reports the subsequent
+     * handshake performed with the target server.
      * <p>
      * For a typical connection, this callback is invoked after {@link #onTransportHandshakeComplete(ConnectionInfo)}.
      * There are exceptions:
@@ -149,6 +154,25 @@ public interface ConnectionObserver {
      */
     default SecurityHandshakeObserver onSecurityHandshake(SslConfig sslConfig) {
         return onSecurityHandshake();
+    }
+
+    /**
+     * Callback when the proxy security handshake is initiated.
+     * <p>
+     * This reports the TLS handshake with the proxy itself, if TLS to the proxy is configured. Fired only on
+     * the client side, and does not fire for plaintext proxies or non-proxy connections.
+     * <p>
+     * Fires after {@link #onTransportHandshakeComplete(ConnectionInfo)}, and the returned
+     * {@link SecurityHandshakeObserver} terminates before {@link #onProxyConnect(Object)}. On failure the returned
+     * observer receives {@link SecurityHandshakeObserver#handshakeFailed(Throwable) handshakeFailed} and the attempt is
+     * aborted without sending CONNECT, so {@link #onProxyConnect(Object)} is not invoked.
+     *
+     * @param sslConfig the {@link SslConfig} used when performing the proxy security handshake
+     * @return a new {@link SecurityHandshakeObserver} that provides visibility into proxy security
+     * handshake events
+     */
+    default SecurityHandshakeObserver onProxySecurityHandshake(SslConfig sslConfig) {
+        return NoopTransportObserver.NoopSecurityHandshakeObserver.INSTANCE;
     }
 
     /**
@@ -217,6 +241,11 @@ public interface ConnectionObserver {
 
         /**
          * Callback when the proxy connect attempt fails.
+         * <p>
+         * Reports a CONNECT-exchange failure (e.g. a non-2xx response from the proxy). This fires only after the
+         * CONNECT request has been sent. When the connection runs through a TLS proxy and the proxy TLS handshake
+         * itself fails, the CONNECT is never sent and the failure is reported solely via the observer returned by
+         * {@link ConnectionObserver#onProxySecurityHandshake(SslConfig)}.
          *
          * @param cause the cause of the proxy connect failure
          */

@@ -103,6 +103,12 @@ final class BiTransportObserver implements TransportObserver {
         }
 
         @Override
+        public SecurityHandshakeObserver onProxySecurityHandshake(final SslConfig sslConfig) {
+            return new BiSecurityHandshakeObserver(first.onProxySecurityHandshake(sslConfig),
+                    second.onProxySecurityHandshake(sslConfig));
+        }
+
+        @Override
         public DataObserver connectionEstablished(final ConnectionInfo info) {
             return new BiDataObserver(first.connectionEstablished(info), second.connectionEstablished(info));
         }
