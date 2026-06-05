@@ -94,6 +94,7 @@ import static io.servicetalk.grpc.api.GrpcUtils.setStatus;
 import static io.servicetalk.grpc.api.GrpcUtils.setStatusOk;
 import static io.servicetalk.grpc.api.GrpcUtils.validateContentType;
 import static io.servicetalk.grpc.internal.GrpcContextKeys.TRAILERS_ONLY_RESPONSE;
+import static io.servicetalk.grpc.internal.GrpcStatusUtils.getStatusMessage;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
@@ -899,11 +900,11 @@ final class GrpcRouter {
         CharSequence codeValue = headers.get(GRPC_STATUS);
         assert codeValue != null;
         GrpcStatusCode statusCode = GrpcStatusCode.fromCodeValue(codeValue);
-        String msg = "Exception from {} for a request to {} was converted to grpc-status={}";
+        String msg = "Exception from {} for a request to {} was converted to grpc-status={}, grpc-message=\"{}\"";
         if (serverCatchAllShouldLog(error)) {
-            LOGGER.error(msg, where, methodDescriptor.httpPath(), statusCode, error);
+            LOGGER.error(msg, where, methodDescriptor.httpPath(), statusCode, getStatusMessage(headers), error);
         } else {
-            LOGGER.debug(msg, where, methodDescriptor.httpPath(), statusCode, error);
+            LOGGER.debug(msg, where, methodDescriptor.httpPath(), statusCode, getStatusMessage(headers), error);
         }
     }
 

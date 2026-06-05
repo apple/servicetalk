@@ -20,6 +20,10 @@ import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.ProxyConnectResponseException;
 import io.servicetalk.serializer.api.SerializationException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
@@ -31,6 +35,7 @@ import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.grpc.api.GrpcStatusCode.fromHttp2ErrorCode;
 import static io.servicetalk.grpc.api.GrpcUtils.fromHttpStatus;
+import static java.lang.Boolean.getBoolean;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -38,6 +43,36 @@ import static java.util.Objects.requireNonNull;
  */
 public final class GrpcStatusException extends RuntimeException {
     private static final long serialVersionUID = -1882895535544626915L;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrpcStatusException.class);
+
+    /**
+     * When {@code true}, restores the legacy behavior of echoing {@link Throwable#toString()} of an otherwise-unmapped
+     * server-side exception in the gRPC status description that is sent to the peer. This is intended for
+     * non-production debugging only: it can leak internal class names and message content (file paths, SQL fragments,
+     * configuration values, tokens, PII) to remote clients (CWE-209 / CWE-200). The default ({@code false}) sends an
+     * opaque {@value #UNKNOWN_DESCRIPTION_PREFIX} reference instead, which operators can correlate with the full
+     * exception logged server-side.
+     */
+    static final String EXPOSE_EXCEPTION_DETAILS_PROPERTY = "io.servicetalk.grpc.exposeExceptionDetails";
+
+    /**
+     * Prefix of the opaque description sent to the peer for unmapped server-side exceptions when
+     * {@link #EXPOSE_EXCEPTION_DETAILS_PROPERTY} is not enabled.
+     */
+    static final String UNKNOWN_DESCRIPTION_PREFIX = "internal error";
+
+    /**
+     * Prefix of the opaque description sent to the peer for server-side serialization failures when
+     * {@link #EXPOSE_EXCEPTION_DETAILS_PROPERTY} is not enabled.
+     */
+    static final String SERIALIZATION_DESCRIPTION_PREFIX = "Serialization error";
+
+    private static final boolean EXPOSE_EXCEPTION_DETAILS = getBoolean(EXPOSE_EXCEPTION_DETAILS_PROPERTY);
+
+    static {
+        LOGGER.debug("-D{}: {}", EXPOSE_EXCEPTION_DETAILS_PROPERTY, EXPOSE_EXCEPTION_DETAILS);
+    }
 
     private final GrpcStatus status;
     private final Supplier<com.google.rpc.Status> applicationStatusSupplier;
@@ -138,7 +173,10 @@ public final class GrpcStatusException extends RuntimeException {
             status = new GrpcStatus(UNIMPLEMENTED, cause, "Message encoding '" + msgEncException.encoding()
                     + "' not supported ");
         } else if (cause instanceof SerializationException) {
-            status = new GrpcStatus(UNKNOWN, cause, "Serialization error: " + cause.getMessage());
+            // Avoid leaking serializer internals (the message may contain partial payload content or internal type
+            // names) to the remote peer. The category is still conveyed; the detailed message is logged server-side
+            // and can be restored on the wire via the same opt-in as the catch-all below.
+            status = new GrpcStatus(UNKNOWN, cause, serializationErrorDescription(cause));
         } else if (cause instanceof CancellationException) {
             status = new GrpcStatus(CANCELLED, cause);
         } else if (cause instanceof TimeoutException) {
@@ -147,11 +185,39 @@ public final class GrpcStatusException extends RuntimeException {
             final HttpResponseMetaData response = ((ProxyConnectResponseException) cause).response();
             status = new GrpcStatus(fromHttpStatus(response.status()), cause);
         } else {
-            // Initialize detail because cause is often lost
-            status = new GrpcStatus(UNKNOWN, cause, cause.toString());
+            // Avoid leaking internal exception details. Instead, send an opaque reference that operators can correlate
+            // with the full exception logged server-side. Verbose behavior can be restored for non-production debugging
+            // via -Dio.servicetalk.grpc.exposeExceptionDetails=true.
+            status = new GrpcStatus(UNKNOWN, cause, unknownStatusDescription(cause));
         }
 
         return status;
+    }
+
+    private static String unknownStatusDescription(Throwable cause) {
+        return unknownStatusDescription(cause, EXPOSE_EXCEPTION_DETAILS);
+    }
+
+    // Visible for testing: the EXPOSE_EXCEPTION_DETAILS flag is resolved once at class-init from a system property,
+    // so the description logic is factored out to allow both behaviors to be exercised directly.
+    static String unknownStatusDescription(Throwable cause, boolean exposeExceptionDetails) {
+        return exposeExceptionDetails ? cause.toString() : redactedDescription(UNKNOWN_DESCRIPTION_PREFIX);
+    }
+
+    private static String serializationErrorDescription(Throwable cause) {
+        return serializationErrorDescription(cause, EXPOSE_EXCEPTION_DETAILS);
+    }
+
+    // Visible for testing, see unknownStatusDescription(Throwable, boolean).
+    static String serializationErrorDescription(Throwable cause, boolean exposeExceptionDetails) {
+        return exposeExceptionDetails ? SERIALIZATION_DESCRIPTION_PREFIX + ": " + cause.getMessage()
+                : redactedDescription(SERIALIZATION_DESCRIPTION_PREFIX);
+    }
+
+    // An opaque, non-identifying description with a reference that operators can correlate with the full exception
+    // logged server-side (which logs the same reference). See serverCatchAllShouldLog and its callers.
+    private static String redactedDescription(String prefix) {
+        return prefix + " (ref: " + UUID.randomUUID() + ')';
     }
 
     static boolean serverCatchAllShouldLog(Throwable cause) {
