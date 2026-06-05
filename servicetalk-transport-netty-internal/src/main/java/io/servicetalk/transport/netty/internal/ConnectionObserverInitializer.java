@@ -124,6 +124,13 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
                                          final boolean client,
                                          @Nullable final SslConfig sslConfig,
                                          @Nullable final SslConfig proxySslConfig) {
+        // sslConfig here means "an SslHandler is being installed eagerly" — for any CONNECT proxy the origin
+        // handshake is deferred, so callers pass null sslConfig in that case (see TcpClientChannelInitializer).
+        // proxySslConfig non-null implies CONNECT implies deferral, so sslConfig must be null when proxySslConfig
+        // is set. The deferred origin handshake is reported by DeferSslHandler.ready() rather than this class.
+        assert sslConfig == null || proxySslConfig == null
+                : "sslConfig and proxySslConfig cannot both be non-null: TLS to a CONNECT proxy requires the " +
+                "origin handshake to be deferred, which signals as a null sslConfig at this layer";
         this.observer = requireNonNull(observer);
         this.connectionInfoFactory = requireNonNull(connectionInfoFactory);
         this.client = client;
