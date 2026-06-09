@@ -28,9 +28,7 @@ import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.grpc.api.GrpcStatusException.SERIALIZATION_DESCRIPTION_PREFIX;
 import static io.servicetalk.grpc.api.GrpcStatusException.UNKNOWN_DESCRIPTION_PREFIX;
-import static io.servicetalk.grpc.api.GrpcStatusException.serializationErrorDescription;
 import static io.servicetalk.grpc.api.GrpcStatusException.toGrpcStatus;
-import static io.servicetalk.grpc.api.GrpcStatusException.unknownStatusDescription;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
@@ -60,18 +58,11 @@ class GrpcStatusExceptionTest {
 
     @Test
     void redactedDescriptionsUseUniqueReferences() {
-        Throwable cause = new RuntimeException(SECRET);
-        String first = unknownStatusDescription(cause, false);
-        String second = unknownStatusDescription(cause, false);
+        String first = toGrpcStatus(new RuntimeException(SECRET)).description();
+        String second = toGrpcStatus(new RuntimeException(SECRET)).description();
         assertThat(first, not(is(second)));
         assertThat(first, not(containsString(SECRET)));
         assertThat(second, not(containsString(SECRET)));
-    }
-
-    @Test
-    void exposeExceptionDetailsRestoresVerboseDescription() {
-        Throwable cause = new IllegalStateException(SECRET);
-        assertThat(unknownStatusDescription(cause, true), is(cause.toString()));
     }
 
     @Test
@@ -91,12 +82,6 @@ class GrpcStatusExceptionTest {
                 startsWith(SERIALIZATION_DESCRIPTION_PREFIX), not(containsString("boom"))));
         assertThat(status.description(), matchesPattern(
                 "Serialization error \\(ref: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\)"));
-    }
-
-    @Test
-    void exposeExceptionDetailsRestoresSerializationMessage() {
-        assertThat(serializationErrorDescription(new SerializationException("boom"), true),
-                is("Serialization error: boom"));
     }
 
     @Test

@@ -192,7 +192,7 @@ IMPORTANT: The description and `details` you supply here are **not** redacted â€
 are transmitted as-is. Treat them as untrusted output: include only information that is safe to expose to the remote
 peer. Anything that is *not* an explicit `GrpcStatusException` is redacted instead, as described next.
 
-[#exposeExceptionDetails]
+[#exceptionRedaction]
 === Exception detail redaction
 
 To avoid leaking internal information to remote peers, the server does **not** echo arbitrary exception detail in the
@@ -200,14 +200,3 @@ To avoid leaking internal information to remote peers, the server does **not** e
 `internal error (ref: <uuid>)`, and for a serialization failure it receives `Serialization error (ref: <uuid>)`. The
 full exception (including the same reference) is always logged on the server, so operators can correlate a
 client-reported reference with the corresponding server log entry without exposing sensitive information.
-
-This is the recommended production behavior. For non-production debugging, the legacy behavior of echoing
-`Throwable.toString()` (and the serializer's message) on the wire can be restored by setting the system property:
-
-[source]
-----
--Dio.servicetalk.grpc.exposeExceptionDetails=true
-----
-
-NOTE: Relying on the client-side description for debugging is discouraged. Prefer out-of-band correlation via the
-opaque reference and server logs, which works regardless of this property.
