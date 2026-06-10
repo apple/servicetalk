@@ -20,6 +20,7 @@ import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.ProxyConnectResponseException;
 import io.servicetalk.serializer.api.SerializationException;
 
+import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
@@ -38,6 +39,19 @@ import static java.util.Objects.requireNonNull;
  */
 public final class GrpcStatusException extends RuntimeException {
     private static final long serialVersionUID = -1882895535544626915L;
+
+    /**
+     * Prefix of the opaque description sent to the peer for unmapped server-side exceptions. The detail is not echoed
+     * to the peer to avoid leaking internal information (CWE-209 / CWE-200); the full exception is logged server-side
+     * with the same reference for correlation.
+     */
+    static final String UNKNOWN_DESCRIPTION_PREFIX = "internal error";
+
+    /**
+     * Prefix of the opaque description sent to the peer for server-side serialization failures. See
+     * {@link #UNKNOWN_DESCRIPTION_PREFIX}.
+     */
+    static final String SERIALIZATION_DESCRIPTION_PREFIX = "Serialization error";
 
     private final GrpcStatus status;
     private final Supplier<com.google.rpc.Status> applicationStatusSupplier;
@@ -138,7 +152,10 @@ public final class GrpcStatusException extends RuntimeException {
             status = new GrpcStatus(UNIMPLEMENTED, cause, "Message encoding '" + msgEncException.encoding()
                     + "' not supported ");
         } else if (cause instanceof SerializationException) {
-            status = new GrpcStatus(UNKNOWN, cause, "Serialization error: " + cause.getMessage());
+            // Avoid leaking serializer internals (the message may contain partial payload content or internal type
+            // names) to the remote peer. The category is still conveyed; the detailed message is logged server-side
+            // with the same reference.
+            status = new GrpcStatus(UNKNOWN, cause, redactedDescription(SERIALIZATION_DESCRIPTION_PREFIX));
         } else if (cause instanceof CancellationException) {
             status = new GrpcStatus(CANCELLED, cause);
         } else if (cause instanceof TimeoutException) {
@@ -147,11 +164,18 @@ public final class GrpcStatusException extends RuntimeException {
             final HttpResponseMetaData response = ((ProxyConnectResponseException) cause).response();
             status = new GrpcStatus(fromHttpStatus(response.status()), cause);
         } else {
-            // Initialize detail because cause is often lost
-            status = new GrpcStatus(UNKNOWN, cause, cause.toString());
+            // Avoid leaking internal exception details to the remote peer (CWE-209 / CWE-200). Instead, send an opaque
+            // reference that operators can correlate with the full exception logged server-side.
+            status = new GrpcStatus(UNKNOWN, cause, redactedDescription(UNKNOWN_DESCRIPTION_PREFIX));
         }
 
         return status;
+    }
+
+    // An opaque, non-identifying description with a reference that operators can correlate with the full exception
+    // logged server-side (which logs the same reference). See serverCatchAllShouldLog and its callers.
+    private static String redactedDescription(String prefix) {
+        return prefix + " (ref: " + UUID.randomUUID() + ')';
     }
 
     static boolean serverCatchAllShouldLog(Throwable cause) {

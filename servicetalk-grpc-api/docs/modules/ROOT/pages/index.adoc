@@ -156,3 +156,47 @@ similar to the xref:{page-version}@servicetalk-http-api::index.adoc#client[HTTP 
 
 gRPC client uses xref:{page-version}@servicetalk-client-api::service-discovery.adoc[Service Discovery] to discover
 instances of the target service similar to the xref:{page-version}@servicetalk-http-api::index.adoc#client[HTTP Client].
+
+== Error Handling
+
+When a `Service` fails, ServiceTalk maps the `Throwable` to a
+link:{source-root}/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcStatus.java[GrpcStatus] that is sent
+to the client as the `grpc-status` and (optionally) `grpc-message` trailers. Well-known exception types are mapped to
+specific status codes; any other exception is mapped to `UNKNOWN`.
+
+[#returningErrors]
+=== Returning an error from a service
+
+To return a meaningful, client-facing error, a `Service` should fail with a
+link:{source-root}/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcStatusException.java[GrpcStatusException]
+that it constructs explicitly — either by throwing it (blocking APIs) or by completing the `Single`/`Publisher`
+with it (asynchronous APIs). The status code and description you put on it are sent **verbatim** on the wire.
+
+For most errors the ServiceTalk-native `GrpcStatus` (a status code and an optional human-readable description) is all
+you need:
+
+[source, java]
+----
+// Sent as the grpc-status / grpc-message trailers:
+throw new GrpcStatusException(new GrpcStatus(GrpcStatusCode.INVALID_ARGUMENT, "id must be positive"));
+----
+
+When you need to attach structured, typed error detail (the gRPC
+link:https://grpc.io/docs/guides/error/#richer-error-model[richer error model]), use
+`GrpcStatusException.of(...)` with a `com.google.rpc.Status` — the `details` (a repeated `Any`) are carried in the
+`grpc-status-details-bin` trailer. This is what the
+link:{source-root}/servicetalk-examples/grpc/errors/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleServer.java[Application Errors example]
+demonstrates, returning an `INVALID_ARGUMENT` with a `com.google.rpc.BadRequest` detail.
+
+IMPORTANT: The description and `details` you supply here are **not** redacted — they are intended for the client and
+are transmitted as-is. Treat them as untrusted output: include only information that is safe to expose to the remote
+peer. Anything that is *not* an explicit `GrpcStatusException` is redacted instead, as described next.
+
+[#exceptionRedaction]
+=== Exception detail redaction
+
+To avoid leaking internal information to remote peers, the server does **not** echo arbitrary exception detail in the
+`grpc-message` description. For an otherwise-unmapped exception the client receives an opaque reference of the form
+`internal error (ref: <uuid>)`, and for a serialization failure it receives `Serialization error (ref: <uuid>)`. The
+full exception (including the same reference) is always logged on the server, so operators can correlate a
+client-reported reference with the corresponding server log entry without exposing sensitive information.

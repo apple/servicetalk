@@ -35,6 +35,7 @@ import static io.servicetalk.grpc.api.GrpcHeaderValues.APPLICATION_GRPC;
 import static io.servicetalk.grpc.api.GrpcStatusCode.fromCodeValue;
 import static io.servicetalk.grpc.api.GrpcStatusException.serverCatchAllShouldLog;
 import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
+import static io.servicetalk.grpc.internal.GrpcStatusUtils.getStatusMessage;
 
 /**
  * Filter that maps known {@link Throwable} subtypes into an gRPC response with an appropriate {@link GrpcStatusCode}.
@@ -95,14 +96,15 @@ public final class GrpcExceptionMapperServiceFilter implements StreamingHttpServ
                             final HttpServiceContext ctx, final StreamingHttpRequest request, final Throwable cause) {
         final CharSequence codeValue = response.headers().get(GRPC_STATUS);
         assert codeValue != null;
-        final String format =
-                "{} during a {} processing for connection='{}', request='{} {} {}' was mapped to grpc-status: {} ({})";
+        final CharSequence message = getStatusMessage(response.headers());
+        final String format = "{} during a {} processing for connection='{}', request='{} {} {}' was mapped to " +
+                "grpc-status: {} ({}), grpc-message: \"{}\"";
         if (debug) {
             LOGGER.debug(format, "Exception", what, ctx, request.method(), request.requestTarget(),
-                    request.version(), codeValue, fromCodeValue(codeValue), cause);
+                    request.version(), codeValue, fromCodeValue(codeValue), message, cause);
         } else {
             LOGGER.error(format, "Unexpected exception", what, ctx, request.method(), request.requestTarget(),
-                    request.version(), codeValue, fromCodeValue(codeValue), cause);
+                    request.version(), codeValue, fromCodeValue(codeValue), message, cause);
         }
     }
 
