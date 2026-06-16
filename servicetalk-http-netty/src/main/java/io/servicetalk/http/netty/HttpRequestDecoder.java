@@ -57,9 +57,11 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> im
                        final HttpHeadersFactory headersFactory, final int maxStartLineLength,
                        final int maxHeaderFieldLength, final int maxTotalHeaderLength,
                        final boolean allowPrematureClosureBeforePayloadBody, final boolean allowLFWithoutCR,
+                       final boolean allowTransferEncodingWithContentLength,
                        final CloseHandler closeHandler) {
         super(alloc, headersFactory, maxStartLineLength, maxHeaderFieldLength, maxTotalHeaderLength,
-                allowPrematureClosureBeforePayloadBody, allowLFWithoutCR, closeHandler);
+                allowPrematureClosureBeforePayloadBody, allowLFWithoutCR,
+                allowTransferEncodingWithContentLength, closeHandler);
         this.methodQueue = requireNonNull(methodQueue);
         this.closeHandler = closeHandler;
     }

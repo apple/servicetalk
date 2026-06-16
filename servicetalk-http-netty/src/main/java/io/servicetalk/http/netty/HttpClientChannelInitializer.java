@@ -58,7 +58,8 @@ final class HttpClientChannelInitializer implements ChannelInitializer {
             pipeline.addLast(new HttpResponseDecoder(methodQueue, signalsQueue, alloc, config.headersFactory(),
                     config.maxStartLineLength(), config.maxHeaderFieldLength(), config.maxTotalHeaderFieldsLength(),
                     config.specExceptions().allowPrematureClosureBeforePayloadBody(),
-                    config.specExceptions().allowLFWithoutCR(), closeHandler));
+                    config.specExceptions().allowLFWithoutCR(),
+                    config.specExceptions().allowTransferEncodingWithContentLength(), closeHandler));
             pipeline.addLast(new HttpRequestEncoder(methodQueue, signalsQueue,
                     config.headersEncodedSizeEstimate(), config.trailersEncodedSizeEstimate(), closeHandler));
         });

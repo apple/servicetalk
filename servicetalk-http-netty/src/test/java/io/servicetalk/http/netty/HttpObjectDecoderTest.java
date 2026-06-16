@@ -116,6 +116,15 @@ abstract class HttpObjectDecoderTest {
      */
     abstract EmbeddedChannel channelWithMaxTotalHeaderFieldsLength(int maxTotalHeaderFieldsLength);
 
+    /**
+     * Creates a new channel with
+     * {@link H1SpecExceptions.Builder#allowTransferEncodingWithContentLength(boolean)} set
+     * to {@code true}, used to verify the lenient RFC 7230 strip-Content-Length behaviour.
+     *
+     * @return a new EmbeddedChannel that accepts both Transfer-Encoding and Content-Length.
+     */
+    abstract EmbeddedChannel channelLenientTransferEncodingWithContentLength();
+
     final HttpMetaData assertStartLineForContent() {
         return assertStartLineForContent(channel());
     }
@@ -572,6 +581,14 @@ abstract class HttpObjectDecoderTest {
         validateWithContent(-chunkSize, false, channel);
     }
 
+    /**
+     * RFC 9112 section 6.1: an HTTP/1.1 message must not carry both Transfer-Encoding and
+     * Content-Length. ServiceTalk historically silently stripped Content-Length (RFC 7230
+     * lenient behaviour) which left the connection open and is a request-smuggling vector.
+     * The default is now to reject;
+     * {@link H1SpecExceptions.Builder#allowTransferEncodingWithContentLength(boolean)}
+     * restores the legacy behaviour for break-glass use.
+     */
     @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
     @ValueSource(booleans = {true, false})
     void chunkedWithContentLength(boolean crlf) {
@@ -579,16 +596,41 @@ abstract class HttpObjectDecoderTest {
         String br = br(crlf);
         int chunkSize = 128;
         int chunkedContentLength = 2 + 2 + chunkSize + 2 + 5;
-        writeMsg(startLineForContent() + br +
+        DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + br +
                 "Host: servicetalk.io" + br +
                 "Connection: keep-alive" + br +
                 "Content-Length: " + chunkedContentLength + br +
-                "Transfer-Encoding: chunked" + br + br, channel);
+                "Transfer-Encoding: chunked" + br + br, channel));
+        assertThat(e.getMessage(), startsWith("Content-Length is not allowed"));
+    }
+
+    /**
+     * Lenient mode: when {@code allowTransferEncodingWithContentLength} is enabled, the
+     * decoder strips {@code Content-Length} and (for requests only) sets
+     * {@code Connection: close} so the connection is not reused for a smuggled follow-up.
+     */
+    @Test
+    void chunkedWithContentLengthLenient() {
+        EmbeddedChannel channel = channelLenientTransferEncodingWithContentLength();
+        int chunkSize = 128;
+        int chunkedContentLength = 2 + 2 + chunkSize + 2 + 5;
+        writeMsg(startLineForContent() + "\r\n" +
+                "Host: servicetalk.io" + "\r\n" +
+                "Connection: keep-alive" + "\r\n" +
+                "Content-Length: " + chunkedContentLength + "\r\n" +
+                "Transfer-Encoding: chunked" + "\r\n\r\n", channel);
         writeChunk(chunkSize, channel);
         writeLastChunk(channel);
-        HttpMetaData metaData = validateWithContent(-chunkSize, false, channel);
-        assertThat("Unexpected content-length header(s)",
+
+        HttpMetaData metaData = assertStartLineForContent(channel);
+        assertSingleHeaderValue(metaData.headers(), HOST, "servicetalk.io");
+        assertSingleHeaderValue(metaData.headers(), TRANSFER_ENCODING, CHUNKED);
+        assertThat("Content-Length must be stripped",
                 metaData.headers().valuesIterator(CONTENT_LENGTH).hasNext(), is(false));
+        // Connection: close is forced on requests only (matches Netty's HttpUtil.setKeepAlive call).
+        assertSingleHeaderValue(metaData.headers(), "Connection", isDecodingRequest() ? "close" : KEEP_ALIVE);
+        assertPayloadSize(chunkSize, channel);
+        assertFalse(channel.finishAndReleaseAll());
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")

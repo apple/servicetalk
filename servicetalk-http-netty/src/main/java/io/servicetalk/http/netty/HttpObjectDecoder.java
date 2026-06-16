@@ -68,6 +68,7 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
+import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY1;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY2;
@@ -76,6 +77,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_ORIGIN;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.UPGRADE;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
+import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
@@ -159,6 +161,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
      * </pre>
      */
     private final boolean allowLFWithoutCR;
+    private final boolean allowTransferEncodingWithContentLength;
     @Nullable
     private T message;
     @Nullable
@@ -198,6 +201,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                       final int maxStartLineLength, final int maxHeaderFieldLength,
                       final int maxTotalHeaderFieldsLength,
                       final boolean allowPrematureClosureBeforePayloadBody, final boolean allowLFWithoutCR,
+                      final boolean allowTransferEncodingWithContentLength,
                       final CloseHandler closeHandler) {
         super(alloc);
         this.closeHandler = requireNonNull(closeHandler);
@@ -207,6 +211,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         this.maxTotalHeaderFieldsLength = ensurePositive(maxTotalHeaderFieldsLength, "maxTotalHeaderFieldsLength");
         this.allowPrematureClosureBeforePayloadBody = allowPrematureClosureBeforePayloadBody;
         this.allowLFWithoutCR = allowLFWithoutCR;
+        this.allowTransferEncodingWithContentLength = allowTransferEncodingWithContentLength;
     }
 
     final HttpHeadersFactory headersFactory() {
@@ -775,9 +780,19 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                     throw new DecoderException(
                             "chunked must be the last encoding present in the Transfer-Encoding header");
                 }
+                // RFC 9112 section 6.1: TE and Content-Length must not both be present.
                 if (contentLength >= 0L) {
-                    // https://tools.ietf.org/html/rfc7230#section-3.3.3, item 3.
+                    if (!allowTransferEncodingWithContentLength) {
+                        throw new DecoderException(
+                                "Content-Length is not allowed in HTTP/1.1 messages that contain a " +
+                                        "Transfer-Encoding header");
+                    }
+                    // Lenient: strip Content-Length; force Connection: close on requests to
+                    // prevent smuggled follow-ups (matches Netty's HttpUtil.setKeepAlive call).
                     message.headers().remove(CONTENT_LENGTH);
+                    if (isDecodingRequest()) {
+                        message.headers().set(CONNECTION, CLOSE);
+                    }
                     this.contentLength = Long.MIN_VALUE;
                 }
             }

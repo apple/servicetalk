@@ -100,12 +100,19 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     private final EmbeddedChannel channelSpecException = newChannel(true);
 
     private EmbeddedChannel newChannel(boolean allowLFWithoutCR) {
+        return newChannel(DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH, allowLFWithoutCR, false);
+    }
+
+    private EmbeddedChannel newChannel(int maxTotalHeaderFieldsLength,
+                                       boolean allowLFWithoutCR,
+                                       boolean allowTransferEncodingWithContentLength) {
         final ArrayDeque<Signal> signalsQueue = new PollLikePeakArrayDeque<>();
         signalsQueue.offer(REQUEST_SIGNAL);
         return new EmbeddedChannel(new HttpResponseDecoder(methodQueue, signalsQueue,
                 getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE,
-                DEFAULT_MAX_START_LINE_LENGTH, DEFAULT_MAX_HEADER_FIELD_LENGTH, DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH,
-                false, allowLFWithoutCR, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
+                DEFAULT_MAX_START_LINE_LENGTH, DEFAULT_MAX_HEADER_FIELD_LENGTH, maxTotalHeaderFieldsLength,
+                false, allowLFWithoutCR, allowTransferEncodingWithContentLength,
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
     }
 
     @Override
@@ -150,17 +157,12 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
 
     @Override
     EmbeddedChannel channelWithMaxTotalHeaderFieldsLength(int maxTotalHeaderFieldsLength) {
-        final ArrayDeque<Signal> signalsQueue = new PollLikePeakArrayDeque<>();
-        signalsQueue.offer(REQUEST_SIGNAL);
-        return new EmbeddedChannel(new HttpResponseDecoder(methodQueue, signalsQueue,
-                getByteBufAllocator(DEFAULT_ALLOCATOR),
-                DefaultHttpHeadersFactory.INSTANCE,
-                DEFAULT_MAX_START_LINE_LENGTH,
-                DEFAULT_MAX_HEADER_FIELD_LENGTH,
-                maxTotalHeaderFieldsLength,
-                false,  // allowPrematureClosureBeforePayloadBody
-                false,  // allowLFWithoutCR
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
+        return newChannel(maxTotalHeaderFieldsLength, false, false);
+    }
+
+    @Override
+    EmbeddedChannel channelLenientTransferEncodingWithContentLength() {
+        return newChannel(DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH, false, true);
     }
 
     @Test
