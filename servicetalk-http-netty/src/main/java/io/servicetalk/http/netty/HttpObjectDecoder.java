@@ -54,6 +54,7 @@ import io.netty.handler.codec.http.HttpExpectationFailedEvent;
 import io.netty.util.AsciiString;
 import io.netty.util.ByteProcessor;
 
+import java.util.Iterator;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpConstants.COLON;
@@ -72,7 +73,9 @@ import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY1;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY2;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_LOCATION;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_ORIGIN;
+import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.UPGRADE;
+import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
@@ -747,10 +750,29 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         if (isContentAlwaysEmpty(message)) {
             removeTransferEncodingChunked(message.headers());
             return State.SKIP_CONTROL_CHARS;
-        } else if (isTransferEncodingChunked(message.headers())) {
-            if (contentLength >= 0L && HTTP_1_1.equals(message.version())) {
-                // Remove the received content-length header(s), keep only "transfer-encoding: chunked"
-                // See https://tools.ietf.org/html/rfc7230#section-3.3.3, item 3.
+        }
+        // RFC 9112 section 6.1: Transfer-Encoding is HTTP/1.1-only.
+        if (message.headers().contains(TRANSFER_ENCODING) && !HTTP_1_1.equals(message.version())) {
+            throw new StacklessDecoderException("Transfer-Encoding is only allowed in HTTP/1.1");
+        }
+        if (isTransferEncodingChunked(message.headers())) {
+            // RFC 9112 section 6.1: chunked must be the final coding.
+            final Iterator<? extends CharSequence> encodingIt =
+                    message.headers().valuesIterator(TRANSFER_ENCODING);
+            CharSequence lastValue = encodingIt.next();
+            while (encodingIt.hasNext()) {
+                lastValue = encodingIt.next();
+            }
+            final int vLen = lastValue.length();
+            final int chunkedValueLength = CHUNKED.length();
+            if (vLen < chunkedValueLength ||
+                    !AsciiString.regionMatches(lastValue, true, vLen - chunkedValueLength,
+                            CHUNKED, 0, chunkedValueLength)) {
+                throw new StacklessDecoderException(
+                        "chunked must be the last encoding present in the Transfer-Encoding header");
+            }
+            if (contentLength >= 0L) {
+                // https://tools.ietf.org/html/rfc7230#section-3.3.3, item 3.
                 message.headers().remove(CONTENT_LENGTH);
                 this.contentLength = Long.MIN_VALUE;
             }
@@ -1072,6 +1094,10 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
     static final class StacklessDecoderException extends DecoderException {
         private static final long serialVersionUID = 7611225180490304156L;
+
+        StacklessDecoderException(final String message) {
+            super(message);
+        }
 
         StacklessDecoderException(final String message, final Throwable cause) {
             super(message, cause);
