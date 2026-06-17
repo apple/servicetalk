@@ -18,7 +18,7 @@ jobs:
         java: [ 8, 11 ] # These are the JDK's we publish artifacts with.
     steps:
       - name: Download Artifacts
-        uses: dawidd6/action-download-artifact@b6e2e70617bc3265edd6dab6c906732b2f1ae151
+        uses: dawidd6/action-download-artifact@b6e2e70617bc3265edd6dab6c906732b2f1ae151 # v21
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow: ${{ github.event.workflow_run.workflow_id }}
@@ -27,7 +27,7 @@ jobs:
           name: checkstyle-results-${{ matrix.java }}
       - name: Publish Checkstyle Report
         # v1.2
-        uses: jwgmeligmeyling/checkstyle-github-action@50292990e18466f2c5d95d04ff5fab931254fa5f
+        uses: jwgmeligmeyling/checkstyle-github-action@50292990e18466f2c5d95d04ff5fab931254fa5f # v1.2
         with:
           name: Checkstyle Report JDK ${{ matrix.java }}
           path: '**/build/reports/checkstyle/*.xml'
@@ -41,7 +41,7 @@ jobs:
         java: [ 8, 11 ]
     steps:
       - name: Download Artifacts
-        uses: dawidd6/action-download-artifact@b6e2e70617bc3265edd6dab6c906732b2f1ae151
+        uses: dawidd6/action-download-artifact@b6e2e70617bc3265edd6dab6c906732b2f1ae151 # v21
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow: ${{ github.event.workflow_run.workflow_id }}
@@ -50,7 +50,7 @@ jobs:
           name: pmd-results-${{ matrix.java }}
       - name: Publish PMD Report
         # v1.2
-        uses: jwgmeligmeyling/pmd-github-action@322e346bd76a0757c4d54ff9209e245965aa066d
+        uses: jwgmeligmeyling/pmd-github-action@322e346bd76a0757c4d54ff9209e245965aa066d # v1.2
         with:
           name: PMD Report JDK ${{ matrix.java }}
           path: '**/build/reports/pmd/*.xml'
@@ -64,7 +64,7 @@ jobs:
         java: [ 8, 11 ]
     steps:
       - name: Download Artifacts
-        uses: dawidd6/action-download-artifact@b6e2e70617bc3265edd6dab6c906732b2f1ae151
+        uses: dawidd6/action-download-artifact@b6e2e70617bc3265edd6dab6c906732b2f1ae151 # v21
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow: ${{ github.event.workflow_run.workflow_id }}
@@ -73,7 +73,7 @@ jobs:
           name: spotbugs-results-${{ matrix.java }}
       - name: Publish SpotBugs Report
         # v1.2
-        uses: jwgmeligmeyling/spotbugs-github-action@b8e2c3523acb34c87f14e18cbcd2d87db8c8584e
+        uses: jwgmeligmeyling/spotbugs-github-action@b8e2c3523acb34c87f14e18cbcd2d87db8c8584e # v1.2
         with:
           name: SpotBugs Report JDK ${{ matrix.java }}
           path: '**/build/reports/spotbugs/*.xml'
