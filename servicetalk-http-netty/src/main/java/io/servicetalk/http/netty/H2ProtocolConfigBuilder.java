@@ -28,6 +28,14 @@ import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
+import static io.servicetalk.buffer.api.CharSequences.regionMatches;
+import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
+import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
+import static io.servicetalk.http.api.HttpHeaderNames.DPOP;
+import static io.servicetalk.http.api.HttpHeaderNames.DPOP_NONCE;
+import static io.servicetalk.http.api.HttpHeaderNames.SET_COOKIE;
+import static io.servicetalk.http.api.HttpHeaderNames.SET_COOKIE2;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.disabled;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.validateKeepAlivePolicy;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
@@ -39,7 +47,29 @@ import static java.util.Objects.requireNonNull;
  * @see HttpProtocolConfigs#h2()
  */
 public final class H2ProtocolConfigBuilder {
-    private static final BiPredicate<CharSequence, CharSequence> DEFAULT_SENSITIVITY_DETECTOR = (name, value) -> false;
+
+    private static final CharSequence API_KEY_SUFFIX = "api-key";
+    private static final CharSequence AUTHENTICATE_SUFFIX = "authenticate";
+    private static final CharSequence SIGNATURE_SUFFIX = "signature";
+    private static final CharSequence TOKEN_SUFFIX = "token";
+    private static final CharSequence TOKEN_ID_SUFFIX = "token-id";
+
+    // Marks common auth/credential headers as <a href="https://tools.ietf.org/html/rfc7541#section-7.1.3">sensitive</a>
+    // so they aren't stored in the HPACK dynamic table; includes the
+    // <a href="https://datatracker.ietf.org/doc/html/rfc9449#section-4.1">DPoP</a> proof header.
+    private static final BiPredicate<CharSequence, CharSequence> DEFAULT_SENSITIVITY_DETECTOR = (name, value) ->
+            contentEqualsIgnoreCase(name, COOKIE)
+                    || contentEqualsIgnoreCase(name, DPOP)
+                    || contentEqualsIgnoreCase(name, DPOP_NONCE)
+                    || contentEqualsIgnoreCase(name, SET_COOKIE)
+                    || contentEqualsIgnoreCase(name, SET_COOKIE2)
+                    || endsWithIgnoreCase(name, API_KEY_SUFFIX)
+                    || endsWithIgnoreCase(name, AUTHENTICATE_SUFFIX)
+                    || endsWithIgnoreCase(name, AUTHORIZATION)
+                    || endsWithIgnoreCase(name, SIGNATURE_SUFFIX)
+                    || endsWithIgnoreCase(name, TOKEN_ID_SUFFIX)
+                    || endsWithIgnoreCase(name, TOKEN_SUFFIX);
+
     /**
      * Netty currently doubles the connection window by default so a single stream doesn't exhaust all flow control
      * bytes.
@@ -161,6 +191,12 @@ public final class H2ProtocolConfigBuilder {
     public H2ProtocolConfig build() {
         return new DefaultH2ProtocolConfig(h2Settings, headersFactory, headersSensitivityDetector, frameLoggerConfig,
                 keepAlivePolicy, flowControlQuantum, flowControlIncrement);
+    }
+
+    private static boolean endsWithIgnoreCase(final CharSequence name, final CharSequence suffix) {
+        return name.length() >= suffix.length() &&
+                regionMatches(name, true, name.length() - suffix.length(), suffix, 0,
+                        suffix.length());
     }
 
     private static final class DefaultH2ProtocolConfig implements H2ProtocolConfig {
