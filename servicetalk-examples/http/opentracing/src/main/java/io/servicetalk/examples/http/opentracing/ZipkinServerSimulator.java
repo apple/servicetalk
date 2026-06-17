@@ -31,7 +31,7 @@ public final class ZipkinServerSimulator {
     public static void main(String[] args) throws Exception {
         HttpServers.forPort(8081)
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
-                    LOGGER.info("request {} {}", request.toString((name, value) -> value),
+                    LOGGER.info("request {} {}", request.toString(LoggingHeaderFilter.INSTANCE),
                             request.payloadBody().toString(UTF_8));
                     return responseFactory.ok();
                 }).awaitShutdown();

@@ -16,6 +16,7 @@
 package io.servicetalk.examples.http.service.composition;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -25,14 +26,19 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.http.netty.RetryingHttpRequesterFilter.HttpResponseException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 
 /**
- * Example service filter that returns a response with the exception message if the wrapped service completes with a
- * {@link HttpResponseException}.
+ * Example service filter that converts a {@link HttpResponseException} from the wrapped service into a response,
+ * logging the cause server-side.
  */
 final class HttpResponseExceptionHandlingServiceFilter implements StreamingHttpServiceFilterFactory {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpResponseExceptionHandlingServiceFilter.class);
+
     @Override
     public StreamingHttpServiceFilter create(final StreamingHttpService service) {
         return new StreamingHttpServiceFilter(service) {
@@ -41,10 +47,13 @@ final class HttpResponseExceptionHandlingServiceFilter implements StreamingHttpS
                                                         StreamingHttpResponseFactory responseFactory) {
                 return delegate().handle(ctx, request, responseFactory).onErrorResume(cause -> {
                     if (cause instanceof HttpResponseException) {
-                        // It's useful to include the exception message in the payload for demonstration purposes, but
-                        // this is not recommended in production as it may leak internal information.
-                        return responseFactory.internalServerError().toResponse().map(
-                                resp -> resp.payloadBody(cause.getMessage(), textSerializerUtf8()).toStreamingResponse());
+                        // Log the full cause server-side and return only the non-sensitive upstream status code to the
+                        // client. Echoing cause.getMessage() into the payload may leak internal information.
+                        LOGGER.warn("Unexpected response from a backend service", cause);
+                        final HttpResponseMetaData response = ((HttpResponseException) cause).metaData();
+                        return responseFactory.internalServerError().toResponse().map(resp -> resp.payloadBody(
+                                "Unexpected response status from a backend service: " + response.status(),
+                                textSerializerUtf8()).toStreamingResponse());
                     }
                     // Pass all other exceptions as-is, they will be handled by default HttpExceptionMapperServiceFilter
                     return failed(cause);

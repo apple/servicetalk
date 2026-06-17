@@ -49,7 +49,7 @@ public final class OpenTracingServer {
             HttpServers.forAddress(bindAddress)
                     .appendServiceFilter(new TracingHttpServiceFilter(tracer, serviceName))
                     .listenBlockingAndAwait((ctx, request, responseFactory) -> {
-                        LOGGER.info("processed request {}", request.toString((name, value) -> value));
+                        LOGGER.info("processed request {}", request.toString(LoggingHeaderFilter.INSTANCE));
                         return responseFactory.ok();
                     }).awaitShutdown();
         }

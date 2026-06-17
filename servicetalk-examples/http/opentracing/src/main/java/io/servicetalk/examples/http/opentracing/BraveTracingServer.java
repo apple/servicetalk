@@ -62,7 +62,7 @@ public final class BraveTracingServer {
             HttpServers.forAddress(bindAddress)
                     .appendServiceFilter(new TracingHttpServiceFilter(tracer, TEXT_MAP, serviceName))
                     .listenBlockingAndAwait((ctx, request, responseFactory) -> {
-                        LOGGER.info("processed request {}", request.toString((name, value) -> value));
+                        LOGGER.info("processed request {}", request.toString(LoggingHeaderFilter.INSTANCE));
                         return responseFactory.ok();
                     }).awaitShutdown();
         }
