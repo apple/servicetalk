@@ -13,7 +13,10 @@ on:
       - '*.adoc'
       - '*.txt'
 jobs:
+  gradle-wrapper-validation:
+    uses: ./.github/workflows/gradle-wrapper-validation.yml
   quality:
+    needs: gradle-wrapper-validation
     name: JDK ${{ matrix.java }}
     runs-on: ubuntu-latest
     strategy:
