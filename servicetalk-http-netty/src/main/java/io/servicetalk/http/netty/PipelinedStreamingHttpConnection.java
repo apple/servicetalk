@@ -30,10 +30,11 @@ final class PipelinedStreamingHttpConnection
     PipelinedStreamingHttpConnection(final NettyConnection<Object, Object> connection,
                                      final H1ProtocolConfig config,
                                      final StreamingHttpRequestResponseFactory reqRespFactory,
-                                     final boolean allowDropTrailersReadFromTransport) {
+                                     final boolean allowDropTrailersReadFromTransport,
+                                     final int maxAggregatedPayloadSize) {
         super(new NettyPipelinedConnection<>(connection, config.maxPipelinedRequests()),
                 config.maxPipelinedRequests(), reqRespFactory, config.headersFactory(),
-                allowDropTrailersReadFromTransport);
+                allowDropTrailersReadFromTransport, maxAggregatedPayloadSize);
     }
 
     @Override

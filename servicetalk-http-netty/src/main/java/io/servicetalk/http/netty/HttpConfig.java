@@ -17,11 +17,15 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpProtocolConfig;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.List;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
+import static java.lang.Integer.getInteger;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -29,6 +33,22 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
 final class HttpConfig {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpConfig.class);
+
+    static final int DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE = 4 * 1024 * 1024;
+    static final String DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY =
+            "io.servicetalk.http.netty.defaultMaxAggregatedPayloadSize";
+    static final int DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE =
+            getInteger(DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY, DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE);
+
+    static {
+        if (DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE != DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE) {
+            LOGGER.info("-D{}: {}. Overriding the default maximum aggregated payload size. This can also be " +
+                            "configured per client/server builder via maxAggregatedPayloadSize(int).",
+                    DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY, DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE);
+        }
+    }
+
     private final Consumer<H2ProtocolConfig> h2ConfigValidator;
     @Nullable
     private H1ProtocolConfig h1Config;
@@ -36,6 +56,7 @@ final class HttpConfig {
     private H2ProtocolConfig h2Config;
     private List<String> supportedAlpnProtocols;
     private boolean allowDropTrailers;
+    private int maxAggregatedPayloadSize = DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE;
 
     HttpConfig(final Consumer<H2ProtocolConfig> h2ConfigValidator) {
         this.h2ConfigValidator = requireNonNull(h2ConfigValidator);
@@ -50,6 +71,7 @@ final class HttpConfig {
         this.h2Config = from.h2Config;
         this.supportedAlpnProtocols = from.supportedAlpnProtocols;
         this.allowDropTrailers = from.allowDropTrailers;
+        this.maxAggregatedPayloadSize = from.maxAggregatedPayloadSize;
     }
 
     @Nullable
@@ -72,6 +94,14 @@ final class HttpConfig {
 
     void allowDropTrailersReadFromTransport(boolean allowDrop) {
         this.allowDropTrailers = allowDrop;
+    }
+
+    int maxAggregatedPayloadSize() {
+        return maxAggregatedPayloadSize;
+    }
+
+    void maxAggregatedPayloadSize(int maxAggregatedPayloadSize) {
+        this.maxAggregatedPayloadSize = maxAggregatedPayloadSize;
     }
 
     void protocols(final HttpProtocolConfig... protocols) {

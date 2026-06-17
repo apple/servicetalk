@@ -190,7 +190,8 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                 // ServiceTalk HTTP service handler
                                 new NettyHttpServerConnection(streamConnection, service, HTTP_2_0,
                                         h2ServerConfig.headersFactory(),
-                                        config.allowDropTrailersReadFromTransport()).process(false);
+                                        config.allowDropTrailersReadFromTransport(),
+                                        config.maxAggregatedPayloadSize()).process(false);
                             }
                     }).init(channel);
                 } catch (Throwable cause) {

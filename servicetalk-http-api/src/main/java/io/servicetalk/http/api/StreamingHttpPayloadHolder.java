@@ -54,17 +54,19 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
     private final BufferAllocator allocator;
     private final DefaultPayloadInfo payloadInfo;
     private final HttpHeadersFactory headersFactory;
+    private final int maxAggregatedSize;
     @Nullable
     private Publisher<?> messageBody;
 
     StreamingHttpPayloadHolder(final HttpHeaders headers, final BufferAllocator allocator,
                                @Nullable final Publisher<?> messageBody, final DefaultPayloadInfo messageBodyInfo,
-                               final HttpHeadersFactory headersFactory) {
+                               final HttpHeadersFactory headersFactory, final int maxAggregatedSize) {
         assert messageBody != null || !messageBodyInfo.mayHaveTrailers();
         this.headers = requireNonNull(headers);
         this.allocator = requireNonNull(allocator);
         this.payloadInfo = requireNonNull(messageBodyInfo);
         this.headersFactory = requireNonNull(headersFactory);
+        this.maxAggregatedSize = maxAggregatedSize;
         this.messageBody = messageBody;
         payloadInfo.setEmpty(messageBody == null || messageBody == empty());
     }
@@ -178,7 +180,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
 
     Single<PayloadAndTrailers> aggregate() {
         payloadInfo.setSafeToAggregate(true);
-        return aggregatePayloadAndTrailers(payloadInfo, messageBody(), allocator);
+        return aggregatePayloadAndTrailers(payloadInfo, messageBody(), allocator, maxAggregatedSize);
     }
 
     @Override

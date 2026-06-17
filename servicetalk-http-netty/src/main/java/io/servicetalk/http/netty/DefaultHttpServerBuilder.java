@@ -76,6 +76,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalServiceFilterFactory;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.net.StandardSocketOptions.SO_KEEPALIVE;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
@@ -283,6 +284,13 @@ class DefaultHttpServerBuilder implements HttpServerBuilder {
     @Override
     public final HttpServerBuilder allowDropRequestTrailers(final boolean allowDrop) {
         config.httpConfig().allowDropTrailersReadFromTransport(allowDrop);
+        return this;
+    }
+
+    @Override
+    public final HttpServerBuilder maxAggregatedPayloadSize(final int maxAggregatedPayloadSize) {
+        config.httpConfig().maxAggregatedPayloadSize(
+                ensureNonNegative(maxAggregatedPayloadSize, "maxAggregatedPayloadSize"));
         return this;
     }
 

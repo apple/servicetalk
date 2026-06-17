@@ -30,8 +30,10 @@ final class NonPipelinedStreamingHttpConnection
     NonPipelinedStreamingHttpConnection(final NettyConnection<Object, Object> connection,
                                         final StreamingHttpRequestResponseFactory reqRespFactory,
                                         final HttpHeadersFactory headersFactory,
-                                        final boolean allowDropTrailersReadFromTransport) {
-        super(connection, 1, reqRespFactory, headersFactory, allowDropTrailersReadFromTransport);
+                                        final boolean allowDropTrailersReadFromTransport,
+                                        final int maxAggregatedPayloadSize) {
+        super(connection, 1, reqRespFactory, headersFactory, allowDropTrailersReadFromTransport,
+                maxAggregatedPayloadSize);
     }
 
     @Override

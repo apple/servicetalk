@@ -28,6 +28,7 @@ final class ReadOnlyHttpServerConfig {
     @Nullable
     private final H2ProtocolConfig h2Config;
     private final boolean allowDropTrailers;
+    private final int maxAggregatedPayloadSize;
     @Nullable
     private final HttpLifecycleObserver lifecycleObserver;
 
@@ -37,6 +38,7 @@ final class ReadOnlyHttpServerConfig {
         h1Config = configs.h1Config();
         h2Config = configs.h2Config();
         allowDropTrailers = configs.allowDropTrailersReadFromTransport();
+        maxAggregatedPayloadSize = configs.maxAggregatedPayloadSize();
         lifecycleObserver = from.lifecycleObserver();
     }
 
@@ -56,6 +58,10 @@ final class ReadOnlyHttpServerConfig {
 
     boolean allowDropTrailersReadFromTransport() {
         return allowDropTrailers;
+    }
+
+    int maxAggregatedPayloadSize() {
+        return maxAggregatedPayloadSize;
     }
 
     boolean isH2PriorKnowledge() {

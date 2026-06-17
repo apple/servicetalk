@@ -29,6 +29,7 @@ final class ReadOnlyHttpClientConfig {
     @Nullable
     private final ProxyConfig<String> proxyConfig;
     private final boolean allowDropTrailers;
+    private final int maxAggregatedPayloadSize;
 
     ReadOnlyHttpClientConfig(final HttpClientConfig from) {
         final HttpConfig configs = from.protocolConfigs();
@@ -37,6 +38,7 @@ final class ReadOnlyHttpClientConfig {
         h2Config = configs.h2Config();
         proxyConfig = from.proxyConfig();
         allowDropTrailers = configs.allowDropTrailersReadFromTransport();
+        maxAggregatedPayloadSize = configs.maxAggregatedPayloadSize();
     }
 
     ReadOnlyTcpClientConfig tcpConfig() {
@@ -55,6 +57,10 @@ final class ReadOnlyHttpClientConfig {
 
     boolean allowDropTrailersReadFromTransport() {
         return allowDropTrailers;
+    }
+
+    int maxAggregatedPayloadSize() {
+        return maxAggregatedPayloadSize;
     }
 
     boolean isH2PriorKnowledge() {

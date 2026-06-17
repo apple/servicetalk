@@ -188,7 +188,7 @@ final class NettyHttpServer {
                 HTTP_1_1, observer, false, __ -> false)
                 .map(conn -> new NettyHttpServerConnection(conn, service,
                         HTTP_1_1, h1Config.headersFactory(),
-                        config.allowDropTrailersReadFromTransport())),
+                        config.allowDropTrailersReadFromTransport(), config.maxAggregatedPayloadSize())),
                 HTTP_1_1, channel);
     }
 
@@ -270,12 +270,14 @@ final class NettyHttpServer {
         private final HttpExecutionContext executionContext;
         private final ChangingFlushStrategy flushStrategy;
         private final boolean requireTrailerHeader;
+        private final int maxAggregatedPayloadSize;
 
         NettyHttpServerConnection(final NettyConnection<Object, Object> connection,
                                   final StreamingHttpService service,
                                   final HttpProtocolVersion version,
                                   final HttpHeadersFactory headersFactory,
-                                  final boolean requireTrailerHeader) {
+                                  final boolean requireTrailerHeader,
+                                  final int maxAggregatedPayloadSize) {
             super(headersFactory,
                     new DefaultHttpResponseFactory(headersFactory, connection.executionContext().bufferAllocator(),
                             version),
@@ -292,6 +294,7 @@ final class NettyHttpServer {
             this.flushStrategy = new ChangingFlushStrategy(new FlushStrategyHolder(connection.defaultFlushStrategy()));
             connection.updateFlushStrategy((current, isCurrentOriginal) -> flushStrategy);
             this.requireTrailerHeader = requireTrailerHeader;
+            this.maxAggregatedPayloadSize = maxAggregatedPayloadSize;
         }
 
         void process(final boolean handleMultipleRequests) {
@@ -303,7 +306,7 @@ final class NettyHttpServer {
                     connection.read().firstAndTail((head, payload) -> {
                         HttpRequestMetaData meta = (HttpRequestMetaData) head;
                         return newTransportRequest(meta, executionContext().bufferAllocator(), payload,
-                                requireTrailerHeader, headersFactory);
+                                requireTrailerHeader, headersFactory, maxAggregatedPayloadSize);
                     });
             toSource(handleRequestAndWriteResponse(requestSingle, handleMultipleRequests))
                     .subscribe(new ErrorLoggingHttpSubscriber(this));

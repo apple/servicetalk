@@ -35,9 +35,10 @@ final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
                                  final HttpHeaders headers, @Nullable final ContextMap context,
                                  final BufferAllocator allocator,
                                  @Nullable final Publisher<?> payloadBody, final DefaultPayloadInfo payloadInfo,
-                                 final HttpHeadersFactory headersFactory) {
+                                 final HttpHeadersFactory headersFactory, final int maxAggregatedSize) {
         super(status, version, headers, context);
-        payloadHolder = new StreamingHttpPayloadHolder(headers, allocator, payloadBody, payloadInfo, headersFactory);
+        payloadHolder = new StreamingHttpPayloadHolder(headers, allocator, payloadBody, payloadInfo, headersFactory,
+                maxAggregatedSize);
     }
 
     @Override

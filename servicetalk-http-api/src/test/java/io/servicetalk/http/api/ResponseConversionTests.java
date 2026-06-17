@@ -57,7 +57,7 @@ class ResponseConversionTests extends AbstractConversionTest {
         return Arguments.of((Supplier<StreamingHttpResponse>) () ->
                 new DefaultStreamingHttpResponse(OK, HTTP_1_1,
                         DefaultHttpHeadersFactory.INSTANCE.newHeaders(), null, DEFAULT_ALLOCATOR,
-                        new SingleSubscribePublisher(payloadInfo), payloadInfo, DefaultHttpHeadersFactory.INSTANCE),
+                        new SingleSubscribePublisher(payloadInfo), payloadInfo, DefaultHttpHeadersFactory.INSTANCE, 0),
                 payloadInfo, paramName);
     }
 

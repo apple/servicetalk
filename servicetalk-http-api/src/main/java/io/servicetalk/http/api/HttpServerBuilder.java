@@ -213,6 +213,38 @@ public interface HttpServerBuilder {
     HttpServerBuilder allowDropRequestTrailers(boolean allowDrop);
 
     /**
+     * Sets the maximum size, in bytes, of an aggregated request payload body that this server will buffer in memory.
+     * <p>
+     * This limit applies only when a request is <strong>aggregated</strong> &mdash; for example when the service uses
+     * an {@link HttpRequest aggregated programming paradigm}, or when a filter calls
+     * {@link StreamingHttpRequest#toRequest()}. Requests that are consumed purely as a
+     * {@link StreamingHttpRequest#payloadBody() stream} are not affected. When the aggregated payload would exceed this
+     * limit a {@link PayloadTooLargeException} is raised, which the default exception mapping translates into a
+     * {@link HttpResponseStatus#PAYLOAD_TOO_LARGE 413 Payload Too Large} response.
+     * <p>
+     * The limit is measured against the fully decoded payload buffered in memory at the point of aggregation &mdash;
+     * that is, <em>after</em> any decompression or body transformation applied by filters earlier in the pipeline
+     * &mdash; not the number of bytes received from the network nor any declared {@code Content-Length}. A small
+     * compressed request that expands beyond this limit once decoded will therefore be rejected.
+     * <p>
+     * The default value is 4 MiB and can be overridden globally via the
+     * {@code io.servicetalk.http.netty.defaultMaxAggregatedPayloadSize} system property. Pass {@code 0} to disable the
+     * limit.
+     * <p>
+     * For an independent, opt-in limit that can fail fast on {@code Content-Length} or bound bytes at a chosen position
+     * in the filter chain (e.g. before a decompressor), see {@code PayloadSizeLimitingHttpServiceFilter}; both apply.
+     *
+     * @param maxAggregatedPayloadSize the maximum number of payload bytes to buffer when a request is aggregated, or
+     * {@code 0} to disable the limit. Must not be negative.
+     * @return {@code this}
+     */
+    // FIXME: 0.43 - consider removing default impl
+    default HttpServerBuilder maxAggregatedPayloadSize(int maxAggregatedPayloadSize) {
+        throw new UnsupportedOperationException("Setting maxAggregatedPayloadSize is not yet supported by " +
+                getClass().getName());
+    }
+
+    /**
      * Appends the filter to the chain of filters used to decorate the {@link ConnectionAcceptor} used by this builder.
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:

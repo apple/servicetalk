@@ -146,6 +146,12 @@ public class DelegatingHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
+    public HttpServerBuilder maxAggregatedPayloadSize(final int maxAggregatedPayloadSize) {
+        delegate = delegate.maxAggregatedPayloadSize(maxAggregatedPayloadSize);
+        return this;
+    }
+
+    @Override
     public HttpServerBuilder appendConnectionAcceptorFilter(final ConnectionAcceptorFactory factory) {
         delegate = delegate.appendConnectionAcceptorFilter(factory);
         return this;

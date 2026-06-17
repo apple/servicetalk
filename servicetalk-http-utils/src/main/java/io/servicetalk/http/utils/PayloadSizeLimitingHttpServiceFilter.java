@@ -40,6 +40,10 @@ import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
  * A {@link PayloadTooLargeException} will be thrown when the maximum payload size is exceeded. The
  * {@code Content-Length} request header (when present) is inspected before the body is read so oversized requests
  * that declare their size fail early; otherwise the streaming body is bounded as bytes arrive.
+ * <p>
+ * This is independent of the server's default {@code maxAggregatedPayloadSize} limit, which bounds the
+ * fully-decoded payload at aggregation time. This filter bounds bytes at its position in the chain (so it can run
+ * before a decompressor to reject oversized wire bodies early); both limits apply.
  */
 public final class PayloadSizeLimitingHttpServiceFilter implements StreamingHttpServiceFilterFactory {
     private final int maxRequestPayloadSize;

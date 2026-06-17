@@ -38,12 +38,14 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
                                 @Nullable final ContextMap context,
                                 @Nullable final ContentCodec encoding, @Nullable final BufferEncoder encoder,
                                 final BufferAllocator allocator, @Nullable final Publisher<?> payloadBody,
-                                final DefaultPayloadInfo payloadInfo, final HttpHeadersFactory headersFactory) {
+                                final DefaultPayloadInfo payloadInfo, final HttpHeadersFactory headersFactory,
+                                final int maxAggregatedSize) {
         super(method, requestTarget, version, headers, context);
         if (encoding != null) {
             encoding(encoding);
         }
-        payloadHolder = new StreamingHttpPayloadHolder(headers, allocator, payloadBody, payloadInfo, headersFactory);
+        payloadHolder = new StreamingHttpPayloadHolder(headers, allocator, payloadBody, payloadInfo, headersFactory,
+                maxAggregatedSize);
         this.contentEncoding(encoder);
     }
 

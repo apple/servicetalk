@@ -85,7 +85,7 @@ class PipelinedHttpConnectionTest {
 
         pipe = TestStreamingHttpConnection.from(
                 new PipelinedStreamingHttpConnection(connection, h1().maxPipelinedRequests(2).build(),
-                        reqRespFactory, false));
+                        reqRespFactory, false, 0));
     }
 
     private void fullSetup(NettyConnection<Object, Object> connection) {

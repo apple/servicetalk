@@ -89,7 +89,7 @@ final class AbstractHttpConnectionTest {
             extends AbstractStreamingHttpConnection<NettyConnection<Object, Object>> {
         MockStreamingHttpConnection(final NettyConnection<Object, Object> connection,
                                     final int maxPipelinedRequests) {
-            super(connection, maxPipelinedRequests, reqRespFactory, headersFactory, false);
+            super(connection, maxPipelinedRequests, reqRespFactory, headersFactory, false, 0);
         }
 
         @Override
@@ -133,7 +133,7 @@ final class AbstractHttpConnectionTest {
         HttpHeaders headers = headersFactory.newHeaders();
         headers.add(TRANSFER_ENCODING, CHUNKED);
         StreamingHttpRequest req = newTransportRequest(newRequestMetaData(HTTP_1_1, GET, "/foo", headers),
-                allocator, from(chunk1, chunk2, chunk3, trailers), false, headersFactory);
+                allocator, from(chunk1, chunk2, chunk3, trailers), false, headersFactory, 0);
 
         HttpResponseMetaData respMeta = newResponseMetaData(HTTP_1_1, OK,
                 INSTANCE.newHeaders().add(CONTENT_TYPE, TEXT_PLAIN));

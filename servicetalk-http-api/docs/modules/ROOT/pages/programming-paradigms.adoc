@@ -12,6 +12,24 @@ As explained xref:{page-version}@servicetalk::programming-paradigms.adoc[here] S
 programming paradigms for users to use. In this document we elaborate on how HTTP module provides support for these
 programming paradigms.
 
+[NOTE]
+====
+Whenever a payload body is *aggregated* into a single object (the aggregated paradigms below, or any filter that
+calls `toRequest()`/`toResponse()`), the whole body is buffered in memory. To guard against excessive memory
+consumption, ServiceTalk caps the size of an aggregated body at *4 MiB* by default. Requests that exceed the server's limit are
+rejected with a `413 Payload Too Large`; oversized responses surface a `PayloadTooLargeException` to the client.
+
+The limit is measured against the fully decoded payload buffered at the point of aggregation -- that is, _after_ any
+decompression or body transformation applied by filters earlier in the pipeline -- not the bytes received from the
+network nor any declared `Content-Length`. A small compressed body that expands beyond the limit once decoded is
+therefore rejected.
+
+Adjust or disable this via `HttpServerBuilder#maxAggregatedPayloadSize(int)` /
+`SingleAddressHttpClientBuilder#maxAggregatedPayloadSize(int)` (pass `0` to disable), or globally with the
+`io.servicetalk.http.netty.defaultMaxAggregatedPayloadSize` system property. Bodies consumed purely as a stream are
+not affected.
+====
+
 [#service-programming-paradigms]
 == Server
 

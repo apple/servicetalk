@@ -309,7 +309,8 @@ final class HttpDataSourceTransformations {
 
     static Single<PayloadAndTrailers> aggregatePayloadAndTrailers(final DefaultPayloadInfo payloadInfo,
                                                                   final Publisher<?> payloadAndTrailers,
-                                                                  final BufferAllocator allocator) {
+                                                                  final BufferAllocator allocator,
+                                                                  final int maxAggregatedSize) {
         if (payloadAndTrailers == empty()) {
             payloadInfo.setEmpty(true).setMayHaveTrailersAndGenericTypeBuffer(false);
             return succeeded(EMPTY_PAYLOAD_AND_TRAILERS);
@@ -318,6 +319,16 @@ final class HttpDataSourceTransformations {
             if (nextItem instanceof Buffer) {
                 try {
                     Buffer buffer = (Buffer) nextItem;
+                    // A non-positive limit disables the check. Otherwise, fail fast once the accumulated payload would
+                    // exceed the configured maximum, so an oversized aggregated message can't consume an unbounded
+                    // amount of memory. The subtraction avoids integer overflow when both operands are near
+                    // Integer.MAX_VALUE. Throwing here cancels the upstream message body (see ReduceSingle).
+                    if (maxAggregatedSize > 0 &&
+                            maxAggregatedSize - pair.payload.readableBytes() < buffer.readableBytes()) {
+                        throw new PayloadTooLargeException("Maximum aggregated payload size=" + maxAggregatedSize +
+                                " current payload size=" + pair.payload.readableBytes() + " new buffer size=" +
+                                buffer.readableBytes());
+                    }
                     if (isAlwaysEmpty(pair.payload)) {
                         pair.payload = buffer;
                     } else if (pair.payload instanceof CompositeBuffer) {

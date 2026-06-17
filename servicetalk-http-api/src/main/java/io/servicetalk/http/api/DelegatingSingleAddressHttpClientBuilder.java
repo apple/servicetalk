@@ -113,6 +113,12 @@ public class DelegatingSingleAddressHttpClientBuilder<U, R> implements SingleAdd
     }
 
     @Override
+    public SingleAddressHttpClientBuilder<U, R> maxAggregatedPayloadSize(final int maxAggregatedPayloadSize) {
+        delegate = delegate.maxAggregatedPayloadSize(maxAggregatedPayloadSize);
+        return this;
+    }
+
+    @Override
     public SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
             final StreamingHttpConnectionFilterFactory factory) {
         delegate = delegate.appendConnectionFilter(factory);
