@@ -52,6 +52,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
@@ -299,7 +300,10 @@ class NettyCompressionSerializerBombTest {
                         from(DEFAULT_ALLOCATOR.wrap(compressed)), DEFAULT_ALLOCATOR)
                 .collect(DEFAULT_ALLOCATOR::newCompositeBuffer, CompositeBuffer::addBuffer)
                 .toFuture().get();
+
         assertThat(result.readableBytes(), equalTo(payloadBytes));
+        // our uncompressed bomb should be a sequence of 0's.
+        assertEquals(-1, result.forEachByte((b) -> b == 0));
     }
 
     /**
