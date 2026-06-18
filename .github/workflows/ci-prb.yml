@@ -65,8 +65,9 @@ jobs:
           JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
         run: ./gradlew --no-daemon --parallel test
       - name: Upload Test Results
-        if: always()
+        if: '!cancelled()'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
+          # File location used in ci-prb-reports.yml and must be coordinated.
           name: test-results-${{ matrix.os_label }}-${{ matrix.java }}
           path: '**/build/test-results/test/TEST-*.xml'
