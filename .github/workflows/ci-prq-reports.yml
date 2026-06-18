@@ -26,7 +26,6 @@ jobs:
           commit: ${{ github.event.workflow_run.head_commit.id }}
           name: checkstyle-results-${{ matrix.java }}
       - name: Publish Checkstyle Report
-        # v1.2
         uses: jwgmeligmeyling/checkstyle-github-action@50292990e18466f2c5d95d04ff5fab931254fa5f # v1.2
         with:
           name: Checkstyle Report JDK ${{ matrix.java }}
@@ -49,7 +48,6 @@ jobs:
           commit: ${{ github.event.workflow_run.head_commit.id }}
           name: pmd-results-${{ matrix.java }}
       - name: Publish PMD Report
-        # v1.2
         uses: jwgmeligmeyling/pmd-github-action@322e346bd76a0757c4d54ff9209e245965aa066d # v1.2
         with:
           name: PMD Report JDK ${{ matrix.java }}
@@ -72,7 +70,6 @@ jobs:
           commit: ${{ github.event.workflow_run.head_commit.id }}
           name: spotbugs-results-${{ matrix.java }}
       - name: Publish SpotBugs Report
-        # v1.2
         uses: jwgmeligmeyling/spotbugs-github-action@b8e2c3523acb34c87f14e18cbcd2d87db8c8584e # v1.2
         with:
           name: SpotBugs Report JDK ${{ matrix.java }}

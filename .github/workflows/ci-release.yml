@@ -75,7 +75,6 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish SpotBugs Report
         if: always()
-        # v1.2
         uses: jwgmeligmeyling/spotbugs-github-action@b8e2c3523acb34c87f14e18cbcd2d87db8c8584e # v1.2
         with:
           name: SpotBugs Report
