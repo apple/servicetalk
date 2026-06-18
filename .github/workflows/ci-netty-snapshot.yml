@@ -8,7 +8,10 @@ on:
 env:
   JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
 jobs:
+  gradle-wrapper-validation:
+    uses: ./.github/workflows/gradle-wrapper-validation.yml
   build:
+    needs: gradle-wrapper-validation
     name: Netty ${{ matrix.netty }} Snapshot
     runs-on: ${{ matrix.os }}
     env:

@@ -26,7 +26,10 @@ on:
     - cron: '0 13 * * 1'
 
 jobs:
+  gradle-wrapper-validation:
+    uses: ./.github/workflows/gradle-wrapper-validation.yml
   analyze:
+    needs: gradle-wrapper-validation
     permissions:
       contents: read
       actions: read
