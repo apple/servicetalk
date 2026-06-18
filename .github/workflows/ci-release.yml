@@ -19,11 +19,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Check NO SNAPSHOT version suffix
         run: if [[ $(cat gradle.properties | grep version= | sed 's/^version=//') =~ .*-SNAPSHOT ]]; then exit 1; else exit 0; fi
       - name: Set up JDK
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287 # v5.3.0
         with:
           java-version: 17
           distribution: 'zulu'
@@ -54,29 +54,28 @@ jobs:
           echo "Go to https://central.sonatype.com/publishing/deployments to finish publishing artifacts"
       - name: Publish Test Results
         if: always()
-        uses: scacap/action-surefire-report@3dacff26879cd2a7f2160d101254032a3707fe6f
+        uses: scacap/action-surefire-report@3dacff26879cd2a7f2160d101254032a3707fe6f # v1.12.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/test/TEST-*.xml'
           check_name: Test Report
       - name: Publish Checkstyle Report
         if: always()
-        uses: jwgmeligmeyling/checkstyle-github-action@50292990e18466f2c5d95d04ff5fab931254fa5f
+        uses: jwgmeligmeyling/checkstyle-github-action@50292990e18466f2c5d95d04ff5fab931254fa5f # v1.2
         with:
           name: Checkstyle Report
           path: '**/build/reports/checkstyle/*.xml'
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish PMD Report
         if: always()
-        uses: jwgmeligmeyling/pmd-github-action@322e346bd76a0757c4d54ff9209e245965aa066d
+        uses: jwgmeligmeyling/pmd-github-action@322e346bd76a0757c4d54ff9209e245965aa066d # v1.2
         with:
           name: PMD Report
           path: '**/build/reports/pmd/*.xml'
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish SpotBugs Report
         if: always()
-        # v1.2
-        uses: jwgmeligmeyling/spotbugs-github-action@b8e2c3523acb34c87f14e18cbcd2d87db8c8584e
+        uses: jwgmeligmeyling/spotbugs-github-action@b8e2c3523acb34c87f14e18cbcd2d87db8c8584e # v1.2
         with:
           name: SpotBugs Report
           path: '**/build/reports/spotbugs/*.xml'
