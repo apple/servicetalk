@@ -21,6 +21,7 @@ import io.servicetalk.encoding.api.BufferEncodingException;
 import io.servicetalk.serializer.api.SerializerDeserializer;
 import io.servicetalk.serializer.api.StreamingSerializerDeserializer;
 
+import io.netty.handler.codec.compression.DecompressionException;
 import io.netty.handler.codec.compression.JdkZlibDecoder;
 import io.netty.handler.codec.compression.JdkZlibEncoder;
 import io.netty.handler.codec.compression.ZlibWrapper;
@@ -35,6 +36,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
@@ -48,7 +50,9 @@ import static io.servicetalk.encoding.netty.NettyCompression.gzipDefault;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
@@ -257,6 +261,52 @@ class NettyCompressionSerializerBombTest {
     }
 
     /**
+     * A single chunk that inflates past {@code maxChunkSize} fails fast (the decoder's own
+     * per-inflate {@code maxAllocation} guard) rather than allocating unbounded memory.
+     */
+    @ParameterizedTest(name = "{displayName} [{index}] codec = {0}")
+    @EnumSource(Codec.class)
+    void streamingBoundedByMaxChunkSize(final Codec codec) throws IOException {
+        final int maxChunkSize = 1 << 20;     // 1 MiB single-inflate guard
+        final long payloadBytes = 64L << 20;  // 64 MiB from one member -> 64x the guard, must trip it
+        final byte[] compressed = codec.bomb.build(payloadBytes);
+        final StreamingSerializerDeserializer<Buffer> serializer = codec.builder.get()
+                .maxChunkSize(maxChunkSize)
+                .maxDecompressedBytes(0L)
+                .buildStreaming();
+
+        final ExecutionException ex = assertThrows(ExecutionException.class,
+                () -> serializer.deserialize(from(DEFAULT_ALLOCATOR.wrap(compressed)), DEFAULT_ALLOCATOR)
+                        .collect(DEFAULT_ALLOCATOR::newCompositeBuffer, CompositeBuffer::addBuffer)
+                        .toFuture().get());
+        assertThat(rootCause(ex), instanceOf(DecompressionException.class));
+    }
+
+    /**
+     * A single chunk that inflates to less than {@code maxChunkSize} round-trips unchanged.
+     */
+    @ParameterizedTest(name = "{displayName} [{index}] codec = {0}")
+    @EnumSource(Codec.class)
+    void streamingUnderMaxChunkSizeRoundTrips(final Codec codec) throws Exception {
+        final int maxChunkSize = 4 << 20;     // 4 MiB single-inflate guard
+        final int payloadBytes = 1 << 20;     // 1 MiB, comfortably under the guard
+        final byte[] compressed = codec.bomb.build(payloadBytes);
+        final StreamingSerializerDeserializer<Buffer> serializer = codec.builder.get()
+                .maxChunkSize(maxChunkSize)
+                .maxDecompressedBytes(0L)
+                .buildStreaming();
+
+        final CompositeBuffer result = serializer.deserialize(
+                        from(DEFAULT_ALLOCATOR.wrap(compressed)), DEFAULT_ALLOCATOR)
+                .collect(DEFAULT_ALLOCATOR::newCompositeBuffer, CompositeBuffer::addBuffer)
+                .toFuture().get();
+
+        assertThat(result.readableBytes(), equalTo(payloadBytes));
+        // our uncompressed bomb should be a sequence of 0's.
+        assertEquals(-1, result.forEachByte((b) -> b == 0));
+    }
+
+    /**
      * Variant that targets the cumulative cap specifically: with a wide {@code maxChunkSize} the
      * 64 MiB default is the binding limit, and the resulting exception message must mention
      * "exceeded" to prove the cap (not the decoder's per-chunk guard) fired.
@@ -283,6 +333,14 @@ class NettyCompressionSerializerBombTest {
             cur = cur.getCause();
         }
         return cur.getMessage() != null ? cur.getMessage() : "";
+    }
+
+    private static Throwable rootCause(final Throwable t) {
+        Throwable cur = t;
+        while (cur.getCause() != null && cur.getCause() != cur) {
+            cur = cur.getCause();
+        }
+        return cur;
     }
 
     @FunctionalInterface
