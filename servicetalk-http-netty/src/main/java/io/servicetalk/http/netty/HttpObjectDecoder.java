@@ -69,7 +69,9 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.api.CharSequences.regionMatches;
 import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
+import static io.servicetalk.http.api.HeaderUtils.isConnectionClose;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
+import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY1;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY2;
@@ -78,6 +80,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_ORIGIN;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.UPGRADE;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
+import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
@@ -762,8 +765,17 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             // RFC 9112 section 6.3: Transfer-Encoding overrides Content-Length. Drop any received
             // Content-Length now so it can never be used to frame the body, in any branch below.
             if (contentLength >= 0L) {
+                // RFC 9112 section 6.1: this is the forbidden Content-Length + Transfer-Encoding
+                // combination. Process per Transfer-Encoding alone and force Connection: close -
+                // the shouldClose(message) check below signals the close handler so the connection
+                // is torn down after this exchange to avoid request smuggling attacks.
                 message.headers().remove(CONTENT_LENGTH);
                 this.contentLength = Long.MIN_VALUE;
+                // Preserve any Connection values the peer already sent (e.g. upgrade, keep-alive) and
+                // only add close if it isn't there yet, rather than overriding with set(...).
+                if (!isConnectionClose(message.headers())) {
+                    message.headers().add(CONNECTION, CLOSE);
+                }
             }
             // RFC 9112 section 6.1: chunked must be the final coding. There may be multiple
             // Transfer-Encoding header lines, so check the last value of the last line.

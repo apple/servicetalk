@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import io.netty.buffer.ByteBuf;
@@ -35,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.annotation.Nullable;
 
@@ -43,16 +45,21 @@ import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static io.netty.util.AsciiString.contentEquals;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
+import static io.servicetalk.http.api.HeaderUtils.isConnectionClose;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
+import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
+import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
 import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
 import static io.servicetalk.http.netty.H1ProtocolConfigBuilder.DEFAULT_MAX_HEADER_FIELD_LENGTH;
 import static io.servicetalk.http.netty.H1ProtocolConfigBuilder.DEFAULT_MAX_START_LINE_LENGTH;
 import static java.lang.Integer.toHexString;
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -69,6 +76,9 @@ import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 abstract class HttpObjectDecoderTest {
 
@@ -115,6 +125,9 @@ abstract class HttpObjectDecoderTest {
      * @return a new EmbeddedChannel configured with the specified limit
      */
     abstract EmbeddedChannel channelWithMaxTotalHeaderFieldsLength(int maxTotalHeaderFieldsLength);
+
+    /** Channel wired with the supplied {@link CloseHandler} for verifying close-pipeline interactions. */
+    abstract EmbeddedChannel channelWithCloseHandler(CloseHandler closeHandler);
 
     final HttpMetaData assertStartLineForContent() {
         return assertStartLineForContent(channel());
@@ -572,6 +585,10 @@ abstract class HttpObjectDecoderTest {
         validateWithContent(-chunkSize, false, channel);
     }
 
+    /**
+     * RFC 9112 section 6.1: TE+CL on HTTP/1.1 is processed per Transfer-Encoding alone
+     * (Content-Length stripped), with Connection: close forced to prevent smuggled follow-ups.
+     */
     @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
     @ValueSource(booleans = {true, false})
     void chunkedWithContentLength(boolean crlf) {
@@ -581,14 +598,99 @@ abstract class HttpObjectDecoderTest {
         int chunkedContentLength = 2 + 2 + chunkSize + 2 + 5;
         writeMsg(startLineForContent() + br +
                 "Host: servicetalk.io" + br +
-                "Connection: keep-alive" + br +
                 "Content-Length: " + chunkedContentLength + br +
                 "Transfer-Encoding: chunked" + br + br, channel);
         writeChunk(chunkSize, channel);
         writeLastChunk(channel);
-        HttpMetaData metaData = validateWithContent(-chunkSize, false, channel);
-        assertThat("Unexpected content-length header(s)",
-                metaData.headers().valuesIterator(CONTENT_LENGTH).hasNext(), is(false));
+
+        HttpMetaData metaData = assertStartLineForContent(channel);
+        assertSingleHeaderValue(metaData.headers(), HOST, "servicetalk.io");
+        assertSingleHeaderValue(metaData.headers(), TRANSFER_ENCODING, CHUNKED);
+        assertSingleHeaderValue(metaData.headers(), CONNECTION, CLOSE);
+        assertFalse(metaData.headers().contains(CONTENT_LENGTH), "Content-Length must be stripped");
+        assertPayloadSize(chunkSize, channel);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    /** TE+CL signals {@link CloseHandler#protocolClosingInbound} so the connection closes after the response. */
+    @Test
+    void chunkedWithContentLengthSignalsProtocolClosingInbound() {
+        CloseHandler closeHandler = mock(CloseHandler.class);
+        EmbeddedChannel channel = channelWithCloseHandler(closeHandler);
+        int chunkSize = 16;
+        writeMsg(startLineForContent() + "\r\n" +
+                "Host: servicetalk.io\r\n" +
+                "Content-Length: 999\r\n" +
+                "Transfer-Encoding: chunked\r\n\r\n", channel);
+        writeChunk(chunkSize, channel);
+        writeLastChunk(channel);
+
+        verify(closeHandler).protocolClosingInbound(any());
+        assertStartLineForContent(channel);
+        assertPayloadSize(chunkSize, channel);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    /**
+     * RFC 9112 section 6.1 close disposition must not clobber Connection values the peer already sent. When
+     * {@code close} is absent it is added while preserving existing values like {@code keep-alive} or
+     * {@code upgrade}; when it is already present (even within a comma-separated value) it is left untouched
+     * rather than duplicated.
+     */
+    @ParameterizedTest(name = "{displayName} [{index}] connection=\"{0}\"")
+    @MethodSource("chunkedWithContentLengthConnectionArgs")
+    void chunkedWithContentLengthPreservesConnectionHeader(@Nullable String connectionValue,
+                                                           List<String> expectedConnectionTokens) {
+        EmbeddedChannel channel = channel();
+        int chunkSize = 16;
+        StringBuilder sb = new StringBuilder(startLineForContent()).append("\r\n")
+                .append("Host: servicetalk.io\r\n")
+                .append("Content-Length: 999\r\n")
+                .append("Transfer-Encoding: chunked\r\n");
+        if (connectionValue != null) {
+            sb.append("Connection: ").append(connectionValue).append("\r\n");
+        }
+        sb.append("\r\n");
+        writeMsg(sb.toString(), channel);
+        writeChunk(chunkSize, channel);
+        writeLastChunk(channel);
+
+        HttpMetaData metaData = assertStartLineForContent(channel);
+        assertFalse(metaData.headers().contains(CONTENT_LENGTH), "Content-Length must be stripped");
+        assertTrue(isConnectionClose(metaData.headers()), "Connection: close must be present");
+        assertThat("Unexpected Connection header tokens",
+                connectionTokens(metaData.headers()), containsInAnyOrder(expectedConnectionTokens.toArray()));
+        assertPayloadSize(chunkSize, channel);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    private static Collection<Arguments> chunkedWithContentLengthConnectionArgs() {
+        final List<Arguments> arguments = new ArrayList<>();
+        // No Connection header: close is added.
+        arguments.add(Arguments.of(null, singletonList("close")));
+        // keep-alive present: preserved, close added alongside (shouldClose still triggers on the close token).
+        arguments.add(Arguments.of("keep-alive", asList("keep-alive", "close")));
+        // upgrade present: preserved, close added alongside.
+        arguments.add(Arguments.of("Upgrade", asList("upgrade", "close")));
+        // close already present: left as-is, not duplicated.
+        arguments.add(Arguments.of("close", singletonList("close")));
+        // close nested in a comma-separated value: recognized, not duplicated, other tokens preserved.
+        arguments.add(Arguments.of("keep-alive, close", asList("keep-alive", "close")));
+        return arguments;
+    }
+
+    /** All {@code Connection} header values, comma-split and lower-cased, gathered across every header line. */
+    private static List<String> connectionTokens(HttpHeaders headers) {
+        final List<String> tokens = new ArrayList<>();
+        for (Iterator<? extends CharSequence> it = headers.valuesIterator(CONNECTION); it.hasNext();) {
+            for (String token : it.next().toString().split(",")) {
+                final String trimmed = token.trim();
+                if (!trimmed.isEmpty()) {
+                    tokens.add(trimmed.toLowerCase(Locale.ENGLISH));
+                }
+            }
+        }
+        return tokens;
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
