@@ -879,6 +879,60 @@ abstract class HttpObjectDecoderTest {
             // Multi-header: chunked first, deflate last (length 7, same as "chunked") - rejected.
             // This case demonstrates the gap closed vs Netty's permissive check.
             arguments.add(Arguments.of("chunked" + br + "Transfer-Encoding: deflate", true, crlf));
+            // Multi-header: chunked first, notchunked last - rejected. The "chunked" suffix of
+            // "notchunked" must NOT be treated as a token boundary match.
+            arguments.add(Arguments.of("chunked" + br + "Transfer-Encoding: notchunked", true, crlf));
+            // Single value: notchunked is not chunked at all - the decoder treats this as
+            // "TE without chunked" and rejects on the request side via the test below; for the
+            // response side it is not a "chunked must be last" violation, so we don't include
+            // it here.
+            // Multi-header: chunked first, empty value last - rejected (empty cannot end in chunked).
+            arguments.add(Arguments.of("chunked" + br + "Transfer-Encoding: ", true, crlf));
+        }
+        return arguments;
+    }
+
+    /**
+     * RFC 9112 section 6.3: a request that has {@code Transfer-Encoding} without {@code chunked}
+     * as the final coding cannot be reliably framed and MUST be rejected. For responses the
+     * legacy "read-until-connection-close" framing still applies, so the decoder accepts the
+     * headers and falls through to variable-length reads.
+     */
+    @ParameterizedTest(name = "{displayName} [{index}] transferEncoding=\"{0}\" withContentLength={1} crlf={2}")
+    @MethodSource("transferEncodingWithoutChunkedArgs")
+    void transferEncodingWithoutChunked(String transferEncoding, boolean withContentLength, boolean crlf) {
+        EmbeddedChannel channel = channel(crlf);
+        String br = br(crlf);
+        StringBuilder sb = new StringBuilder()
+                .append(startLineForContent()).append(br)
+                .append("Host: servicetalk.io").append(br)
+                .append("Transfer-Encoding: ").append(transferEncoding).append(br);
+        if (withContentLength) {
+            sb.append("Content-Length: 0").append(br);
+        }
+        sb.append(br);
+        String msg = sb.toString();
+        if (isDecodingRequest()) {
+            DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(msg, channel));
+            assertThat(e.getMessage(), startsWith("Transfer-Encoding without chunked is not allowed in requests"));
+        } else {
+            // Response side: TE without chunked is legal under RFC 9112 6.3 and frames by
+            // connection close. Feed the headers and confirm decoding progresses.
+            writeMsg(msg, channel);
+            HttpMetaData metaData = assertStartLineForContent(channel);
+            assertThat(metaData, is(notNullValue()));
+        }
+    }
+
+    private static Collection<Arguments> transferEncodingWithoutChunkedArgs() {
+        final List<Arguments> arguments = new ArrayList<>();
+        for (boolean crlf : new boolean[] {true, false}) {
+            // gzip alone is not chunked-framed.
+            arguments.add(Arguments.of("gzip", false, crlf));
+            // gzip + Content-Length: still not chunked; request must reject.
+            arguments.add(Arguments.of("gzip", true, crlf));
+            // Empty TE value with no chunked is also "TE without chunked".
+            arguments.add(Arguments.of("", false, crlf));
         }
         return arguments;
     }

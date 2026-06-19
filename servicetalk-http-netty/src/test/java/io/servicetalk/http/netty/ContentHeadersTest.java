@@ -123,7 +123,6 @@ class ContentHeadersTest extends AbstractNettyHttpServerTest {
                 new RequestTest(aggregatedRequest(TRACE), withoutPayload(), HAVE_NEITHER),
                 new RequestTest(aggregatedRequest(PATCH), withoutPayload(), HAVE_CONTENT_LENGTH_ZERO),
 
-                new RequestTest(aggregatedRequest(GET), transferEncodingGzip(), HAVE_CONTENT_LENGTH),
                 new RequestTest(aggregatedRequest(GET), transferEncodingChunked(), HAVE_TRANSFER_ENCODING_CHUNKED),
                 new RequestTest(aggregatedRequest(GET), transferEncodingGzipAndChunked(),
                         HAVE_TRANSFER_ENCODING_CHUNKED),
