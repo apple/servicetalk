@@ -433,7 +433,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 }
                 onDataSeen();
                 final int lfIndex = crlfIndex(longLFIndex);
-                long chunkSize = getChunkSize(buffer, lfIndex);
+                int chunkSize = getChunkSize(buffer, lfIndex);
                 consumeCRLF(buffer, lfIndex);
                 this.chunkSize = chunkSize;
                 if (chunkSize == 0) {
@@ -444,7 +444,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 // fall-through
             }
             case READ_CHUNKED_CONTENT: {
-                final int toRead = min((int) min(Integer.MAX_VALUE, chunkSize), buffer.readableBytes());
+                final int toRead = (int) min(chunkSize, buffer.readableBytes());
                 if (toRead == 0) {
                     return;
                 }
@@ -836,7 +836,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         }
     }
 
-    private static long getChunkSize(final ByteBuf buffer, final int lfIndex) {
+    private static int getChunkSize(final ByteBuf buffer, final int lfIndex) {
         if (lfIndex - 2 < buffer.readerIndex()) {
             throw new DecoderException("Chunked encoding specified but chunk-size not found");
         }
@@ -844,7 +844,13 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 lfIndex - 1 - buffer.readerIndex(), US_ASCII));
     }
 
-    private static long getChunkSize(String hex) {
+    /**
+     * Parses an HTTP/1.1 chunk-size token. Stops at the first {@code ';'}, whitespace, or
+     * ISO control character so any chunk-extension is ignored. Visible for testing the
+     * {@code value < 0} guard which is otherwise unreachable through the public flow given
+     * the {@link #MAX_HEX_CHARS_FOR_LONG} line cap.
+     */
+    static int getChunkSize(String hex) {
         hex = hex.trim();
         for (int i = 0; i < hex.length(); ++i) {
             char c = hex.charAt(i);
@@ -853,9 +859,13 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 break;
             }
         }
-
         try {
-            return parseUnsignedLong(hex, 16);
+            final long value = parseUnsignedLong(hex, 16);
+            if (value < 0 || value > Integer.MAX_VALUE) {
+                throw new NumberFormatException("Chunk size " + Long.toUnsignedString(value)
+                        + " exceeds Integer.MAX_VALUE");
+            }
+            return (int) value;
         } catch (NumberFormatException cause) {
             throw invalidChunkSize(hex, cause);
         }
