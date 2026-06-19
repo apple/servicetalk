@@ -639,12 +639,6 @@ abstract class HttpObjectDecoderTest {
         assertThat(channel.inboundMessages(), is(not(empty())));
     }
 
-    /**
-     * Validates that chunk-size values exceeding {@link Integer#MAX_VALUE} are rejected.
-     * Previously {@link Long#parseUnsignedLong} accepted them and a defensive cast in
-     * {@code READ_CHUNKED_CONTENT} silently clamped to {@link Integer#MAX_VALUE}, leaving
-     * the decoder waiting forever for body bytes that would not arrive.
-     */
     @ParameterizedTest(name = "{displayName} [{index}] chunkSize={0} expectRejected={1} crlf={2}")
     @MethodSource("chunkSizeOverflowArgs")
     void chunkedChunkSizeIntOverflow(String chunkSizeHex, boolean expectRejected, boolean crlf) {
@@ -700,13 +694,6 @@ abstract class HttpObjectDecoderTest {
         assertThat(channel.inboundMessages(), is(not(empty())));
     }
 
-    /**
-     * Direct tests for {@link HttpObjectDecoder#getChunkSize(String)}, exercising branches that
-     * are unreachable through the EmbeddedChannel flow because of the chunk-size line cap.
-     * In particular the {@code value < 0} guard requires a hex string that wraps
-     * {@link Long#parseUnsignedLong} into a negative long, which needs more than 15 hex
-     * characters — the public flow caps the line at 14 hex characters + CRLF.
-     */
     @ParameterizedTest(name = "{displayName} [{index}] hex={0}")
     @ValueSource(strings = {
             // 16 hex F's: parseUnsignedLong -> -1L (0xFFFFFFFFFFFFFFFF). Exercises value < 0.
