@@ -68,6 +68,7 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
+import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY1;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY2;
@@ -76,6 +77,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_ORIGIN;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.UPGRADE;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
+import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
@@ -778,9 +780,12 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                             "chunked must be the last encoding present in the Transfer-Encoding header");
                 }
                 if (contentLength >= 0L) {
-                    // https://tools.ietf.org/html/rfc7230#section-3.3.3, item 3.
+                    // RFC 9112 section 6.1: forbidden combination. Process per Transfer-Encoding
+                    // alone, force Connection: close - the shouldClose(message) check below
+                    // signals the close handler so the connection is torn down after this exchange.
                     message.headers().remove(CONTENT_LENGTH);
                     this.contentLength = Long.MIN_VALUE;
+                    message.headers().set(CONNECTION, CLOSE);
                 }
                 return State.READ_CHUNK_SIZE;
             }
