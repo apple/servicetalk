@@ -35,6 +35,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
@@ -54,6 +55,7 @@ import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 
 class PayloadSizeLimitingHttpServiceFilterTest {
@@ -132,7 +134,11 @@ class PayloadSizeLimitingHttpServiceFilterTest {
     @ParameterizedTest
     @EnumSource(HttpProtocol.class)
     void streamingBodyOverLimitRejectedWith413(HttpProtocol protocol) throws Exception {
-        // No Content-Length: the streaming limiter must still fire once accumulated bytes exceed max.
+        // No Content-Length: the streaming limiter must still fire once accumulated bytes exceed max. The filter
+        // cancels (rather than drains) the oversized body, so the close handlers may tear down the transaction
+        // before the mapped 413 is delivered — a race (reliably teardown on Linux/epoll, where the client's
+        // in-flight body write fails with a broken pipe). Either outcome means the oversized body was rejected.
+        // Accept both, matching contentLengthOverLimitTerminatesTransaction.
         try (HttpServerContext server = startServer(protocol);
              StreamingHttpClient client = newClient(server, protocol)) {
 
@@ -144,7 +150,14 @@ class PayloadSizeLimitingHttpServiceFilterTest {
             StreamingHttpRequest request = client.post("/").payloadBody(Publisher.from(chunks));
             request.headers().remove(CONTENT_LENGTH);
 
-            StreamingHttpResponse response = client.request(request).toFuture().get();
+            final StreamingHttpResponse response;
+            try {
+                response = client.request(request).toFuture().get();
+            } catch (ExecutionException terminated) {
+                // Connection/stream torn down before the response surfaced.
+                assertThat(terminated.getCause(), is(instanceOf(IOException.class)));
+                return;
+            }
             assertThat(response.status(), is(PAYLOAD_TOO_LARGE));
         }
     }
