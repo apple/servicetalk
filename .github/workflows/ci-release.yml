@@ -13,7 +13,6 @@ jobs:
     needs: gradle-wrapper-validation
     permissions:
       contents: read
-      actions: read
       checks: write
     name: Release
     runs-on: ubuntu-latest
@@ -53,12 +52,12 @@ jobs:
           curl -i --retry 5 -H "Authorization: Bearer $BEARER_TOKEN" -X POST https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/io.servicetalk
           echo "Go to https://central.sonatype.com/publishing/deployments to finish publishing artifacts"
       - name: Publish Test Results
-        if: always()
-        uses: scacap/action-surefire-report@3dacff26879cd2a7f2160d101254032a3707fe6f # v1.12.0
+        if: '!cancelled()'
+        uses: EnricoMi/publish-unit-test-result-action@c950f6fb443cb5af20a377fd0dfaa78838901040 # v2.23.0
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          report_paths: '**/build/test-results/test/TEST-*.xml'
-          check_name: Test Report
+          files: '**/build/test-results/test/TEST-*.xml'
+          check_name: Test Report Release
+          comment_mode: 'off'
       - name: Publish Checkstyle Report
         if: always()
         uses: jwgmeligmeyling/checkstyle-github-action@50292990e18466f2c5d95d04ff5fab931254fa5f # v1.2
