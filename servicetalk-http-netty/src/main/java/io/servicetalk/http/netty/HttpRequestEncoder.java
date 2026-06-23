@@ -38,6 +38,7 @@ import io.servicetalk.http.netty.HttpResponseDecoder.Signal;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection.CancelWriteUserEvent;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ContinueUserEvent;
+import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import io.netty.channel.ChannelHandlerContext;
 
@@ -54,6 +55,7 @@ import static java.util.Objects.requireNonNull;
 final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
     private static final char SLASH = '/';
     private static final char QUESTION_MARK = '?';
+    private static final char DEL = 0x7f;
     private static final int SLASH_AND_SPACE_SHORT = (SLASH << 8) | SP;
     private static final int SPACE_SLASH_AND_SPACE_MEDIUM = (SP << 16) | SLASH_AND_SPACE_SHORT;
 
@@ -107,6 +109,7 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
         message.method().writeTo(stBuffer);
 
         String uri = message.requestTarget();
+        validateRequestTarget(uri);
 
         if (uri.isEmpty()) {
             // Add " / " as absolute path if uri is not present.
@@ -147,6 +150,17 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
         // if this happens just force http/1.1 to avoid generating an invalid request.
         (message.version().major() == 1 ? message.version() : HTTP_1_1).writeTo(stBuffer);
         stBuffer.writeShort(CRLF_SHORT);
+    }
+
+    private static void validateRequestTarget(final String requestTarget) {
+        // This guards HTTP/1.x request-line framing only. Preserve existing behavior for non-ASCII
+        // request-target characters: they are written via UTF-8 and do not encode to SP/CTL/DEL bytes.
+        for (int i = 0; i < requestTarget.length(); ++i) {
+            final char c = requestTarget.charAt(i);
+            if (c <= SP || c == DEL) {
+                throw new IllegalCharacterException((byte) c, "request-target character (no SP / CTL / DEL)");
+            }
+        }
     }
 
     @Override
