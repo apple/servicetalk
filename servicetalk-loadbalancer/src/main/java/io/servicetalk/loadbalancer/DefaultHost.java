@@ -531,7 +531,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             this.lastError = lastError;
         }
 
-        public void schedule(final Throwable originalCause) {
+        void schedule(final Throwable originalCause) {
             assert healthCheckConfig != null;
             delayedCancellable(
                     // Use retry strategy to utilize jitter.
@@ -586,7 +586,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         final State state;
         final int failedConnections;
         @Nullable
-        HealthCheck healthCheck;
+        final HealthCheck healthCheck;
 
         private ConnState(final List<C> connections, State state, int failedConnections,
                           @Nullable final HealthCheck healthCheck) {
@@ -656,7 +656,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             // problems with correlated connection churn.
             final int newSize = connections.size() + 1;
             final int insertionIndex = ThreadLocalRandom.current().nextInt(newSize);
-            ArrayList<C> newList = new ArrayList<>(newSize);
+            List<C> newList = new ArrayList<>(newSize);
             for (int i = 0, j = 0; i < newSize; i++) {
                 newList.add(i == insertionIndex ? connection : connections.get(j++));
             }

@@ -269,6 +269,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
         }
     }
 
+    @SuppressWarnings("PMD.AvoidArrayLoops") // Vose alias algorithm: per-index updates with stateful stack rebalancing
     private AliasTableEntrySelector buildAliasTable(double[] pin) {
         assert isNormalized(pin);
         // We use the Vose alias method to compute the alias table with linear complexity.

@@ -273,13 +273,13 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     }
 
     @Override
-    public DefaultDnsServiceDiscovererBuilder queryTimeout(final @Nullable Duration queryTimeout) {
+    public DefaultDnsServiceDiscovererBuilder queryTimeout(@Nullable final Duration queryTimeout) {
         this.queryTimeout = queryTimeout == null ? null : DurationUtils.ensureNonNegative(queryTimeout, "queryTimeout");
         return this;
     }
 
     @Override
-    public DefaultDnsServiceDiscovererBuilder resolutionTimeout(final @Nullable Duration resolutionTimeout) {
+    public DefaultDnsServiceDiscovererBuilder resolutionTimeout(@Nullable final Duration resolutionTimeout) {
         this.resolutionTimeout = resolutionTimeout == null ? null :
                 DurationUtils.ensureNonNegative(resolutionTimeout, "resolutionTimeout");
         return this;

@@ -235,7 +235,7 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     void testEffectiveHostIPv6EmptyPort() {
         createFixture("some/path?foo=bar&abc=def&foo=baz");
         fixture.headers().set(HOST, "[1:2:3::5]:");
-        assertThrows(IllegalArgumentException.class, () -> fixture.effectiveHostAndPort());
+        assertThrows(IllegalArgumentException.class, fixture::effectiveHostAndPort);
     }
 
     @Test
@@ -243,7 +243,7 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         createFixture("some/path?foo=bar&abc=def&foo=baz");
         fixture.headers().set(HOST, "[1:2:3::5]:f8080");
 
-        assertThrows(IllegalArgumentException.class, () -> fixture.effectiveHostAndPort());
+        assertThrows(IllegalArgumentException.class, fixture::effectiveHostAndPort);
     }
 
     @Test
@@ -251,7 +251,7 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         createFixture("some/path?foo=bar&abc=def&foo=baz");
         fixture.headers().set(HOST, "[1:2:3::5]:8080f");
 
-        assertThrows(IllegalArgumentException.class, () -> fixture.effectiveHostAndPort());
+        assertThrows(IllegalArgumentException.class, fixture::effectiveHostAndPort);
     }
 
     @Test
@@ -259,7 +259,7 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         createFixture("some/path?foo=bar&abc=def&foo=baz");
         fixture.headers().set(HOST, "[1:2:3::5]f8080");
 
-        assertThrows(IllegalArgumentException.class, () -> fixture.effectiveHostAndPort());
+        assertThrows(IllegalArgumentException.class, fixture::effectiveHostAndPort);
     }
 
     @Test
@@ -267,7 +267,7 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         createFixture("some/path?foo=bar&abc=def&foo=baz");
         fixture.headers().set(HOST, "[1:2:3::5");
 
-        assertThrows(IllegalArgumentException.class, () -> fixture.effectiveHostAndPort());
+        assertThrows(IllegalArgumentException.class, fixture::effectiveHostAndPort);
     }
 
     @Test
@@ -341,7 +341,7 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     @Test
     void testAppendNoSegmentToPath() {
         createFixture("base/");
-        assertThrows(IllegalArgumentException.class, () -> fixture.appendPathSegments());
+        assertThrows(IllegalArgumentException.class, fixture::appendPathSegments);
     }
 
     @Test

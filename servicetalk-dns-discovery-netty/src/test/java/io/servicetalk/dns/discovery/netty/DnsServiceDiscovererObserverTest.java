@@ -80,14 +80,14 @@ class DnsServiceDiscovererObserverTest {
     private final CompositeCloseable toClose = newCompositeCloseable();
 
     @BeforeEach
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
         recordStore.addIPv4Address(HOST_NAME, DEFAULT_TTL, nextIp(), nextIp());
         recordStore.addSrv(SERVICE_NAME, HOST_NAME, 443, DEFAULT_TTL);
         dnsServer.start();
     }
 
     @AfterEach
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         try {
             toClose.closeGracefully();
         } finally {

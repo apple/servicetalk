@@ -51,6 +51,9 @@ import static java.lang.Integer.MAX_VALUE;
 import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.time.Duration.ofNanos;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 @Timeout(90)
 class ClientClosureRaceTest {
@@ -75,7 +78,7 @@ class ClientClosureRaceTest {
 
     @BeforeEach
     void startServer() throws Exception {
-        assert executor != null;
+        assertThat(executor, is(notNullValue()));
         serverSocket = new ServerSocket(0, 50, getLoopbackAddress());
 
         executor.submit(() -> {

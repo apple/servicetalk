@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NavigableMap;
 import java.util.TreeMap;
 
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
@@ -58,7 +59,7 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
         //      #zone-aware-load-balancing
         // Consolidate our hosts into their respective priority groups. Since we're going to use a map we must use
         // and ordered map (in this case a TreeMap) so that we can iterate in order of group priority.
-        TreeMap<Integer, Group<T>> groups = new TreeMap<>();
+        NavigableMap<Integer, Group<T>> groups = new TreeMap<>();
         for (T host : hosts) {
             if (host.priority() < 0) {
                 LOGGER.warn("{}: Illegal priority: {} (expected priority >=0). Ignoring priority data.",
@@ -117,7 +118,7 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
         return weightedResults;
     }
 
-    private static class Group<H extends PrioritizedHost> {
+    private static final class Group<H extends PrioritizedHost> {
         final List<H> hosts = new ArrayList<>();
         int healthyCount;
         int healthPercentage;

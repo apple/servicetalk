@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
 
@@ -80,7 +81,7 @@ class InsertionPointTest {
         try {
             // prepare stdin and stdout for the plugin execution
             System.setIn(stdinWithRequest);
-            System.setOut(new PrintStream(stdoutWithResponse));
+            System.setOut(new PrintStream(stdoutWithResponse, true, StandardCharsets.UTF_8.name()));
             // execute plugin
             Main.main();
             return CodeGeneratorResponse.parseFrom(stdoutWithResponse.toByteArray());

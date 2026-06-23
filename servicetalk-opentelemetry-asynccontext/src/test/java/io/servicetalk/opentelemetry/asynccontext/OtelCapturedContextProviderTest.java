@@ -51,6 +51,7 @@ class OtelCapturedContextProviderTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.UnusedLocalVariable") // false positive
     void testContextIsCaptured() {
         setup();
         assertNotEquals(contextMap, AsyncContext.context());
@@ -73,6 +74,7 @@ class OtelCapturedContextProviderTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.UnusedLocalVariable") // false positive
     void testContextCaptureWhenNested() {
         setup();
         List<CapturedContext> results = recurseCapture(10);
@@ -96,6 +98,7 @@ class OtelCapturedContextProviderTest {
         verify(stScope, times(10)).close();
     }
 
+    @SuppressWarnings("PMD.UnusedLocalVariable") // false positive
     private List<CapturedContext> recurseCapture(int depth) {
         try (Scope scope = Context.current().with(STRING_CONTEXT_KEY, "depth-" + depth).makeCurrent()) {
             CapturedContext captured = provider.captureContext(underlying);
@@ -105,6 +108,7 @@ class OtelCapturedContextProviderTest {
         }
     }
 
+    @SuppressWarnings("PMD.UnusedLocalVariable") // false positive
     private void recurseRestore(List<CapturedContext> capturedContexts, int i) {
         if (i == capturedContexts.size()) {
             return;

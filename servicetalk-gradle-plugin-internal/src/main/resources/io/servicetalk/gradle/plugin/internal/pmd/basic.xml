@@ -27,7 +27,7 @@
   <rule ref="category/java/errorprone.xml">
     <exclude name="AssignmentInOperand"/>
     <exclude name="AvoidAccessibilityAlteration"/>
-    <exclude name="AvoidCatchingThrowable"/>
+    <exclude name="AvoidCatchingGenericException"/>
     <exclude name="AvoidDuplicateLiterals"/>
     <exclude name="AvoidFieldNameMatchingMethodName"/>
     <exclude name="AvoidFieldNameMatchingTypeName"/>
@@ -47,6 +47,7 @@
 
   <rule ref="category/java/multithreading.xml">
     <exclude name="AvoidSynchronizedAtMethodLevel"/>
+    <exclude name="AvoidSynchronizedStatement"/>
     <exclude name="AvoidUsingVolatile"/>
     <exclude name="DoNotUseThreads"/>
     <exclude name="UseConcurrentHashMap"/>
@@ -58,17 +59,18 @@
     <exclude name="AvoidReassigningLoopVariables"/>
     <exclude name="AvoidReassigningParameters"/>
     <exclude name="AvoidStringBufferField"/>
+    <exclude name="ExhaustiveSwitchHasDefault"/>  <!-- TODO: revisit after JDK upgrade -->
     <exclude name="ForLoopCanBeForeach"/>
     <exclude name="ForLoopVariableCount"/>
     <exclude name="GuardLogStatement"/>
-    <exclude name="JUnit4TestShouldUseAfterAnnotation"/>
-    <exclude name="JUnit4TestShouldUseBeforeAnnotation"/>
-    <exclude name="JUnit4TestShouldUseTestAnnotation"/>
-    <exclude name="JUnitAssertionsShouldIncludeMessage"/>
-    <exclude name="JUnitTestContainsTooManyAsserts"/>
-    <exclude name="JUnitTestsShouldIncludeAssert"/>
     <exclude name="MethodReturnsInternalArray"/>
     <exclude name="OneDeclarationPerLine"/>
+    <exclude name="UnitTestAssertionsShouldIncludeMessage"/>
+    <exclude name="UnitTestContainsTooManyAsserts"/>
+    <exclude name="UnitTestShouldIncludeAssert"/>
+    <exclude name="UnitTestShouldUseAfterAnnotation"/>
+    <exclude name="UnitTestShouldUseBeforeAnnotation"/>
+    <exclude name="UnitTestShouldUseTestAnnotation"/>
     <exclude name="UnusedAssignment"/>
     <exclude name="UnusedPrivateField"/>
     <exclude name="UnusedPrivateMethod"/>
@@ -98,11 +100,14 @@
     <exclude name="ShortMethodName"/>
     <exclude name="ShortVariable"/>
     <exclude name="TooManyStaticImports"/>
+    <exclude name="TypeParameterNamingConventions"/>
     <exclude name="UnnecessaryConstructor"/>
     <exclude name="UnnecessaryFullyQualifiedName"/>
     <exclude name="UnnecessaryImport"/>
     <exclude name="UnnecessaryLocalBeforeReturn"/>
+    <exclude name="UseDiamondOperator"/>  <!-- TODO: revisit after JDK upgrade -->
     <exclude name="UselessParentheses"/>
+    <exclude name="VariableDeclarationUsageDistance"/>
   </rule>
 
   <rule ref="category/java/performance.xml">
@@ -112,7 +117,6 @@
 
   <rule ref="category/java/design.xml">
     <exclude name="AbstractClassWithoutAnyMethod"/>
-    <exclude name="AvoidCatchingGenericException"/>
     <exclude name="AvoidDeeplyNestedIfStmts"/>
     <exclude name="AvoidRethrowingException"/>
     <exclude name="AvoidThrowingNullPointerException"/>

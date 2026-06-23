@@ -69,12 +69,12 @@ final class HttpMessageDiscardWatchdogClientFilterTest {
                     .setClassLevel(true);
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         loggerStringWriter.reset();
     }
 
     @AfterEach
-    public void tearDown() {
+    void tearDown() {
         loggerStringWriter.remove();
     }
 
@@ -85,7 +85,7 @@ final class HttpMessageDiscardWatchdogClientFilterTest {
     @ParameterizedTest(name = "{displayName} [{index}] filterType={0} expectedException={1} transformer={2}")
     @MethodSource("responseTransformers")
     void warnsIfDiscarded(final FilterType filterType,
-                                                    final @Nullable Class<?> expectedException,
+                                                    @Nullable final Class<?> expectedException,
                                                     ResponseTransformer transformer)
             throws Exception {
         // TODO: CONNECTION type filters currently time out instead of propagating the expectedException.
@@ -100,7 +100,7 @@ final class HttpMessageDiscardWatchdogClientFilterTest {
                     .appendConnectionFilter(c -> new StreamingHttpConnectionFilter(c) {
                         @Override
                         public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-                            if (filterType.equals(FilterType.CONNECTION)) {
+                            if (filterType == FilterType.CONNECTION) {
                                 return transformer.apply(delegate(), request);
                             } else {
                                 return delegate().request(request);
@@ -111,7 +111,7 @@ final class HttpMessageDiscardWatchdogClientFilterTest {
                         @Override
                         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                         final StreamingHttpRequest request) {
-                            if (filterType.equals(FilterType.CLIENT)) {
+                            if (filterType == FilterType.CLIENT) {
                                 return transformer.apply(delegate, request);
                             } else {
                                 return delegate.request(request);
@@ -198,6 +198,7 @@ final class HttpMessageDiscardWatchdogClientFilterTest {
         return arguments.stream();
     }
 
+    @FunctionalInterface
     interface ResponseTransformer
             extends BiFunction<StreamingHttpRequester, StreamingHttpRequest, Single<StreamingHttpResponse>> { }
 }

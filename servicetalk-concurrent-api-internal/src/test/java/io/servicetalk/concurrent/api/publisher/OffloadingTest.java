@@ -26,6 +26,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
@@ -168,12 +169,12 @@ class OffloadingTest extends AbstractPublisherOffloadingTest {
         final String expectedOffloads;
         final BiFunction<Publisher<String>, Executor, Publisher<String>> offloadOperator;
         final TerminalOperation terminal;
-        final EnumMap<CaptureSlot, Matcher<? super String>> threadNameMatchers = new EnumMap<>(CaptureSlot.class);
+        final Map<CaptureSlot, Matcher<? super String>> threadNameMatchers = new EnumMap<>(CaptureSlot.class);
 
         OffloadCase(int offloadsExpected, String expectedOffloads,
                     BiFunction<Publisher<String>, Executor, Publisher<String>> offloadOperator,
                     TerminalOperation terminal,
-                    Set<CaptureSlot> nonOffloaded, EnumSet<CaptureSlot> offloaded) {
+                    Set<CaptureSlot> nonOffloaded, Set<CaptureSlot> offloaded) {
             this.offloadsExpected = offloadsExpected;
             this.expectedOffloads = expectedOffloads;
             this.offloadOperator = offloadOperator;

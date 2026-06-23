@@ -39,6 +39,7 @@ import static io.servicetalk.transport.netty.internal.CloseUtils.safeClose;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 class HttpMultiProxyTest {
 
@@ -118,7 +119,7 @@ class HttpMultiProxyTest {
 
     @Test
     void testRequest() throws Exception {
-        assert client != null;
+        assertThat(client, is(notNullValue()));
 
         final HttpResponse proxiedHttpResponse =
                 client.request(client.get("http://" + serverBehindProxyAddress + "/path"));

@@ -282,9 +282,5 @@ class ResponseTimeoutTest {
         public String getMessage() {
             return status + (null != super.getMessage() ? " : " + super.getMessage() : "");
         }
-
-        public HttpResponseStatus getStatus() {
-            return status;
-        }
     }
 }

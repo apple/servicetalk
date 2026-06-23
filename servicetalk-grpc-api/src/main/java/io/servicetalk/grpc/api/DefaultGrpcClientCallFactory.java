@@ -297,20 +297,22 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                     timeout);
             httpRequest.payloadBody(serializer.serialize(request,
                     streamingHttpClient.executionContext().bufferAllocator()));
+
+            final BlockingStreamingHttpResponse response;
             try {
-                final BlockingStreamingHttpResponse response = client.request(httpRequest);
-                try {
-                    extractResponseContext(response, metadata);
-                    return validateResponseAndGetPayload(response.toStreamingResponse(), responseContentType,
-                            client.executionContext().bufferAllocator(), readGrpcMessageEncodingRaw(response.headers(),
-                                    deserializerIdentity, deserializers, GrpcStreamingDeserializer::messageEncoding),
-                            httpRequest.requestTarget()).toIterable();
-                } catch (Throwable t) {
-                    response.messageBody().iterator().close();
-                    throw GrpcStatusException.fromThrowable(t);
-                }
+                response = client.request(httpRequest);
             } catch (Throwable cause) {
                 throw GrpcStatusException.fromThrowable(cause);
+            }
+            try {
+                extractResponseContext(response, metadata);
+                return validateResponseAndGetPayload(response.toStreamingResponse(), responseContentType,
+                        client.executionContext().bufferAllocator(), readGrpcMessageEncodingRaw(response.headers(),
+                                deserializerIdentity, deserializers, GrpcStreamingDeserializer::messageEncoding),
+                        httpRequest.requestTarget()).toIterable();
+            } catch (Throwable t) {
+                response.messageBody().iterator().close();
+                throw GrpcStatusException.fromThrowable(t);
             }
         };
     }

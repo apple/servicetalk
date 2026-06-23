@@ -89,7 +89,6 @@ final class PublisherSwitchMap<T, R> extends AbstractAsynchronousPublisherOperat
         private RSubscriber currPublisher;
         @SuppressWarnings("unused")
         private volatile int pendingErrorCount;
-        @SuppressWarnings("unused")
         @Nullable
         private volatile Throwable pendingError;
 

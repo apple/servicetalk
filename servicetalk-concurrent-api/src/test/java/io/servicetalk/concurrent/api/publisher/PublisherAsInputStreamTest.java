@@ -138,7 +138,7 @@ final class PublisherAsInputStreamTest {
         Character[] src = {'1', '2', '3', '4'};
         InputStream stream = from(src).toInputStream(c -> new byte[]{(byte) c.charValue()});
         stream.close();
-        assertThrows(IOException.class, () -> stream.read());
+        assertThrows(IOException.class, stream::read);
     }
 
     @Test

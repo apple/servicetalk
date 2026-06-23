@@ -81,6 +81,7 @@ class TrafficResilienceHttpClientFilterTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] dryRun={0}")
     @ValueSource(booleans = {false, true})
+    @SuppressWarnings("PMD.PreserveStackTrace")
     void verifyPeerRetryableRejection(boolean dryRun) throws Exception {
         final TrafficResilienceHttpClientFilter trafficResilienceHttpClientFilter =
                 new TrafficResilienceHttpClientFilter.Builder(
@@ -109,6 +110,7 @@ class TrafficResilienceHttpClientFilterTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] dryRun={0}")
     @ValueSource(booleans = {false, true})
+    @SuppressWarnings("PMD.PreserveStackTrace")
     void verifyPeerRejection(boolean dryRun) throws Exception {
         final TrafficResilienceHttpClientFilter trafficResilienceHttpClientFilter =
                 new TrafficResilienceHttpClientFilter.Builder(

@@ -273,10 +273,7 @@ final class HttpClientConfig {
             }
 
             final DelegatingProxyConfig that = (DelegatingProxyConfig) o;
-            if (!address.equals(that.address)) {
-                return false;
-            }
-            return delegate.equals(that.delegate);
+            return address.equals(that.address) && delegate.equals(that.delegate);
         }
 
         @Override

@@ -179,7 +179,7 @@ abstract class FinallyHttpOperatorTest {
             subscriber.verifyNoResponseReceived();
         } else {
             subscriber.verifyResponseReceived();
-            assert subscriber.response != null;
+            assertThat(subscriber.response, is(notNullValue()));
             Exception ex = assertThrows(Exception.class, () -> subscriber.response.payloadBody().toFuture().get());
             assertThat(ex.getCause(), instanceOf(CancellationException.class));
         }
@@ -298,7 +298,7 @@ abstract class FinallyHttpOperatorTest {
         // We unconditionally cancel and let the original single handle the cancel post terminate
         responseSingle.verifyCancelled();
 
-        assert subscriber.response != null;
+        assertThat(subscriber.response, is(notNullValue()));
         toSource(subscriber.response.payloadBody()).subscribe(payloadSubscriber);
         payload.onSubscribe(payloadSubscription);
         payloadSubscriber.awaitSubscription().request(MAX_VALUE);
@@ -343,7 +343,7 @@ abstract class FinallyHttpOperatorTest {
         responseSingle.verifyNotCancelled();
         subscriber.verifyResponseReceived();
 
-        assert subscriber.response != null;
+        assertThat(subscriber.response, is(notNullValue()));
         toSource(subscriber.response.payloadBody()).subscribe(payloadSubscriber);
         payload.onSubscribe(payloadSubscription);
         payloadSubscriber.awaitSubscription().request(MAX_VALUE);
@@ -400,7 +400,7 @@ abstract class FinallyHttpOperatorTest {
         responseSingle.verifyNotCancelled();
         subscriber.verifyResponseReceived();
 
-        assert subscriber.response != null;
+        assertThat(subscriber.response, is(notNullValue()));
         toSource(subscriber.response.payloadBody()).subscribe(payloadSubscriber);
         payload.onSubscribe(payloadSubscription);
         payloadSubscriber.awaitSubscription().request(MAX_VALUE);
@@ -445,7 +445,7 @@ abstract class FinallyHttpOperatorTest {
         responseSingle.verifyNotCancelled();
         subscriber.verifyResponseReceived();
 
-        assert subscriber.response != null;
+        assertThat(subscriber.response, is(notNullValue()));
         BlockingQueue<Buffer> receivedPayload = new LinkedBlockingDeque<>();
         AtomicReference<TerminalNotification> subscriberTerminal = new AtomicReference<>();
         toSource(subscriber.response.payloadBody()).subscribe(new PublisherSource.Subscriber<Buffer>() {
@@ -516,7 +516,7 @@ abstract class FinallyHttpOperatorTest {
         responseSingle.verifyNotCancelled();
         subscriber.verifyResponseReceived();
 
-        assert subscriber.response != null;
+        assertThat(subscriber.response, is(notNullValue()));
         BlockingQueue<Buffer> receivedPayload = new LinkedBlockingDeque<>();
         AtomicReference<TerminalNotification> subscriberTerminal = new AtomicReference<>();
         toSource(subscriber.response.payloadBody()).subscribe(new PublisherSource.Subscriber<Buffer>() {
@@ -596,7 +596,7 @@ abstract class FinallyHttpOperatorTest {
         verifyNoInteractions(whenFinally);
         responseSingle.verifyNotCancelled();
         subscriber.verifyResponseReceived();
-        assert subscriber.response != null;
+        assertThat(subscriber.response, is(notNullValue()));
         subscriber.response.payloadBody().forEach(chunk -> {
             //ignore
         });
@@ -623,7 +623,7 @@ abstract class FinallyHttpOperatorTest {
         verifyNoInteractions(whenFinally);
         responseSingle.verifyNotCancelled();
         subscriber.verifyResponseReceived();
-        assert subscriber.response != null;
+        assertThat(subscriber.response, is(notNullValue()));
 
         // Subscribe for the first time.
         TestPublisherSubscriber<Buffer> payloadSubscriber1 = new TestPublisherSubscriber<>();

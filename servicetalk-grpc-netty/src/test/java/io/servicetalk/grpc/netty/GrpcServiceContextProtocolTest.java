@@ -152,7 +152,7 @@ class GrpcServiceContextProtocolTest {
                 .build();
     }
 
-    private static class TesterServiceImpl implements TesterService {
+    private static final class TesterServiceImpl implements TesterService {
 
         @Override
         public Single<TestResponse> test(GrpcServiceContext ctx, TestRequest request) {
@@ -175,7 +175,7 @@ class GrpcServiceContextProtocolTest {
         }
     }
 
-    private static class BlockingTesterServiceImpl implements BlockingTesterService {
+    private static final class BlockingTesterServiceImpl implements BlockingTesterService {
         @Override
         public TestResponse test(GrpcServiceContext ctx, TestRequest request) {
             return newResponse(ctx);

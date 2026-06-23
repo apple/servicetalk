@@ -279,6 +279,7 @@ final class ProxyConnectChannelSingle extends ChannelInitSingle<Channel> {
         }
     }
 
+    @SuppressWarnings("PMD.UnnecessaryInterfaceDeclaration") // to preserve RetryableException after deprecation removal
     private static final class RetryableProxyConnectResponseException extends ProxyResponseException
             implements RetryableException {
 

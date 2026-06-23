@@ -407,7 +407,7 @@ class ConnectablePayloadWriterTest {
         } catch (RuntimeException cause) {
             assertSame(DELIBERATE_EXCEPTION, cause);
         }
-        assertThrows(IOException.class, () -> cpw.flush());
+        assertThrows(IOException.class, cpw::flush);
         cpw.close();
         onError.await();
         toSource(cpw.connect()).subscribe(subscriber);

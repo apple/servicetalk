@@ -65,7 +65,6 @@ public final class NettyIoThreadFactory implements IoThreadFactory<NettyIoThread
      * @param daemon {@code true} if the created {@link Thread} should be a daemon thread.
      * @param threadGroup the {@link ThreadGroup} to which all created threads will belong, or null for default group
      */
-    @SuppressWarnings("PMD.AvoidThreadGroup")
     NettyIoThreadFactory(String threadNamePrefix, boolean daemon, @Nullable ThreadGroup threadGroup) {
         this.namePrefix = requireNonNull(threadNamePrefix) + '-' + factoryCount.incrementAndGet() + '-';
         this.daemon = daemon;

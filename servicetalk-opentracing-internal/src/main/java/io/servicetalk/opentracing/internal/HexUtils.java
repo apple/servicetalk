@@ -56,6 +56,7 @@ public final class HexUtils {
      * @param offset The index to start within {@code str} to start the conversion.
      * @return the {@code long} value.
      */
+    @SuppressWarnings("PMD.UnnecessaryCast")    // we'd like to keep it explicit
     public static long longOfHexBytes(String str, int offset) {
         if (offset < 0) {
             throw new StringIndexOutOfBoundsException(offset);

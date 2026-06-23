@@ -194,7 +194,7 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
             this.cancellable = new SequentialCancellable(scheduleNextOutliersCheck(config));
         }
 
-        public void cancel() {
+        void cancel() {
             cancellable.cancel();
         }
 

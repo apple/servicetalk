@@ -148,13 +148,10 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
         final HttpResponseStatus status = msg.status();
 
         if (status.statusClass() == INFORMATIONAL_1XX) {
-            if (status.code() == SWITCHING_PROTOCOLS.code()) {
-                // We need special handling for WebSockets version 00 as it will include an body.
-                // Fortunally this version should not really be used in the wild very often.
-                // See https://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-00#section-1.2
-                return msg.headers().contains(SEC_WEBSOCKET_VERSION);
-            }
-            return true;
+            // We need special handling for WebSockets version 00 as it will include a body.
+            // Fortunally this version should not really be used in the wild very often.
+            // See https://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-00#section-1.2
+            return status.code() != SWITCHING_PROTOCOLS.code() || msg.headers().contains(SEC_WEBSOCKET_VERSION);
         }
         return status.code() == NO_CONTENT.code() || status.code() == NOT_MODIFIED.code();
     }
@@ -167,6 +164,7 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
     /**
      * Notifies when a response is sent.
      */
+    @FunctionalInterface
     interface OnResponse {
 
         /**

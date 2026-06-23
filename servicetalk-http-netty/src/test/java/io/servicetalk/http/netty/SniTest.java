@@ -197,8 +197,8 @@ class SniTest {
     @EnumSource(SslProvider.class)
     void sniTimeout(SslProvider sslProvider) throws Exception {
         try (ServerContext serverContext = newServerBuilder(SERVER_CTX, HTTP_1)
-                .sslConfig(trustedServerConfig(sslProvider, null),
-                        singletonMap(SNI_HOSTNAME, trustedServerConfig(sslProvider, null)),
+                .sslConfig(trustedServerConfig(sslProvider, (String) null),
+                        singletonMap(SNI_HOSTNAME, trustedServerConfig(sslProvider, (String) null)),
                         16 * 1024, Duration.ofMillis(HANDSHAKE_TIMEOUT_MILLIS))
                 .listenBlockingAndAwait(newSslVerifyService());
              // Use a non-secure client to open a new connection without sending ClientHello or any data.

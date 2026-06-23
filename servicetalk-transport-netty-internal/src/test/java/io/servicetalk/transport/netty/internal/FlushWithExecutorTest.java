@@ -39,7 +39,7 @@ class FlushWithExecutorTest extends AbstractFlushTest {
     final ExecutionContextExtension contextRule = cached();
 
     @SuppressWarnings("unused")
-    public static Collection<FlushStrategyAndVerifier> flushStrategyAndVerifiers() {
+    static Collection<FlushStrategyAndVerifier> flushStrategyAndVerifiers() {
         List<FlushStrategyAndVerifier> params = new ArrayList<>();
         params.add(flushOnEach());
         params.add(flushBeforeEnd(data.length));

@@ -28,6 +28,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 class ExecutionStrategyTest {
 
@@ -48,13 +49,13 @@ class ExecutionStrategyTest {
 
     @Test
     void serviceFilter() {
-        assert tracer != null;
+        assertThat(tracer, is(notNullValue()));
         assertThat(new TracingHttpServiceFilter(tracer, "test").requiredOffloads(), is(offloadNone()));
     }
 
     @Test
     void requesterFilter() {
-        assert tracer != null;
+        assertThat(tracer, is(notNullValue()));
         assertThat(new TracingHttpRequesterFilter(tracer, "test").requiredOffloads(), is(offloadNone()));
     }
 }

@@ -105,7 +105,8 @@ public final class DeadlineUtils {
      * @param timeout the timeout {@link Duration}
      * @return The timeout header text value or null for infinite timeouts
      */
-    public static @Nullable CharSequence makeTimeoutHeader(@Nullable Duration timeout) {
+    @Nullable
+    public static CharSequence makeTimeoutHeader(@Nullable Duration timeout) {
         if (isInfinite(timeout, GRPC_MAX_TIMEOUT)) {
             return null;
         }
@@ -138,7 +139,8 @@ public final class DeadlineUtils {
      * @return The non-negative timeout duration which may null if not present
      * @throws IllegalArgumentException if the timeout value is malformed
      */
-    public static @Nullable Duration readTimeoutHeader(HttpRequestMetaData request) {
+    @Nullable
+    public static Duration readTimeoutHeader(HttpRequestMetaData request) {
         return readTimeoutHeader(request.headers());
     }
 
@@ -149,7 +151,8 @@ public final class DeadlineUtils {
      * @return The non-negative timeout duration which may null if not present
      * @throws IllegalArgumentException if the timeout value is malformed
      */
-    public static @Nullable Duration readTimeoutHeader(HttpHeaders headers) {
+    @Nullable
+    public static Duration readTimeoutHeader(HttpHeaders headers) {
         CharSequence grpcTimeoutValue = headers.get(GRPC_TIMEOUT_HEADER_KEY);
         return null == grpcTimeoutValue ? null : parseTimeoutHeader(grpcTimeoutValue);
     }
@@ -177,7 +180,7 @@ public final class DeadlineUtils {
                 throw new NumberFormatException("grpcTimeoutValue: " + grpcTimeoutValue +
                         " (Bad digit '" + digitChar + "')");
             } else {
-                runningTotal = runningTotal * 10L + (long) (digitChar - '0');
+                runningTotal = runningTotal * 10L + (digitChar - '0');
             }
         }
 

@@ -882,10 +882,7 @@ public final class OutlierDetectorConfig {
         if (enforcingPercentage <= 0) {
             return false;
         }
-        if (enforcingPercentage >= 100) {
-            return true;
-        }
-        return enforcingPercentage >= ThreadLocalRandom.current().nextInt(100) + 1;
+        return enforcingPercentage >= 100 || enforcingPercentage >= ThreadLocalRandom.current().nextInt(100) + 1;
     }
 
     static boolean allDisabled(OutlierDetectorConfig outlierDetectorConfig) {

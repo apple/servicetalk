@@ -97,6 +97,7 @@ class RouterConcurrentShutdownTest {
      * {@code requestScope.shutdown()} to set {@code isActive = false} while the locator is still alive.
      * Reproduces the pre-state-flip window where HK2 wraps the failure in a {@code MultiException}.
      */
+    @SuppressWarnings("PMD.PublicMemberInNonPublicType") // JAX-RS @Provider must be public
     public static final class ScopeDeactivatingFilter implements ContainerRequestFilter {
         @Context
         private RequestScope requestScope;
@@ -113,6 +114,7 @@ class RouterConcurrentShutdownTest {
      * {@code SHUTDOWN} so subsequent service lookups fail at {@code ServiceLocatorImpl.checkState()}
      * with a raw, unwrapped {@code IllegalStateException}.
      */
+    @SuppressWarnings("PMD.PublicMemberInNonPublicType") // JAX-RS @Provider must be public
     public static final class LocatorShutdownFilter implements ContainerRequestFilter {
         @Context
         private ApplicationHandler applicationHandler;
@@ -125,6 +127,7 @@ class RouterConcurrentShutdownTest {
 
     @Path("/ping")
     @Produces(MediaType.TEXT_PLAIN)
+    @SuppressWarnings("PMD.PublicMemberInNonPublicType") // JAX-RS @Path resource must be public
     public static final class PingResource {
         @GET
         public String ping() {

@@ -40,6 +40,7 @@ public class ConnectionRejectedException extends SocketException implements Retr
      * @param message the detail message.
      * @param cause the cause.
      */
+    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public ConnectionRejectedException(final String message, final Throwable cause) {
         super(message);
         initCause(cause);

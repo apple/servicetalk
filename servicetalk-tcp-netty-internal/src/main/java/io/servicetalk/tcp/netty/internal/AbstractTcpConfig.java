@@ -40,6 +40,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Common configuration for TCP based clients and servers.
  */
+@SuppressWarnings("PMD.PublicMemberInNonPublicType") // public methods are exposed via public subclasses
 abstract class AbstractTcpConfig {
 
     private static final TransportConfig DEFAULT_TRANSPORT_CONFIG = new TransportConfigBuilder().build();

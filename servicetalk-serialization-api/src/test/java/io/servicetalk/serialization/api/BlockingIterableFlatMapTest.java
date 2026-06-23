@@ -257,7 +257,7 @@ class BlockingIterableFlatMapTest {
         }
     }
 
-    private static class CountingAnswer implements Answer<Integer> {
+    private static final class CountingAnswer implements Answer<Integer> {
         private int count;
 
         @Override

@@ -117,13 +117,13 @@ public class DelegatingDnsServiceDiscovererBuilder implements DnsServiceDiscover
     }
 
     @Override
-    public DnsServiceDiscovererBuilder queryTimeout(final @Nullable Duration queryTimeout) {
+    public DnsServiceDiscovererBuilder queryTimeout(@Nullable final Duration queryTimeout) {
         delegate = delegate.queryTimeout(queryTimeout);
         return this;
     }
 
     @Override
-    public DnsServiceDiscovererBuilder resolutionTimeout(final @Nullable Duration resolutionTimeout) {
+    public DnsServiceDiscovererBuilder resolutionTimeout(@Nullable final Duration resolutionTimeout) {
         delegate = delegate.resolutionTimeout(resolutionTimeout);
         return this;
     }

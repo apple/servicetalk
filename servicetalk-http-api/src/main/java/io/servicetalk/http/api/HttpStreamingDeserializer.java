@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.api.Publisher;
  * HTTP request/response deserialization for streaming payload bodies.
  * @param <T> The type of objects to serialize.
  */
+@FunctionalInterface
 public interface HttpStreamingDeserializer<T> {
     /**
      * Deserialize a {@link Publisher} of {@link Object}s into a {@link Publisher} of type {@link T}.

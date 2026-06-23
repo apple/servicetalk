@@ -76,7 +76,8 @@ abstract class DnsResolver {
         }
     }
 
-    private static @Nullable Integer getDelay() {
+    @Nullable
+    private static Integer getDelay() {
         return getInteger(DNS_BACKUP_REQUEST_DELAY_MS_PROPERTY);
     }
 

@@ -84,7 +84,7 @@ class TestDnsServer extends DnsServer {
         acceptor.bind();
     }
 
-    public InetSocketAddress localAddress() {
+    InetSocketAddress localAddress() {
         return (InetSocketAddress) getTransports()[0].getAcceptor().getLocalAddress();
     }
 

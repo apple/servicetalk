@@ -81,10 +81,9 @@ final class PublisherProcessorSignalHolders {
      * @return A new {@link PublisherProcessorSignalsHolder}.
      */
     static <T> PublisherProcessorSignalsHolder<T> fixedSizeDropHead(final int maxBuffer) {
-        return new AbstractPublisherProcessorSignalsHolder<T, ConcurrentLinkedQueue<Object>>(maxBuffer,
-                new ConcurrentLinkedQueue<>()) {
+        return new AbstractPublisherProcessorSignalsHolder<T, Queue<Object>>(maxBuffer, new ConcurrentLinkedQueue<>()) {
             @Override
-            void offerPastBufferSize(final Object signal, final ConcurrentLinkedQueue<Object> queue) {
+            void offerPastBufferSize(final Object signal, final Queue<Object> queue) {
                 queue.poll(); // drop oldest
                 // Since the queue is unbounded (ConcurrentLinkedQueue) offer never fails.
                 queue.offer(signal);

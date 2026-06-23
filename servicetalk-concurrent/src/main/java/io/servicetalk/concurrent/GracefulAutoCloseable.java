@@ -18,6 +18,7 @@ package io.servicetalk.concurrent;
 /**
  * An extension of {@link AutoCloseable} to add graceful closure semantics.
  */
+@FunctionalInterface
 public interface GracefulAutoCloseable extends AutoCloseable {
 
     /**

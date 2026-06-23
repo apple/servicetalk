@@ -557,7 +557,7 @@ abstract class HttpObjectDecoderTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] addSemicolon={0} crlf={1}")
     @MethodSource("biBooleanPermutationSource")
-    private void chunkedNoTrailers(boolean addSemicolon, boolean crlf) {
+    void chunkedNoTrailers(boolean addSemicolon, boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         int chunkSize = 128;

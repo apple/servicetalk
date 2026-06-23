@@ -95,7 +95,7 @@ class DefaultNettyConnectionTest {
     private DefaultNettyConnection<Buffer, Buffer> conn;
 
     @BeforeEach
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
         setupWithCloseHandler(__ -> UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
     }
 

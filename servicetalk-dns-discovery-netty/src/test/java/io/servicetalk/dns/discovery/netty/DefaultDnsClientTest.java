@@ -144,7 +144,7 @@ class DefaultDnsClientTest {
     }
 
     @AfterEach
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         if (client != null) {
             client.closeAsync().toFuture().get();
         }

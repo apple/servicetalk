@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
@@ -66,7 +67,7 @@ class CompletableToPublisherTest {
     void subscribeOnOriginalIsPreserved() throws Exception {
         final Thread testThread = currentThread();
         final CountDownLatch analyzed = new CountDownLatch(1);
-        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        Queue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         TestCompletable completable = new TestCompletable.Builder().disableAutoOnSubscribe().build();
         TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
         toSource(completable.beforeCancel(() -> {
@@ -90,7 +91,7 @@ class CompletableToPublisherTest {
 
     @Test
     void publishOnOriginalIsPreservedOnComplete() throws Exception {
-        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        Queue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
         TestCompletable completable = new TestCompletable();
         CountDownLatch analyzed = publishOnOriginalIsPreserved0(errors, subscriber, completable);
@@ -102,7 +103,7 @@ class CompletableToPublisherTest {
 
     @Test
     void publishOnOriginalIsPreservedOnError() throws Exception {
-        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        Queue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
         TestCompletable completable = new TestCompletable();
         CountDownLatch analyzed = publishOnOriginalIsPreserved0(errors, subscriber, completable);
@@ -116,7 +117,7 @@ class CompletableToPublisherTest {
     @Test
     @Disabled("The Publisher subscriber is now not offloaded")
     void publishOnOriginalIsPreservedOnInvalidRequestN() throws Exception {
-        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        Queue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
         TestCompletable completable = new TestCompletable();
         CountDownLatch analyzed = publishOnOriginalIsPreserved0(errors, subscriber, completable);
@@ -127,7 +128,7 @@ class CompletableToPublisherTest {
         assertThat("Wrong error received.", err, is(instanceOf(IllegalArgumentException.class)));
     }
 
-    private CountDownLatch publishOnOriginalIsPreserved0(final ConcurrentLinkedQueue<AssertionError> errors,
+    private CountDownLatch publishOnOriginalIsPreserved0(final Queue<AssertionError> errors,
                                                          final TestPublisherSubscriber<String> subscriber,
                                                          final TestCompletable completable) {
         final Thread testThread = currentThread();

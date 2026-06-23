@@ -117,9 +117,9 @@ public final class TimeoutTracingInfoExtension implements AfterEachCallback {
                 .collect(Collectors.toList());
         StringBuilder sb = new StringBuilder(threadInfos.size() * 4096);
         for (ThreadInfo info : threadInfos) {
-            sb.append('"').append(info.getThreadName()).append('"');
-            sb.append(" #").append(info.getThreadId());
-            sb.append(' ').append(info.getThreadState().toString().toLowerCase(Locale.ENGLISH));
+            sb.append('"').append(info.getThreadName()).append('"')
+                    .append(" #").append(info.getThreadId())
+                    .append(' ').append(info.getThreadState().toString().toLowerCase(Locale.ENGLISH));
             if (info.getLockName() != null) {
                 sb.append(" on ").append(info.getLockName());
             }
@@ -133,9 +133,7 @@ public final class TimeoutTracingInfoExtension implements AfterEachCallback {
             if (info.isInNative()) {
                 sb.append(" (in native)");
             }
-            sb.append('\n');
-
-            sb.append("  java.lang.Thread.State: ").append(info.getThreadState()).append('\n');
+            sb.append('\n').append("  java.lang.Thread.State: ").append(info.getThreadState()).append('\n');
             StackTraceElement[] stackTrace = info.getStackTrace();
             for (int i = 0; i < stackTrace.length; ++i) {
                 sb.append("\t  at ").append(stackTrace[i]).append('\n');

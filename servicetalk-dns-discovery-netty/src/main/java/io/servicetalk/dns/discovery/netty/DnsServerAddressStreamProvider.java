@@ -22,6 +22,7 @@ package io.servicetalk.dns.discovery.netty;
  * <a href="https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man5/resolver.5.html">
  * /etc/resolver</a>.
  */
+@FunctionalInterface
 public interface DnsServerAddressStreamProvider {
     /**
      * Ask this provider for the name servers to query for {@code hostname}.

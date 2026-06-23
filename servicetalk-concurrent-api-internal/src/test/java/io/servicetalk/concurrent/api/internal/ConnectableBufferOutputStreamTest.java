@@ -403,7 +403,7 @@ class ConnectableBufferOutputStreamTest {
         } catch (RuntimeException cause) {
             assertSame(DELIBERATE_EXCEPTION, cause);
         }
-        assertThrows(IOException.class, () -> cbos.flush());
+        assertThrows(IOException.class, cbos::flush);
         cbos.close();
         onError.await();
         toSource(cbos.connect()).subscribe(subscriber);

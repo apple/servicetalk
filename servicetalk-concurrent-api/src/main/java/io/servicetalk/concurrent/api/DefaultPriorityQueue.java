@@ -66,6 +66,7 @@ final class DefaultPriorityQueue<T extends DefaultPriorityQueue.Node> extends Ab
          * <p>
          * Throwing exceptions from this method will result in undefined behavior.
          */
+        @SuppressWarnings("PMD.LooseCoupling")
         int priorityQueueIndex(DefaultPriorityQueue<?> queue);
 
         /**
@@ -75,6 +76,7 @@ final class DefaultPriorityQueue<T extends DefaultPriorityQueue.Node> extends Ab
          * @param queue The queue for which the index is being set.
          * @param i The index as used by {@link DefaultPriorityQueue}.
          */
+        @SuppressWarnings("PMD.LooseCoupling")
         void priorityQueueIndex(DefaultPriorityQueue<?> queue, int i);
     }
 

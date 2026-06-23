@@ -87,6 +87,7 @@ final class AlpnChannelSingle extends ChannelInitSingle<String> {
         }
 
         @Override
+        @SuppressWarnings("PMD.ExceptionAsFlowControl")
         public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) throws Exception {
             // Intercept only the *successful* SslHandshakeCompletionEvent. The parent's implementation looks up
             // the SslHandler via pipeline.get(SslHandler.class), which in a layered-TLS pipeline returns the

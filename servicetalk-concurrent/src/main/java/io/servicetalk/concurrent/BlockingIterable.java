@@ -36,6 +36,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * same characteristics in terms of being able to call the method multiple times and data availability in memory.
  * @param <T> the type of elements returned by the {@link BlockingIterator}.
  */
+@FunctionalInterface
 public interface BlockingIterable<T> extends CloseableIterable<T> {
     @Override
     BlockingIterator<T> iterator();

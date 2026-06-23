@@ -61,10 +61,8 @@ class DefaultGrpcMetadata implements GrpcMetadata {
     }
 
     boolean responseContext(final ContextMap context) {
-        if (responseContext instanceof LazyContextMapSupplier) {
-            return ((LazyContextMapSupplier) responseContext).initialize(context);
-        }
-        return false;
+        return responseContext instanceof LazyContextMapSupplier
+                && ((LazyContextMapSupplier) responseContext).initialize(context);
     }
 
     @Deprecated

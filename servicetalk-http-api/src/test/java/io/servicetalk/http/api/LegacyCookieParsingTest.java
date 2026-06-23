@@ -33,9 +33,7 @@ import io.netty.handler.codec.DateFormatter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Calendar;
 import java.util.Date;
-import java.util.TimeZone;
 
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.http.api.HeaderUtils.COOKIE_STRICT_RFC_6265;
@@ -222,6 +220,7 @@ class LegacyCookieParsingTest {
 
     // Client cookie (SET_COOKIE header) decoder tests
     @Test
+    @SuppressWarnings("PMD.ReplaceJavaUtilDate")
     void testDecodingSingleCookieV0() {
         String cookieString = "myCookie=myValue;expires="
                 + DateFormatter.format(new Date(System.currentTimeMillis() + 50_000))
@@ -319,10 +318,7 @@ class LegacyCookieParsingTest {
 
     @Test
     void testDecodingLongDates() {
-        Calendar cookieDate = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-        cookieDate.set(9999, Calendar.DECEMBER, 31, 23, 59, 59);
         String source = "Format=EU; expires=Fri, 31-Dec-9999 23:59:59 GMT; path=/";
-
         headers.add(SET_COOKIE, source);
         HttpSetCookie cookie = headers.getSetCookie("Format");
         assertNotNull(cookie);

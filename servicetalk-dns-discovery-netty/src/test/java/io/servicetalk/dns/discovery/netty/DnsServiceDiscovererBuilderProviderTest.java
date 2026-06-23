@@ -49,6 +49,7 @@ class DnsServiceDiscovererBuilderProviderTest {
         assertEquals(5000, ttlJitterIntercept.get());
     }
 
+    @SuppressWarnings("PMD.PublicMemberInNonPublicType") // SPI implementation must be public
     public static final class TestDnsServiceDiscovererBuilderProvider
             implements DnsServiceDiscovererBuilderProvider {
         @Override

@@ -83,7 +83,7 @@ public final class TcpClientConfig extends AbstractTcpConfig {
      *
      * @param sslConfig the {@link ClientSslConfig}.
      */
-    public void sslConfig(final @Nullable ClientSslConfig sslConfig) {
+    public void sslConfig(@Nullable final ClientSslConfig sslConfig) {
         this.sslConfig = sslConfig;
     }
 
@@ -92,7 +92,7 @@ public final class TcpClientConfig extends AbstractTcpConfig {
      *
      * @param proxySslConfig the {@link ClientSslConfig} used for the proxy TLS stage.
      */
-    public void proxySslConfig(final @Nullable ClientSslConfig proxySslConfig) {
+    public void proxySslConfig(@Nullable final ClientSslConfig proxySslConfig) {
         this.proxySslConfig = proxySslConfig;
     }
 }

@@ -29,7 +29,6 @@ abstract class CompletableMergeSubscriber implements Subscriber {
             newUpdater(CompletableMergeSubscriber.class, Object.class, "terminalNotification");
     private static final Object ON_COMPLETE = new Object();
     private static final Object DELIVERED_DELAYED_ERROR = new Object();
-    @SuppressWarnings("unused")
     @Nullable
     private volatile Object terminalNotification;
     private final Subscriber subscriber;

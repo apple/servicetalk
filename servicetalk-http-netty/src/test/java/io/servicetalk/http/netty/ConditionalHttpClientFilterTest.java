@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilterTest {
+class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilterTest {
 
     private static final StreamingHttpClientFilterFactory REQ_FILTER = client -> new StreamingHttpClientFilter(client) {
         @Override
@@ -73,7 +73,7 @@ public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilt
         }
     }
 
-    public static StreamingHttpClient newClient(AtomicBoolean closed, AtomicInteger closedCount) {
+    static StreamingHttpClient newClient(AtomicBoolean closed, AtomicInteger closedCount) {
         return TestStreamingHttpClient.from(REQ_RES_FACTORY, testHttpExecutionContext(),
                 Stream.concat(IntStream
                                     .rangeClosed(1, NUM_FILTERS)

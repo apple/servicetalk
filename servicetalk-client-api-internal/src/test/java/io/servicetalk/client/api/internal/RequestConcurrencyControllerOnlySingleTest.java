@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.api.Publisher;
 
 import static io.servicetalk.client.api.internal.RequestConcurrencyControllers.newSingleController;
 
-public class RequestConcurrencyControllerOnlySingleTest extends AbstractRequestConcurrencyControllerOnlySingleTest {
+final class RequestConcurrencyControllerOnlySingleTest extends AbstractRequestConcurrencyControllerOnlySingleTest {
     @Override
     protected RequestConcurrencyController newController(final Publisher<Integer> maxSetting,
                                                          final Completable onClose) {

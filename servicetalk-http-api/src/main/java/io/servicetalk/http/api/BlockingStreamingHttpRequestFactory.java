@@ -28,6 +28,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
 /**
  * A factory for creating {@link BlockingStreamingHttpRequest}s.
  */
+@FunctionalInterface
 public interface BlockingStreamingHttpRequestFactory {
     /**
      * Create a new {@link HttpRequestFactory}.

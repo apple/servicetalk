@@ -31,6 +31,7 @@ public class ConnectTimeoutException extends ConnectException implements Retryab
      * @param message the message.
      * @param cause the original cause.
      */
+    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public ConnectTimeoutException(String message, Throwable cause) {
         super(message);
         initCause(cause);

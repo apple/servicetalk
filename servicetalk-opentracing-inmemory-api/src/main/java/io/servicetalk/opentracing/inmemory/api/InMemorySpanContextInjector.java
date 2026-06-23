@@ -19,6 +19,7 @@ package io.servicetalk.opentracing.inmemory.api;
  * Used to inject {@link InMemorySpanContext} into a carrier of type {@link C}.
  * @param <C> the carrier type.
  */
+@FunctionalInterface
 public interface InMemorySpanContextInjector<C> {
     /**
      * Inject a trace state into a carrier.

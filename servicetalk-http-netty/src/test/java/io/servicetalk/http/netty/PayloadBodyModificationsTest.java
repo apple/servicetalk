@@ -34,6 +34,7 @@ class PayloadBodyModificationsTest extends AbstractNettyHttpServerTest {
 
     private static final String CONTENT = "content";
 
+    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     PayloadBodyModificationsTest() {
         setUp(CACHED, CACHED_SERVER);
     }

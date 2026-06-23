@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import java.util.EnumSet;
+import java.util.Set;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_CLOSE;
@@ -265,7 +265,7 @@ public final class HttpExecutionStrategies {
             return (byte) (1 << ordinal());
         }
 
-        static byte toMask(EnumSet<HttpOffload> offloads) {
+        static byte toMask(Set<HttpOffload> offloads) {
             return (byte) offloads.stream().mapToInt(HttpOffload::mask).reduce(0, Integer::sum);
         }
     }

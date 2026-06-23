@@ -61,7 +61,6 @@ class CustomTransportTest {
             // Build the client with the custom transport and bridge to server's transport.
             Tester.TesterClient client = new Tester.ClientFactory() {
                 @Override
-                @SuppressWarnings("PMD.UselessOverridingMethod")
                 // Override to alter visibility modifier
                 public TesterClient newClient(final GrpcClientCallFactory factory) {
                     return super.newClient(factory);

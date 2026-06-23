@@ -133,7 +133,7 @@ public final class TcpServerConfig extends AbstractTcpConfig {
      * @param sslConfig the {@link ServerSslConfig}.
      * @return {@code this}.
      */
-    public TcpServerConfig sslConfig(final @Nullable ServerSslConfig sslConfig) {
+    public TcpServerConfig sslConfig(@Nullable final ServerSslConfig sslConfig) {
         return sslConfig(sslConfig, DEFAULT_ACCEPT_INSECURE_CONNECTIONS);
     }
 

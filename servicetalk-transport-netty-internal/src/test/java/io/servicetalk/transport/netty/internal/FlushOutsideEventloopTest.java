@@ -42,7 +42,7 @@ class FlushOutsideEventloopTest extends AbstractOutOfEventloopTest {
         src = new TestPublisher<>();
         strategy = new MockFlushStrategy();
         Publisher<Integer> composedFlush = composeFlushes(channel, src, strategy, NoopWriteObserver.INSTANCE)
-                .beforeOnNext(integer -> channel.write(integer));
+                .beforeOnNext(channel::write);
         toSource(composedFlush).subscribe(subscriber);
         subscriber.awaitSubscription().request(Long.MAX_VALUE);
         flushSender = strategy.verifyApplied();
@@ -86,7 +86,7 @@ class FlushOutsideEventloopTest extends AbstractOutOfEventloopTest {
     void testWriteFromEventloopAndFlushOutsideEventloop() throws Exception {
         EventLoop executor = getDifferentEventloopThanChannel();
         channel.eventLoop().submit(() -> src.onNext(1)).get();
-        executor.submit(() -> flushSender.flush()).get();
+        executor.submit(flushSender::flush).get();
         ensureEnqueuedTaskAreRun(executor);
         assertWritten(1);
     }

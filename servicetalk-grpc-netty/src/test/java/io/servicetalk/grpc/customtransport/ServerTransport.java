@@ -22,6 +22,7 @@ import io.netty.channel.Channel;
 
 import javax.annotation.Nullable;
 
+@FunctionalInterface
 interface ServerTransport {
     // Channel may be optional depending on what capabilities you want to provide to the Service.
     // GrpcServiceContext is part of the gRPC service interface which is 1:1 with a child channel (h2 stream) in

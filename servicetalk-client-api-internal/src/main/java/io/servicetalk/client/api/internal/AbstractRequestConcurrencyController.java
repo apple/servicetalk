@@ -35,7 +35,6 @@ abstract class AbstractRequestConcurrencyController implements RequestConcurrenc
 
     private static final int STATE_QUIT = -1;
 
-    @SuppressWarnings("unused")
     private volatile int pendingRequests;
     private final LatestValueSubscriber<Integer> maxConcurrencyHolder;
 

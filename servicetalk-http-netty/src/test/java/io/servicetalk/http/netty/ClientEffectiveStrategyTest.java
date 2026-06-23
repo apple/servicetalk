@@ -592,7 +592,7 @@ class ClientEffectiveStrategyTest {
             verifyOffloads(clientApi, clientStrategy, apiStrategy);
         }
 
-        public void verifyOffloads(ClientApi clientApi, HttpExecutionStrategy clientStrategy, String apiStrategy) {
+        void verifyOffloads(ClientApi clientApi, HttpExecutionStrategy clientStrategy, String apiStrategy) {
             assertNoAsyncErrors("API=" + clientApi + ", apiStrategy=" + apiStrategy +
                     ", clientStrategy=" + clientStrategy +
                     ", expectedStrategy=" + expectedStrategy + ". Async Errors! See suppressed", errors);
@@ -644,7 +644,7 @@ class ClientEffectiveStrategyTest {
 
         private final HttpExecutionStrategy strategy;
 
-        ClientApi(EnumSet<ClientOffloadPoint> offloads) {
+        ClientApi(Set<ClientOffloadPoint> offloads) {
             HttpExecutionStrategies.Builder builder = HttpExecutionStrategies.customStrategyBuilder();
 
             if (offloads.contains(Send)) {
@@ -660,7 +660,7 @@ class ClientEffectiveStrategyTest {
             this.strategy = builder.build();
         }
 
-        public HttpExecutionStrategy strategy() {
+        HttpExecutionStrategy strategy() {
             return strategy;
         }
     }

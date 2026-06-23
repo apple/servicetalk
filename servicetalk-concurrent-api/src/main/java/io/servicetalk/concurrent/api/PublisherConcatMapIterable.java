@@ -79,7 +79,6 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
          * Visibility and thread safety provided by {@link #emitting}.
          */
         private volatile Iterator<? extends U> iterator = emptyIterator();
-        @SuppressWarnings("unused")
         private volatile long requestN;
         @SuppressWarnings("unused")
         private volatile int emitting;

@@ -349,6 +349,7 @@ class ScanWithPublisherTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @ValueSource(booleans = {true, false})
+    @SuppressWarnings("PMD.ExceptionAsFlowControl")
     void scanWithFinalizationOnCancelDifferentThreads(final boolean interleaveCancellation) {
         ExecutorService executorService = Executors.newFixedThreadPool(1);
         try {

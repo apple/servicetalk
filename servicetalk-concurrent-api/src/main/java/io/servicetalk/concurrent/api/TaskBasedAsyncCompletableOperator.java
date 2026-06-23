@@ -112,6 +112,7 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscri
             return true;
         }
 
+        @SuppressWarnings("PMD.PublicMemberInNonPublicType") // implements public Subscriber interface
         public final void onSubscribe(final Cancellable cancellable) {
             this.cancellable = cancellable;
             state = ON_SUBSCRIBE_RECEIVED_MASK;

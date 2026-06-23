@@ -218,7 +218,7 @@ class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTest {
             try {
                 final SSLSession sslSession = context.sslSession();
                 if (sslSession != null && sslSession.getPeerPrincipal() != null
-                        && sslSession.getPeerPrincipal().getName().equals("unit.test.auth")) {
+                        && "unit.test.auth".equals(sslSession.getPeerPrincipal().getName())) {
                     // proper SSL Session established, continue with delegation
                     return delegate.request(request);
                 }

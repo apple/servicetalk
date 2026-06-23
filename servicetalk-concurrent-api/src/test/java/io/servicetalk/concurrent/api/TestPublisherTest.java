@@ -247,14 +247,14 @@ class TestPublisherTest {
             this.fanOut = fanOut;
         }
 
-        public void consume(final Publisher<Integer> publisher) {
+        private void consume(final Publisher<Integer> publisher) {
             final PublisherSource<Integer> source = toSource(publisher);
             for (int i = 0; i < fanOut; ++i) {
                 source.subscribe(new MySubscriber(fanOut, i));
             }
         }
 
-        public Map<Integer, Integer> getCounts() {
+        private Map<Integer, Integer> getCounts() {
             return new HashMap<>(counts);
         }
 

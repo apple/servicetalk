@@ -93,13 +93,9 @@ public final class OpenTelemetryOptions {
         }
 
         final OpenTelemetryOptions that = (OpenTelemetryOptions) o;
-        if (enableMetrics != that.enableMetrics) {
-            return false;
-        }
-        if (!capturedRequestHeaders.equals(that.capturedRequestHeaders)) {
-            return false;
-        }
-        return capturedResponseHeaders.equals(that.capturedResponseHeaders);
+        return enableMetrics == that.enableMetrics
+                && capturedRequestHeaders.equals(that.capturedRequestHeaders)
+                && capturedResponseHeaders.equals(that.capturedResponseHeaders);
     }
 
     @Override

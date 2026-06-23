@@ -218,6 +218,7 @@ final class NettyChannelContentCodec implements ContentCodec { // FIXME: 0.43 - 
     }
 
     @Override
+    @SuppressWarnings("PMD.ExceptionAsFlowControl")
     public Buffer decode(final Buffer src, final BufferAllocator allocator) {
         requireNonNull(allocator);
 

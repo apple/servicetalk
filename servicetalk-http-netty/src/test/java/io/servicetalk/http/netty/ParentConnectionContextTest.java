@@ -141,6 +141,7 @@ class ParentConnectionContextTest {
                 ctx.parent(), is(nullValue()));
     }
 
+    @SuppressWarnings("PMD.ExceptionAsFlowControl")
     private static void assertServiceContext(HttpServiceContext ctx, HttpProtocol protocol,
                                              BlockingQueue<Throwable> errors) {
         try {

@@ -21,6 +21,7 @@ package io.servicetalk.transport.api;
  * This feature is defined in <a href="https://www.rfc-editor.org/rfc/rfc8879">RFC 8879</a> as an optional extension
  * to TLS 1.3 and later.
  */
+@FunctionalInterface
 public interface CertificateCompressionAlgorithm {
 
     /**

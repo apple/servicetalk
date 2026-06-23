@@ -143,7 +143,7 @@ class RetryRequestWithNonRepeatablePayloadTest extends AbstractNettyHttpServerTe
     }
 
     @Sharable
-    private static class FailingFirstWriteHandler extends ChannelOutboundHandlerAdapter {
+    private static final class FailingFirstWriteHandler extends ChannelOutboundHandlerAdapter {
 
         private boolean needToFail = true;
 

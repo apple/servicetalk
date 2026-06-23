@@ -176,7 +176,7 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             return new AsyncContextCaptureConnectionObserver();
         }
 
-        private class AsyncContextCaptureConnectionObserver implements ConnectionObserver {
+        private final class AsyncContextCaptureConnectionObserver implements ConnectionObserver {
 
             @Override
             public void onDataRead(final int size) {
@@ -238,7 +238,7 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             }
         }
 
-        private class AsyncContextCaptureMultiplexedObserver implements MultiplexedObserver {
+        private final class AsyncContextCaptureMultiplexedObserver implements MultiplexedObserver {
 
             @Override
             public StreamObserver onNewStream() {
@@ -247,7 +247,7 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             }
         }
 
-        private class AsyncContextCaptureStreamObserver implements StreamObserver {
+        private final class AsyncContextCaptureStreamObserver implements StreamObserver {
 
             @Override
             public void streamIdAssigned(final long streamId) {
@@ -271,7 +271,7 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             }
         }
 
-        private class AsyncContextCaptureDataObserver implements DataObserver {
+        private final class AsyncContextCaptureDataObserver implements DataObserver {
 
             @Override
             public ReadObserver onNewRead() {
@@ -286,7 +286,7 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             }
         }
 
-        private class AsyncContextCaptureReadObserver implements ReadObserver {
+        private final class AsyncContextCaptureReadObserver implements ReadObserver {
 
             @Override
             public void requestedToRead(final long n) {
@@ -314,7 +314,7 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             }
         }
 
-        private class AsyncContextCaptureWriteObserver implements WriteObserver {
+        private final class AsyncContextCaptureWriteObserver implements WriteObserver {
 
             @Override
             public void requestedToWrite(final long n) {

@@ -18,6 +18,7 @@ package io.servicetalk.transport.api;
 /**
  * Context for controlling listen behavior.
  */
+@FunctionalInterface
 public interface ServerListenContext {
     /**
      * Toggles the server's ability to accept new connections.

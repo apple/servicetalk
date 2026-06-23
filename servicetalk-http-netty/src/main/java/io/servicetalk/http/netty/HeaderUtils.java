@@ -72,12 +72,8 @@ final class HeaderUtils {
                 reqMetaData.headers().containsIgnoreCase(EXPECT, CONTINUE);
     };
 
-    static final Predicate<Object> OBJ_EXPECT_CONTINUE = msg -> {
-        if (!(msg instanceof HttpRequestMetaData)) {
-            return false;
-        }
-        return REQ_EXPECT_CONTINUE.test((HttpRequestMetaData) msg);
-    };
+    static final Predicate<Object> OBJ_EXPECT_CONTINUE = msg ->
+            msg instanceof HttpRequestMetaData && REQ_EXPECT_CONTINUE.test((HttpRequestMetaData) msg);
 
     private HeaderUtils() {
         // no instances
@@ -309,6 +305,7 @@ final class HeaderUtils {
         }
     }
 
+    @SuppressWarnings("PMD.LooseCoupling") // internal ContentLengthList is required to access its contentLength field
     private static Publisher<Object> setContentLength(final HttpMetaData metadata,
                                                       final Publisher<Object> messageBody,
                                                       final BiIntConsumer<HttpHeaders> contentLengthUpdater,

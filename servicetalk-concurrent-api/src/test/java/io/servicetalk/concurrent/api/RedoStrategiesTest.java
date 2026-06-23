@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.ArgumentCaptor;
 
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -35,7 +36,7 @@ import static org.mockito.Mockito.when;
 
 class RedoStrategiesTest {
 
-    protected LinkedBlockingQueue<LegacyTestCompletable> timers;
+    protected BlockingQueue<LegacyTestCompletable> timers;
     protected Executor timerExecutor;
 
     @BeforeEach

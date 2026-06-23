@@ -61,6 +61,7 @@ import static java.util.Base64.getEncoder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
@@ -98,7 +99,7 @@ class BasicAuthStrategyInfluencerTest {
     @Test
     void defaultOffloads() throws Exception {
         BlockingHttpClient client = setup(false);
-        assert service != null;
+        assertThat(service, is(notNullValue()));
         HttpResponse response = makeRequest(client);
         assertThat("Unexpected response.", response.status().code(), is(200));
         service.assertHandleOffload(not(startsWith(IO_EXECUTOR_NAME_PREFIX)));
@@ -109,7 +110,7 @@ class BasicAuthStrategyInfluencerTest {
     @Test
     void noOffloadsInfluence() throws Exception {
         BlockingHttpClient client = setup(true);
-        assert service != null;
+        assertThat(service, is(notNullValue()));
         HttpResponse response = makeRequest(client);
         assertThat("Unexpected response.", response.status().code(), is(200));
         service.assertHandleOffload(startsWith(IO_EXECUTOR_NAME_PREFIX));

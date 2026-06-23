@@ -836,7 +836,7 @@ final class GrpcRouter {
          *
          * @return {@link GrpcRouter}.
          */
-        public GrpcRouter build() {
+        GrpcRouter build() {
             return new GrpcRouter(
                     routes, streamingRoutes, blockingRoutes, blockingStreamingRoutes, executionStrategies);
         }

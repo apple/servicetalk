@@ -73,7 +73,7 @@ class ChannelSetTest {
     private GenericFutureListener<ChannelFuture> listener;
 
     @BeforeEach
-    public void setupMocks() {
+    void setupMocks() {
         lenient().when(channel.id()).thenReturn(channelId);
         lenient().when(channel.closeFuture()).thenReturn(channelCloseFuture);
         lenient().when(channel.close()).then(invocation -> {
@@ -95,7 +95,7 @@ class ChannelSetTest {
     }
 
     @AfterEach
-    public void finalValidation() {
+    void finalValidation() {
         // ChannelSet uses only "NoOffload" variant of these methods:
         verify(nettyConnection, never()).onClose();
         verify(nettyConnection, never()).closeAsync();

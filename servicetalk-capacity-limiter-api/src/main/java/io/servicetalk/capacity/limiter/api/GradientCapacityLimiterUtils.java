@@ -33,7 +33,7 @@ final class GradientCapacityLimiterUtils {
      * @return A {@link BiPredicate} where the first argument represents the current consumption of the Gradient,
      * and the second argument is the current limit.
      */
-    public static BiPredicate<Integer, Double> blastRadius(final int scale) {
+    static BiPredicate<Integer, Double> blastRadius(final int scale) {
         return (inFlight, limit) -> (inFlight * scale) < limit;
     }
 
@@ -47,7 +47,7 @@ final class GradientCapacityLimiterUtils {
      * @return A {@link BiPredicate} where the first argument represents the current consumption of the Gradient,
      * and the second argument is the current limit.
      */
-    public static BiPredicate<Integer, Double> occupancyFactor(final float factor) {
+    static BiPredicate<Integer, Double> occupancyFactor(final float factor) {
         return (inFlight, limit) -> inFlight <= (limit * factor);
     }
 }

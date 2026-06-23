@@ -62,6 +62,7 @@ import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoE
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 class H2SchemeTest {
 
@@ -124,7 +125,7 @@ class H2SchemeTest {
     @EnumSource(Scenario.class)
     void test(Scenario scenario) throws Exception {
         setUp(scenario);
-        assert serverAcceptorChannel != null;
+        assertThat(serverAcceptorChannel, is(notNullValue()));
         final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder = newClientBuilder(
                 serverHostAndPort(serverAcceptorChannel.localAddress()), CLIENT_CTX, HTTP_2);
         if (scenario != Scenario.H2_PLAINTEXT) {
