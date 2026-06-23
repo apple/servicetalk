@@ -70,15 +70,13 @@ class IllegalHeaderValueTest extends AbstractNettyHttpServerTest {
         setUp(CACHED, CACHED_SERVER);
 
         StreamingHttpConnection connection = streamingHttpConnection();
-        StreamingHttpResponse response = requestWithInvalidHeader(connection);
-        assertResponse(response, protocol.version, OK, 0);
-
         if (protocol == HTTP_1) {
-            // HTTP/1.1 will try parsing the X_HEADER_NAME as a new request and fail, closing the connection:
             ExecutionException e = assertThrows(ExecutionException.class, () -> requestWithInvalidHeader(connection));
             assertThat(e.getCause(), instanceOf(IOException.class));
         } else {
-            // HTTP/2 uses binary encoding and can transfer illegal header values with not problem:
+            // HTTP/2 uses binary encoding and can transfer illegal header values with no problem:
+            StreamingHttpResponse response = requestWithInvalidHeader(connection);
+            assertResponse(response, protocol.version, OK, 0);
             StreamingHttpResponse secondResponse = requestWithInvalidHeader(connection);
             assertResponse(secondResponse, protocol.version, OK, 0);
         }
