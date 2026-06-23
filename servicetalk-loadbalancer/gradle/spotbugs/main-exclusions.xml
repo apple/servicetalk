@@ -27,13 +27,6 @@
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
 
-  <!-- Class constructor throws exception by design for validation -->
-  <Match>
-    <Class name="io.servicetalk.loadbalancer.XdsHealthIndicator"/>
-    <Method name="&lt;init&gt;"/>
-    <Bug pattern="CT_CONSTRUCTOR_THROW"/>
-  </Match>
-
   <!-- XdsHealthIndicator uses SequentialExecutor for thread safety, sequential execution guarantees -->
   <Match>
     <Class name="io.servicetalk.loadbalancer.XdsHealthIndicator"/>

@@ -215,7 +215,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
 
   private static void configureToolchains(Project project) {
     def testJavaVersion = System.getenv("TEST_JAVA_VERSION")
-    
+
     // Only override test compilation and execution when TEST_JAVA_VERSION is explicitly set
     // Otherwise, leave existing compilation settings unchanged (modules configure their own --release)
     if (testJavaVersion) {
@@ -236,7 +236,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
           project.tasks.withType(Test) { task -> task.enabled = false }
           return
         }
-        
+
         // Predicate to identify test compile tasks (excludes test fixtures which compile with main sources)
         def isTestCompileTask = { task ->
           def taskName = task.name.toLowerCase()
@@ -257,7 +257,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
           // (and JDK 8 doesn't support --release anyway)
           compileTask.options.release.set(null as Integer)
         }
-        
+
         // Configure test execution to use TEST_JAVA_VERSION
         project.tasks.withType(Test).all {
           javaLauncher = toolchainService.launcherFor {
@@ -345,6 +345,8 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
 
       spotbugs {
         toolVersion = SPOTBUGS_VERSION
+        // We often apply validation of parameters at the beginning of a constractor in many classes
+        omitVisitors = ["ConstructorThrow"]
       }
 
       // This task defaults to XML reporting for CI, but humans like HTML

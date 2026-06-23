@@ -1,5 +1,7 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
-com.github.spotbugs.snom:spotbugs-gradle-plugin:5.2.5=compileClasspath,runtimeClasspath
+com.github.spotbugs.snom:spotbugs-gradle-plugin:6.5.8=compileClasspath,runtimeClasspath
+org.jetbrains.kotlin:kotlin-stdlib:2.0.21=compileClasspath,runtimeClasspath
+org.jetbrains:annotations:13.0=compileClasspath,runtimeClasspath
 empty=annotationProcessor,jmhCompileClasspath,jmhRuntimeClasspath,spotbugsPlugins,testAnnotationProcessor

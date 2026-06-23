@@ -119,13 +119,6 @@
     <Bug pattern="NP_NONNULL_PARAM_VIOLATION"/>
   </Match>
 
-  <!-- ByteToMessageDecoder constructor throws exception by design for validation -->
-  <Match>
-    <Class name="io.servicetalk.transport.netty.internal.ByteToMessageDecoder"/>
-    <Method name="&lt;init&gt;"/>
-    <Bug pattern="CT_CONSTRUCTOR_THROW"/>
-  </Match>
-
   <!-- WriteStreamSubscriber uses event loop thread confinement for thread safety -->
   <Match>
     <Class name="io.servicetalk.transport.netty.internal.WriteStreamSubscriber"/>
@@ -134,5 +127,11 @@
       <Field name="enqueueWrites"/>
     </Or>
     <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
+  </Match>
+  <!-- False positives or intentional -->
+  <Match>
+    <Class name="io.servicetalk.transport.netty.internal.NettyIoThreadFactory$NettyIoThread"/>
+    <Method name="context"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
   </Match>
 </FindBugsFilter>

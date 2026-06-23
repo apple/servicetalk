@@ -15,10 +15,19 @@
   ~ limitations under the License.
   -->
 <FindBugsFilter>
-  <!-- Fields are usually initialized in @BeforeClass/@Before methods instead of constructors for tests -->
   <Match>
     <Source name="~.*Test\.java"/>
-    <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
+    <Or>
+      <!-- Fields are usually initialized in @BeforeClass/@Before methods instead of constructors for tests -->
+      <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
+      <!-- Tests methods can throw any exception type -->
+      <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
+      <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+      <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
+      <!-- Tests classes can use simple synchronization -->
+      <Bug pattern="USO_UNSAFE_METHOD_SYNCHRONIZATION"/>
+      <Bug pattern="USO_UNSAFE_OBJECT_SYNCHRONIZATION"/>
+    </Or>
   </Match>
   <!-- Not interested in returned values -->
   <Match>
@@ -52,15 +61,8 @@
     <Bug pattern="DM_GC"/>
   </Match>
   <Match>
-    <Source name="~.*Test\.java"/>
-    <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
-  </Match>
-  <Match>
-    <Source name="~.*Test\.java"/>
-    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
-  </Match>
-  <Match>
-    <Source name="~.*Test\.java"/>
-    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
+    <Class name="io.servicetalk.concurrent.api.MulticastRealizedSourcePublisherTest$MulticastSubscriber"/>
+    <Method name="onError"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
 </FindBugsFilter>
