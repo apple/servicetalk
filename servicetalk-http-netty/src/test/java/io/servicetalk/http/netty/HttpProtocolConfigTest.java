@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.net.InetSocketAddress;
 import java.util.function.BiPredicate;
 
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
@@ -212,10 +213,12 @@ class HttpProtocolConfigTest {
 
     @Test
     void defaultDetectorMarksSensitiveHeaders() {
-        BiPredicate<CharSequence, CharSequence> detector = h2Default().headersSensitivityDetector();
+        BiPredicate<CharSequence, CharSequence> detector = bothCharSequenceTypes(
+                h2Default().headersSensitivityDetector());
         assertTrue(detector.test("authorization", "Bearer abc"));
         assertTrue(detector.test("cookie", "sid=1"));
         assertTrue(detector.test("set-cookie", "sid=1; Path=/"));
+        assertTrue(detector.test("set-cookie2", "sid=1; Path=/"));
         assertTrue(detector.test("proxy-authorization", "Basic xyz"));
         assertTrue(detector.test("x-original-authorization", "Basic xyz"));
         assertTrue(detector.test("x-forwarded-authorization", "Basic xyz"));
@@ -243,7 +246,8 @@ class HttpProtocolConfigTest {
 
     @Test
     void defaultDetectorIgnoresNonSensitiveHeaders() {
-        BiPredicate<CharSequence, CharSequence> detector = h2Default().headersSensitivityDetector();
+        BiPredicate<CharSequence, CharSequence> detector = bothCharSequenceTypes(
+                h2Default().headersSensitivityDetector());
         assertFalse(detector.test("", ""));
         assertFalse(detector.test("content-type", "application/json"));
         assertFalse(detector.test("user-agent", "ServiceTalk"));
@@ -256,7 +260,8 @@ class HttpProtocolConfigTest {
 
     @Test
     void defaultDetectorIsCaseInsensitive() {
-        BiPredicate<CharSequence, CharSequence> detector = h2Default().headersSensitivityDetector();
+        BiPredicate<CharSequence, CharSequence> detector = bothCharSequenceTypes(
+                h2Default().headersSensitivityDetector());
         assertTrue(detector.test("AUTHORIZATION", "Bearer abc"));
         assertTrue(detector.test("Authorization", "Bearer abc"));
         assertTrue(detector.test("proxy-authorization", "abc"));
@@ -279,5 +284,17 @@ class HttpProtocolConfigTest {
         assertThat(configured, is(sameInstance(custom)));
         assertFalse(configured.test("authorization", "Bearer abc"));
         assertFalse(configured.test("cookie", "sid=1"));
+    }
+
+    private static BiPredicate<CharSequence, CharSequence> bothCharSequenceTypes(
+            final BiPredicate<CharSequence, CharSequence> detector) {
+        return (name, value) -> {
+            final boolean asIs = detector.test(name, value);
+            final boolean asAscii = detector.test(
+                    newAsciiString(name.toString()), newAsciiString(value.toString()));
+            assertEquals(asIs, asAscii,
+                    () -> "detector disagreed for String vs AsciiString: name=" + name + ", value=" + value);
+            return asIs;
+        };
     }
 }

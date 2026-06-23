@@ -215,7 +215,7 @@ public final class HttpHeaderNames {
      */
     public static final CharSequence DPOP = newAsciiString("dpop");
     /**
-     * {@code "dpop"}
+     * {@code "dpop-nonce"}
      *
      * @see <a href="https://tools.ietf.org/html/rfc9449#name-authorization-server-provid">RFC 9449, section 8</a>
      */

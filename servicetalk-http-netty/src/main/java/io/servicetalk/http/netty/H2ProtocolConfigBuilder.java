@@ -57,6 +57,10 @@ public final class H2ProtocolConfigBuilder {
     // Marks common auth/credential headers as <a href="https://tools.ietf.org/html/rfc7541#section-7.1.3">sensitive</a>
     // so they aren't stored in the HPACK dynamic table; includes the
     // <a href="https://datatracker.ietf.org/doc/html/rfc9449#section-4.1">DPoP</a> proof header.
+    // The suffix matches (e.g. "*-token", "*-signature") err on the safe side: some headers ending in
+    // these suffixes may not actually carry secrets, but we prefer to skip indexing them rather than
+    // risk leaking credentials via the HPACK dynamic table. Callers needing a narrower policy can
+    // override via {@link #headersSensitivityDetector(BiPredicate)}.
     private static final BiPredicate<CharSequence, CharSequence> DEFAULT_SENSITIVITY_DETECTOR = (name, value) ->
             contentEqualsIgnoreCase(name, COOKIE)
                     || contentEqualsIgnoreCase(name, DPOP)
