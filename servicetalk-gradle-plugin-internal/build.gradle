@@ -21,6 +21,18 @@ apply plugin: "groovy"
 apply plugin: "java-gradle-plugin"
 apply from: "plugin-config.gradle"
 
+// Required version for module
+def javaLanguageVersion = JavaVersion.VERSION_11
+
+java {
+ sourceCompatibility = javaLanguageVersion
+ targetCompatibility = javaLanguageVersion
+}
+
+tasks.withType(JavaCompile).configureEach {
+ options.release = Integer.parseInt(javaLanguageVersion.getMajorVersion())
+}
+
 // Ignore Spotbugs for this module
 spotbugs {
  ignoreFailures = true

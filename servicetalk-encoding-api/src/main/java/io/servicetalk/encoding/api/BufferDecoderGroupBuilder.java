@@ -21,6 +21,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.unmodifiableList;
 
 /**
  * Builder for {@link BufferDecoderGroup}s.
@@ -89,7 +90,7 @@ public final class BufferDecoderGroupBuilder {
     public BufferDecoderGroup build() {
         return new BufferDecoderGroup() {
             private final List<BufferDecoder> bufferEncoders = decoders.isEmpty() ? emptyList() :
-                    new ArrayList<>(decoders);
+                    unmodifiableList(new ArrayList<>(decoders));
             @Nullable
             private final CharSequence advertisedMessageEncoding = messageEncoding.length() == 0 ?
                     null : newAsciiString(messageEncoding);

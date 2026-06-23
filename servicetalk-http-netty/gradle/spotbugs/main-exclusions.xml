@@ -32,26 +32,38 @@
     <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
   </Match>
 
-  <!-- Parameters/state is intentional -->
+  <!-- False positives or intentional -->
   <Match>
-    <Class name="io.servicetalk.http.netty.ProxyResponseException"/>
-    <Method name="status"/>
+    <Class name="io.servicetalk.http.netty.H2ParentConnectionContext"/>
+    <Method name="sslSession"/>
     <Bug pattern="EI_EXPOSE_REP"/>
   </Match>
-
-  <!-- Duration isn't mutable -->
   <Match>
-    <Class name="io.servicetalk.http.netty.H2KeepAlivePolicies$KeepAlivePolicyBuilder"/>
+    <Class name="io.servicetalk.http.netty.H2ProtocolConfigBuilder$DefaultH2ProtocolConfig"/>
+    <Method name="initialSettings"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+  <Match>
     <Or>
-      <Method name="ackTimeout"/>
-      <Method name="idleDuration"/>
+      <Class name="io.servicetalk.http.netty.HttpClientConfig$1"/>
+      <Class name="io.servicetalk.http.netty.HttpServerConfig$DelegatingHttpServerSslConfig"/>
     </Or>
+    <Method name="alpnProtocols"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.netty.NettyHttpServer$ChangingFlushStrategy"/>
+    <Method name="apply"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.netty.H2ProtocolConfigBuilder"/>
+    <Method name="initialSettings"/>
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
-
-  <!-- Intentional -->
   <Match>
-    <Class name="io.servicetalk.http.netty.RetryingHttpRequesterFilter$HttpResponseException"/>
+    <Class name="io.servicetalk.http.netty.ProxyConnectChannelSingle$ProxyConnectHandler"/>
+    <Method name="channelRead"/>
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
 
@@ -130,11 +142,6 @@
     <Class name="io.servicetalk.http.netty.SniCompleteChannelSingle$SniCompleteChannelHandler"/>
     <Method name="handlerAdded"/>
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
-  </Match>
-  <Match>
-    <Class name="io.servicetalk.http.netty.H2ProtocolConfigBuilder"/>
-    <Field name="h2Settings"/>
-    <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
 
   <!-- False positive: this is not a Singleton, the filter can be build multiple times by its Builder -->

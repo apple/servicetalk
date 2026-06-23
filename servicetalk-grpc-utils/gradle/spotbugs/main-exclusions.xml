@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+  ~ Copyright © 2026 Apple Inc. and the ServiceTalk project authors
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -16,17 +16,11 @@
   -->
 <FindBugsFilter>
   <Match>
-    <Source name="~.*Test\.java"/>
+    <Class name="io.servicetalk.grpc.utils.LoggingGrpcLifecycleObserver$LoggingGrpcExchangeObserver"/>
     <Or>
-      <!-- Fields are usually initialized in @BeforeClass/@Before methods instead of constructors for tests -->
-      <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
-      <!-- False positive, verify() on mock  -->
-      <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
-      <!-- Tests methods can throw any exception type -->
-      <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
-      <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
-      <!-- Other patterns we would like to ignore for tests -->
-      <Bug pattern="EI_EXPOSE_REP2"/>
+      <Method name="onRequest"/>
+      <Method name="onResponse"/>
     </Or>
+    <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
 </FindBugsFilter>

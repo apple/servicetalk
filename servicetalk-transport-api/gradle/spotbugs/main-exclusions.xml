@@ -23,4 +23,15 @@
     </Or>
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
   </Match>
+  <!-- False positives or intentional -->
+  <Match>
+    <Class name="io.servicetalk.transport.api.AbstractSslConfig"/>
+    <Or>
+      <Method name="alpnProtocols"/>
+      <Method name="certificateCompressionAlgorithms"/>
+      <Method name="ciphers"/>
+      <Method name="sslProtocols"/>
+    </Or>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
 </FindBugsFilter>

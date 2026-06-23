@@ -39,13 +39,6 @@
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
   </Match>
 
-  <!-- Test class constructor throws exception by design -->
-  <Match>
-    <Class name="io.servicetalk.transport.netty.internal.AbstractSslCloseNotifyAlertHandlingTest"/>
-    <Method name="&lt;init&gt;"/>
-    <Bug pattern="CT_CONSTRUCTOR_THROW"/>
-  </Match>
-
   <!-- Test field with controlled single-threaded access -->
   <Match>
     <Class name="io.servicetalk.transport.netty.internal.NettyChannelPublisherTest"/>

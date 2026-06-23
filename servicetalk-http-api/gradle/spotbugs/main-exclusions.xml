@@ -87,22 +87,6 @@
     <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
   </Match>
 
-  <!-- Parameters/state is intentional -->
-  <Match>
-    <Or>
-      <Class name="io.servicetalk.http.api.ContentEncodingHttpServiceFilter"/>
-      <Class name="io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory"/>
-      <Class name="io.servicetalk.http.api.RedirectConfigBuilder"/>
-    </Or>
-    <Or>
-      <Method name ="&lt;init&gt;"/>
-      <Method name ="allowedMethods"/>
-      <Method name ="headersToRedirect"/>
-      <Method name ="trailersToRedirect"/>
-    </Or>
-    <Bug pattern="EI_EXPOSE_REP2"/>
-  </Match>
-
   <Match>
     <Or>
       <Class name="io.servicetalk.http.api.BlockingHttpClient"/>
@@ -309,13 +293,105 @@
     <Method name="catchPayloadFailure"/>
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
   </Match>
-
-  <!-- Parameters/state is intentional -->
+  <!-- False positives or intentional -->
   <Match>
-    <Class name="io.servicetalk.http.api.ProxyConnectResponseException"/>
+    <Class name="io.servicetalk.http.api.AbstractHttpMetaData"/>
+    <Or>
+      <Method name="context"/>
+      <Method name="headers"/>
+      <Method name="version"/>
+    </Or>
     <Or>
       <Bug pattern="EI_EXPOSE_REP"/>
       <Bug pattern="EI_EXPOSE_REP2"/>
     </Or>
+  </Match>
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.http.api.BlockingStreamingHttpMessageBodyUtils$DefaultHttpMessageBodyIterator"/>
+      <Class name="io.servicetalk.http.api.BlockingStreamingToStreamingService$BufferHttpPayloadWriter"/>
+    </Or>
+    <Method name="trailers"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.DefaultBlockingStreamingHttpRequest"/>
+    <Method name="toStreamingRequest"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.DefaultBlockingStreamingHttpServerResponse"/>
+    <Method name="sendMetaData"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.DefaultHttpRequest"/>
+    <Or>
+      <Method name="method"/>
+      <Method name="payloadBody"/>
+    </Or>
+    <Or>
+      <Bug pattern="EI_EXPOSE_REP"/>
+      <Bug pattern="EI_EXPOSE_REP2"/>
+    </Or>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.DefaultHttpResponse"/>
+    <Or>
+      <Method name="payloadBody"/>
+      <Method name="status"/>
+    </Or>
+    <Or>
+      <Bug pattern="EI_EXPOSE_REP"/>
+      <Bug pattern="EI_EXPOSE_REP2"/>
+    </Or>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.DefaultHttpRequestMetaData"/>
+    <Method name="method"/>
+    <Or>
+      <Bug pattern="EI_EXPOSE_REP"/>
+      <Bug pattern="EI_EXPOSE_REP2"/>
+    </Or>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.DefaultHttpResponseMetaData"/>
+    <Method name="status"/>
+    <Or>
+      <Bug pattern="EI_EXPOSE_REP"/>
+      <Bug pattern="EI_EXPOSE_REP2"/>
+    </Or>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.ProxyConnectResponseException"/>
+    <Method name="response"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.RedirectConfigBuilder$DefaultRedirectConfig"/>
+    <Or>
+      <Method name="allowedMethods"/>
+      <Method name="allowedStatuses"/>
+    </Or>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.http.api.ContentEncodingHttpServiceFilter"/>
+      <Class name="io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory"/>
+      <Class name="io.servicetalk.http.api.ProxyConnectResponseException"/>
+    </Or>
+    <Method name ="&lt;init&gt;"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.StreamingHttpPayloadHolder$PreserveTrailersBufferOperator$PreserveTrailersBufferSubscriber"/>
+    <Method name="onNext"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.StreamingHttpPayloadHolder$TrailersMapper"/>
+    <Method name="mapOnNext"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
 </FindBugsFilter>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+  ~ Copyright © 2026 Apple Inc. and the ServiceTalk project authors
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -15,11 +15,10 @@
   ~ limitations under the License.
   -->
 <FindBugsFilter>
+  <!-- False positives or intentional -->
   <Match>
-    <Class name="io.servicetalk.log4j2.mdc.utils.ServiceTalkThreadContextMap"/>
-    <Or>
-      <Method name="unwrapNull"/>
-    </Or>
-    <Bug pattern="ES_COMPARING_PARAMETER_STRING_WITH_EQ"/>
+    <Class name="io.servicetalk.traffic.resilience.http.AbstractTrafficResilienceHttpFilter$SignalConsumer"/>
+    <Method name="onError"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
 </FindBugsFilter>

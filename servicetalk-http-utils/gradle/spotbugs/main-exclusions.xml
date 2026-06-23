@@ -35,4 +35,12 @@
     </Or>
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
+  <Match>
+    <Class name="io.servicetalk.http.utils.LoggingHttpLifecycleObserver$LoggingHttpExchangeObserver"/>
+    <Or>
+      <Method name="onRequest"/>
+      <Method name="onResponse"/>
+    </Or>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
 </FindBugsFilter>
