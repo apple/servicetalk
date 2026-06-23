@@ -17,10 +17,46 @@ package io.servicetalk.http.api;
 
 import org.junit.jupiter.api.Test;
 
+import static java.lang.System.clearProperty;
+import static java.lang.System.getProperty;
+import static java.lang.System.setProperty;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DefaultHttpHeadersTest extends AbstractHttpHeadersTest {
+
+    @Test
+    void defaultFactoryValidatesValues() {
+        assertTrue(DefaultHttpHeadersFactory.INSTANCE.validateValues());
+        assertThrows(IllegalArgumentException.class,
+                () -> DefaultHttpHeadersFactory.INSTANCE.newHeaders().add("name", "invalid\0value"));
+    }
+
+    @Test
+    void explicitFactoryCanDisableValueValidation() {
+        assertDoesNotThrow(() -> new DefaultHttpHeadersFactory(true, true, false).newHeaders()
+                .add("name", "invalid\0value"));
+    }
+
+    @Test
+    void temporaryDefaultValidateValuesPropertyCanDisableDefault() {
+        final String oldValue = getProperty(DefaultHttpHeadersFactory.DEFAULT_VALIDATE_VALUES_PROPERTY);
+        try {
+            clearProperty(DefaultHttpHeadersFactory.DEFAULT_VALIDATE_VALUES_PROPERTY);
+            assertTrue(DefaultHttpHeadersFactory.defaultValidateValues());
+
+            setProperty(DefaultHttpHeadersFactory.DEFAULT_VALIDATE_VALUES_PROPERTY, "false");
+            assertFalse(DefaultHttpHeadersFactory.defaultValidateValues());
+        } finally {
+            if (oldValue == null) {
+                clearProperty(DefaultHttpHeadersFactory.DEFAULT_VALIDATE_VALUES_PROPERTY);
+            } else {
+                setProperty(DefaultHttpHeadersFactory.DEFAULT_VALIDATE_VALUES_PROPERTY, oldValue);
+            }
+        }
+    }
 
     @Test
     void addHeadersValidatesNamesWhenSourceDoesNot() {

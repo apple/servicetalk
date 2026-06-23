@@ -19,6 +19,12 @@ import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static java.lang.Boolean.parseBoolean;
+import static java.lang.System.getProperty;
+
 /**
  * A {@link HttpHeadersFactory} optimized for HTTP/2.
  *
@@ -27,7 +33,21 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 @Deprecated // FIXME: 0.43 - remove deprecated class
 public final class H2HeadersFactory implements HttpHeadersFactory {
 
-    public static final HttpHeadersFactory INSTANCE = new H2HeadersFactory(true, true, false);
+    private static final Logger LOGGER = LoggerFactory.getLogger(H2HeadersFactory.class);
+    // FIXME: 0.43 - remove this temporary property
+    static final String DEFAULT_VALIDATE_VALUES_PROPERTY =
+            "io.servicetalk.http.api.temporaryDefaultValidateHeaderValues";
+    private static final boolean DEFAULT_VALIDATE_VALUES = defaultValidateValues();
+
+    public static final HttpHeadersFactory INSTANCE = new H2HeadersFactory(true, true, DEFAULT_VALIDATE_VALUES);
+
+    static {
+        if (!DEFAULT_VALIDATE_VALUES) {
+            LOGGER.warn("-D{}: {}. This property will be removed in the future releases. " +
+                            "Configure this value via H2HeadersFactory constructor instead.",
+                    DEFAULT_VALIDATE_VALUES_PROPERTY, DEFAULT_VALIDATE_VALUES);
+        }
+    }
 
     private final HttpHeadersFactory underlying;
 
@@ -87,6 +107,10 @@ public final class H2HeadersFactory implements HttpHeadersFactory {
     @Override
     public boolean validateValues() {
         return underlying.validateValues();
+    }
+
+    static boolean defaultValidateValues() {
+        return parseBoolean(getProperty(DEFAULT_VALIDATE_VALUES_PROPERTY, "true"));
     }
 
     @Override

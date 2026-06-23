@@ -576,7 +576,7 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
 
     @Override
     protected CharSequence validateValue(final CharSequence value) {
-        if (validateValues) {
+        if (value != null && validateValues) {
             validateHeaderValue(value);
         }
         return value;
