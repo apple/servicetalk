@@ -55,6 +55,10 @@ final class MinTtlCache implements DnsCache {
     }
 
     void prepareForResolution(final String hostname) {
+        clearMinTtl(hostname);
+    }
+
+    void clearMinTtl(final String hostname) {
         minExpiryMap.remove(hostname);
     }
 
@@ -76,6 +80,7 @@ final class MinTtlCache implements DnsCache {
 
     @Override
     public boolean clear(final String hostname) {
+        clearMinTtl(hostname);
         return cache.clear(hostname);
     }
 

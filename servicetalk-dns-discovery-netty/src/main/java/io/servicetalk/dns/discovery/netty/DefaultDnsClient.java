@@ -345,7 +345,9 @@ final class DefaultDnsClient implements DnsClient {
                     // Unwrap the list so we can use it in SrvInactiveCombinerOperator below.
                     return from(((SrvInactiveEvent<HostAndPort, InetSocketAddress>) srvEvent).aggregatedEvents);
                 } else {
-                    final ARecordPublisher aPublisher = aRecordMap.remove(srvEvent.address().hostName());
+                    final String srvHostName = srvEvent.address().hostName();
+                    final ARecordPublisher aPublisher = aRecordMap.remove(srvHostName);
+                    ttlCache.clearMinTtl(srvHostName);
                     if (aPublisher != null) {
                         aPublisher.cancelAndFail0(
                                 SrvAddressRemovedException.newInstance(DefaultDnsClient.class, "dnsSrvQuery"));
