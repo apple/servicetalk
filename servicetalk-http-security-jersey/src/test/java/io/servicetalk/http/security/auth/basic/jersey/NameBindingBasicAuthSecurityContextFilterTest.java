@@ -19,6 +19,7 @@ import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.security.auth.basic.jersey.resources.GlobalBindingResource;
 import io.servicetalk.http.security.auth.basic.jersey.resources.NameBindingResource;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -26,6 +27,7 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import javax.ws.rs.core.Application;
 
+import static io.servicetalk.http.api.HttpResponseStatus.UNAUTHORIZED;
 import static java.util.Collections.singleton;
 
 class NameBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthSecurityContextFilterTest {
@@ -43,12 +45,26 @@ class NameBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthSec
         };
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] withUserInfo={0}")
-    @ValueSource(booleans = {true, false})
-    void authenticated(final boolean withUserInfo) throws Exception {
-        setUp(withUserInfo);
+    @Test
+    void authenticatedWithUserInfo() throws Exception {
+        setUp(true);
         assertBasicAuthSecurityContextAbsent(GlobalBindingResource.PATH, true);
         assertBasicAuthSecurityContextPresent(NameBindingResource.PATH);
+    }
+
+    /**
+     * No userInfo key wired and no custom principal function: per the security fix in
+     * {@code AbstractBasicAuthSecurityContextFilter} and {@code NoUserInfoBuilder},
+     * {@code @BasicAuthenticated} resources must fail closed even with valid credentials,
+     * because there is no source of identity for the filter to publish.
+     */
+    @Test
+    void noUserInfoFailsClosedEvenWithValidCredentials() throws Exception {
+        setUp(false);
+        // Non-@BasicAuthenticated resource: filter does not run, default Jersey context applies.
+        assertBasicAuthSecurityContextAbsent(GlobalBindingResource.PATH, true);
+        // @BasicAuthenticated resource: filter runs, default returns null, abortWith(401).
+        assertBasicAuthSecurityContextAbsent(NameBindingResource.PATH, true, UNAUTHORIZED);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] withUserInfo={0}, withNewKey={1}")

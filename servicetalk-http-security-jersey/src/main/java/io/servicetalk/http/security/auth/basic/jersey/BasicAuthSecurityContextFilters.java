@@ -119,12 +119,9 @@ public final class BasicAuthSecurityContextFilters {
 
         NoUserInfoBuilder() {
             super(BasicAuthSecurityContextFilters::asSecurityContextFunction,
-                    BasicAuthSecurityContextFilters::newAnonymousSecurityContext);
+                    requestCtx -> null);
         }
     }
-
-    // Visible for testing
-    static final Principal ANONYMOUS_PRINCIPAL = () -> "ANONYMOUS";
 
     private BasicAuthSecurityContextFilters() {
         // no instances
@@ -196,10 +193,6 @@ public final class BasicAuthSecurityContextFilters {
                         asSecurityContextBiFunction(securityContextFunction()));
             }
         };
-    }
-
-    private static SecurityContext newAnonymousSecurityContext(final ContainerRequestContext requestCtx) {
-        return new BasicAuthSecurityContext(ANONYMOUS_PRINCIPAL, isRequestSecure(requestCtx));
     }
 
     private static <UserInfo> SecurityContext newSecurityContext(final ContainerRequestContext requestCtx,

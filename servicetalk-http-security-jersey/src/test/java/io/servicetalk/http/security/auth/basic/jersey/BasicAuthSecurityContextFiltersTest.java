@@ -34,17 +34,19 @@ import java.net.URI;
 import java.security.Principal;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
-import static io.servicetalk.http.security.auth.basic.jersey.BasicAuthSecurityContextFilters.ANONYMOUS_PRINCIPAL;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -73,11 +75,13 @@ class BasicAuthSecurityContextFiltersTest {
         this.globalFilter = globalFilter;
         final ContainerRequestFilter filter = newFilterBuilder().build();
 
-        final ArgumentCaptor<SecurityContext> securityCtxCaptor = ArgumentCaptor.forClass(SecurityContext.class);
         filter.filter(requestCtx);
 
-        verify(requestCtx).setSecurityContext(securityCtxCaptor.capture());
-        assertThat(securityCtxCaptor.getValue().getUserPrincipal(), is(sameInstance(ANONYMOUS_PRINCIPAL)));
+        final ArgumentCaptor<Response> respCaptor = ArgumentCaptor.forClass(Response.class);
+        verify(requestCtx).abortWith(respCaptor.capture());
+        verify(requestCtx, never()).setSecurityContext(any(SecurityContext.class));
+        assertThat(respCaptor.getValue().getStatus(),
+                is(Response.Status.UNAUTHORIZED.getStatusCode()));
     }
 
     @ParameterizedTest
@@ -88,7 +92,8 @@ class BasicAuthSecurityContextFiltersTest {
         final ContainerRequestFilter filter = newFilterBuilder(userInfoKey).build();
 
         filter.filter(requestCtx);
-        verifyNoInteractions(requestCtx);
+        verify(requestCtx).abortWith(any(Response.class));
+        clearInvocations(requestCtx);
 
         AsyncContext.put(userInfoKey, TEST_PRINCIPAL);
         final ArgumentCaptor<SecurityContext> securityCtxCaptor = ArgumentCaptor.forClass(SecurityContext.class);
@@ -123,7 +128,8 @@ class BasicAuthSecurityContextFiltersTest {
                 .build();
 
         filter.filter(requestCtx);
-        verifyNoInteractions(requestCtx);
+        verify(requestCtx).abortWith(any(Response.class));
+        clearInvocations(requestCtx);
 
         AsyncContext.put(userInfoKey, TEST_USER_INFO);
         final ArgumentCaptor<SecurityContext> securityCtxCaptor = ArgumentCaptor.forClass(SecurityContext.class);
@@ -162,7 +168,8 @@ class BasicAuthSecurityContextFiltersTest {
                 .build();
 
         filter.filter(requestCtx);
-        verifyNoInteractions(requestCtx);
+        verify(requestCtx).abortWith(any(Response.class));
+        clearInvocations(requestCtx);
 
         AsyncContext.put(userInfoKey, TEST_USER_INFO);
         final ArgumentCaptor<SecurityContext> securityCtxCaptor = ArgumentCaptor.forClass(SecurityContext.class);
