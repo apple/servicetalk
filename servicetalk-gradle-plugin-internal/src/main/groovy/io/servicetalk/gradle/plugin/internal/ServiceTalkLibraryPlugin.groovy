@@ -33,6 +33,7 @@ import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addToolchainDeb
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.createJavadocJarTask
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.createSourcesJarTask
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.locateBuildLevelConfigFile
+import static io.servicetalk.gradle.plugin.internal.Versions.JACOCO_VERSION
 import static io.servicetalk.gradle.plugin.internal.Versions.PMD_VERSION
 import static io.servicetalk.gradle.plugin.internal.Versions.SPOTBUGS_VERSION
 import static io.servicetalk.gradle.plugin.internal.Versions.TARGET_VERSION
@@ -51,6 +52,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
     configureToolchains project
     configureTestFixtures project
     configureTests project
+    applyJacocoPlugin project
     enforceCheckstyleRoot project
     applyPmdPlugin project
     applySpotBugsPlugin project
@@ -306,6 +308,26 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junit5Version")
         testRuntimeOnly("org.junit.platform:junit-platform-launcher")
         testRuntimeOnly("org.junit.platform:junit-platform-suite-engine")
+      }
+    }
+  }
+
+  private static void applyJacocoPlugin(Project project) {
+    project.configure(project) {
+      pluginManager.apply("jacoco")
+
+      jacoco {
+        toolVersion = JACOCO_VERSION
+      }
+
+      // Per-module reports are available on demand via: ./gradlew :module:jacocoTestReport
+      // Not wired to `check` to avoid overhead — use the root-level aggregate report for CI.
+      tasks.named("jacocoTestReport") {
+        dependsOn tasks.withType(Test)
+        reports {
+          xml.required = true
+          html.required = true
+        }
       }
     }
   }
