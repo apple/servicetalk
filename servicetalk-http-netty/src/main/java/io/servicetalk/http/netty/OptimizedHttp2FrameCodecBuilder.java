@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Constructor;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
@@ -71,6 +72,12 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
     @Nullable
     private static final MethodHandle DECODER_ENFORCE_MAX_RST_FRAMES_PER_WINDOW;
 
+    @Nullable
+    private static final Constructor<? extends Http2ConnectionDecoder> EMPTY_DATA_FRAME_DECODER_CTOR;
+
+    @Nullable
+    private static final Constructor<? extends Http2ConnectionDecoder> MAX_RST_FRAME_DECODER_CTOR;
+
     static {
         final Http2FrameCodecBuilder builder = forServer();
 
@@ -105,6 +112,11 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
             decoderEnforceMaxRstFramesPerWindow = null;
         }
         DECODER_ENFORCE_MAX_RST_FRAMES_PER_WINDOW = decoderEnforceMaxRstFramesPerWindow;
+
+        EMPTY_DATA_FRAME_DECODER_CTOR = resolveDecoratingDecoderCtor(
+                "io.netty.handler.codec.http2.Http2EmptyDataFrameConnectionDecoder", int.class);
+        MAX_RST_FRAME_DECODER_CTOR = resolveDecoratingDecoderCtor(
+                "io.netty.handler.codec.http2.Http2MaxRstFrameDecoder", int.class, int.class);
     }
 
     private final boolean server;
@@ -151,8 +163,52 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
 
         Http2ConnectionDecoder decoder = new DefaultHttp2ConnectionDecoder(connection, encoder, frameReader,
                 promisedRequestVerifier(), isAutoAckSettingsFrame(), isAutoAckPingFrame(), isValidateHeaders());
+        decoder = applyDdosDecoders(decoder);
 
         return super.build(decoder, encoder, initialSettings);
+    }
+
+    // Netty wraps the decoder it passes to us (ignoredDecoder) with its DDoS-protection decorators inside
+    // AbstractHttp2ConnectionHandlerBuilder#buildFromCodec(...). Because we replace that decoder with our own (to
+    // install ServiceTalkHttp2HeadersDecoder), we must re-apply the same decorators here or the protections are
+    // silently lost. We mirror Netty's order and configuration: empty-DATA-frame guard first (inner), then
+    // RST_STREAM rate-limiting (outer).
+    private Http2ConnectionDecoder applyDdosDecoders(Http2ConnectionDecoder decoder) {
+        // Matches AbstractHttp2ConnectionHandlerBuilder#buildFromCodec: empty-DATA guard is applied for both client and
+        // server whenever the configured count is > 0 (Netty's default is 2; ServiceTalk never disables it).
+        final int maxConsecutiveEmptyDataFrames = decoderEnforceMaxConsecutiveEmptyDataFrames();
+        if (maxConsecutiveEmptyDataFrames > 0) {
+            decoder = newDecoratingDecoder(EMPTY_DATA_FRAME_DECODER_CTOR, decoder, maxConsecutiveEmptyDataFrames);
+        }
+        // RST_STREAM rate-limiting is server-only; maxRstFramesPerWindow(server)/rstSecondsPerWindow(server) return 0
+        // for the client, which disables the guard (matching the values passed to Netty's builder).
+        final int maxRst = maxRstFramesPerWindow(server);
+        final int rstWindowSeconds = rstSecondsPerWindow(server);
+        if (maxRst > 0 && rstWindowSeconds > 0) {
+            decoder = newDecoratingDecoder(MAX_RST_FRAME_DECODER_CTOR, decoder, maxRst, rstWindowSeconds);
+        }
+        return decoder;
+    }
+
+    private static Http2ConnectionDecoder newDecoratingDecoder(
+            @Nullable final Constructor<? extends Http2ConnectionDecoder> ctor,
+            final Http2ConnectionDecoder delegate, final Object... extraArgs) {
+        if (ctor == null) {
+            // Reflection resolution failed and already logged in the static initializer. Fall back to the undecorated
+            // decoder rather than failing the connection; this matches the pre-existing behavior on older Netty.
+            return delegate;
+        }
+        final Object[] args = new Object[extraArgs.length + 1];
+        args[0] = delegate;
+        System.arraycopy(extraArgs, 0, args, 1, extraArgs.length);
+        try {
+            return ctor.newInstance(args);
+        } catch (Throwable cause) {
+            // A constructor that resolved at class-init but fails to instantiate is unexpected: fail the  connection
+            // loudly rather than silently degrading a security control.
+            throwException(cause);
+            return delegate;
+        }
     }
 
     /**
@@ -217,23 +273,45 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
         if (methodHandle == null) {
             return builderInstance;
         }
-        final int maxRstFramesPerWindow;
-        final int secondsPerWindow;
-        if (isServer) {
-            maxRstFramesPerWindow = MAX_RST_FRAMES_PER_WINDOW;
-            secondsPerWindow = SECONDS_PER_WINDOW;
-        } else {
-            // Client doesn't need this protection
-            maxRstFramesPerWindow = 0;
-            secondsPerWindow = 0;
-        }
         try {
             // invokeExact requires return type cast to match the type signature
             return (Http2FrameCodecBuilder) methodHandle.invokeExact(builderInstance,
-                    maxRstFramesPerWindow, secondsPerWindow);
+                    maxRstFramesPerWindow(isServer), rstSecondsPerWindow(isServer));
         } catch (Throwable t) {
             throwException(t);
             return builderInstance;
+        }
+    }
+
+    // RST_STREAM rate-limiting is only enabled on the server; the client doesn't need this protection.
+    private static int maxRstFramesPerWindow(final boolean isServer) {
+        return isServer ? MAX_RST_FRAMES_PER_WINDOW : 0;
+    }
+
+    // RST_STREAM rate-limiting is only enabled on the server; the client doesn't need this protection.
+    private static int rstSecondsPerWindow(final boolean isServer) {
+        return isServer ? SECONDS_PER_WINDOW : 0;
+    }
+
+    @Nullable
+    @SuppressWarnings("unchecked")
+    private static Constructor<? extends Http2ConnectionDecoder> resolveDecoratingDecoderCtor(
+            final String className, final Class<?>... extraParamTypes) {
+        try {
+            final Class<?> clazz = Class.forName(className, false,
+                    OptimizedHttp2FrameCodecBuilder.class.getClassLoader());
+            final Class<?>[] paramTypes = new Class<?>[extraParamTypes.length + 1];
+            paramTypes[0] = Http2ConnectionDecoder.class;
+            System.arraycopy(extraParamTypes, 0, paramTypes, 1, extraParamTypes.length);
+            final Constructor<?> ctor = clazz.getDeclaredConstructor(paramTypes);
+            ctor.setAccessible(true);
+            return (Constructor<? extends Http2ConnectionDecoder>) ctor;
+        } catch (Throwable cause) {
+            LOGGER.warn("Unable to resolve Netty's package-private {} via reflection. HTTP/2 connections will " +
+                            "not re-apply this DDoS protection decorator on top of ServiceTalk's custom decoder. " +
+                            "Detected Netty version: {}", className,
+                    Http2FrameCodecBuilder.class.getPackage().getImplementationVersion(), cause);
+            return null;
         }
     }
 
