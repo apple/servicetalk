@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.Locale;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -77,8 +78,56 @@ public final class PlatformDependent {
     private static final int MIN_ALLOWED_SPSC_CHUNK_SIZE = 8; // JCTools does not allow lower initial capacity.
     private static final int MIN_ALLOWED_MPSC_CHUNK_SIZE = 2; // JCTools does not allow lower initial capacity.
 
+    // OS detection. Logic kept in sync with io.netty.util.internal.PlatformDependent#normalizeOs in Netty 4.1.x.
+    private static final String NORMALIZED_OS = normalizeOs(readOsName());
+    private static final boolean IS_LINUX = "linux".equals(NORMALIZED_OS);
+    private static final boolean IS_OSX = "osx".equals(NORMALIZED_OS);
+
+    static {
+        LOGGER.debug("Detected OS: {}", NORMALIZED_OS);
+    }
+
     private PlatformDependent() {
         // no instantiation
+    }
+
+    /**
+     * Returns {@code true} if the JVM is running on Linux. Determined from the {@code os.name} system property,
+     * equivalent to {@code "linux".equals(normalizedOs())}.
+     *
+     * @return {@code true} if the JVM is running on Linux.
+     */
+    public static boolean isLinux() {
+        return IS_LINUX;
+    }
+
+    /**
+     * Returns {@code true} if the JVM is running on macOS (a.k.a. OSX / Darwin). Determined from the {@code os.name}
+     * system property, equivalent to {@code "osx".equals(normalizedOs())}.
+     * <p>
+     * The method name mirrors Netty's {@code io.netty.util.internal.PlatformDependent#isOsx()} and the canonical
+     * value returned by {@link #normalizedOs()}.
+     *
+     * @return {@code true} if the JVM is running on macOS.
+     */
+    public static boolean isOsx() {
+        return IS_OSX;
+    }
+
+    /**
+     * Returns the canonical name of the operating system the JVM is running on, derived from the {@code os.name}
+     * system property. Possible values include {@code "linux"}, {@code "osx"}, {@code "windows"}, {@code "freebsd"},
+     * {@code "openbsd"}, {@code "netbsd"}, {@code "sunos"}, {@code "aix"}, {@code "hpux"}, {@code "os400"}, or
+     * {@code "unknown"}.
+     * <p>
+     * Note: there is intentionally no {@code isWindows()} getter — {@link #isLinux()} and {@link #isOsx()} cover
+     * the platforms ServiceTalk needs to branch on; callers needing other operating systems should compare against
+     * the value returned here.
+     *
+     * @return canonical normalized OS name.
+     */
+    public static String normalizedOs() {
+        return NORMALIZED_OS;
     }
 
     /**
@@ -269,6 +318,59 @@ public final class PlatformDependent {
      */
     public static <T> Queue<T> newUnboundedSpscQueue(final int initialCapacity) {
         return Queues.newUnboundedSpscQueue(initialCapacity);
+    }
+
+    private static String readOsName() {
+        try {
+            // Read through doPrivileged so OS detection still works under a SecurityManager that grants the
+            // permission to this code but not to the caller, matching Netty's SystemPropertyUtil behavior.
+            return AccessController.doPrivileged((PrivilegedAction<String>) () -> getProperty("os.name", ""));
+        } catch (SecurityException e) {
+            LOGGER.debug("Unable to read os.name system property; treating as unknown", e);
+            return "";
+        }
+    }
+
+    // Visible for testing.
+    static String normalizeOs(final String value) {
+        final String v = normalize(value);
+        if (v.startsWith("aix")) {
+            return "aix";
+        }
+        if (v.startsWith("hpux")) {
+            return "hpux";
+        }
+        // Avoid matching names such as "os4000" by checking the char after "os400" is not a digit.
+        if (v.startsWith("os400") && (v.length() <= 5 || !Character.isDigit(v.charAt(5)))) {
+            return "os400";
+        }
+        if (v.startsWith("linux")) {
+            return "linux";
+        }
+        if (v.startsWith("macosx") || v.startsWith("osx") || v.startsWith("darwin")) {
+            return "osx";
+        }
+        if (v.startsWith("freebsd")) {
+            return "freebsd";
+        }
+        if (v.startsWith("openbsd")) {
+            return "openbsd";
+        }
+        if (v.startsWith("netbsd")) {
+            return "netbsd";
+        }
+        if (v.startsWith("solaris") || v.startsWith("sunos")) {
+            return "sunos";
+        }
+        if (v.startsWith("windows")) {
+            return "windows";
+        }
+        return "unknown";
+    }
+
+    // Visible for testing.
+    static String normalize(final String value) {
+        return value.toLowerCase(Locale.US).replaceAll("[^a-z0-9]+", "");
     }
 
     private static final class Queues {
