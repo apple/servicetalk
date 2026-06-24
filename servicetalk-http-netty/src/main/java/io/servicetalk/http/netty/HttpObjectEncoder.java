@@ -31,12 +31,14 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.ByteProcessor;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpHeaderValues;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.transport.netty.internal.CloseHandler;
+import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
@@ -57,8 +59,10 @@ import static io.netty.buffer.Unpooled.unreleasableBuffer;
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static io.netty.handler.codec.http.HttpConstants.COLON;
 import static io.netty.handler.codec.http.HttpConstants.CR;
+import static io.netty.handler.codec.http.HttpConstants.HT;
 import static io.netty.handler.codec.http.HttpConstants.LF;
 import static io.netty.handler.codec.http.HttpConstants.SP;
+import static io.servicetalk.buffer.api.CharSequences.forEachByte;
 import static io.servicetalk.buffer.api.CharSequences.unwrapBuffer;
 import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
 import static io.servicetalk.buffer.netty.BufferUtils.toByteBufNoThrow;
@@ -77,6 +81,8 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
     private static final int ZERO_CRLF_MEDIUM = ('0' << 16) | CRLF_SHORT;
     private static final int COLON_AND_SPACE_SHORT = (COLON << 8) | SP;
     private static final byte[] ZERO_CRLF_CRLF = {'0', CR, LF, CR, LF};
+    private static final byte DEL = 127;
+    private static final byte CONTROL_CHARS_MASK = (byte) 0xE0;
     private static final ByteBuf CRLF_BUF = unreleasableBuffer(directBuffer(2).writeByte(CR).writeByte(LF)
             .asReadOnly());
     private static final ByteBuf ZERO_CRLF_CRLF_BUF = unreleasableBuffer(directBuffer(ZERO_CRLF_CRLF.length)
@@ -440,6 +446,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
     }
 
     private static void encodeHeader(CharSequence name, CharSequence value, ByteBuf byteBuf, Buffer buffer) {
+        validateHeaderValue(value);
         final int nameLen = name.length();
         final int valueLen = value.length();
         final int entryLen = nameLen + valueLen + 4;
@@ -454,6 +461,10 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
         ByteBufUtil.setShortBE(byteBuf, offset, CRLF_SHORT);
         offset += 2;
         byteBuf.writerIndex(offset);
+    }
+
+    private static void validateHeaderValue(final CharSequence value) {
+        forEachByte(value, HeaderValueValidator.INSTANCE);
     }
 
     private static void writeAscii(CharSequence value, ByteBuf dstByteBuf, Buffer dstBuffer, int dstOffset) {
@@ -488,5 +499,18 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
     private static ByteBuf toByteBuf(Buffer buffer) {
         ByteBuf byteBuf = toByteBufNoThrow(buffer);
         return byteBuf != null ? byteBuf : wrappedBuffer(buffer.toNioBuffer());
+    }
+
+    private enum HeaderValueValidator implements ByteProcessor {
+        INSTANCE;
+
+        @Override
+        public boolean process(final byte value) {
+            if (((value & CONTROL_CHARS_MASK) == 0 && value != HT) || value == DEL) {
+                throw new IllegalCharacterException(value,
+                        "(VCHAR / obs-text) [ 1*(SP / HTAB) (VCHAR / obs-text) ]");
+            }
+            return true;
+        }
     }
 }

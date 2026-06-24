@@ -162,6 +162,19 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
         assertFalse(channel.finishAndReleaseAll());
     }
 
+    @ParameterizedTest(name = "{index}")
+    @ValueSource(strings = {"bad\r\nvalue", "bad\nvalue", "bad\rvalue", "bad\u0000value", "bad\u007Fvalue"})
+    void contentLengthNoTrailersHeaderValueControlCharacterThrows(final String headerValue) {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        HttpRequestMetaData request = newRequestMetaData(HTTP_1_1, GET, "/some/path?foo=bar&baz=yyy",
+                new DefaultHttpHeadersFactory(false, false, false).newHeaders());
+        request.headers().add(USER_AGENT, headerValue);
+
+        IOException e = assertThrows(IOException.class, () -> channel.writeOutbound(request));
+        assertTrue(e.getCause() instanceof IllegalArgumentException);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
     @Test
     void contentLengthNoTrailersHeaderWhiteSpaceEncodedWithValidationOff() {
         EmbeddedChannel channel = newEmbeddedChannel();
