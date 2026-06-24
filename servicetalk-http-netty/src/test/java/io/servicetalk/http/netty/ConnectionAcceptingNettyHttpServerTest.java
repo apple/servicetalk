@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
-import static io.netty.util.internal.PlatformDependent.normalizedOs;
 import static io.servicetalk.client.api.LimitingConnectionFactoryFilter.withMax;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
@@ -50,6 +49,7 @@ import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.CONNECT_TIMEOUT;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.SO_BACKLOG;
+import static io.servicetalk.utils.internal.PlatformDependent.isLinux;
 import static java.lang.Boolean.TRUE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -61,7 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ConnectionAcceptingNettyHttpServerTest extends AbstractNettyHttpServerTest {
 
-    private static final boolean IS_LINUX = "linux".equals(normalizedOs());
+    private static final boolean IS_LINUX = isLinux();
     // There is an off-by-one behavior difference between macOS & Linux.
     // Linux has a greater-than check
     // (see. https://github.com/torvalds/linux/blob/5bfc75d92efd494db37f5c4c173d3639d4772966/include/net/sock.h#L941)
