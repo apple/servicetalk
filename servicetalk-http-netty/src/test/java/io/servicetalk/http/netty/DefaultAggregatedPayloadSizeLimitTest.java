@@ -25,10 +25,13 @@ import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.PayloadTooLargeException;
 import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -145,6 +148,45 @@ class DefaultAggregatedPayloadSizeLimitTest {
 
     @ParameterizedTest
     @EnumSource(HttpProtocol.class)
+    void negativeClientLimitRejected(HttpProtocol protocol) {
+        assertThrows(IllegalArgumentException.class, () ->
+                newClientBuilder(HostAndPort.of("localhost", 8080), CLIENT_CTX, protocol).maxAggregatedPayloadSize(-1));
+    }
+
+    @ParameterizedTest
+    @EnumSource(HttpProtocol.class)
+    void streamingServiceWithAggregatingFilterOverLimitRejected(HttpProtocol protocol) throws Exception {
+        // The service itself is streaming, but a filter aggregates the request via toRequest(). The aggregation limit
+        // must still apply at that aggregation boundary. As in serverOverLimitRejected, the 413 may race with teardown.
+        try (HttpServerContext server = startStreamingServerWithAggregatingFilter(protocol, MAX_PAYLOAD);
+             StreamingHttpClient client = newStreamingClient(server, protocol, 0)) {
+            HttpClient aggregated = client.asClient();
+            final HttpResponse response;
+            try {
+                response = aggregated.request(aggregated.post("/")
+                        .payloadBody(alloc(client).fromAscii(repeat('x', MAX_PAYLOAD + 1)))).toFuture().get();
+            } catch (ExecutionException terminated) {
+                return;
+            }
+            assertThat(response.status(), is(PAYLOAD_TOO_LARGE));
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(HttpProtocol.class)
+    void streamingClientWithAggregatingFilterOverLimitFails(HttpProtocol protocol) throws Exception {
+        // The application consumes the response as a stream, but a client filter aggregates it via toResponse(). The
+        // aggregation limit must apply at that boundary even though the application paradigm is streaming.
+        try (HttpServerContext server = startFixedResponseServer(protocol, MAX_PAYLOAD + 1);
+             StreamingHttpClient client = newStreamingClientWithAggregatingFilter(server, protocol, MAX_PAYLOAD)) {
+            ExecutionException e = assertThrows(ExecutionException.class,
+                    () -> client.request(client.get("/")).toFuture().get());
+            assertThat(e.getCause(), is(instanceOf(PayloadTooLargeException.class)));
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(HttpProtocol.class)
     void serverExpandedBodyOverLimitRejected(HttpProtocol protocol) throws Exception {
         // Simulates automatic decompression: a tiny wire body is expanded by a filter into a payload larger than the
         // limit before the aggregating service reads it. The limit must apply to the post-transformation size, not the
@@ -207,10 +249,46 @@ class DefaultAggregatedPayloadSizeLimitTest {
         });
     }
 
+    private static HttpServerContext startStreamingServerWithAggregatingFilter(HttpProtocol protocol,
+            int maxAggregatedPayloadSize) throws Exception {
+        // A streaming service fronted by a filter that aggregates the request via toRequest() before delegating, so the
+        // aggregation limit is exercised from the filter rather than an aggregated service paradigm.
+        return newServerBuilder(SERVER_CTX, protocol)
+                .maxAggregatedPayloadSize(maxAggregatedPayloadSize)
+                .appendServiceFilter(service -> new StreamingHttpServiceFilter(service) {
+                    @Override
+                    public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                                final StreamingHttpRequest request,
+                                                                final StreamingHttpResponseFactory factory) {
+                        return request.toRequest().flatMap(aggregated ->
+                                delegate().handle(ctx, aggregated.toStreamingRequest(), factory));
+                    }
+                })
+                .listenStreamingAndAwait((ctx, request, factory) ->
+                        succeeded(factory.ok().payloadBody(request.payloadBody())));
+    }
+
     private static StreamingHttpClient newStreamingClient(HttpServerContext server, HttpProtocol protocol,
                                                           int maxAggregatedPayloadSize) {
         return newClientBuilder(server, CLIENT_CTX, protocol)
                 .maxAggregatedPayloadSize(maxAggregatedPayloadSize)
+                .buildStreaming();
+    }
+
+    private static StreamingHttpClient newStreamingClientWithAggregatingFilter(HttpServerContext server,
+            HttpProtocol protocol, int maxAggregatedPayloadSize) {
+        // A client filter aggregates the response via toResponse() even though the application consumes it as a stream,
+        // so the aggregation limit is exercised from the filter rather than an aggregated client paradigm.
+        return newClientBuilder(server, CLIENT_CTX, protocol)
+                .maxAggregatedPayloadSize(maxAggregatedPayloadSize)
+                .appendClientFilter(client -> new StreamingHttpClientFilter(client) {
+                    @Override
+                    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                                    final StreamingHttpRequest request) {
+                        return delegate.request(request).flatMap(response ->
+                                response.toResponse().map(HttpResponse::toStreamingResponse));
+                    }
+                })
                 .buildStreaming();
     }
 

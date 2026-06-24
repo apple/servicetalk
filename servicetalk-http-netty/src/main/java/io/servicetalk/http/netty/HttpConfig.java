@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.lang.Integer.getInteger;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -36,15 +37,16 @@ final class HttpConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpConfig.class);
 
     static final int DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE = 4 * 1024 * 1024;
+    // FIXME: 0.43 - remove this temporary property
     static final String DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY =
-            "io.servicetalk.http.netty.defaultMaxAggregatedPayloadSize";
+            "io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize";
     static final int DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE =
             getInteger(DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY, DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE);
 
     static {
         if (DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE != DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE) {
-            LOGGER.info("-D{}: {}. Overriding the default maximum aggregated payload size. This can also be " +
-                            "configured per client/server builder via maxAggregatedPayloadSize(int).",
+            LOGGER.warn("-D{}: {}. This property will be removed in the future releases. " +
+                            "Configure this value per client/server builder via maxAggregatedPayloadSize(int) instead.",
                     DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY, DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE);
         }
     }
@@ -101,7 +103,7 @@ final class HttpConfig {
     }
 
     void maxAggregatedPayloadSize(int maxAggregatedPayloadSize) {
-        this.maxAggregatedPayloadSize = maxAggregatedPayloadSize;
+        this.maxAggregatedPayloadSize = ensureNonNegative(maxAggregatedPayloadSize, "maxAggregatedPayloadSize");
     }
 
     void protocols(final HttpProtocolConfig... protocols) {

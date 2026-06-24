@@ -89,7 +89,6 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
 import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalClientFilterFactory;
 import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalConnectionFilterFactory;
-import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.lang.Integer.parseInt;
 import static java.net.StandardSocketOptions.SO_KEEPALIVE;
 import static java.time.Duration.ofMinutes;
@@ -586,8 +585,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> maxAggregatedPayloadSize(final int maxAggregatedPayloadSize) {
-        config.protocolConfigs().maxAggregatedPayloadSize(
-                ensureNonNegative(maxAggregatedPayloadSize, "maxAggregatedPayloadSize"));
+        config.protocolConfigs().maxAggregatedPayloadSize(maxAggregatedPayloadSize);
         return this;
     }
 

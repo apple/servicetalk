@@ -176,9 +176,10 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * &mdash; not the number of bytes received from the network nor any declared {@code Content-Length}. A small
      * compressed response that expands beyond this limit once decoded will therefore be rejected.
      * <p>
-     * The default value is 4 MiB and can be overridden globally via the
-     * {@code io.servicetalk.http.netty.defaultMaxAggregatedPayloadSize} system property. Pass {@code 0} to disable the
-     * limit.
+     * The default value is 4 MiB. Pass {@code 0} to disable the limit. Users who unexpectedly hit the default limit can
+     * temporarily set the {@code io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize} system property to
+     * override the default globally until they can configure it explicitly via this method; this is a temporary
+     * property that will be removed in future releases.
      * <p>
      * For an independent, opt-in limit that can fail fast on {@code Content-Length} or bound bytes at a chosen position
      * in the filter chain (e.g. before a decompressor), see {@code PayloadSizeLimitingHttpRequesterFilter}; both apply.

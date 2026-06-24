@@ -72,10 +72,12 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
     DefaultGrpcServerBuilder(final Supplier<HttpServerBuilder> httpServerBuilderSupplier) {
         this.httpServerBuilderSupplier = () ->
                 requireNonNull(httpServerBuilderSupplier.get(), "Supplier<HttpServerBuilder> result was null")
+                    .protocols(h2Default())
+                    .allowDropRequestTrailers(true)
                     // gRPC frames its own messages, so the HTTP-level aggregated payload limit doesn't map cleanly to
                     // gRPC message size. Disable it here and rely on gRPC-specific message-size limits (tracked
                     // separately) instead of silently capping gRPC payloads at the HTTP default.
-                    .protocols(h2Default()).allowDropRequestTrailers(true).maxAggregatedPayloadSize(0);
+                    .maxAggregatedPayloadSize(0);
     }
 
     @Override
