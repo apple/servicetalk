@@ -36,6 +36,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * SNI {@link ChannelInitializer} for servers.
  */
+@SuppressWarnings("PMD.ExceptionAsFlowControl")
 public final class SniServerChannelInitializer implements ChannelInitializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SniServerChannelInitializer.class);

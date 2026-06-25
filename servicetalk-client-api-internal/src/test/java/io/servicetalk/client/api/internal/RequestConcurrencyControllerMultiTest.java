@@ -18,7 +18,7 @@ package io.servicetalk.client.api.internal;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 
-public class RequestConcurrencyControllerMultiTest extends AbstractRequestConcurrencyControllerMultiTest {
+final class RequestConcurrencyControllerMultiTest extends AbstractRequestConcurrencyControllerMultiTest {
     @Override
     protected RequestConcurrencyController newController(final Publisher<Integer> maxSetting,
                                                          final Completable onClose,

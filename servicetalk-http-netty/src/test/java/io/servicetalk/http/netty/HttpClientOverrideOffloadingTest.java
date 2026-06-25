@@ -29,6 +29,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.net.InetSocketAddress;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -107,7 +108,7 @@ class HttpClientOverrideOffloadingTest {
     @EnumSource(Params.class)
     void reserveRespectsDisable(final Params params) throws Exception {
         setUp(params);
-        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        Queue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         HttpRequest request = client.get("/");
         request.context().put(HTTP_EXECUTION_STRATEGY_KEY, this.overridingStrategy);
         client.reserveConnection(request).beforeOnSuccess(__ -> {
@@ -123,7 +124,7 @@ class HttpClientOverrideOffloadingTest {
     @EnumSource(Params.class)
     void requestRespectsDisable(final Params params) throws Exception {
         setUp(params);
-        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        Queue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         HttpRequest request = client.get("/");
         request.context().put(HTTP_EXECUTION_STRATEGY_KEY, this.overridingStrategy);
         client.request(request)

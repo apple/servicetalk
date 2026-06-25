@@ -163,7 +163,7 @@ abstract class AbstractTracingHttpFilter {
          * @return {@code true} if the {@link HttpResponseMetaData} should be considered an error for tracing.
          */
         protected boolean isError(final HttpResponseMetaData metaData) {
-            return metaData.status().statusClass().equals(SERVER_ERROR_5XX);
+            return metaData.status().statusClass() == SERVER_ERROR_5XX;
         }
 
         Single<StreamingHttpResponse> track(Single<StreamingHttpResponse> responseSingle) {

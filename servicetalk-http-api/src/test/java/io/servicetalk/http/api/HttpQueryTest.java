@@ -213,7 +213,7 @@ class HttpQueryTest {
         assertEquals("123", entry.getValue());
 
         assertFalse(iterator.hasNext());
-        assertThrows(NoSuchElementException.class, () -> iterator.next());
+        assertThrows(NoSuchElementException.class, iterator::next);
     }
 
     @Test
@@ -238,7 +238,7 @@ class HttpQueryTest {
         assertEquals("baz", entry.getValue());
 
         assertFalse(iterator.hasNext());
-        assertThrows(NoSuchElementException.class, () -> iterator.next());
+        assertThrows(NoSuchElementException.class, iterator::next);
     }
 
     @Test
@@ -276,7 +276,7 @@ class HttpQueryTest {
         assertEquals(2, query.size());
         assertEquals(asList("def", "123"), iteratorAsList(query.valuesIterator("abc")));
         assertNull(query.get("foo"));
-        assertThrows(NoSuchElementException.class, () -> iterator.next());
+        assertThrows(NoSuchElementException.class, iterator::next);
     }
 
     @Test
@@ -290,7 +290,7 @@ class HttpQueryTest {
         iterator.next();
         iterator.remove();
 
-        assertThrows(IllegalStateException.class, () -> iterator.remove());
+        assertThrows(IllegalStateException.class, iterator::remove);
     }
 
     @SuppressWarnings("unchecked")

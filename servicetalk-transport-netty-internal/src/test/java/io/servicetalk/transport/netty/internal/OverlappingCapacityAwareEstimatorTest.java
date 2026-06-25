@@ -192,6 +192,7 @@ class OverlappingCapacityAwareEstimatorTest {
         assertThat("Unexpected requestN", requestN, is(expectedRequestN));
     }
 
+    @FunctionalInterface
     private interface LongFunc {
         long apply(long foo);
     }

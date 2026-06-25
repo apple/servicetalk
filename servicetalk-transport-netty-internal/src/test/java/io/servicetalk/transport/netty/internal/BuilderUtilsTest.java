@@ -33,7 +33,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class BuilderUtilsTest {
 
     @Test
-    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     void toResolvedInetSocketAddressFromIPv4() {
         final String localhostIp4Address = NetUtil.LOCALHOST4.getHostAddress();
         InetSocketAddress address = toResolvedInetSocketAddress(HostAndPort.of(localhostIp4Address, 8080));
@@ -43,7 +42,6 @@ class BuilderUtilsTest {
     }
 
     @Test
-    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     void toResolvedInetSocketAddressFromIPv6() {
         final String localhostIp6Address = NetUtil.LOCALHOST6.getHostAddress();
         InetSocketAddress address = toResolvedInetSocketAddress(HostAndPort.of(localhostIp6Address, 8080));

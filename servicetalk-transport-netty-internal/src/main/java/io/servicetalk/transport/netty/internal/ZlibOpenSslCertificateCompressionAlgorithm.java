@@ -70,6 +70,7 @@ final class ZlibOpenSslCertificateCompressionAlgorithm implements OpenSslCertifi
     }
 
     @Override
+    @SuppressWarnings("PMD.ExceptionAsFlowControl")
     public byte[] decompress(final SSLEngine engine, final int uncompressedLen, final byte[] compressedCertificate)
             throws Exception {
         if (compressedCertificate.length == 0) {

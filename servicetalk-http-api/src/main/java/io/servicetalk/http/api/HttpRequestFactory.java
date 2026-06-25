@@ -28,6 +28,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
 /**
  * A factory for creating {@link HttpRequest}s.
  */
+@FunctionalInterface
 public interface HttpRequestFactory {
     /**
      * Create a new {@link HttpRequest}.

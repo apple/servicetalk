@@ -15,7 +15,7 @@
  */
 package io.servicetalk.loadbalancer;
 
-public class EagerP2CLoadBalancerTest extends EagerLoadBalancerTest {
+class EagerP2CLoadBalancerTest extends EagerLoadBalancerTest {
 
     @Override
     protected boolean isRoundRobin() {

@@ -135,7 +135,7 @@ class NonPipelinedCloseHandlerTest {
         });
     }
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "PMD.UnnecessaryVarargsArrayCreation"})
     private static Collection<Object[]> data() {    // If inserting lines here, adjust the `offset` variable below
         StackTraceElement se = Thread.currentThread().getStackTrace()[1];
         List<Object[]> params = asList(new Object[][] {

@@ -76,7 +76,7 @@ final class TcpClient {
      * @throws ExecutionException If connect failed.
      * @throws InterruptedException If interrupted while waiting for connect to complete.
      */
-    public NettyConnection<Buffer, Buffer> connectBlocking(ExecutionContext<?> executionContext, SocketAddress address)
+    NettyConnection<Buffer, Buffer> connectBlocking(ExecutionContext<?> executionContext, SocketAddress address)
             throws ExecutionException, InterruptedException {
         return connect(executionContext, address).toFuture().get();
     }
@@ -89,7 +89,7 @@ final class TcpClient {
      * @return New {@link NettyConnection}.
      */
     @SuppressWarnings("deprecation") // legitimate use of BufferHandler
-    public Single<NettyConnection<Buffer, Buffer>> connect(ExecutionContext<?> executionContext,
+    Single<NettyConnection<Buffer, Buffer>> connect(ExecutionContext<?> executionContext,
                                                            SocketAddress address) {
         return TcpConnector.connect(null, address, config, false, executionContext,
                 (channel, connectionObserver) -> initChannel(channel,
@@ -111,7 +111,7 @@ final class TcpClient {
      * @throws ExecutionException If connect failed.
      * @throws InterruptedException If interrupted while waiting for connect to complete.
      */
-    public NettyConnection<Buffer, Buffer> connectWithFdBlocking(ExecutionContext<?> executionContext,
+    NettyConnection<Buffer, Buffer> connectWithFdBlocking(ExecutionContext<?> executionContext,
                                                                  SocketAddress address)
             throws Exception {
         assumeTrue(executionContext.ioExecutor().isFileDescriptorSocketAddressSupported());
@@ -154,7 +154,7 @@ final class TcpClient {
      *
      * @return {@link ReadOnlyTcpClientConfig} for this client.
      */
-    public ReadOnlyTcpClientConfig config() {
+    ReadOnlyTcpClientConfig config() {
         return config;
     }
 }

@@ -51,7 +51,8 @@ public abstract class AbstractWriteTest {
     protected void verifyWriteSuccessful(String... items) {
         channel.flushOutbound();
         if (items.length > 0) {
-            assertThat("Message not written.", channel.outboundMessages(), contains((String[]) items));
+            // Cast required so Hamcrest's contains(E...) spreads the array instead of treating it as one element.
+            assertThat("Message not written.", channel.outboundMessages(), contains((Object[]) items));
             for (int i = 0; i < items.length; ++i) {
                 channel.readOutbound(); // discard written items
             }

@@ -31,7 +31,7 @@ import static io.servicetalk.http.api.HttpApiConversions.toClient;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static java.util.Objects.requireNonNull;
 
-public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHttpRequesterTest {
+class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHttpRequesterTest {
     @SuppressWarnings("unchecked")
     @Override
     protected <T extends StreamingHttpRequester & TestHttpRequester> T newAsyncRequester(

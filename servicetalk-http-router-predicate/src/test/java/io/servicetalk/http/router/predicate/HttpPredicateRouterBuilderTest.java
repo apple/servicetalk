@@ -39,6 +39,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpRequestMethod.PUT;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -66,7 +67,7 @@ class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuilderTest 
 
         final Single<StreamingHttpResponse> responseSingle = service.handle(ctx, request, reqRespFactory);
         final StreamingHttpResponse response = responseSingle.toFuture().get();
-        assert response != null;
+        assertNotNull(response);
         assertEquals(404, response.status().code());
     }
 

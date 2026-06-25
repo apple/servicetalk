@@ -18,6 +18,7 @@ package io.servicetalk.client.api;
 /**
  * Enables components to expose a score.
  */
+@FunctionalInterface
 public interface ScoreSupplier {
 
     /**

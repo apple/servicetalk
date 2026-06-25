@@ -52,6 +52,7 @@ final class PublisherAsBlockingIterableTest {
     private final TestPublisher<Integer> source = new TestPublisher<>();
 
     @Test
+    @SuppressWarnings("PMD.UselessPureMethodCall")
     void subscribeDelayedTillIterator() {
         Iterable<Integer> iterable = source.toIterable();
         assertFalse(source.isSubscribed());

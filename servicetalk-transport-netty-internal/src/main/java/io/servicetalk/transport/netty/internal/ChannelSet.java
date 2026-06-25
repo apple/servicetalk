@@ -68,7 +68,6 @@ public final class ChannelSet implements ListenableAsyncCloseable {
     private final Processor onCloseProcessor = newCompletableProcessor();
     private final Processor onClosingProcessor = newCompletableProcessor();
     private final Completable onClose;
-    @SuppressWarnings("unused")
     private volatile int state;
 
     /**

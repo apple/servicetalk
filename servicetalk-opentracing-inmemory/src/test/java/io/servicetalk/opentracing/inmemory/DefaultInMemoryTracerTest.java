@@ -82,7 +82,7 @@ class DefaultInMemoryTracerTest {
 
     private static Optional<InMemoryReference> findChildRef(InMemorySpan span) {
         for (InMemoryReference ref : span.references()) {
-            if (ref.type().equals(CHILD_OF)) {
+            if (CHILD_OF.equals(ref.type())) {
                 return Optional.of(ref);
             }
         }

@@ -67,7 +67,7 @@ class HttpServerDefaultExecutionStrategyTest {
                         return hes.toString();
                     }
                 })
-                .map(service -> Arguments.of(service));
+                .map(Arguments::of);
     }
 
     @ParameterizedTest(name = "{displayName} {index}: service: {0}")

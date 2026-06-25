@@ -99,12 +99,12 @@ class OpenTelemetryHttpRequesterFilterTest {
     static final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         loggerStringWriter.reset();
     }
 
     @AfterEach
-    public void tearDown() {
+    void tearDown() {
         loggerStringWriter.remove();
     }
 
@@ -204,6 +204,7 @@ class OpenTelemetryHttpRequesterFilterTest {
 
     @ParameterizedTest(name = "{displayName} [{index}]: absoluteForm={0}, withHostHeader={1}, useHttp2={2}")
     @MethodSource("testInjectWithAParentCreatedArguments")
+    @SuppressWarnings("PMD.UnusedLocalVariable") // false positive
     void testInjectWithAParentCreated(boolean absoluteForm, boolean withHostHeader, boolean useHttp2) throws Exception {
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         try (ServerContext context = buildServer(useHttp2, true)) {

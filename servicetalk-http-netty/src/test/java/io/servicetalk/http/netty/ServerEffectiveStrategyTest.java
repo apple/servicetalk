@@ -30,13 +30,13 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.oio.api.PayloadWriter;
-import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.io.IOException;
 import java.util.EnumSet;
+import java.util.Set;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -139,8 +139,8 @@ class ServerEffectiveStrategyTest {
     }
 
     private static final class Params implements AutoCloseable {
-        private final EnumSet<ServerOffloadPoint> offloadPoints;
-        private final EnumSet<ServerOffloadPoint> nonOffloadPoints;
+        private final Set<ServerOffloadPoint> offloadPoints;
+        private final Set<ServerOffloadPoint> nonOffloadPoints;
         private final boolean addFilter;
         private final InvokingThreadsRecorder<ServerOffloadPoint> invokingThreadsRecorder;
 
@@ -149,7 +149,7 @@ class ServerEffectiveStrategyTest {
             this.addFilter = addFilter;
             this.invokingThreadsRecorder = null == strategy ? noStrategy() : userStrategy(strategy);
             offloadPoints = expectedOffloads.forServiceType(serviceType);
-            nonOffloadPoints = EnumSet.complementOf(offloadPoints);
+            nonOffloadPoints = EnumSet.complementOf(EnumSet.copyOf(offloadPoints));
         }
 
         boolean isNoOffloadsStrategy() {
@@ -284,8 +284,7 @@ class ServerEffectiveStrategyTest {
         }
     }
 
-    private static final class ServiceInvokingThreadRecorder
-            implements ExecutionStrategyInfluencer<HttpExecutionStrategy>, StreamingHttpServiceFilterFactory {
+    private static final class ServiceInvokingThreadRecorder implements StreamingHttpServiceFilterFactory {
 
         private final InvokingThreadsRecorder<ServerOffloadPoint> recorder;
 
@@ -348,7 +347,7 @@ class ServerEffectiveStrategyTest {
             }
         };
 
-        abstract EnumSet<ServerOffloadPoint> forServiceType(ServiceType clientType);
+        abstract Set<ServerOffloadPoint> forServiceType(ServiceType clientType);
     }
 
     private enum ServiceType {

@@ -77,6 +77,7 @@ class H2ResponseCancelTest extends AbstractNettyHttpServerTest {
 
     private final AtomicInteger newConnectionsCounter = new AtomicInteger();
 
+    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     H2ResponseCancelTest() {
         protocol(HTTP_2.config);
         serviceFilterFactory(service -> new StreamingHttpServiceFilter(service) {

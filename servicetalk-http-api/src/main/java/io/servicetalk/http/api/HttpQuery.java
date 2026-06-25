@@ -52,7 +52,7 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
     }
 
     @Nullable
-    public String get(final String key) {
+    String get(final String key) {
         final List<String> values = params.get(key);
         if (values == null || values.isEmpty()) {
             return null;
@@ -60,7 +60,7 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
         return values.get(0);
     }
 
-    public Iterator<String> valuesIterator(final String key) {
+    Iterator<String> valuesIterator(final String key) {
         final List<String> values = params.get(key);
         if (values == null) {
             return emptyIterator();
@@ -73,7 +73,7 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
         });
     }
 
-    public Iterable<String> values(final String key) {
+    Iterable<String> values(final String key) {
         return new Iterable<String>() {
             @Override
             public Iterator<String> iterator() {
@@ -88,18 +88,18 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
         };
     }
 
-    public Set<String> keys() {
+    Set<String> keys() {
         return unmodifiableSet(params.keySet());
     }
 
-    public HttpQuery add(final String key, @Nullable final String value) {
+    HttpQuery add(final String key, @Nullable final String value) {
         validateQueryParam(key);
         getValues(key).add(value);
         markDirty();
         return this;
     }
 
-    public HttpQuery add(final String key, final Iterable<String> values) {
+    HttpQuery add(final String key, final Iterable<String> values) {
         final List<String> paramValues = getValues(key);
         for (final String value : values) {
             paramValues.add(value);
@@ -108,24 +108,24 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
         return this;
     }
 
-    public HttpQuery add(final String key, final String... values) {
+    HttpQuery add(final String key, final String... values) {
         final List<String> paramValues = getValues(key);
         addAll(paramValues, values);
         markDirty();
         return this;
     }
 
-    public HttpQuery set(final String key, @Nullable final String value) {
+    HttpQuery set(final String key, @Nullable final String value) {
         validateQueryParam(key);
-        final ArrayList<String> list = new ArrayList<>(DEFAULT_LIST_SIZE);
+        final List<String> list = new ArrayList<>(DEFAULT_LIST_SIZE);
         list.add(value);
         markDirty();
         params.put(key, list);
         return this;
     }
 
-    public HttpQuery set(final String key, final Iterable<String> values) {
-        final ArrayList<String> list = new ArrayList<>(DEFAULT_LIST_SIZE);
+    HttpQuery set(final String key, final Iterable<String> values) {
+        final List<String> list = new ArrayList<>(DEFAULT_LIST_SIZE);
         for (final String value : values) {
             list.add(value);
         }
@@ -134,8 +134,8 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
         return this;
     }
 
-    public HttpQuery set(final String key, final String... values) {
-        final ArrayList<String> list = new ArrayList<>(DEFAULT_LIST_SIZE);
+    HttpQuery set(final String key, final String... values) {
+        final List<String> list = new ArrayList<>(DEFAULT_LIST_SIZE);
         addAll(list, values);
         params.put(key, list);
         markDirty();
@@ -146,7 +146,7 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
         return params.get(key) != null;
     }
 
-    public boolean contains(final String key, @Nullable final String value) {
+    boolean contains(final String key, @Nullable final String value) {
         final Iterator<String> values = valuesIterator(key);
         while (values.hasNext()) {
             if (Objects.equals(value, values.next())) {
@@ -156,7 +156,7 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
         return false;
     }
 
-    public boolean remove(final String key) {
+    boolean remove(final String key) {
         if (params.remove(key) != null) {
             markDirty();
             return true;
@@ -164,7 +164,7 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
         return false;
     }
 
-    public boolean remove(final String key, @Nullable final String value) {
+    boolean remove(final String key, @Nullable final String value) {
         final Iterator<String> values = valuesIterator(key);
         while (values.hasNext()) {
             if (Objects.equals(value, values.next())) {
@@ -176,7 +176,7 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
         return false;
     }
 
-    public int size() {
+    int size() {
         int size = 0;
         for (final Entry<String, List<String>> entry : params.entrySet()) {
             size += entry.getValue().size();

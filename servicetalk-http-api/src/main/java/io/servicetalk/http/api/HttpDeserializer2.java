@@ -22,6 +22,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
  * A factory to address deserialization concerns for HTTP request/response payload bodies.
  * @param <T> The type of objects to deserialize.
  */
+@FunctionalInterface
 public interface HttpDeserializer2<T> {
     /**
      * Deserialize a single {@link Object} into a {@link T}.

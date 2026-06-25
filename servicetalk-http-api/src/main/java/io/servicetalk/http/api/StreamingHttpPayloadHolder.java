@@ -223,19 +223,11 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         }
 
         final StreamingHttpPayloadHolder that = (StreamingHttpPayloadHolder) o;
-        if (!headers.equals(that.headers)) {
-            return false;
-        }
-        if (!allocator.equals(that.allocator)) {
-            return false;
-        }
-        if (!payloadInfo.equals(that.payloadInfo)) {
-            return false;
-        }
-        if (!headersFactory.equals(that.headersFactory)) {
-            return false;
-        }
-        return Objects.equals(messageBody, that.messageBody);
+        return headers.equals(that.headers)
+                && allocator.equals(that.allocator)
+                && payloadInfo.equals(that.payloadInfo)
+                && headersFactory.equals(that.headersFactory)
+                && Objects.equals(messageBody, that.messageBody);
     }
 
     @Override

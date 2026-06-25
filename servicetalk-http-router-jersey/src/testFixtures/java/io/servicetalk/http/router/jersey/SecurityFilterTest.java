@@ -41,6 +41,7 @@ class SecurityFilterTest extends AbstractJerseyStreamingHttpServiceTest {
 
     @Provider
     @Priority(AUTHENTICATION)
+    @SuppressWarnings("PMD.PublicMemberInNonPublicType") // JAX-RS @Provider must be public
     public static class TestSecurityFilter implements ContainerRequestFilter {
         @Override
         public void filter(final ContainerRequestContext requestCtx) {

@@ -148,7 +148,7 @@ class PublisherFlatMapMergeTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void exceptionHandledWhileConcurrentProcessing(boolean delayError) {
-        assert executor != null;
+        assertNotNull(executor);
         TestPublisher<Integer> publisher2 = new TestPublisher<>();
         Function<? super Integer, ? extends Publisher<? extends Integer>> func = i -> {
             if (i == 1) {
@@ -550,7 +550,7 @@ class PublisherFlatMapMergeTest {
         subscriber.awaitSubscription().request(1);
         publisher.onNext(1);
 
-        assert executor != null;
+        assertNotNull(executor);
         executor.execute(() -> mappedPublisher.onError(DELIBERATE_EXCEPTION));
         // Verify that cancel happens before terminal. This ensures that sources which allow for multiple sequential
         // Subscribers can clear out there current subscriber in preparation for the next Subscriber and avoid duplicate
@@ -1004,7 +1004,7 @@ class PublisherFlatMapMergeTest {
         second.doOnSubscribe(2);
         second.mappedSubscription.awaitRequestN(3);
 
-        assert executorService != null;
+        assertNotNull(executorService);
         Future<?> firstEmitFuture = executorService.submit(() -> {
             first.mappedPublisher.onNext(1, 2, 3);
             first.mappedPublisher.onComplete();
@@ -1037,7 +1037,7 @@ class PublisherFlatMapMergeTest {
         toSource(publisher.flatMapMerge(Publisher::from, 2).beforeOnNext(received::add))
                 .subscribe(subscriber);
         Subscription subscription = subscriber.awaitSubscription();
-        assert executorService != null;
+        assertNotNull(executorService);
         Future<?> submitFuture = executorService.submit(() -> {
             requestingStarting.countDown();
             for (int i = 0; i < totalToRequest; i++) {
@@ -1059,7 +1059,7 @@ class PublisherFlatMapMergeTest {
 
     @Test
     void concurrentMappedAndPublisherTermination() throws Exception {
-        assert executor != null;
+        assertNotNull(executor);
         Single<List<Integer>> single = range(0, 1000)
                 .flatMapMerge(i -> executor.submit(() -> i).toPublisher(), 1024)
                 .collect(ArrayList::new, (ints, i) -> {
@@ -1074,7 +1074,7 @@ class PublisherFlatMapMergeTest {
 
     @Test
     void concurrentMappedDeliveryOrderPreserved() {
-        assert executor != null;
+        assertNotNull(executor);
         final int upstreamItems = 10_000;
         final int mappedItems = 5;
         final TestPublisherSubscriber<IntPair> subscriber = new TestPublisherSubscriber<>();
@@ -1105,7 +1105,7 @@ class PublisherFlatMapMergeTest {
 
     @Test
     void concurrentSkipQueueDoesNotDeadlock() throws Throwable {
-        assert executorService != null;
+        assertNotNull(executorService);
         List<TestSubscriptionPublisherPair<Integer>> mappedPublishers = new ArrayList<>();
         CountDownLatch onNextLatch = new CountDownLatch(1);
         CountDownLatch onNextSecondLatch = new CountDownLatch(2);
@@ -1205,7 +1205,7 @@ class PublisherFlatMapMergeTest {
 
     @Test
     void concurrentMappedErrorAndPublisherTermination() throws Exception {
-        assert executor != null;
+        assertNotNull(executor);
         AtomicReference<Throwable> error = new AtomicReference<>();
         Single<List<Integer>> single = range(0, 1000)
                 .flatMapMergeDelayError(i -> executor.submit(() -> {

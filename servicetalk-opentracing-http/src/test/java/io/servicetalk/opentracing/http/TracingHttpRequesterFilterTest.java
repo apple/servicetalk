@@ -92,13 +92,13 @@ class TracingHttpRequesterFilterTest {
     private Tracer mockTracer;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         initMocks(this);
         loggerStringWriter.reset();
     }
 
     @AfterEach
-    public void tearDown() {
+    void tearDown() {
         loggerStringWriter.remove();
     }
 

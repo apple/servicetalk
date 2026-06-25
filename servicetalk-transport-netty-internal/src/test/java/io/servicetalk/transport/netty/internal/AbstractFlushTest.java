@@ -39,7 +39,7 @@ abstract class AbstractFlushTest {
         when(eventLoop.inEventLoop()).thenReturn(true);
         when(channel.eventLoop()).thenReturn(eventLoop);
         Publisher<String> flushedStream = composeFlushes(channel, source, strategy, NoopWriteObserver.INSTANCE)
-                .beforeOnNext(s -> channel.write(s));
+                .beforeOnNext(channel::write);
         verifier = inOrder(channel);
         return flushedStream;
     }

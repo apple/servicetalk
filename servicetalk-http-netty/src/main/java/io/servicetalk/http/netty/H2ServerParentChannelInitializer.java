@@ -35,6 +35,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.logging.slf4j.internal.Slf4jFixedLevelLoggers.newLogger;
 import static java.lang.Long.getLong;
 
+@SuppressWarnings("PMD.LooseCoupling") // Netty's concrete Http2Settings is required by the Netty API
 final class H2ServerParentChannelInitializer implements ChannelInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(H2ServerParentChannelInitializer.class);
 

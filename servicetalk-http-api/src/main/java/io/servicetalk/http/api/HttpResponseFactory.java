@@ -80,6 +80,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.VARIANT_ALSO_NEGOTIATES
 /**
  * A factory for creating {@link HttpResponse}s.
  */
+@FunctionalInterface
 public interface HttpResponseFactory {
     /**
      * Create a new {@link HttpResponse} object.

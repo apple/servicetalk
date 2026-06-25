@@ -78,7 +78,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class CancellationTest {
-    private static class TestCancellable implements Cancellable {
+    private static final class TestCancellable implements Cancellable {
         private boolean cancelled;
 
         @Override

@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -93,84 +94,84 @@ final class TestRecordStore implements RecordStore {
         }
     }
 
-    public synchronized void addFail(final ServFail fail) {
+    synchronized void addFail(final ServFail fail) {
         failSet.add(fail);
     }
 
-    public synchronized void removeFail(final ServFail fail) {
+    synchronized void removeFail(final ServFail fail) {
         failSet.remove(fail);
     }
 
-    public void addTimeout(final String domain, final RecordType recordType) {
+    void addTimeout(final String domain, final RecordType recordType) {
         timeouts.put(new QuestionRecord(domain, recordType, RecordClass.IN), new CountDownLatch(1));
     }
 
-    public void removeTimeout(final String domain, final RecordType recordType) {
+    void removeTimeout(final String domain, final RecordType recordType) {
         CountDownLatch latch = timeouts.remove(new QuestionRecord(domain, recordType, RecordClass.IN));
         if (latch != null) {
             latch.countDown();
         }
     }
 
-    public synchronized void addSrv(final String domain, String targetDomain, final int port, final int ttl) {
+    synchronized void addSrv(final String domain, String targetDomain, final int port, final int ttl) {
         addSrv(domain, targetDomain, port, ttl, SRV_DEFAULT_WEIGHT, SRV_DEFAULT_PRIORITY);
     }
 
-    public synchronized void addSrv(final String domain, String targetDomain, final int port, final int ttl,
+    synchronized void addSrv(final String domain, String targetDomain, final int port, final int ttl,
                                     final int weight, final int priority) {
         Map<RecordType, List<ResourceRecord>> typeMap = getTypeMap(domain);
         List<ResourceRecord> recordList = getRecordList(typeMap, SRV);
         recordList.add(createSrvRecord(domain, targetDomain, port, ttl, weight, priority));
     }
 
-    public synchronized boolean removeSrv(final String domain) {
+    synchronized boolean removeSrv(final String domain) {
         return removeAddresses(domain, SRV);
     }
 
-    public synchronized boolean removeSrv(final String domain, String targetDomain, final int port, final int ttl) {
+    synchronized boolean removeSrv(final String domain, String targetDomain, final int port, final int ttl) {
         return removeSrv(domain, targetDomain, port, ttl, SRV_DEFAULT_WEIGHT, SRV_DEFAULT_PRIORITY);
     }
 
-    public synchronized boolean removeSrv(final String domain, String targetDomain, final int port, final int ttl,
+    synchronized boolean removeSrv(final String domain, String targetDomain, final int port, final int ttl,
                                           final int weight, final int priority) {
         Map<RecordType, List<ResourceRecord>> typeMap = getTypeMap(domain);
         List<ResourceRecord> recordList = getRecordList(typeMap, SRV);
         return removeRecords(createSrvRecord(domain, targetDomain, port, ttl, weight, priority), recordList, typeMap);
     }
 
-    public synchronized void addIPv4Address(final String domain, final int ttl, final String... ipAddresses) {
+    synchronized void addIPv4Address(final String domain, final int ttl, final String... ipAddresses) {
         addAddress(domain, A, ttl, ipAddresses);
     }
 
-    public synchronized boolean removeIPv4Address(final String domain, final int ttl, final String... ipAddresses) {
+    synchronized boolean removeIPv4Address(final String domain, final int ttl, final String... ipAddresses) {
         return removeAddresses(domain, A, ttl, ipAddresses);
     }
 
-    public synchronized boolean removeIPv4Addresses(final String domain) {
+    synchronized boolean removeIPv4Addresses(final String domain) {
         return removeAddresses(domain, A);
     }
 
-    public synchronized void addIPv6Address(final String domain, final int ttl, final String... ipAddresses) {
+    synchronized void addIPv6Address(final String domain, final int ttl, final String... ipAddresses) {
         addAddress(domain, AAAA, ttl, ipAddresses);
     }
 
-    public synchronized boolean removeIPv6Address(final String domain, final int ttl, final String... ipAddresses) {
+    synchronized boolean removeIPv6Address(final String domain, final int ttl, final String... ipAddresses) {
         return removeAddresses(domain, AAAA, ttl, ipAddresses);
     }
 
-    public synchronized void addCNAME(final String domain, final String cname, final int ttl) {
+    synchronized void addCNAME(final String domain, final String cname, final int ttl) {
         Map<RecordType, List<ResourceRecord>> typeMap = getTypeMap(domain);
         List<ResourceRecord> recordList = getRecordList(typeMap, RecordType.CNAME);
         recordList.add(createCnameRecord(domain, cname, ttl));
     }
 
-    public synchronized boolean removeCNAME(final String domain, final String cname, final int ttl) {
+    synchronized boolean removeCNAME(final String domain, final String cname, final int ttl) {
         Map<RecordType, List<ResourceRecord>> typeMap = getTypeMap(domain);
         List<ResourceRecord> recordList = getRecordList(typeMap, RecordType.CNAME);
         return removeRecords(createCnameRecord(domain, cname, ttl), recordList, typeMap);
     }
 
-    public synchronized boolean removeRecords(ResourceRecord... records) {
+    synchronized boolean removeRecords(ResourceRecord... records) {
         boolean removed = false;
         for (ResourceRecord rr : records) {
             Map<RecordType, List<ResourceRecord>> typeMap = getTypeMap(rr.getDomainName());
@@ -181,7 +182,7 @@ final class TestRecordStore implements RecordStore {
     }
 
     private Map<RecordType, List<ResourceRecord>> getTypeMap(final String domain) {
-        return recordsToReturnByDomain.computeIfAbsent(domain, d -> new HashMap<>());
+        return recordsToReturnByDomain.computeIfAbsent(domain, d -> new EnumMap<>(RecordType.class));
     }
 
     private static List<ResourceRecord> getRecordList(Map<RecordType, List<ResourceRecord>> typeMap,

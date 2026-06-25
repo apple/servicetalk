@@ -152,7 +152,7 @@ class GrpcRequestTrackerTest {
         Future<TesterProto.TestResponse> fResponse = client.test(
                 TesterProto.TestRequest.newBuilder().setName("slow").build()).toFuture();
         fResponse.cancel(true);
-        assertThrows(CancellationException.class, () -> fResponse.get());
+        assertThrows(CancellationException.class, fResponse::get);
         assertThat(testRequestTracker.successes.get(), equalTo(0));
         assertThat(testRequestTracker.failures.get(), equalTo(1));
         assertThat(testRequestTracker.cancellations.get(), equalTo(2));

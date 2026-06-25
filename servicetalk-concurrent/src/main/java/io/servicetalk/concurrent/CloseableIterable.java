@@ -30,6 +30,7 @@ import java.util.Iterator;
  *
  * @param <T> the type of elements returned by the {@link CloseableIterator}.
  */
+@FunctionalInterface
 public interface CloseableIterable<T> extends Iterable<T> {
 
     @Override

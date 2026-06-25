@@ -87,7 +87,7 @@ abstract class AbstractSslCloseNotifyAlertHandlingTest {
     }
 
     @AfterEach
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         try {
             // Make sure the connection and channel are closed after each test:
             assertThat("Underlying Channel is not closed", channel.isOpen(), is(false));

@@ -60,6 +60,7 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
     }
 
     @Override
+    @SuppressWarnings("PMD.ExceptionAsFlowControl")
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                 final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory responseFactory) {

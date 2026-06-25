@@ -24,8 +24,8 @@ import static io.servicetalk.concurrent.api.Completable.failed;
  * A {@link FilterableStreamingHttpConnection} that supported filtering and implements the {@link
  * LoadBalancedConnection} contract.
  */
-public interface FilterableStreamingHttpLoadBalancedConnection extends FilterableStreamingHttpConnection,
-        LoadBalancedConnection, ReservedStreamingHttpConnection {
+public interface FilterableStreamingHttpLoadBalancedConnection extends LoadBalancedConnection,
+                                                                       ReservedStreamingHttpConnection {
 
     // FIXME: 0.43 - consider removing default implementations
     @Override

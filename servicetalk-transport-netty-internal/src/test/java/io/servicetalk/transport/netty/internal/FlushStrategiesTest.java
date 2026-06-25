@@ -41,7 +41,7 @@ class FlushStrategiesTest {
     private final TestSubscription subscription = new TestSubscription();
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         flushSender = mock(FlushSender.class);
         durationSource = new TestPublisher<>();
     }

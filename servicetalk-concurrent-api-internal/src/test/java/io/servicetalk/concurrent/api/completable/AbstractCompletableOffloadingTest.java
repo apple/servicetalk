@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 import io.servicetalk.context.api.ContextMap;
 
 import java.util.EnumSet;
+import java.util.Set;
 import java.util.function.BiFunction;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -48,6 +49,7 @@ public abstract class AbstractCompletableOffloadingTest extends AbstractOffloadi
             );
     final TestCompletableSubscriber testSubscriber = new TestCompletableSubscriber();
 
+    @SuppressWarnings("PMD.ExceptionAsFlowControl")
     protected int testOffloading(BiFunction<Completable, Executor, Completable> offloadingFunction,
                                  TerminalOperation terminal) throws InterruptedException {
         Runnable appCode = () -> {
@@ -170,7 +172,7 @@ public abstract class AbstractCompletableOffloadingTest extends AbstractOffloadi
         assertThat("Map was shared not copied", subscribeMap, not(sameInstance(appMap)));
         assertThat("Missing custom async context entry ",
                 subscribeMap.get(ASYNC_CONTEXT_CUSTOM_KEY), sameInstance(ASYNC_CONTEXT_VALUE));
-        EnumSet<CaptureSlot> checkSlots =
+        Set<CaptureSlot> checkSlots =
                 EnumSet.complementOf(EnumSet.of(CaptureSlot.APP, CaptureSlot.ORIGINAL_SUBSCRIBE));
         checkSlots.stream()
                 .filter(slot -> null != capturedContexts.captured(slot))

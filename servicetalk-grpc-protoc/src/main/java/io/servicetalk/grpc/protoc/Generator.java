@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
@@ -1238,7 +1239,7 @@ final class Generator {
     }
 
     private MethodSpec newRpcMethodSpec(
-            final MethodDescriptorProto methodProto, final EnumSet<NewRpcMethodFlag> flags, final boolean printJavaDocs,
+            final MethodDescriptorProto methodProto, final Set<NewRpcMethodFlag> flags, final boolean printJavaDocs,
             final BiFunction<String, MethodSpec.Builder, MethodSpec.Builder> methodBuilderCustomizer) {
         return newRpcMethodSpec(messageTypesMap.get(methodProto.getInputType()),
                 messageTypesMap.get(methodProto.getOutputType()), routeName(methodProto),
@@ -1249,7 +1250,7 @@ final class Generator {
     private MethodSpec newRpcMethodSpec(
             final ClassName inClass, final ClassName outClass, final String methodName,
             final boolean clientStreaming, final boolean serverStreaming,
-            final EnumSet<NewRpcMethodFlag> flags, final boolean printJavaDocs,
+            final Set<NewRpcMethodFlag> flags, final boolean printJavaDocs,
             final BiFunction<String, MethodSpec.Builder, MethodSpec.Builder> methodBuilderCustomizer) {
         final MethodSpec.Builder methodSpecBuilder = methodBuilderCustomizer.apply(methodName,
                 methodBuilder(methodName)).addModifiers(PUBLIC);
@@ -1485,7 +1486,7 @@ final class Generator {
                                            final MethodSpec.Builder constructorBuilder,
                                            final boolean blocking) {
 
-        final EnumSet<NewRpcMethodFlag> rpcMethodSpecsFlags =
+        final Set<NewRpcMethodFlag> rpcMethodSpecsFlags =
                 blocking ? EnumSet.of(BLOCKING, CLIENT) : EnumSet.of(CLIENT);
 
         assert state.clientMetaDatas.size() == state.serviceRpcInterfaces.size() >>> 1;

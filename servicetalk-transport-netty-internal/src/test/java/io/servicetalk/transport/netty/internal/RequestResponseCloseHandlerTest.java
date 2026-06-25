@@ -136,7 +136,7 @@ class RequestResponseCloseHandlerTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestResponseCloseHandlerTest.class);
 
     // Helps debug failed tests, by printing the internal state
-    private static class ScenarioFailedPendingWatcher implements TestWatcher {
+    private static final class ScenarioFailedPendingWatcher implements TestWatcher {
         @Override
         public void testFailed(final ExtensionContext context, final Throwable cause) {
             final RequestResponseCloseHandler h = ((Scenarios) context.getRequiredTestInstance()).h;
@@ -176,7 +176,7 @@ class RequestResponseCloseHandlerTest {
         }
     }
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "PMD.UnnecessaryVarargsArrayCreation"})
     private static Collection<Object[]> scenariosData() { // If inserting lines here, adjust the `offset` variable below
         StackTraceElement se = Thread.currentThread().getStackTrace()[1];
         List<Object[]> params = asList(new Object[][]{
@@ -608,10 +608,10 @@ class RequestResponseCloseHandlerTest {
     class ChannelBehavior {
 
         @RegisterExtension
-        public final ExecutionContextExtension clientCtx = new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR,
+        final ExecutionContextExtension clientCtx = new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR,
                 () -> createIoExecutor("client-thread"), Executors::immediate);
         @RegisterExtension
-        public final ExecutionContextExtension serverCtx = new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR,
+        final ExecutionContextExtension serverCtx = new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR,
                 () -> createIoExecutor("server-thread"), Executors::immediate);
 
         private SocketChannel cChannel;
@@ -628,14 +628,14 @@ class RequestResponseCloseHandlerTest {
 
         @BeforeEach
         @SuppressWarnings("unchecked")
-        public void setup() throws Exception {
+        void setup() throws Exception {
             ssChannel = startServer();
             cChannel = connectClient(ssChannel.localAddress());
             connectedLatch.await();
         }
 
         @AfterEach
-        public void dispose() throws Exception {
+        void dispose() throws Exception {
             cChannel.close().sync();
             sChannel.close().sync();
             ssChannel.close().sync();

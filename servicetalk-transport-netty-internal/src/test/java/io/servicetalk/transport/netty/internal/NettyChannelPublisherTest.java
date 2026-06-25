@@ -86,11 +86,11 @@ class NettyChannelPublisherTest {
     private boolean readRequested;
 
     @BeforeEach
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
         setUp(integer -> nextItemTerminal);
     }
 
-    public void setUp(Predicate<Integer> terminalPredicate) throws Exception {
+    void setUp(Predicate<Integer> terminalPredicate) throws Exception {
         channel = new EmbeddedDuplexChannel(false);
         CloseHandler closeHandler = UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
         ExecutionContext<?> executionContext = new DefaultExecutionContext<>(DEFAULT_ALLOCATOR,
@@ -119,7 +119,7 @@ class NettyChannelPublisherTest {
     }
 
     @AfterEach
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         if (!channel.close().await(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
             throw new IllegalStateException("Channel close not finished in 1 second.");
         }

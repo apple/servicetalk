@@ -97,6 +97,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -297,7 +298,7 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
         sendServiceDiscoveryEvents(upEvent("address-1"));
 
         final TestLoadBalancedConnection connection = awaitIndefinitely(lb.selectConnection(any(), null));
-        assert connection != null;
+        assertNotNull(connection);
         List<Map.Entry<String, List<TestLoadBalancedConnection>>> activeAddresses = lb.usedAddresses();
 
         assertThat(activeAddresses.size(), is(1));

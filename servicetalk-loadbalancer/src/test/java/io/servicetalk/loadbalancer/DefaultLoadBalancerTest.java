@@ -408,7 +408,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
     }
 
-    private static class TestOutlierDetectorFactory implements
+    private static final class TestOutlierDetectorFactory implements
             Supplier<OutlierDetector<String, TestLoadBalancedConnection>> {
 
         final AtomicReference<TestOutlierDetector> currentOutlierDetector = new AtomicReference<>();
@@ -422,7 +422,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
     }
 
-    private static class TestOutlierDetector implements OutlierDetector<String, TestLoadBalancedConnection> {
+    private static final class TestOutlierDetector implements OutlierDetector<String, TestLoadBalancedConnection> {
 
         private final Set<TestHealthIndicator> indicatorSet = new HashSet<>();
 
@@ -456,7 +456,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
     }
 
-    private static class TestLoadBalancerPolicy extends LoadBalancingPolicy<String, TestLoadBalancedConnection> {
+    private static final class TestLoadBalancerPolicy extends LoadBalancingPolicy<String, TestLoadBalancedConnection> {
 
         int rebuilds;
 

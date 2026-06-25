@@ -52,6 +52,7 @@ abstract class SourceToFuture<T> implements Future<T> {
     private SourceToFuture() {
     }
 
+    @SuppressWarnings("PMD.PublicMemberInNonPublicType") // implements public Subscriber interface
     public final void onSubscribe(final Cancellable cancellable) {
         this.cancellable.delayedCancellable(cancellable);
     }
@@ -62,6 +63,7 @@ abstract class SourceToFuture<T> implements Future<T> {
         }
     }
 
+    @SuppressWarnings("PMD.PublicMemberInNonPublicType") // implements public Subscriber interface
     public final void onError(final Throwable t) {
         setValue(requireNonNull(t));
     }

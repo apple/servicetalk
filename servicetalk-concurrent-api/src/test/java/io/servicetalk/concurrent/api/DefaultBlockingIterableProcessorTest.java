@@ -84,7 +84,7 @@ class DefaultBlockingIterableProcessorTest {
         BlockingIterator<Integer> iterator = processor.iterator();
         processor.close();
         iterator.close();
-        assertThrows(CancellationException.class, () -> iterator.hasNext());
+        assertThrows(CancellationException.class, iterator::hasNext);
     }
 
     @Test
@@ -92,20 +92,20 @@ class DefaultBlockingIterableProcessorTest {
         BlockingIterator<Integer> iterator = processor.iterator();
         processor.fail(DELIBERATE_EXCEPTION);
         iterator.close();
-        assertThrows(CancellationException.class, () -> iterator.hasNext());
+        assertThrows(CancellationException.class, iterator::hasNext);
     }
 
     @Test
     void postIteratorCloseHasNextThrows() throws Exception {
         BlockingIterator<Integer> iterator = processor.iterator();
         iterator.close();
-        assertThrows(CancellationException.class, () -> iterator.hasNext());
+        assertThrows(CancellationException.class, iterator::hasNext);
     }
 
     @Test
     void postIteratorCloseNextThrows() throws Exception {
         BlockingIterator<Integer> iterator = processor.iterator();
         iterator.close();
-        assertThrows(CancellationException.class, () -> iterator.next());
+        assertThrows(CancellationException.class, iterator::next);
     }
 }

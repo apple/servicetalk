@@ -28,6 +28,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.NOT_FOUND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class DefaultFallbackServiceTest extends BaseHttpPredicateRouterBuilderTest {
 
@@ -38,7 +39,7 @@ class DefaultFallbackServiceTest extends BaseHttpPredicateRouterBuilderTest {
         final Single<StreamingHttpResponse> responseSingle = fixture.handle(ctx, request, reqRespFactory);
 
         final StreamingHttpResponse response = responseSingle.toFuture().get();
-        assert response != null;
+        assertNotNull(response);
         assertEquals(HTTP_1_1, response.version());
         assertEquals(NOT_FOUND, response.status());
         assertEquals(ZERO, response.headers().get(CONTENT_LENGTH));

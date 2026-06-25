@@ -17,6 +17,7 @@ package io.servicetalk.grpc.protoc;
 
 import javax.annotation.Nullable;
 
+@FunctionalInterface
 interface ServiceCommentsMap {
     @Nullable
     String getLeadingComments(int serviceIndex, int methodIndex);

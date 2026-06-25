@@ -107,7 +107,7 @@ class MultiClientTest {
         assertThat(countingObserver.count.get(), equalTo(1));
     }
 
-    private static class CountingConnectionObserver implements TransportObserver {
+    private static final class CountingConnectionObserver implements TransportObserver {
 
         private final AtomicInteger count = new AtomicInteger();
 

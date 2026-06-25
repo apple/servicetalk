@@ -119,6 +119,7 @@ class GrpcProvidersTest {
         }
     }
 
+    @SuppressWarnings("PMD.PublicMemberInNonPublicType") // SPI implementation must be public
     public static final class TestGrpcServerBuilderProvider implements GrpcServerBuilderProvider,
                                                                        HttpServerBuilderProvider {
 
@@ -156,6 +157,7 @@ class GrpcProvidersTest {
         }
     }
 
+    @SuppressWarnings("PMD.PublicMemberInNonPublicType") // SPI implementation must be public
     public static final class TestGrpcClientBuilderProvider implements GrpcClientBuilderProvider,
                                                                        SingleAddressHttpClientBuilderProvider {
 

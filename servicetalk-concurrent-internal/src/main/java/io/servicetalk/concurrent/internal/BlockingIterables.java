@@ -166,7 +166,7 @@ public final class BlockingIterables {
             }
 
             @SuppressWarnings("unchecked")
-            public static <T> BlockingIterator<T> instance() {
+            static <T> BlockingIterator<T> instance() {
                 return (BlockingIterator<T>) INSTANCE;
             }
 

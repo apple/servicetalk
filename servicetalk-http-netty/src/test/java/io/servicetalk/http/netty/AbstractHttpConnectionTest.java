@@ -16,14 +16,13 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.ExecutionContextToHttpExecutionContext;
 import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -47,7 +46,6 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
@@ -80,16 +78,14 @@ final class AbstractHttpConnectionTest {
     private Function<Publisher<Object>, Publisher<Object>> reqResp;
 
     private StreamingHttpConnection http;
-    private final BufferAllocator allocator = DEFAULT_ALLOCATOR;
-    private final HttpHeadersFactory headersFactory = INSTANCE;
-    private final StreamingHttpRequestResponseFactory reqRespFactory =
-            new DefaultStreamingHttpRequestResponseFactory(allocator, headersFactory, HTTP_1_1);
+    private final StreamingHttpRequestResponseFactory reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
+            DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1);
 
     private class MockStreamingHttpConnection
             extends AbstractStreamingHttpConnection<NettyConnection<Object, Object>> {
         MockStreamingHttpConnection(final NettyConnection<Object, Object> connection,
                                     final int maxPipelinedRequests) {
-            super(connection, maxPipelinedRequests, reqRespFactory, headersFactory, false);
+            super(connection, maxPipelinedRequests, reqRespFactory, DefaultHttpHeadersFactory.INSTANCE, false);
         }
 
         @Override
@@ -125,18 +121,18 @@ final class AbstractHttpConnectionTest {
     void requestShouldWriteFlatStreamToConnectionAndReadFlatStreamSplicedIntoResponseAndPayload()
             throws Exception {
 
-        Buffer chunk1 = allocator.fromAscii("test");
-        Buffer chunk2 = allocator.fromAscii("payload");
-        Buffer chunk3 = allocator.fromAscii("payload");
-        HttpHeaders trailers = headersFactory.newEmptyTrailers();
+        Buffer chunk1 = DEFAULT_ALLOCATOR.fromAscii("test");
+        Buffer chunk2 = DEFAULT_ALLOCATOR.fromAscii("payload");
+        Buffer chunk3 = DEFAULT_ALLOCATOR.fromAscii("payload");
+        HttpHeaders trailers = DefaultHttpHeadersFactory.INSTANCE.newEmptyTrailers();
 
-        HttpHeaders headers = headersFactory.newHeaders();
+        HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add(TRANSFER_ENCODING, CHUNKED);
         StreamingHttpRequest req = newTransportRequest(newRequestMetaData(HTTP_1_1, GET, "/foo", headers),
-                allocator, from(chunk1, chunk2, chunk3, trailers), false, headersFactory);
+                DEFAULT_ALLOCATOR, from(chunk1, chunk2, chunk3, trailers), false, DefaultHttpHeadersFactory.INSTANCE);
 
         HttpResponseMetaData respMeta = newResponseMetaData(HTTP_1_1, OK,
-                INSTANCE.newHeaders().add(CONTENT_TYPE, TEXT_PLAIN));
+                DefaultHttpHeadersFactory.INSTANCE.newHeaders().add(CONTENT_TYPE, TEXT_PLAIN));
 
         Publisher<Object> respFlat = from(respMeta, chunk1, chunk2, chunk3, trailers);
         ArgumentCaptor<Publisher<Object>> reqFlatCaptor = ArgumentCaptor.forClass(Publisher.class);
@@ -159,17 +155,17 @@ final class AbstractHttpConnectionTest {
     @Test
     void requestShouldInsertLastPayloadChunkInRequestPayloadWhenMissing() throws Exception {
 
-        Buffer chunk1 = allocator.fromAscii("test");
-        Buffer chunk2 = allocator.fromAscii("payload");
+        Buffer chunk1 = DEFAULT_ALLOCATOR.fromAscii("test");
+        Buffer chunk2 = DEFAULT_ALLOCATOR.fromAscii("payload");
 
-        StreamingHttpRequest req = newRequest(GET, "/foo", HTTP_1_1, headersFactory.newHeaders(),
-                allocator, headersFactory).payloadBody(from(chunk1, chunk2)); // NO chunk3 here!
+        StreamingHttpRequest req = newRequest(GET, "/foo", HTTP_1_1, DefaultHttpHeadersFactory.INSTANCE.newHeaders(),
+                DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE).payloadBody(from(chunk1, chunk2)); // NO chunk3!
 
         HttpResponseMetaData respMeta = newResponseMetaData(HTTP_1_1, OK,
-                headersFactory.newHeaders().add(CONTENT_TYPE, TEXT_PLAIN));
+                DefaultHttpHeadersFactory.INSTANCE.newHeaders().add(CONTENT_TYPE, TEXT_PLAIN));
 
-        Buffer chunk3 = allocator.fromAscii("payload");
-        HttpHeaders trailers = headersFactory.newEmptyTrailers();
+        Buffer chunk3 = DEFAULT_ALLOCATOR.fromAscii("payload");
+        HttpHeaders trailers = DefaultHttpHeadersFactory.INSTANCE.newEmptyTrailers();
 
         Publisher<Object> respFlat = from(respMeta, chunk1, chunk2, chunk3, trailers);
         ArgumentCaptor<Publisher<Object>> reqFlatCaptor = ArgumentCaptor.forClass(Publisher.class);

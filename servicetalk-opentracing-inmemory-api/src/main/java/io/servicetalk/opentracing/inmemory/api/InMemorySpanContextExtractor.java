@@ -21,6 +21,7 @@ import javax.annotation.Nullable;
  * Used to extract {@link InMemorySpanContext} from a carrier of type {@link C}.
  * @param <C> the carrier type.
  */
+@FunctionalInterface
 public interface InMemorySpanContextExtractor<C> {
     /**
      * Extract the trace state from a carrier.

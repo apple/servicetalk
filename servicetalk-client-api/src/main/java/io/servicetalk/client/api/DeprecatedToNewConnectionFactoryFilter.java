@@ -34,7 +34,7 @@ final class DeprecatedToNewConnectionFactoryFilter<ResolvedAddress, C extends Li
      * Key that propagates {@link ContextMap} argument between new and deprecated
      * {@code ConnectionFactory#newConnection(...)} methods.
      */
-    public static final ContextMap.Key<ContextMap> CONNECTION_FACTORY_CONTEXT_MAP_KEY =
+    static final ContextMap.Key<ContextMap> CONNECTION_FACTORY_CONTEXT_MAP_KEY =
             newKey("CONNECTION_FACTORY_CONTEXT_MAP_KEY", ContextMap.class);
 
     @Override

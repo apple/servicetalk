@@ -341,8 +341,8 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
         private static final int STATE_ENQUEUED = 1;
         private static final int STATE_EXECUTING = 2;
 
-        public static final int CANCELLED = -1;
-        public static final int TERMINATED = -2;
+        private static final int CANCELLED = -1;
+        private static final int TERMINATED = -2;
 
         private static final AtomicIntegerFieldUpdater<OffloadedSubscription> stateUpdater =
                 newUpdater(OffloadedSubscription.class, "state");

@@ -163,6 +163,7 @@ class HttpProvidersTest {
         }
     }
 
+    @SuppressWarnings("PMD.PublicMemberInNonPublicType") // SPI implementation must be public
     public static final class TestHttpServerBuilderProvider implements HttpServerBuilderProvider {
 
         static final AtomicReference<SocketAddress> MODIFY_FOR_ADDRESS = new AtomicReference<>();
@@ -221,6 +222,7 @@ class HttpProvidersTest {
         }
     }
 
+    @SuppressWarnings("PMD.PublicMemberInNonPublicType") // SPI implementation must be public
     public static final class TestSingleAddressHttpClientBuilderProvider
             implements SingleAddressHttpClientBuilderProvider {
 
@@ -283,6 +285,7 @@ class HttpProvidersTest {
         }
     }
 
+    @SuppressWarnings("PMD.PublicMemberInNonPublicType") // SPI implementation must be public
     public static final class TestMultiAddressHttpClientBuilderProvider
             implements MultiAddressHttpClientBuilderProvider {
 

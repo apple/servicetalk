@@ -104,6 +104,7 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
     }
 
     @Override
+    @SuppressWarnings("PMD.UnnecessaryCast") // false positive
     public Buffer getBytes(int index, Buffer dst, int dstIndex, int length) {
         checkDstIndex(index, length, dstIndex, dst.capacity());
 
@@ -420,6 +421,7 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
         return sliceByteBuffer0(index, length);
     }
 
+    @SuppressWarnings("PMD.UnnecessaryCast") // false positive
     private ByteBuffer sliceByteBuffer0(int index, int length) {
         return (ByteBuffer) buffer.duplicate().position(index).limit(index + length);
     }

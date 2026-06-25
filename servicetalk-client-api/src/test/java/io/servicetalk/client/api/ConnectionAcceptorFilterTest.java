@@ -40,7 +40,7 @@ class ConnectionAcceptorFilterTest {
         Deque<Integer> connectOrder = new ArrayDeque<>();
         class AcceptorOrder implements ConnectionAcceptor {
             final int order;
-            ConnectionAcceptor original;
+            final ConnectionAcceptor original;
             AcceptorOrder(int order, ConnectionAcceptor original) {
                 this.order = order;
                 this.original = original;

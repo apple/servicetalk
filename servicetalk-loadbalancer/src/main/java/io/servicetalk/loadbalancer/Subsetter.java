@@ -20,6 +20,7 @@ import java.util.List;
 /**
  * An abstraction for picking a subset of hosts to use for load balancing purposes.
  */
+@FunctionalInterface
 interface Subsetter {
 
     /**
@@ -33,6 +34,7 @@ interface Subsetter {
     /**
      * Build {@link Subsetter} instances using the provided load balancer description.
      */
+    @FunctionalInterface
     interface SubsetterFactory {
 
         /**

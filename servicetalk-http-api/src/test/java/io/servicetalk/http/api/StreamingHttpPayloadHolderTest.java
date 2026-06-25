@@ -53,6 +53,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -202,7 +203,7 @@ class StreamingHttpPayloadHolderTest {
             assumeTrue(sourceType != SourceType.None, () -> "Ignored source type: " + sourceType);
             assumeTrue(sourceType != SourceType.BufferOnly, () -> "Ignored source type: " + sourceType);
         });
-        assert payloadSource != null;
+        assertThat(payloadSource, is(notNullValue()));
         Publisher<Object> bodyAndTrailers = payloadHolder.messageBody();
         toSource(bodyAndTrailers).subscribe(payloadAndTrailersSubscriber);
         simulateAndVerifyPayloadRead(payloadAndTrailersSubscriber);
@@ -229,7 +230,7 @@ class StreamingHttpPayloadHolderTest {
             assumeTrue(sourceType != SourceType.None, () -> "Ignored source type: " + sourceType);
             assumeTrue(updateMode == UpdateMode.TransformWithTrailer, () -> "Ignored update mode: " + updateMode);
         });
-        assert payloadSource != null;
+        assertThat(payloadSource, is(notNullValue()));
 
         throwPayloadErrorFromTransformer(updateMode, transformFunctions.trailerTransformer);
         if (doubleTransform) {
@@ -260,7 +261,7 @@ class StreamingHttpPayloadHolderTest {
             assumeTrue(sourceType != SourceType.None, () -> "Ignored source type: " + sourceType);
             assumeTrue(updateMode == UpdateMode.TransformWithTrailer, () -> "Ignored update mode: " + updateMode);
         });
-        assert payloadSource != null;
+        assertThat(payloadSource, is(notNullValue()));
 
         Publisher<Object> bodyAndTrailers = payloadHolder.messageBody();
         toSource(bodyAndTrailers).subscribe(payloadAndTrailersSubscriber);
@@ -323,7 +324,7 @@ class StreamingHttpPayloadHolderTest {
         }
         payloadAndTrailersSubscriber.awaitSubscription().request(1);
         if (sourceType == SourceType.Trailers) {
-            assert payloadSource != null;
+            assertThat(payloadSource, is(notNullValue()));
             payloadSource.onNext(mock(HttpHeaders.class));
             if (updateMode != UpdateMode.TransformWithErrorInTrailer) {
                 // If trailers with error, the publisher is already terminated by the error
@@ -387,7 +388,7 @@ class StreamingHttpPayloadHolderTest {
         if (updateMode == UpdateMode.Set || updateMode == UpdateMode.SetWithSerializer) {
             return updatedPayloadSource;
         }
-        assert payloadSource != null;
+        assertThat(payloadSource, is(notNullValue()));
         return payloadSource;
     }
 

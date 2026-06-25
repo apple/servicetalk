@@ -82,8 +82,8 @@ public class CaptureReferences<E extends Enum<E>, R> {
      *
      * @return The reference captured for the specified slot or {@code null} if no reference has been captured.
      */
-    public @Nullable
-    R captured(final E slot) {
+    @Nullable
+    public R captured(final E slot) {
         return references.get(slot.ordinal());
     }
 

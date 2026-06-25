@@ -108,6 +108,7 @@ final class DefaultExecutorTest {
             }
 
             @Override
+            @SuppressWarnings("PMD.LambdaCanBeMethodReference") // false positive
             Executor get() {
                 ExecutorService service = Executors.newCachedThreadPool();
                 //noinspection Convert2MethodRef,FunctionalExpressionCanBeFolded
@@ -222,7 +223,7 @@ final class DefaultExecutorTest {
         Cancellable cancellable = executor.execute(awaitTillCancelled);
         awaitTillCancelled.awaitStart();
         cancellable.cancel();
-        Executable executable = () -> awaitTillCancelled.awaitDone();
+        Executable executable = awaitTillCancelled::awaitDone;
         assertThrows(InterruptedException.class, executable);
     }
 

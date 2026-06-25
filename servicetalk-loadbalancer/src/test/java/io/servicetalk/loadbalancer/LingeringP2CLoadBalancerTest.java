@@ -15,7 +15,7 @@
  */
 package io.servicetalk.loadbalancer;
 
-public class LingeringP2CLoadBalancerTest extends LingeringLoadBalancerTest {
+class LingeringP2CLoadBalancerTest extends LingeringLoadBalancerTest {
 
     @Override
     protected boolean isRoundRobin() {

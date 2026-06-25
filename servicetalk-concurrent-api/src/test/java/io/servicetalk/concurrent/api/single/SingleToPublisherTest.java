@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import javax.annotation.Nullable;
@@ -130,7 +131,7 @@ class SingleToPublisherTest {
     void subscribeOnOriginalIsPreserved() throws Exception {
         final Thread testThread = currentThread();
         final CountDownLatch analyzed = new CountDownLatch(1);
-        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        Queue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         TestSingle<String> single = new TestSingle.Builder<String>().disableAutoOnSubscribe().build();
         TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
         toSource(single.beforeCancel(() -> {
@@ -152,7 +153,7 @@ class SingleToPublisherTest {
     @Test
     @Disabled("The Publisher Subscriber is now not offloaded")
     void publishOnOriginalIsPreservedOnCompleteFromRequest() throws Exception {
-        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        Queue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<String> subscriber =
                 new io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();
         TestSingle<String> single = new TestSingle.Builder<String>().disableAutoOnSubscribe().build();
@@ -169,7 +170,7 @@ class SingleToPublisherTest {
 
     @Test
     void publishOnOriginalIsPreservedOnCompleteFromOnSuccess() throws Exception {
-        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        Queue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<String> subscriber =
                 new io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();
         TestSingle<String> single = new TestSingle.Builder<String>().disableAutoOnSubscribe().build();
@@ -184,7 +185,7 @@ class SingleToPublisherTest {
 
     @Test
     void publishOnOriginalIsPreservedOnError() throws Exception {
-        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        Queue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<String> subscriber = new
                 io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();
         TestSingle<String> single = new TestSingle.Builder<String>().disableAutoOnSubscribe().build();
@@ -200,7 +201,7 @@ class SingleToPublisherTest {
     @Test
     @Disabled("The Publisher Subscriber is now not offloaded")
     void publishOnOriginalIsPreservedOnInvalidRequestN() throws Exception {
-        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        Queue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<String> subscriber =
                 new io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();
         TestSingle<String> single = new TestSingle.Builder<String>().disableAutoOnSubscribe().build();
@@ -214,7 +215,7 @@ class SingleToPublisherTest {
     }
 
     private CountDownLatch publishOnOriginalIsPreserved0(
-            final ConcurrentLinkedQueue<AssertionError> errors,
+            final Queue<AssertionError> errors,
             final io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<String> subscriber,
             final TestSingle<String> single,
             @Nullable final CountDownLatch receivedOnSuccessFromSingle) throws Exception {

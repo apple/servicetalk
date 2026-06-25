@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
+@FunctionalInterface
 interface ExecutorPlugin {
     Executor wrapExecutor(Executor executor);
 }

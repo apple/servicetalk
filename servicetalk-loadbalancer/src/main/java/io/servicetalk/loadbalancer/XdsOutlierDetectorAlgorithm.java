@@ -23,6 +23,7 @@ import java.util.Collection;
  * Logic that can detect outliers and attempts to mark them as an outlier so that the load balancer
  * can try to route traffic to more healthy hosts.
  */
+@FunctionalInterface
 interface XdsOutlierDetectorAlgorithm<ResolvedAddress, C extends LoadBalancedConnection> {
     /**
      * Analyze and potentially eject outlier hosts.

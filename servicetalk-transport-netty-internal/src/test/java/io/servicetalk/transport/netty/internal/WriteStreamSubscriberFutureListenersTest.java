@@ -76,7 +76,7 @@ class WriteStreamSubscriberFutureListenersTest {
     }
 
     @AfterEach
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         channel.close().sync().await();
     }
 

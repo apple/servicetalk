@@ -389,6 +389,7 @@ public final class CharSequences {
         return true;
     }
 
+    @FunctionalInterface
     private interface CharEqualityComparator {
         boolean equals(char a, char b);
     }

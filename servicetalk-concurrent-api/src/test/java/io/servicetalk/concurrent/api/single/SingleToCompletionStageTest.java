@@ -120,7 +120,7 @@ class SingleToCompletionStageTest {
                 .thenApply(l -> l + 1)
                 .whenComplete((v, c) -> { });
         input.completeExceptionally(DELIBERATE_EXCEPTION);
-        ExecutionException e = assertThrows(ExecutionException.class, () -> output.get());
+        ExecutionException e = assertThrows(ExecutionException.class, output::get);
         assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 

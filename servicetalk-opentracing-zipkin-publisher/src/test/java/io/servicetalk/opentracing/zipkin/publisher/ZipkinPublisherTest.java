@@ -47,12 +47,12 @@ class ZipkinPublisherTest {
     private InMemoryTracer tracer;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER).persistLogs(true).build();
     }
 
     @AfterEach
-    public void tearDown() {
+    void tearDown() {
     }
 
     @Test

@@ -435,6 +435,7 @@ final class DefaultDnsClient implements DnsClient {
                 final Subscriber<? super List<ServiceDiscovererEvent<HostAndPort>>> subscriber) {
             return new AbstractDnsSubscription(subscriber) {
                 @Override
+                @SuppressWarnings("PMD.ExceptionAsFlowControl")
                 protected Future<DnsAnswer<HostAndPort>> doDnsQuery(final boolean scheduledQuery) {
                     final EventLoop eventLoop = nettyIoExecutor.eventLoopGroup().next();
                     final Promise<DnsAnswer<HostAndPort>> promise = eventLoop.newPromise();
@@ -962,7 +963,7 @@ final class DefaultDnsClient implements DnsClient {
             Publisher<? extends Collection<ServiceDiscovererEvent<InetAddress>>> returnPub,
             Map<InetSocketAddress, Integer> availableAddresses, int port) {
         return returnPub.map(events -> {
-            ArrayList<ServiceDiscovererEvent<InetSocketAddress>> mappedEvents = new ArrayList<>(events.size());
+            List<ServiceDiscovererEvent<InetSocketAddress>> mappedEvents = new ArrayList<>(events.size());
             for (ServiceDiscovererEvent<InetAddress> event : events) {
                 InetSocketAddress addr = new InetSocketAddress(event.address(), port);
                 final ServiceDiscovererEvent.Status status = event.status();
@@ -1012,8 +1013,8 @@ final class DefaultDnsClient implements DnsClient {
         return t instanceof SrvAddressRemovedException || t instanceof IllegalStateException ||
                 t instanceof ClosedDnsServiceDiscovererException || (nxInvalidation &&
                 // string matching is done on purpose to avoid the hard Netty dependency
-                (t.getCause() != null && t.getCause().getClass().getName()
-                        .equals("io.netty.resolver.dns.DnsErrorCauseException")) &&
+                (t.getCause() != null && "io.netty.resolver.dns.DnsErrorCauseException"
+                        .equals(t.getCause().getClass().getName())) &&
                 NXDOMAIN.equals(((io.netty.resolver.dns.DnsErrorCauseException) t.getCause()).getCode()));
     }
 

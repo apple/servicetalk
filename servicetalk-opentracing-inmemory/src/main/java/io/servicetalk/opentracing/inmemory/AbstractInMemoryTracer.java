@@ -40,6 +40,7 @@ abstract class AbstractInMemoryTracer implements InMemoryTracer {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractInMemoryTracer.class);
 
     @Override
+    @SuppressWarnings("PMD.ExceptionAsFlowControl")
     public final <C> void inject(InMemorySpanContext spanContext, Format<C> format, C carrier) {
         try {
             if (format instanceof InMemorySpanContextInjector) {
@@ -59,6 +60,7 @@ abstract class AbstractInMemoryTracer implements InMemoryTracer {
 
     @Nullable
     @Override
+    @SuppressWarnings("PMD.ExceptionAsFlowControl")
     public final <C> InMemorySpanContext extract(Format<C> format, C carrier) {
         try {
             if (format instanceof InMemorySpanContextExtractor) {

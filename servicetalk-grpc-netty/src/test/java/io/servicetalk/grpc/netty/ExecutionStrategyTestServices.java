@@ -159,7 +159,7 @@ public final class ExecutionStrategyTestServices {
     }
 
     @NoOffloadsRouteExecutionStrategy
-    private static class ClassNoOffloadsStrategyAsyncService extends EsAsyncService {
+    private static final class ClassNoOffloadsStrategyAsyncService extends EsAsyncService {
         // Nothing to override
     }
 
@@ -233,7 +233,7 @@ public final class ExecutionStrategyTestServices {
     }
 
     @NoOffloadsRouteExecutionStrategy
-    private static class ClassNoOffloadsStrategyBlockingService extends EsBlockingService {
+    private static final class ClassNoOffloadsStrategyBlockingService extends EsBlockingService {
         // Nothing to override
     }
 

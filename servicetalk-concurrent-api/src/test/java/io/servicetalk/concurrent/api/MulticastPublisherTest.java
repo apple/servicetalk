@@ -787,7 +787,7 @@ class MulticastPublisherTest {
     @Test
     void replenishRequestNInMaxQueueIncrementsRange() throws Exception {
         Publisher<Integer> original = range(1, 10);
-        ArrayList<Integer> items = original.collect((Supplier<ArrayList<Integer>>) ArrayList::new, (list, integer) -> {
+        List<Integer> items = original.collect((Supplier<List<Integer>>) ArrayList::new, (list, integer) -> {
             list.add(integer);
             return list;
         }).toFuture().get();

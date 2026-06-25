@@ -472,6 +472,7 @@ final class UnreleasableReadOnlyByteBufferBuf extends AbstractReferenceCountedBy
     }
 
     @Override
+    @SuppressWarnings("PMD.UnnecessaryCast") // false positive
     public ByteBuf copy(int index, int length) {
         ensureAccessible();
         ByteBuffer src;
@@ -498,12 +499,14 @@ final class UnreleasableReadOnlyByteBufferBuf extends AbstractReferenceCountedBy
     }
 
     @Override
+    @SuppressWarnings("PMD.UnnecessaryCast") // false positive
     public ByteBuffer nioBuffer(int index, int length) {
         checkIndex(index, length);
         return (ByteBuffer) buffer.duplicate().position(index).limit(index + length);
     }
 
     @Override
+    @SuppressWarnings("PMD.UnnecessaryCast") // false positive
     public ByteBuffer internalNioBuffer(int index, int length) {
         ensureAccessible();
         return (ByteBuffer) internalNioBuffer().clear().position(index).limit(index + length);

@@ -253,6 +253,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 }
                 currentState = State.READ_INITIAL;
             }
+            // fallthrough to the next state
             case READ_INITIAL: {
                 final long longLFIndex = findCRLF(buffer, maxStartLineLength, allowLFWithoutCR);
                 if (longLFIndex < 0) {
@@ -313,8 +314,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                     // Don't notify CloseHandler if it's interim 100 (Continue) response
                     closeHandler.protocolPayloadBeginInbound(ctx);
                 }
-                // fall-through
             }
+            // fallthrough to the next state
             case READ_HEADER: {
                 State nextState = readHeaders(buffer);
                 if (nextState == null) {
@@ -441,8 +442,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                     return;
                 }
                 currentState = State.READ_CHUNKED_CONTENT;
-                // fall-through
             }
+            // fallthrough to the next state
             case READ_CHUNKED_CONTENT: {
                 final int toRead = (int) min(chunkSize, buffer.readableBytes());
                 if (toRead == 0) {
@@ -459,8 +460,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                     return;
                 }
                 currentState = State.READ_CHUNK_DELIMITER;
-                // fall-through
             }
+            // fallthrough to the next state
             case READ_CHUNK_DELIMITER: {
                 // Read the chunk delimiter
                 final long longLFIndex = findCRLF(buffer, CHUNK_DELIMETER_SIZE, false);
@@ -850,6 +851,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
      * {@code value < 0} guard which is otherwise unreachable through the public flow given
      * the {@link #MAX_HEX_CHARS_FOR_LONG} line cap.
      */
+    @SuppressWarnings("PMD.ExceptionAsFlowControl")
     static int getChunkSize(String hex) {
         hex = hex.trim();
         for (int i = 0; i < hex.length(); ++i) {

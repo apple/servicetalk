@@ -42,7 +42,7 @@ class NettyChannelListenableAsyncCloseableTest {
     NettyChannelListenableAsyncCloseable fixture;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         fixture = new NettyChannelListenableAsyncCloseable(channel, immediate());
         when(channel.closeFuture()).thenReturn(channelCloseFuture);
     }

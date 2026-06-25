@@ -35,7 +35,7 @@ import java.util.stream.Stream;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static org.mockito.Mockito.mock;
 
-public class ConditionalHttpServiceFilterTest extends AbstractConditionalHttpFilterTest {
+class ConditionalHttpServiceFilterTest extends AbstractConditionalHttpFilterTest {
 
     private static final class TestCondFilterFactory implements StreamingHttpServiceFilterFactory {
         private final AtomicBoolean closed;

@@ -141,7 +141,7 @@ class IterableMergeCompletableTest {
     @Test
     void mergeEmptyIterable() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
-        toSource(completed().merge(() -> Collections.emptyIterator())).subscribe(subscriber);
+        toSource(completed().merge(Collections::emptyIterator)).subscribe(subscriber);
         subscriber.awaitOnComplete();
     }
 

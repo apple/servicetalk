@@ -424,6 +424,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
             }
         }
 
+        @SuppressWarnings("PMD.SimplifyBooleanReturns")
         private boolean responseFinished() {
             if (STATE_UPDATER.compareAndSet(this, IDLE, RESPONSE_COMPLETE)) {
                 // nothing to do: it's up to the request to finish now.

@@ -595,7 +595,7 @@ class FromInputStreamPublisherTest {
     // [20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
     // [30, 31, 32, 33, 34]
     private byte[][] chunked(final int items, final int chunkSize) {
-        byte[][] chunks = new byte[(int) ceil((float) items / (float) chunkSize)][];
+        byte[][] chunks = new byte[(int) ceil((float) items / chunkSize)][];
         for (byte i = 0; i < items; i++) {
             int batch = i / chunkSize;
             if (i % chunkSize == 0) {

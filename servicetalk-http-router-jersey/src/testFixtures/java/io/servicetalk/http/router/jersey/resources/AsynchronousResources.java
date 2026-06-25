@@ -105,7 +105,7 @@ public class AsynchronousResources {
     @Produces(TEXT_PLAIN)
     @Path("/single-string")
     @GET
-    public Single<String> getStringSingle(final @QueryParam("fail") boolean fail) {
+    public Single<String> getStringSingle(@QueryParam("fail") final boolean fail) {
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
                 .concat(fail ? failed(DELIBERATE_EXCEPTION) : succeeded("DONE"));
     }
@@ -130,7 +130,7 @@ public class AsynchronousResources {
     @Produces(TEXT_PLAIN)
     @Path("/single-response")
     @GET
-    public Single<Response> getResponseSingle(final @QueryParam("fail") boolean fail) {
+    public Single<Response> getResponseSingle(@QueryParam("fail") final boolean fail) {
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
                 .concat(fail ? failed(DELIBERATE_EXCEPTION) : succeeded(accepted("DONE").build()));
     }
@@ -158,7 +158,7 @@ public class AsynchronousResources {
     @Produces(APPLICATION_JSON)
     @Path("/single-map")
     @GET
-    public Single<Map<String, Object>> getMapSingle(final @QueryParam("fail") boolean fail) {
+    public Single<Map<String, Object>> getMapSingle(@QueryParam("fail") final boolean fail) {
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
                 .concat(fail ? failed(DELIBERATE_EXCEPTION) : defer(() -> succeeded(singletonMap("foo", "bar4"))));
     }
@@ -166,7 +166,7 @@ public class AsynchronousResources {
     @Produces(APPLICATION_JSON)
     @Path("/single-pojo")
     @GET
-    public Single<TestPojo> getPojoSingle(final @QueryParam("fail") boolean fail) {
+    public Single<TestPojo> getPojoSingle(@QueryParam("fail") final boolean fail) {
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
                 .concat(fail ? failed(DELIBERATE_EXCEPTION) : defer(() -> {
                     final TestPojo testPojo = new TestPojo();

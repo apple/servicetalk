@@ -49,7 +49,7 @@ class LoggingGrpcLifecycleObserverTest {
     private GrpcLifecycleObserver.GrpcExchangeObserver observer;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         mockRequestMetadata = mock(HttpRequestMetaData.class);
         when(mockRequestMetadata.headers()).thenReturn(mock(HttpHeaders.class));
         when(mockRequestMetadata.method()).thenReturn(HttpRequestMethod.GET);

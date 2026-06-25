@@ -67,12 +67,8 @@ class PublisherProcessorTest {
             return true;
         });
         when(buffer.tryConsumeTerminal(any()))
-                .thenAnswer(invocation -> {
-                    if (bufferQueue.peek() == null) {
-                        return terminateConsumeFromMock(invocation.getArgument(0));
-                    }
-                    return false;
-                });
+                .thenAnswer(invocation ->
+                        bufferQueue.peek() == null && terminateConsumeFromMock(invocation.getArgument(0)));
         doAnswer(__ -> {
             terminalNotification = TerminalNotification.complete();
             return null;
