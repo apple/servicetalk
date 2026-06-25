@@ -176,16 +176,19 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * &mdash; not the number of bytes received from the network nor any declared {@code Content-Length}. A small
      * compressed response that expands beyond this limit once decoded will therefore be rejected.
      * <p>
-     * The default value is 4 MiB. Pass {@code 0} to disable the limit. Users who unexpectedly hit the default limit can
-     * temporarily set the {@code io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize} system property to
-     * override the default globally until they can configure it explicitly via this method; this is a temporary
-     * property that will be removed in future releases.
+     * The default value is 4 MiB. Pass {@code 0} to disable the limit, or {@code -1} for <strong>warn-only</strong>
+     * mode: oversized aggregated responses are still delivered, but a warning (rate-limited to once every five minutes
+     * per client) is logged so the limit can be evaluated before it is enforced. Users who unexpectedly hit the default
+     * limit can temporarily set the {@code io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize} system
+     * property to override the default globally until they can configure it explicitly via this method; this is a
+     * temporary property that will be removed in future releases.
      * <p>
      * For an independent, opt-in limit that can fail fast on {@code Content-Length} or bound bytes at a chosen position
      * in the filter chain (e.g. before a decompressor), see {@code PayloadSizeLimitingHttpRequesterFilter}; both apply.
      *
-     * @param maxAggregatedPayloadSize the maximum number of payload bytes to buffer when a response is aggregated, or
-     * {@code 0} to disable the limit. Must not be negative.
+     * @param maxAggregatedPayloadSize the maximum number of payload bytes to buffer when a response is aggregated,
+     * {@code 0} to disable the limit, or {@code -1} to warn (but not reject) when the default limit is exceeded. Other
+     * negative values are rejected.
      * @return {@code this}
      */
     // FIXME: 0.43 - consider removing default impl

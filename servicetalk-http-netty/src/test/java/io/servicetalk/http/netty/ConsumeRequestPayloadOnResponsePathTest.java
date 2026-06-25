@@ -105,7 +105,7 @@ class ConsumeRequestPayloadOnResponsePathTest {
                 // TriFunction. It doesn't change the behavior of this test.
                 newTransportResponse(response.status(), response.version(), response.headers(), DEFAULT_ALLOCATOR,
                         response.messageBody().concat(consumePayloadBody(request)), false,
-                        DefaultHttpHeadersFactory.INSTANCE, 0)));
+                        DefaultHttpHeadersFactory.INSTANCE, AggregatedPayloadSizeLimiter.NONE)));
     }
 
     @Test

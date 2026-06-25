@@ -33,6 +33,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.LongConsumer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
@@ -310,7 +311,7 @@ final class HttpDataSourceTransformations {
     static Single<PayloadAndTrailers> aggregatePayloadAndTrailers(final DefaultPayloadInfo payloadInfo,
                                                                   final Publisher<?> payloadAndTrailers,
                                                                   final BufferAllocator allocator,
-                                                                  final int maxAggregatedSize) {
+                                                                  final LongConsumer payloadSizeLimiter) {
         if (payloadAndTrailers == empty()) {
             payloadInfo.setEmpty(true).setMayHaveTrailersAndGenericTypeBuffer(false);
             return succeeded(EMPTY_PAYLOAD_AND_TRAILERS);
@@ -319,16 +320,11 @@ final class HttpDataSourceTransformations {
             if (nextItem instanceof Buffer) {
                 try {
                     Buffer buffer = (Buffer) nextItem;
-                    // A non-positive limit disables the check. Otherwise, fail fast once the accumulated payload would
-                    // exceed the configured maximum, so an oversized aggregated message can't consume an unbounded
-                    // amount of memory. The subtraction avoids integer overflow when both operands are near
-                    // Integer.MAX_VALUE. Throwing here cancels the upstream message body (see ReduceSingle).
-                    if (maxAggregatedSize > 0 &&
-                            maxAggregatedSize - pair.payload.readableBytes() < buffer.readableBytes()) {
-                        throw new PayloadTooLargeException("Maximum aggregated payload size=" + maxAggregatedSize +
-                                " current payload size=" + pair.payload.readableBytes() + " new buffer size=" +
-                                buffer.readableBytes());
-                    }
+                    // Enforce (throw) or warn before buffering so an oversized aggregated message can't consume an
+                    // unbounded amount of memory. The running total is computed as a long to avoid integer overflow
+                    // when both operands are near Integer.MAX_VALUE. Throwing here cancels the upstream message body
+                    // (see ReduceSingle).
+                    payloadSizeLimiter.accept(((long) pair.payload.readableBytes()) + buffer.readableBytes());
                     if (isAlwaysEmpty(pair.payload)) {
                         pair.payload = buffer;
                     } else if (pair.payload instanceof CompositeBuffer) {

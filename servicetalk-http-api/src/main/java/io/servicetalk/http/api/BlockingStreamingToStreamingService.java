@@ -119,7 +119,8 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                             });
                             result = new DefaultStreamingHttpResponse(metaData.status(), version, headers,
                                     metaData.context0(), ctx.executionContext().bufferAllocator(), messageBody,
-                                    forTransportReceive(false, version, headers), ctx.headersFactory(), 0);
+                                    forTransportReceive(false, version, headers), ctx.headersFactory(),
+                                    StreamingHttpPayloadHolder.NO_AGGREGATED_PAYLOAD_LIMIT);
                         } catch (Throwable t) {
                             subscriber.onError(t);
                             throw t;

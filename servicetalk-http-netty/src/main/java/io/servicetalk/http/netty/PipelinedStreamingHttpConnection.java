@@ -23,6 +23,7 @@ import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NettyPipelinedConnection;
 import io.servicetalk.transport.netty.internal.WriteDemandEstimators;
 
+import java.util.function.LongConsumer;
 import javax.annotation.Nullable;
 
 final class PipelinedStreamingHttpConnection
@@ -31,10 +32,10 @@ final class PipelinedStreamingHttpConnection
                                      final H1ProtocolConfig config,
                                      final StreamingHttpRequestResponseFactory reqRespFactory,
                                      final boolean allowDropTrailersReadFromTransport,
-                                     final int maxAggregatedPayloadSize) {
+                                     final LongConsumer payloadSizeLimiter) {
         super(new NettyPipelinedConnection<>(connection, config.maxPipelinedRequests()),
                 config.maxPipelinedRequests(), reqRespFactory, config.headersFactory(),
-                allowDropTrailersReadFromTransport, maxAggregatedPayloadSize);
+                allowDropTrailersReadFromTransport, payloadSizeLimiter);
     }
 
     @Override

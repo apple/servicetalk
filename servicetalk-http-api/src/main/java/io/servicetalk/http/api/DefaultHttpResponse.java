@@ -118,7 +118,7 @@ final class DefaultHttpResponse extends AbstractDelegatingHttpResponse
                 .setMayHaveTrailersAndGenericTypeBuffer(trailers != null);
         return new DefaultStreamingHttpResponse(status(), version(), headers(), context0(),
                 original.payloadHolder().allocator(), payload, payloadInfo,
-                original.payloadHolder().headersFactory(), 0);
+                original.payloadHolder().headersFactory(), StreamingHttpPayloadHolder.NO_AGGREGATED_PAYLOAD_LIMIT);
     }
 
     @Override

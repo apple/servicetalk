@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.context.api.ContextMap;
 
+import java.util.function.LongConsumer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.DefaultPayloadInfo.forTransportReceive;
@@ -51,7 +52,7 @@ public final class StreamingHttpRequests {
             final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
             final HttpHeaders headers, final BufferAllocator allocator, final HttpHeadersFactory headersFactory) {
         return new DefaultStreamingHttpRequest(method, requestTarget, version, headers, null, null, null, allocator,
-                null, forUserCreated(), headersFactory, 0);
+                null, forUserCreated(), headersFactory, StreamingHttpPayloadHolder.NO_AGGREGATED_PAYLOAD_LIMIT);
     }
 
     /**
@@ -75,7 +76,7 @@ public final class StreamingHttpRequests {
      * @param headersFactory {@link HttpHeadersFactory} to use.
      * @return a new {@link StreamingHttpRequest}.
      * @deprecated Use {@link #newTransportRequest(HttpRequestMetaData, BufferAllocator, Publisher, boolean,
-     * HttpHeadersFactory, int)} instead.
+     * HttpHeadersFactory, LongConsumer)} instead.
      */
     @Deprecated
     public static StreamingHttpRequest newTransportRequest(
@@ -83,7 +84,8 @@ public final class StreamingHttpRequests {
             final HttpHeaders headers, final BufferAllocator allocator, final Publisher<Object> payload,
             final boolean requireTrailerHeader, final HttpHeadersFactory headersFactory) {
         return new DefaultStreamingHttpRequest(method, requestTarget, version, headers, null, null, null, allocator,
-                payload, forTransportReceive(requireTrailerHeader, version, headers), headersFactory, 0);
+                payload, forTransportReceive(requireTrailerHeader, version, headers), headersFactory,
+                StreamingHttpPayloadHolder.NO_AGGREGATED_PAYLOAD_LIMIT);
     }
 
     /**
@@ -104,14 +106,15 @@ public final class StreamingHttpRequests {
      * @param headersFactory {@link HttpHeadersFactory} to use to allocate trailers if necessary.
      * @return a new {@link StreamingHttpRequest}.
      * @deprecated Use {@link #newTransportRequest(HttpRequestMetaData, BufferAllocator, Publisher, boolean,
-     * HttpHeadersFactory, int)} which allows bounding the size of the payload buffered during aggregation. This
-     * overload leaves the aggregated payload unbounded.
+     * HttpHeadersFactory, LongConsumer)} which allows bounding the size of the payload buffered during
+     * aggregation. This overload leaves the aggregated payload unbounded.
      */
     @Deprecated
     public static StreamingHttpRequest newTransportRequest(
             final HttpRequestMetaData metaData, final BufferAllocator allocator, final Publisher<Object> payload,
             final boolean requireTrailerHeader, final HttpHeadersFactory headersFactory) {
-        return newTransportRequest(metaData, allocator, payload, requireTrailerHeader, headersFactory, 0);
+        return newTransportRequest(metaData, allocator, payload, requireTrailerHeader, headersFactory,
+                StreamingHttpPayloadHolder.NO_AGGREGATED_PAYLOAD_LIMIT);
     }
 
     /**
@@ -131,20 +134,21 @@ public final class StreamingHttpRequests {
      * @param requireTrailerHeader {@code true} if <a href="https://tools.ietf.org/html/rfc7230#section-4.4">Trailer</a>
      * header is required to accept trailers. {@code false} assumes trailers may be present if other criteria allows.
      * @param headersFactory {@link HttpHeadersFactory} to use to allocate trailers if necessary.
-     * @param maxAggregatedSize the maximum number of payload bytes that may be buffered when this request is
-     * aggregated (e.g. via {@link StreamingHttpRequest#toRequest()}); {@code 0} disables the limit. When exceeded a
-     * {@link PayloadTooLargeException} is raised.
+     * @param payloadSizeLimiter invoked with the running aggregated payload size (in bytes) as the request is
+     * aggregated (e.g. via {@link StreamingHttpRequest#toRequest()}); it may reject an oversized message by throwing a
+     * {@link PayloadTooLargeException}. Use {@code size -> { }} to leave the payload unbounded.
      * @return a new {@link StreamingHttpRequest}.
      */
     public static StreamingHttpRequest newTransportRequest(
             final HttpRequestMetaData metaData, final BufferAllocator allocator, final Publisher<Object> payload,
-            final boolean requireTrailerHeader, final HttpHeadersFactory headersFactory, final int maxAggregatedSize) {
+            final boolean requireTrailerHeader, final HttpHeadersFactory headersFactory,
+            final LongConsumer payloadSizeLimiter) {
         @Nullable
         ContextMap context = metaData instanceof DefaultHttpRequestMetaData ?
                 ((DefaultHttpRequestMetaData) metaData).context0() : metaData.context();
         return new DefaultStreamingHttpRequest(metaData.method(), metaData.requestTarget(), metaData.version(),
                 metaData.headers(), context, metaData.encoding(), metaData.contentEncoding(), allocator, payload,
                 forTransportReceive(requireTrailerHeader, metaData.version(), metaData.headers()), headersFactory,
-                maxAggregatedSize);
+                payloadSizeLimiter);
     }
 }

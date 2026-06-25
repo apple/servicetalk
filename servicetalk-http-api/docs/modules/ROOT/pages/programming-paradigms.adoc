@@ -25,7 +25,9 @@ network nor any declared `Content-Length`. A small compressed body that expands 
 therefore rejected.
 
 Adjust or disable this via `HttpServerBuilder#maxAggregatedPayloadSize(int)` /
-`SingleAddressHttpClientBuilder#maxAggregatedPayloadSize(int)` (pass `0` to disable). Users who unexpectedly hit the
+`SingleAddressHttpClientBuilder#maxAggregatedPayloadSize(int)` (pass `0` to disable, or `-1` for *warn-only* mode --
+oversized aggregated messages are still served/delivered but a warning is logged, rate-limited to once every five
+minutes per client/server, so you can evaluate the limit before enforcing it). Users who unexpectedly hit the
 default limit can temporarily override it globally with the
 `io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize` system property until they can configure it
 explicitly; this is a temporary property that will be removed in future releases. Bodies consumed purely as a stream are

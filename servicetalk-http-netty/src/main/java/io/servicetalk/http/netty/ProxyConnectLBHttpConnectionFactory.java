@@ -146,7 +146,7 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
                         HTTP_1_1, channel)
                         .map(conn -> new PipelinedStreamingHttpConnection(conn, config.h1Config(),
                                 reqRespFactoryFunc.apply(HTTP_1_1), config.allowDropTrailersReadFromTransport(),
-                                config.maxAggregatedPayloadSize()));
+                                config.payloadSizeLimiter()));
                 break;
             case AlpnIds.HTTP_2:
                 removeH1Handlers(channel);
@@ -155,7 +155,7 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
                 result = H2ClientParentConnectionContext.initChannel(channel, executionContext, h2Config,
                         reqRespFactoryFunc.apply(HTTP_2_0), tcpConfig.flushStrategy(), tcpConfig.idleTimeoutMs(),
                         tcpConfig.sslConfig(), new H2ClientParentChannelInitializer(h2Config), connectionObserver,
-                        config.allowDropTrailersReadFromTransport(), config.maxAggregatedPayloadSize());
+                        config.allowDropTrailersReadFromTransport(), config.payloadSizeLimiter());
                 break;
             default:
                 result = unknownAlpnProtocol(protocol);

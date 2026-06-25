@@ -191,7 +191,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                 new NettyHttpServerConnection(streamConnection, service, HTTP_2_0,
                                         h2ServerConfig.headersFactory(),
                                         config.allowDropTrailersReadFromTransport(),
-                                        config.maxAggregatedPayloadSize()).process(false);
+                                        config.payloadSizeLimiter()).process(false);
                             }
                     }).init(channel);
                 } catch (Throwable cause) {

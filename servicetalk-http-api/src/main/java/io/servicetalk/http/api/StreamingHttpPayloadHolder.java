@@ -31,6 +31,7 @@ import io.servicetalk.http.api.HttpDataSourceTransformations.PayloadAndTrailers;
 
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
@@ -50,23 +51,27 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
 
     private static final Publisher<Buffer> EMPTY = empty();
 
+    // Shared no-op limiter for messages that are not subject to an aggregation limit (e.g. user-created messages).
+    static final LongConsumer NO_AGGREGATED_PAYLOAD_LIMIT = size -> { };
+
     private final HttpHeaders headers;
     private final BufferAllocator allocator;
     private final DefaultPayloadInfo payloadInfo;
     private final HttpHeadersFactory headersFactory;
-    private final int maxAggregatedSize;
+    private final LongConsumer payloadSizeLimiter;
     @Nullable
     private Publisher<?> messageBody;
 
     StreamingHttpPayloadHolder(final HttpHeaders headers, final BufferAllocator allocator,
                                @Nullable final Publisher<?> messageBody, final DefaultPayloadInfo messageBodyInfo,
-                               final HttpHeadersFactory headersFactory, final int maxAggregatedSize) {
+                               final HttpHeadersFactory headersFactory,
+                               final LongConsumer payloadSizeLimiter) {
         assert messageBody != null || !messageBodyInfo.mayHaveTrailers();
         this.headers = requireNonNull(headers);
         this.allocator = requireNonNull(allocator);
         this.payloadInfo = requireNonNull(messageBodyInfo);
         this.headersFactory = requireNonNull(headersFactory);
-        this.maxAggregatedSize = maxAggregatedSize;
+        this.payloadSizeLimiter = requireNonNull(payloadSizeLimiter);
         this.messageBody = messageBody;
         payloadInfo.setEmpty(messageBody == null || messageBody == empty());
     }
@@ -180,7 +185,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
 
     Single<PayloadAndTrailers> aggregate() {
         payloadInfo.setSafeToAggregate(true);
-        return aggregatePayloadAndTrailers(payloadInfo, messageBody(), allocator, maxAggregatedSize);
+        return aggregatePayloadAndTrailers(payloadInfo, messageBody(), allocator, payloadSizeLimiter);
     }
 
     @Override

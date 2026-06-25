@@ -22,10 +22,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
-import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.lang.Integer.getInteger;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -37,6 +37,9 @@ final class HttpConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpConfig.class);
 
     static final int DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE = 4 * 1024 * 1024;
+    // Magic value accepted by maxAggregatedPayloadSize(int): warn (rate-limited) when the default limit is exceeded
+    // but let the payload through rather than rejecting it.
+    static final int WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE = -1;
     // FIXME: 0.43 - remove this temporary property
     static final String DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY =
             "io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize";
@@ -98,12 +101,25 @@ final class HttpConfig {
         this.allowDropTrailers = allowDrop;
     }
 
-    int maxAggregatedPayloadSize() {
-        return maxAggregatedPayloadSize;
+    void maxAggregatedPayloadSize(int maxAggregatedPayloadSize) {
+        if (maxAggregatedPayloadSize < WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE) {
+            throw new IllegalArgumentException("maxAggregatedPayloadSize: " + maxAggregatedPayloadSize +
+                    " (expected >= " + WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE + ")");
+        }
+        this.maxAggregatedPayloadSize = maxAggregatedPayloadSize;
     }
 
-    void maxAggregatedPayloadSize(int maxAggregatedPayloadSize) {
-        this.maxAggregatedPayloadSize = ensureNonNegative(maxAggregatedPayloadSize, "maxAggregatedPayloadSize");
+    /**
+     * Build the aggregated-payload-size limiter for a single client/server from the configured value, as a
+     * {@link LongConsumer} invoked with the running aggregated size. The returned instance carries the warn-mode
+     * rate-limiting state, so it must be created once per client/server (see {@link ReadOnlyHttpClientConfig} /
+     * {@link ReadOnlyHttpServerConfig}) and shared across its connections.
+     */
+    LongConsumer newAggregatedPayloadSizeLimiter() {
+        if (maxAggregatedPayloadSize == WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE) {
+            return AggregatedPayloadSizeLimiter.warning(DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE);
+        }
+        return AggregatedPayloadSizeLimiter.enforcing(maxAggregatedPayloadSize);
     }
 
     void protocols(final HttpProtocolConfig... protocols) {

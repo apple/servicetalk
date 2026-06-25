@@ -22,6 +22,7 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
+import java.util.function.LongConsumer;
 import javax.annotation.Nullable;
 
 final class NonPipelinedStreamingHttpConnection
@@ -31,9 +32,9 @@ final class NonPipelinedStreamingHttpConnection
                                         final StreamingHttpRequestResponseFactory reqRespFactory,
                                         final HttpHeadersFactory headersFactory,
                                         final boolean allowDropTrailersReadFromTransport,
-                                        final int maxAggregatedPayloadSize) {
+                                        final LongConsumer payloadSizeLimiter) {
         super(connection, 1, reqRespFactory, headersFactory, allowDropTrailersReadFromTransport,
-                maxAggregatedPayloadSize);
+                payloadSizeLimiter);
     }
 
     @Override

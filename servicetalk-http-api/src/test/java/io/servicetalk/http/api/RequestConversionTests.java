@@ -58,7 +58,8 @@ class RequestConversionTests extends AbstractConversionTest {
         DefaultPayloadInfo payloadInfo = payloadInfoSupplier.get();
         return Arguments.of((Supplier<StreamingHttpRequest>) () -> new DefaultStreamingHttpRequest(GET, "/", HTTP_1_1,
                 DefaultHttpHeadersFactory.INSTANCE.newHeaders(), null, identity(), null, DEFAULT_ALLOCATOR,
-                new SingleSubscribePublisher(payloadInfo), payloadInfo, DefaultHttpHeadersFactory.INSTANCE, 0),
+                new SingleSubscribePublisher(payloadInfo), payloadInfo, DefaultHttpHeadersFactory.INSTANCE,
+                StreamingHttpPayloadHolder.NO_AGGREGATED_PAYLOAD_LIMIT),
                 (Supplier<DefaultPayloadInfo>) () -> payloadInfo, paramName);
     }
 

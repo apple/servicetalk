@@ -50,6 +50,6 @@ final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLB
         return buildStreaming(executionContext, resolvedAddress, config, observer)
                 .map(conn -> new PipelinedStreamingHttpConnection(conn, config.h1Config(),
                         reqRespFactoryFunc.apply(HTTP_1_1), config.allowDropTrailersReadFromTransport(),
-                        config.maxAggregatedPayloadSize()));
+                        config.payloadSizeLimiter()));
     }
 }
