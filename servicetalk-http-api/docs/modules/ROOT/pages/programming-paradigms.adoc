@@ -28,10 +28,10 @@ Adjust or disable this via `HttpServerBuilder#maxAggregatedPayloadSize(int)` /
 `SingleAddressHttpClientBuilder#maxAggregatedPayloadSize(int)` (pass `0` to disable, or `-1` for *warn-only* mode --
 oversized aggregated messages are still served/delivered but a warning is logged, rate-limited to once every five
 minutes per client/server, so you can evaluate the limit before enforcing it). Users who unexpectedly hit the
-default limit can temporarily override it globally with the
-`io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize` system property until they can configure it
-explicitly; this is a temporary property that will be removed in future releases. Bodies consumed purely as a stream are
-not affected.
+default limit can temporarily change it globally with the
+`io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize` system property, which accepts the same values
+(including `-1` to warn globally); an explicit builder call takes precedence over the property. This is a temporary
+property that will be removed in future releases. Bodies consumed purely as a stream are not affected.
 ====
 
 [#service-programming-paradigms]
