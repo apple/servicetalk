@@ -22,6 +22,7 @@ import io.servicetalk.http.api.HttpResponseMetaData;
 /**
  * Metadata for a <a href="https://www.grpc.io">gRPC</a> call.
  */
+@FunctionalInterface
 public interface GrpcMetadata {
 
     /**

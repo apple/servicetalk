@@ -158,7 +158,7 @@ class H2ConcurrencyControllerTest {
     void noMaxActiveStreamsViolatedErrorAfterCancel() throws Exception {
         int serverMaxConcurrentStreams = 1;
         setUp(serverMaxConcurrentStreams);
-        assert serverAddress != null;
+        assertThat(serverAddress, is(notNullValue()));
         try (HttpClient client = configureSingleConnection(newClientBuilder(serverAddress, CLIENT_CTX, HTTP_2),
                 // The deferred cancel holds the only slot ~100ms, so wait for it rather than spin.
                 BackOffPolicy.ofConstantBackoffFullJitter(ofMillis(10), 128))
@@ -204,7 +204,7 @@ class H2ConcurrencyControllerTest {
                     final int idx = i;
                     Cancellable cancellable = client.request(client.get("/" + i))
                         .whenOnError(exceptions::add)
-                        .afterFinally(() -> latches[idx].countDown())
+                        .afterFinally(latches[idx]::countDown)
                         .subscribe(__ -> { /* response is not expected */ });
                     latches[i].await();
                     cancellable.cancel();
@@ -263,7 +263,7 @@ class H2ConcurrencyControllerTest {
         int serverMaxConcurrentStreams = 1;
         setUp(serverMaxConcurrentStreams);
         alwaysEcho.set(true);   // server should always respond
-        assert serverAddress != null;
+        assertThat(serverAddress, is(notNullValue()));
         try (HttpClient client = configureSingleConnection(newClientBuilder(serverAddress, CLIENT_CTX, HTTP_2)
                 .executionStrategy(strategy),
                 // Spin to densely probe the limit-change race; echoed streams free the slot near-instantly.
@@ -323,7 +323,7 @@ class H2ConcurrencyControllerTest {
     @Test
     void maxActiveStreamsOutsideIntRange() throws Exception {
         setUp(MAX_UNSIGNED_INT);
-        assert serverAddress != null;
+        assertThat(serverAddress, is(notNullValue()));
         assertThat(MAX_UNSIGNED_INT, is(greaterThan((long) Integer.MAX_VALUE)));
         try (HttpClient client = newClientBuilder(serverAddress, CLIENT_CTX, HTTP_2)
                 .protocols(HTTP_2.config)

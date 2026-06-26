@@ -32,6 +32,7 @@ import java.util.function.Predicate;
  * This is meant to emphasize that {@link #isReady()} returning {@code true} doesn't necessarily mean
  * {@link LoadBalancer#selectConnection(Predicate, ContextMap)} will always return successfully.
  */
+@FunctionalInterface
 public interface LoadBalancerReadyEvent {
     /**
      * A {@link LoadBalancerReadyEvent} that returns {@code true} for {@link #isReady()}.

@@ -91,7 +91,6 @@ final class FirstAndTailToPackedSingle<Packed, T> implements PublisherToSingleOp
          * </ul>
          */
         @Nullable
-        @SuppressWarnings("unused")
         private volatile Object maybeTailSub;
 
         /**

@@ -32,7 +32,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreamingHttpRequesterTest {
+class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreamingHttpRequesterTest {
     @SuppressWarnings("unchecked")
     @Override
     protected <T extends StreamingHttpRequester & TestHttpRequester> T newAsyncRequester(

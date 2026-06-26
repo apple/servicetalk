@@ -111,7 +111,7 @@ class NettyServerContextTest {
     private ServerContext fixture;
 
     @BeforeEach
-    public void setupMocks() {
+    void setupMocks() {
         when(channel.closeFuture()).thenReturn(channelCloseFuture);
         when(channel.close()).then(invocation -> {
             for (GenericFutureListener<ChannelFuture> listener : listeners) {

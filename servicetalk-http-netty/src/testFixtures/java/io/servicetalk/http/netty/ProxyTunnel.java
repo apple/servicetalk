@@ -88,6 +88,7 @@ public final class ProxyTunnel implements AutoCloseable {
      * @return the {@link HostAndPort} to use to connect to the proxy
      * @throws IOException In case of any I/O exception
      */
+    @SuppressWarnings("PMD.ExceptionAsFlowControl")
     public HostAndPort startProxy() throws IOException {
         final SSLContext sslCtx = this.sslContext;
         if (sslCtx == null) {

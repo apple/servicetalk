@@ -18,6 +18,7 @@ package io.servicetalk.grpc.customtransport;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 
+@FunctionalInterface
 interface ClientTransport {
     Publisher<Buffer> send(String method, Publisher<Buffer> requestMessages);
 }

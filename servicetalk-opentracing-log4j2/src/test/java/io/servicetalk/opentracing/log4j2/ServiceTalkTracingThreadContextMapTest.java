@@ -40,12 +40,12 @@ class ServiceTalkTracingThreadContextMapTest {
     private final LoggerStringWriter loggerStringWriter = new LoggerStringWriter();
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         loggerStringWriter.reset();
     }
 
     @AfterEach
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         loggerStringWriter.remove();
     }
 

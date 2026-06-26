@@ -282,13 +282,7 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
 
         @Override
         public boolean equals(final Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (!(o instanceof ContextMap)) {
-                return false;
-            }
-            return ((ContextMap) o).isEmpty();
+            return this == o || (o instanceof ContextMap && ((ContextMap) o).isEmpty());
         }
 
         @Override

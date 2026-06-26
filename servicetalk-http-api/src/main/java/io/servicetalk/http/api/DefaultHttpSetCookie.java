@@ -423,24 +423,19 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
             sb.append(value);
         }
         if (domain != null) {
-            sb.append(ENCODED_LABEL_DOMAIN);
-            sb.append(domain);
+            sb.append(ENCODED_LABEL_DOMAIN).append(domain);
         }
         if (path != null) {
-            sb.append(ENCODED_LABEL_PATH);
-            sb.append(path);
+            sb.append(ENCODED_LABEL_PATH).append(path);
         }
         if (expires != null) {
-            sb.append(ENCODED_LABEL_EXPIRES);
-            sb.append(expires);
+            sb.append(ENCODED_LABEL_EXPIRES).append(expires);
         }
         if (maxAge != null) {
-            sb.append(ENCODED_LABEL_MAX_AGE);
-            sb.append(maxAge);
+            sb.append(ENCODED_LABEL_MAX_AGE).append(maxAge);
         }
         if (sameSite != null) {
-            sb.append(ENCODED_LABEL_SAMESITE);
-            sb.append(sameSite);
+            sb.append(ENCODED_LABEL_SAMESITE).append(sameSite);
         }
         if (httpOnly) {
             sb.append(ENCODED_LABEL_HTTP_ONLY);

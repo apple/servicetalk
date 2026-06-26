@@ -24,7 +24,7 @@ import javax.ws.rs.core.Application;
 
 import static java.util.Arrays.asList;
 
-public class InterceptorsTest extends AbstractFilterInterceptorTest {
+class InterceptorsTest extends AbstractFilterInterceptorTest {
 
     static class TestApplication extends Application {
         @Override

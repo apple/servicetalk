@@ -45,6 +45,7 @@ class FilterStreamingJsonTest extends AbstractJerseyStreamingHttpServiceTest {
 
     @Priority(ENTITY_CODER)
     @Provider
+    @SuppressWarnings("PMD.PublicMemberInNonPublicType") // JAX-RS @Provider must be public
     public static class TestGlobalFilter implements ContainerRequestFilter {
         @Override
         public void filter(final ContainerRequestContext requestCtx) {

@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.BlockingIterable;
  * also provides access to the <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailers</a>.
  * @param <T> The type of the payload body.
  */
+@FunctionalInterface
 public interface HttpMessageBodyIterable<T> extends BlockingIterable<T> {
     @Override
     HttpMessageBodyIterator<T> iterator();

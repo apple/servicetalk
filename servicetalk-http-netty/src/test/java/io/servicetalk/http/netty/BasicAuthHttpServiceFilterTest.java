@@ -36,21 +36,10 @@ import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.util.Base64.getEncoder;
-import static java.util.Objects.requireNonNull;
 
 class BasicAuthHttpServiceFilterTest {
 
     private static final class BasicUserInfo {
-
-        private final String userId;
-
-        BasicUserInfo(final String userId) {
-            this.userId = requireNonNull(userId);
-        }
-
-        public String userId() {
-            return userId;
-        }
     }
 
     private static final String REALM_VALUE = "hw_realm";
@@ -72,15 +61,15 @@ class BasicAuthHttpServiceFilterTest {
                         };
                     }
                 },
-                new BasicAuthHttpServiceFilter.Builder<>(new CredentialsVerifier<Object>() {
+                new BasicAuthHttpServiceFilter.Builder<>(new CredentialsVerifier<BasicUserInfo>() {
                     @Override
                     public Completable closeAsync() {
                         return completed();
                     }
 
                     @Override
-                    public Single<Object> apply(final String userId, final String password) {
-                        return succeeded(new BasicUserInfo(userId));
+                    public Single<BasicUserInfo> apply(final String userId, final String password) {
+                        return succeeded(new BasicUserInfo());
                     }
                 }, REALM_VALUE).buildServer()));
     }

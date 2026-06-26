@@ -767,10 +767,8 @@ public final class HeaderUtils {
             return false;
         }
         if (expectedCharset == null) {
-            if (contentEqualsIgnoreCase(expectedContentType, contentTypeHeader)) {
-                return true;
-            }
-            return regionMatches(contentTypeHeader, true, 0, expectedContentType, 0, expectedContentType.length());
+            return contentEqualsIgnoreCase(expectedContentType, contentTypeHeader)
+                    || regionMatches(contentTypeHeader, true, 0, expectedContentType, 0, expectedContentType.length());
         }
         if (!regionMatches(contentTypeHeader, true, 0, expectedContentType, 0, expectedContentType.length())) {
             return false;
@@ -929,8 +927,7 @@ public final class HeaderUtils {
                     .append(idx)
                     .append(" in ") // 4
                     .append(what)
-                    .append(' ')    // 1
-                    .append('\'')   // 1
+                    .append(" '")   // 2
                     .append(token)
                     .append("', expected [")    // 13
                     .append(EXPECTED)

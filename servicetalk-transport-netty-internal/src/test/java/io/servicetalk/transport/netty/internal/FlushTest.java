@@ -43,7 +43,7 @@ class FlushTest extends AbstractFlushTest {
     private MockFlushStrategy strategy;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         strategy = new MockFlushStrategy();
         toSource(super.setup(source, strategy)).subscribe(subscriber);
         flushSender = strategy.verifyApplied();

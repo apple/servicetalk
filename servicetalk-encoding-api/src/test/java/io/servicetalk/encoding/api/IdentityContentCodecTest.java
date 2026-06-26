@@ -42,7 +42,7 @@ class IdentityContentCodecTest {
                         return IDENTITY_CODEC.hashCode() + 1;
                     }
 
-                    @SuppressWarnings("RedundantMethodOverride")
+                    @SuppressWarnings("PMD.UselessOverridingMethod")
                     @Override
                     public boolean equals(Object other) {
                         return super.equals(other);

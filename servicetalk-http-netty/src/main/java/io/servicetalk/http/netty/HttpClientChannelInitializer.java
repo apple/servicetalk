@@ -27,6 +27,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelPipeline;
 
 import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 import java.util.Queue;
 
@@ -53,7 +54,7 @@ final class HttpClientChannelInitializer implements ChannelInitializer {
         this.delegate = new CopyByteBufHandlerChannelInitializer(alloc).andThen(channel -> {
             final int minPipelinedRequests = min(8, config.maxPipelinedRequests());
             final Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(minPipelinedRequests);
-            final ArrayDeque<Signal> signalsQueue = new ArrayDeque<>(minPipelinedRequests);
+            final Deque<Signal> signalsQueue = new ArrayDeque<>(minPipelinedRequests);
             final ChannelPipeline pipeline = channel.pipeline();
             pipeline.addLast(new HttpResponseDecoder(methodQueue, signalsQueue, alloc, config.headersFactory(),
                     config.maxStartLineLength(), config.maxHeaderFieldLength(), config.maxTotalHeaderFieldsLength(),

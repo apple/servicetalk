@@ -797,7 +797,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
             return HealthCheck.class.equals(connState.state.getClass());
         }
 
-        boolean addConnection(final C connection, final @Nullable HealthCheck<Addr, C> currentHealthCheck) {
+        boolean addConnection(final C connection, @Nullable final HealthCheck<Addr, C> currentHealthCheck) {
             int addAttempt = 0;
             for (;;) {
                 final ConnState previous = connStateUpdater.get(this);
@@ -993,7 +993,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                 this.lastError = lastError;
             }
 
-            public void schedule(final Throwable originalCause) {
+            void schedule(final Throwable originalCause) {
                 assert host.healthCheckConfig != null;
                 delayedCancellable(
                         // Use retry strategy to utilize jitter.

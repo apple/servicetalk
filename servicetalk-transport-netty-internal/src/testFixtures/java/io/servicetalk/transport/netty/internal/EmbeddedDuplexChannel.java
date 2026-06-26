@@ -451,7 +451,8 @@ public final class EmbeddedDuplexChannel extends EmbeddedChannel implements Dupl
         @Override
         public <T> T getOption(ChannelOption<T> option) {
             if (option == ALLOW_HALF_CLOSURE) {
-                return (T) Boolean.valueOf(isAllowHalfClosure());
+                final Boolean value = isAllowHalfClosure();
+                return (T) value;
             }
             return super.getOption(option);
         }
@@ -470,14 +471,14 @@ public final class EmbeddedDuplexChannel extends EmbeddedChannel implements Dupl
         /**
          * @see SocketChannelConfig#isAllowHalfClosure()
          */
-        public boolean isAllowHalfClosure() {
+        boolean isAllowHalfClosure() {
             return allowHalfClosure;
         }
 
         /**
          * @see SocketChannelConfig#setAllowHalfClosure(boolean)
          */
-        public EmbeddedDuplexChannelConfig setAllowHalfClosure(boolean allowHalfClosure) {
+        EmbeddedDuplexChannelConfig setAllowHalfClosure(boolean allowHalfClosure) {
             this.allowHalfClosure = allowHalfClosure;
             return this;
         }

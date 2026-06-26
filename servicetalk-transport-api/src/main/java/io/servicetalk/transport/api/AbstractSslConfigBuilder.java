@@ -39,6 +39,7 @@ import static java.util.Objects.requireNonNull;
  * Abstract base class for building {@link SslConfig} objects.
  * @param <T> The type of {@link AbstractSslConfigBuilder} which is returned by setter methods.
  */
+@SuppressWarnings("PMD.PublicMemberInNonPublicType") // public methods are exposed via public subclasses
 abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
 
     // FIXME: 0.43 - make DEFAULT_HANDSHAKE_TIMEOUT constant private

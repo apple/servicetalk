@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.servicetalk.concurrent.api.test.TimeUtils.convert;
 
+@FunctionalInterface
 interface NormalizedTimeSource extends TimeSource {
     default boolean isExpired(long timeStamp) {
         return currentTime() <= timeStamp;

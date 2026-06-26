@@ -50,6 +50,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.Queue;
 
@@ -100,7 +101,7 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     private final EmbeddedChannel channelSpecException = newChannel(true);
 
     private EmbeddedChannel newChannel(boolean allowLFWithoutCR) {
-        final ArrayDeque<Signal> signalsQueue = new PollLikePeakArrayDeque<>();
+        final Deque<Signal> signalsQueue = new PollLikePeakArrayDeque<>();
         signalsQueue.offer(REQUEST_SIGNAL);
         return new EmbeddedChannel(new HttpResponseDecoder(methodQueue, signalsQueue,
                 getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE,
@@ -150,7 +151,7 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
 
     @Override
     EmbeddedChannel channelWithMaxTotalHeaderFieldsLength(int maxTotalHeaderFieldsLength) {
-        final ArrayDeque<Signal> signalsQueue = new PollLikePeakArrayDeque<>();
+        final Deque<Signal> signalsQueue = new PollLikePeakArrayDeque<>();
         signalsQueue.offer(REQUEST_SIGNAL);
         return new EmbeddedChannel(new HttpResponseDecoder(methodQueue, signalsQueue,
                 getByteBufAllocator(DEFAULT_ALLOCATOR),

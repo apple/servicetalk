@@ -42,7 +42,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ExecutionContext;
-import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.utils.internal.ThrowableUtils;
 
@@ -89,8 +88,7 @@ import static java.util.Objects.requireNonNull;
  * {@link Builder#maxTotalRetries(int)}.
  * @see RetryStrategies
  */
-public final class RetryingHttpRequesterFilter
-        implements StreamingHttpClientFilterFactory, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
+public final class RetryingHttpRequesterFilter implements StreamingHttpClientFilterFactory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RetryingHttpRequesterFilter.class);
 

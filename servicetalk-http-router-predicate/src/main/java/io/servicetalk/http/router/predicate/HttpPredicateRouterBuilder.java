@@ -170,7 +170,7 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
         }
     }
 
-    private class RouteContinuationImpl implements RouteContinuation {
+    private final class RouteContinuationImpl implements RouteContinuation {
 
         @Nullable
         private HttpExecutionStrategy strategy;

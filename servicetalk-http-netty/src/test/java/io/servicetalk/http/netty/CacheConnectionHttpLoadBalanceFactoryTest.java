@@ -123,7 +123,7 @@ final class CacheConnectionHttpLoadBalanceFactoryTest {
         }
     }
 
-    private static class CountingConnectionObserver implements TransportObserver {
+    private static final class CountingConnectionObserver implements TransportObserver {
         private final AtomicInteger count = new AtomicInteger();
 
         @Override

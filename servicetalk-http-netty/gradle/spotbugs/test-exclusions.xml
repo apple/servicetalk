@@ -15,15 +15,20 @@
   ~ limitations under the License.
   -->
 <FindBugsFilter>
-  <!-- Fields are usually initialized in @BeforeClass/@Before methods instead of constructors for tests -->
   <Match>
     <Source name="~.*Test\.java"/>
-    <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
-  </Match>
-  <!-- Not interested in returned values -->
-  <Match>
-    <Source name="~.*Test\.java"/>
-    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+    <Or>
+      <!-- Fields are usually initialized in @BeforeClass/@Before methods instead of constructors for tests -->
+      <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
+      <!-- Not interested in returned values -->
+      <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+      <!-- Tests methods can throw any exception type -->
+      <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
+      <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+      <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
+      <!-- Other patterns we would like to ignore for tests -->
+      <Bug pattern="EI_EXPOSE_REP"/>
+    </Or>
   </Match>
   <Match>
     <Class name="io.servicetalk.http.netty.TestServiceStreaming"/>
@@ -60,19 +65,8 @@
     <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
   </Match>
   <Match>
-    <Source name="~.*Test\.java"/>
-    <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
-  </Match>
-  <Match>
-    <Or>
-      <Source name="~.*Test\.java"/>
-      <Class name="io.servicetalk.http.netty.InvokingThreadsRecorder"/>
-    </Or>
+    <Class name="io.servicetalk.http.netty.InvokingThreadsRecorder"/>
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
-  </Match>
-  <Match>
-    <Source name="~.*Test\.java"/>
-    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
   </Match>
   <!-- Test intentionally returns null to verify the null-check -->
   <Match>

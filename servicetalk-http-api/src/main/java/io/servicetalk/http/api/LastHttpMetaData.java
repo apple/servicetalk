@@ -20,6 +20,7 @@ package io.servicetalk.http.api;
  * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer headers</a>. This will signify the end of a request
  * or response and no other data can come after this object.
  */
+@FunctionalInterface
 public interface LastHttpMetaData {
     /**
      * Get the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer headers</a>.

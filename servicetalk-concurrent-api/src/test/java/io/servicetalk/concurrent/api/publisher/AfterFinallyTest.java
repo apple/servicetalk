@@ -45,7 +45,7 @@ class AfterFinallyTest extends AbstractWhenFinallyTest {
         try {
             doFinally(publisher, mock).subscribe(subscriber);
             assertFalse(subscription.isCancelled());
-            Exception e = assertThrows(DeliberateException.class, () -> publisher.onComplete());
+            Exception e = assertThrows(DeliberateException.class, publisher::onComplete);
             assertThat(e, is(sameInstance(DELIBERATE_EXCEPTION)));
         } finally {
             subscriber.awaitOnComplete();

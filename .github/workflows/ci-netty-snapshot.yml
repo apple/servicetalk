@@ -12,6 +12,9 @@ jobs:
     uses: ./.github/workflows/gradle-wrapper-validation.yml
   build:
     needs: gradle-wrapper-validation
+    permissions:
+      contents: read
+      checks: write
     name: Netty ${{ matrix.netty }} Snapshot
     runs-on: ${{ matrix.os }}
     env:
@@ -43,8 +46,9 @@ jobs:
       - name: Build and Test
         run:  sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel test"
       - name: Publish Test Results
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: '!cancelled()'
+        uses: EnricoMi/publish-unit-test-result-action@c950f6fb443cb5af20a377fd0dfaa78838901040 # v2.23.0
         with:
-          name: test-results-${{ matrix.os }}-${{ matrix.netty }}
-          path: '**/build/test-results/test/TEST-*.xml'
+          files: '**/build/test-results/test/TEST-*.xml'
+          check_name: Test Report Netty ${{ matrix.netty }} Snapshot
+          comment_mode: 'off'

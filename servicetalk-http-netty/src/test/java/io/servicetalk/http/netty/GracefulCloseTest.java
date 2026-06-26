@@ -99,7 +99,7 @@ class GracefulCloseTest {
         resp.payloadBody().toFuture().get();
     }
 
-    private static class StaticTrailersTransformer extends StatelessTrailersTransformer<Buffer> {
+    private static final class StaticTrailersTransformer extends StatelessTrailersTransformer<Buffer> {
         @Override
         protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
             trailers.add("foo", "bar");

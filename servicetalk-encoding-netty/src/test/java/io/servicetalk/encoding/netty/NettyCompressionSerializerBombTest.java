@@ -83,8 +83,8 @@ class NettyCompressionSerializerBombTest {
     }
 
     enum Codec {
-        GZIP(NettyCompressionSerializerBombTest::gzipBomb, () -> gzip()),
-        DEFLATE(NettyCompressionSerializerBombTest::deflateBomb, () -> deflate());
+        GZIP(NettyCompressionSerializerBombTest::gzipBomb, NettyCompression::gzip),
+        DEFLATE(NettyCompressionSerializerBombTest::deflateBomb, NettyCompression::deflate);
 
         final BombFixture bomb;
         final Supplier<ZipCompressionBuilder> builder;

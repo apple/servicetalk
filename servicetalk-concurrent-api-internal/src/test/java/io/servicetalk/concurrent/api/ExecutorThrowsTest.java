@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.annotation.Nullable;
 
@@ -36,7 +37,7 @@ import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 
 class ExecutorThrowsTest {
 
-    private final LinkedBlockingQueue<Throwable> errors = new LinkedBlockingQueue<>();
+    private final BlockingQueue<Throwable> errors = new LinkedBlockingQueue<>();
 
     @Test
     void publisherExecutorThrows() {

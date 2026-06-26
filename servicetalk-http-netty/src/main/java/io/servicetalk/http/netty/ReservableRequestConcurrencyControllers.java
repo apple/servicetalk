@@ -129,7 +129,6 @@ final class ReservableRequestConcurrencyControllers {
          * STATE_IDLE if connection is not used.
          * pending request count if none of the above states.
          */
-        @SuppressWarnings("unused")
         private volatile int pendingRequests;
         private volatile int lastMaxConcurrency;
 

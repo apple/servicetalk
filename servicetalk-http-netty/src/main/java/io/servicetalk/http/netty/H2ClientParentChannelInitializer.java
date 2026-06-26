@@ -32,6 +32,7 @@ import static io.netty.handler.codec.http2.Http2Error.PROTOCOL_ERROR;
 import static io.servicetalk.http.netty.H2ServerParentChannelInitializer.initFrameLogger;
 import static io.servicetalk.http.netty.H2ServerParentChannelInitializer.toNettySettings;
 
+@SuppressWarnings("PMD.LooseCoupling") // Netty's concrete Http2Settings is required by the Netty API
 final class H2ClientParentChannelInitializer implements ChannelInitializer {
     private final H2ProtocolConfig config;
     private final io.netty.handler.codec.http2.Http2Settings nettySettings;

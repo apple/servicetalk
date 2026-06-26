@@ -52,6 +52,7 @@ class RoundRobinLoadBalancerBuilderProviderTest {
                 is(getClass().getSimpleName()));
     }
 
+    @SuppressWarnings("PMD.PublicMemberInNonPublicType") // SPI implementation must be public
     public static final class TestRoundRobinLoadBalancerBuilderProvider
             implements RoundRobinLoadBalancerBuilderProvider {
 

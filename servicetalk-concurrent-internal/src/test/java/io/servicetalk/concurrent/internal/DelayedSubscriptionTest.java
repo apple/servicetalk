@@ -187,7 +187,7 @@ class DelayedSubscriptionTest {
         assertThat("Unexpected items requested.", s.requested(), is(10_000));
     }
 
-    private static class CountingSubscription implements Subscription {
+    private static final class CountingSubscription implements Subscription {
         private int requested;
 
         @Override

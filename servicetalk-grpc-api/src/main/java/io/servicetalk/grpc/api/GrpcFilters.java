@@ -70,7 +70,7 @@ public final class GrpcFilters {
         @Nullable
         private final Duration defaultTimeout;
 
-        GrpcDetermineTimeoutForRequestFunction(final @Nullable Duration defaultTimeout) {
+        GrpcDetermineTimeoutForRequestFunction(@Nullable final Duration defaultTimeout) {
             this.defaultTimeout = defaultTimeout == null ? null : ensurePositive(defaultTimeout, "defaultTimeout");
         }
 

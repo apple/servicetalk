@@ -29,6 +29,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.Collection;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -186,7 +187,7 @@ class DefaultHttpExecutionStrategyTest {
         private static final int SEND_ANALYZED_INDEX = 0;
         private static final int RECEIVE_META_ANALYZED_INDEX = 1;
         private static final int RECEIVE_DATA_ANALYZED_INDEX = 2;
-        private final ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        private final Queue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         private final Thread testThread = currentThread();
         private final AtomicReferenceArray<Boolean> analyzed = new AtomicReferenceArray<>(3);
         private final CountDownLatch awaitCancel = new CountDownLatch(1);

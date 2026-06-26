@@ -49,7 +49,7 @@ class NettyChannelPublisherRefCountTest {
     private EmbeddedDuplexChannel channel;
 
     @BeforeEach
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
         channel = new EmbeddedDuplexChannel(false);
         ExecutionContext<?> executionContext = new DefaultExecutionContext<>(DEFAULT_ALLOCATOR,
                 fromNettyEventLoop(channel.eventLoop(), false), immediate(), offloadAll());
@@ -60,7 +60,7 @@ class NettyChannelPublisherRefCountTest {
     }
 
     @AfterEach
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         if (!channel.close().await(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
             throw new IllegalStateException("Channel close not finished in 1 second.");
         }

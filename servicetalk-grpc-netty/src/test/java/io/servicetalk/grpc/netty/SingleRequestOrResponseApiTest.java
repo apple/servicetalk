@@ -200,7 +200,7 @@ class SingleRequestOrResponseApiTest {
         return TestResponse.newBuilder().setMessage("response").build();
     }
 
-    private static class TesterServiceImpl implements TesterService {
+    private static final class TesterServiceImpl implements TesterService {
 
         @Override
         public Single<TestResponse> test(GrpcServiceContext ctx, TestRequest request) {
@@ -225,7 +225,7 @@ class SingleRequestOrResponseApiTest {
         }
     }
 
-    private static class BlockingTesterServiceImpl implements BlockingTesterService {
+    private static final class BlockingTesterServiceImpl implements BlockingTesterService {
         @Override
         public TestResponse test(GrpcServiceContext ctx, TestRequest request) {
             throw new UnsupportedOperationException();

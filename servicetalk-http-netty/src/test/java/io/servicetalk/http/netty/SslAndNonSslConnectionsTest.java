@@ -54,6 +54,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
@@ -134,7 +135,7 @@ class SslAndNonSslConnectionsTest {
 
     @Test
     void nonSecureClientToSecureServerClosesConnection() throws Exception {
-        assert secureServerCtx != null;
+        assertThat(secureServerCtx, is(notNullValue()));
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(secureServerCtx))
                 .buildBlocking()) {
             assertThrows(IOException.class, () -> client.request(client.get("/")));
@@ -143,7 +144,7 @@ class SslAndNonSslConnectionsTest {
 
     @Test
     void secureClientToNonSecureServerClosesConnection() throws Exception {
-        assert serverCtx != null;
+        assertThat(serverCtx, is(notNullValue()));
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverCtx))
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         .peerHost(serverPemHostname()).build())
@@ -154,7 +155,7 @@ class SslAndNonSslConnectionsTest {
 
     @Test
     void defaultSingleAddressClientToNonSecureServer() throws Exception {
-        assert serverCtx != null;
+        assertThat(serverCtx, is(notNullValue()));
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverCtx)).buildBlocking()) {
             testRequestResponse(client, "/", false);
         }
@@ -169,7 +170,7 @@ class SslAndNonSslConnectionsTest {
 
     @Test
     void singleAddressClientWithSslToSecureServer() throws Exception {
-        assert secureServerCtx != null;
+        assertThat(secureServerCtx, is(notNullValue()));
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(secureServerCtx))
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         .peerHost(serverPemHostname()).build())
@@ -180,7 +181,7 @@ class SslAndNonSslConnectionsTest {
 
     @Test
     void singleAddressClientWithSslToSecureServerWithoutPeerHost() throws Exception {
-        assert secureServerCtx != null;
+        assertThat(secureServerCtx, is(notNullValue()));
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(secureServerCtx))
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         // if verification is not disabled, identity check fails against the undefined address
@@ -194,7 +195,7 @@ class SslAndNonSslConnectionsTest {
 
     @Test
     void hostNameVerificationIsEnabledByDefault() throws Exception {
-        assert secureServerCtx != null;
+        assertThat(secureServerCtx, is(notNullValue()));
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(secureServerCtx))
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build())
                 .buildBlocking()) {
@@ -208,7 +209,7 @@ class SslAndNonSslConnectionsTest {
 
     @Test
     void hostNameVerificationUsesInferredAddress() throws Exception {
-        assert secureServerCtx != null;
+        assertThat(secureServerCtx, is(notNullValue()));
 
         HostAndPort localAddress = HostAndPort.of(
                 InetAddress.getLoopbackAddress().getHostName(), serverHostAndPort(secureServerCtx).port()

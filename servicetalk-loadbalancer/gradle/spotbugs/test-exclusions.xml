@@ -39,4 +39,11 @@
     <Field name="failOpen"/>
     <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
   </Match>
+
+  <!-- False positive: we do not return original indicatorSet -->
+  <Match>
+    <Class name="io.servicetalk.loadbalancer.DefaultLoadBalancerTest$TestOutlierDetector"/>
+    <Field name="indicatorSet"/>
+    <Bug pattern="USO_UNSAFE_ACCESSIBLE_OBJECT_SYNCHRONIZATION"/>
+  </Match>
 </FindBugsFilter>

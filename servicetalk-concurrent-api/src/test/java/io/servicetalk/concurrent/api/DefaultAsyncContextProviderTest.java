@@ -1245,7 +1245,7 @@ class DefaultAsyncContextProviderTest {
     }
 
     static Map<Key<?>, Object> newMap(Key<?>... keys) {
-        HashMap<Key<?>, Object> map = new HashMap<>();
+        Map<Key<?>, Object> map = new HashMap<>();
         for (int i = 0; i < keys.length; ++i) {
             map.put(keys[i], "permutation" + (i + 1));
         }
@@ -1253,20 +1253,20 @@ class DefaultAsyncContextProviderTest {
     }
 
     static Map<Key<?>, Object> newMap(Key<?> k1, Object v1) {
-        HashMap<Key<?>, Object> map = new HashMap<>();
+        Map<Key<?>, Object> map = new HashMap<>();
         map.put(k1, v1);
         return map;
     }
 
     static Map<Key<?>, Object> newMap(Key<?> k1, Object v1, Key<?> k2, Object v2) {
-        HashMap<Key<?>, Object> map = new HashMap<>();
+        Map<Key<?>, Object> map = new HashMap<>();
         map.put(k1, v1);
         map.put(k2, v2);
         return map;
     }
 
     static Map<Key<?>, Object> newMap(Key<?> k1, Object v1, Key<?> k2, Object v2, Key<?> k3, Object v3) {
-        HashMap<Key<?>, Object> map = new HashMap<>();
+        Map<Key<?>, Object> map = new HashMap<>();
         map.put(k1, v1);
         map.put(k2, v2);
         map.put(k3, v3);
@@ -1289,7 +1289,7 @@ class DefaultAsyncContextProviderTest {
         assertEquals(size == 0, AsyncContext.context().isEmpty());
     }
 
-    private static class ContextCaptureCompletableSubscriber implements CompletableSource.Subscriber {
+    private static final class ContextCaptureCompletableSubscriber implements CompletableSource.Subscriber {
         final CountDownLatch latch = new CountDownLatch(2);
 
         @Nullable
@@ -1328,7 +1328,7 @@ class DefaultAsyncContextProviderTest {
         }
     }
 
-    private static class ContextCaptureSingleSubscriber<T> implements SingleSource.Subscriber<T> {
+    private static final class ContextCaptureSingleSubscriber<T> implements SingleSource.Subscriber<T> {
         final CountDownLatch latch = new CountDownLatch(2);
 
         @Nullable
@@ -1367,7 +1367,7 @@ class DefaultAsyncContextProviderTest {
         }
     }
 
-    private static class ContextCaptureTestPublisher extends Publisher<String> {
+    private static final class ContextCaptureTestPublisher extends Publisher<String> {
         final List<ContextMap> requestNContexts = new ArrayList<>();
         @Nullable
         ContextMap cancelContext;
@@ -1404,7 +1404,7 @@ class DefaultAsyncContextProviderTest {
         }
     }
 
-    private static class ContextCaptureSubscriber<T> implements Subscriber<T> {
+    private static final class ContextCaptureSubscriber<T> implements Subscriber<T> {
         final CountDownLatch latch = new CountDownLatch(1);
 
         @Nullable
@@ -1450,7 +1450,7 @@ class DefaultAsyncContextProviderTest {
         }
     }
 
-    private static class ContextCaptureRunnable implements Runnable {
+    private static final class ContextCaptureRunnable implements Runnable {
         final CompletableFuture<ContextMap> mapFuture = new CompletableFuture<>();
 
         @Override
@@ -1477,7 +1477,7 @@ class DefaultAsyncContextProviderTest {
         }
     }
 
-    private static class ContextCaptureCallable<T> implements Callable<T> {
+    private static final class ContextCaptureCallable<T> implements Callable<T> {
         final CompletableFuture<ContextMap> mapFuture = new CompletableFuture<>();
 
         @Override
@@ -1506,7 +1506,7 @@ class DefaultAsyncContextProviderTest {
         }
     }
 
-    private static class ContextCapturer {
+    private static final class ContextCapturer {
         final CompletableFuture<ContextMap> mapFuture = new CompletableFuture<>();
 
         ContextCapturer runAndWait(Consumer<CompletableFuture<ContextMap>> consumer)

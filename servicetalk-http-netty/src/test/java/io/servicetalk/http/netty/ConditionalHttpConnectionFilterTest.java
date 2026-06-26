@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 
 import static org.mockito.Mockito.mock;
 
-public class ConditionalHttpConnectionFilterTest extends AbstractConditionalHttpFilterTest {
+class ConditionalHttpConnectionFilterTest extends AbstractConditionalHttpFilterTest {
 
     private static final StreamingHttpConnectionFilterFactory REQ_FILTER =
             conn -> new StreamingHttpConnectionFilter(conn) {

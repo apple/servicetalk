@@ -22,6 +22,7 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
  * An observer that provides visibility into <a href="https://tools.ietf.org/html/rfc1034">DNS</a>
  * {@link ServiceDiscoverer} built by {@link DnsServiceDiscovererBuilder}.
  */
+@FunctionalInterface
 public interface DnsServiceDiscovererObserver {
 
     /**
@@ -59,6 +60,7 @@ public interface DnsServiceDiscovererObserver {
      * In case of an SRV lookup, there might be multiple {@link DnsResolutionObserver DNS resolutions} observed for one
      * discovery.
      */
+    @FunctionalInterface
     interface DnsDiscoveryObserver {
 
         /**

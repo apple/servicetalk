@@ -56,6 +56,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class HttpProxyTest {
@@ -129,7 +130,8 @@ class HttpProxyTest {
             Function<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>> clientBuilderFactory)
             throws Exception {
         setUp(clientProtocol, serverProtocol);
-        assert serverAddress != null && proxyAddress != null;
+        assertThat(serverAddress, is(notNullValue()));
+        assertThat(proxyAddress, is(notNullValue()));
 
         try (BlockingHttpClient client = clientBuilderFactory.apply(serverAddress)
                 .proxyConfig(forAddress(proxyAddress))
@@ -145,7 +147,8 @@ class HttpProxyTest {
     @EnumSource(HttpProtocol.class)
     void testBuilderReuseEachClientUsesOwnProxy(HttpProtocol protocol) throws Exception {
         setUp(protocol, protocol);
-        assert serverAddress != null && proxyAddress != null;
+        assertThat(serverAddress, is(notNullValue()));
+        assertThat(proxyAddress, is(notNullValue()));
 
         final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
                 HttpClients.forSingleAddress(serverAddress)

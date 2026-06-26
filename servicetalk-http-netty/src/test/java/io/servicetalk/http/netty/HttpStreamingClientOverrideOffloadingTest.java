@@ -30,6 +30,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.net.InetSocketAddress;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -120,7 +121,7 @@ class HttpStreamingClientOverrideOffloadingTest {
     @EnumSource(Params.class)
     void requestRespectsDisable(final Params params) throws Exception {
         setUp(params);
-        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        Queue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         StreamingHttpRequest req = client.get("/").transformPayloadBody(p -> p.beforeRequest(__ -> {
             if (isInvalidThread()) {
                 errors.add(new AssertionError("Invalid thread called request-n. Thread: "

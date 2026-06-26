@@ -22,6 +22,7 @@ import io.servicetalk.client.api.LoadBalancedConnection;
  * @deprecated use the {@link LoadBalancerBuilder} implementations along with {@link LoadBalancerBuilderProvider}
  */
 @Deprecated
+@FunctionalInterface
 public interface RoundRobinLoadBalancerBuilderProvider { // FIXME: 0.43 - remove deprecated interface
 
     /**

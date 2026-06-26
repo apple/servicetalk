@@ -89,13 +89,6 @@
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
   </Match>
 
-  <!-- MulticastPublisher uses static factory method, constructor is package-private and only called from factory -->
-  <Match>
-    <Class name="io.servicetalk.concurrent.api.MulticastPublisher"/>
-    <Method name="&lt;init&gt;"/>
-    <Bug pattern="CT_CONSTRUCTOR_THROW"/>
-  </Match>
-
   <!-- Reactive Streams protocol guarantees sequential access, these fields are protected by protocol semantics -->
   <Match>
     <Class name="io.servicetalk.concurrent.api.FirstAndTailToPackedSingle$SplicingSubscriber"/>
@@ -124,5 +117,21 @@
     <Class name="io.servicetalk.concurrent.api.SequentialSubscription"/>
     <Field name="sourceEmitted"/>
     <Bug pattern="AT_NONATOMIC_OPERATIONS_ON_SHARED_VARIABLE"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.PublisherFlatMapMerge$FlatMapSubscriber"/>
+    <Method name="onError"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
+  <!-- ContextMap propagation -->
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.DefaultAsyncContextProvider$CapturedContextImpl"/>
+    <Method name="captured"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.DefaultThreadFactory$AsyncContextHolderThread"/>
+    <Method name="context"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
   </Match>
 </FindBugsFilter>

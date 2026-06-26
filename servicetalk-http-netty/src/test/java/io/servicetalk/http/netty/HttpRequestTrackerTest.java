@@ -122,7 +122,7 @@ class HttpRequestTrackerTest {
         // cancel: must come last because we'll kill the connection.
         Future<HttpResponse> fResponse = client.request(client.get("/slow")).toFuture();
         fResponse.cancel(true);
-        assertThrows(CancellationException.class, () -> fResponse.get());
+        assertThrows(CancellationException.class, fResponse::get);
         assertThat(testRequestTracker.successes.get(), equalTo(1));
         assertThat(testRequestTracker.failures.get(), equalTo(1));
         assertThat(testRequestTracker.cancellations.get(), equalTo(1));

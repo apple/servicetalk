@@ -31,7 +31,7 @@ import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
-abstract class AbstractNettyIoExecutor<T extends EventLoopGroup> implements NettyIoExecutor, Executor {
+abstract class AbstractNettyIoExecutor<T extends EventLoopGroup> implements NettyIoExecutor {
     protected final boolean isIoThreadSupported;
     protected final T eventLoop;
     protected final boolean interruptOnCancel;

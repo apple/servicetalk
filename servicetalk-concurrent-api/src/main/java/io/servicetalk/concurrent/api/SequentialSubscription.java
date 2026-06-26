@@ -15,7 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.FlowControlUtils;
@@ -39,7 +38,7 @@ import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
  * If this {@link Subscription} is cancelled, then any other {@link Subscription} set via
  * {@link #switchTo(Subscription)} will be cancelled.
  */
-final class SequentialSubscription implements Subscription, Cancellable {
+final class SequentialSubscription implements Subscription {
     private static final long SWITCHING = -1;
     private static final long REQUESTED = -2;
     private static final long CANCELLED = -3;
@@ -50,9 +49,7 @@ final class SequentialSubscription implements Subscription, Cancellable {
 
     private Subscription subscription;
     private long sourceEmitted;
-    @SuppressWarnings("unused")
     private volatile long requested;
-    @SuppressWarnings({"unused"})
     private volatile long sourceRequested;
 
     /**

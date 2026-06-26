@@ -39,7 +39,7 @@ class AsyncContextInMemoryScopeManagerTest {
     private final AsyncContextInMemoryScopeManager scopeManager = (AsyncContextInMemoryScopeManager) SCOPE_MANAGER;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         initMocks(this);
         AsyncContextInMemoryScopeManager.AsyncContextInMemoryScope previousScope = scopeManager.active();
         if (previousScope != null) {

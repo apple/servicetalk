@@ -116,6 +116,7 @@ class ExceptionMapperTest extends AbstractJerseyStreamingHttpServiceTest {
         abstract Response toResponse(Throwable exception);
     }
 
+    @SuppressWarnings("PMD.PublicMemberInNonPublicType") // JAX-RS @Provider must be public
     public static class TestExceptionMapper implements ExceptionMapper<Throwable> {
         @Context
         private HttpHeaders headers;

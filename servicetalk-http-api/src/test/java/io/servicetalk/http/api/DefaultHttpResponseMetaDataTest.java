@@ -18,7 +18,7 @@ package io.servicetalk.http.api;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 
-public class DefaultHttpResponseMetaDataTest extends AbstractHttpResponseMetaDataTest<DefaultHttpResponseMetaData> {
+class DefaultHttpResponseMetaDataTest extends AbstractHttpResponseMetaDataTest<DefaultHttpResponseMetaData> {
 
     @Override
     protected void createFixture() {

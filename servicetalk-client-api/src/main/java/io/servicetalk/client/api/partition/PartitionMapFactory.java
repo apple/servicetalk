@@ -28,6 +28,7 @@ import java.util.function.Function;
  * the use-case.
  */
 @Deprecated
+@FunctionalInterface
 public interface PartitionMapFactory {  // FIXME: 0.43 - remove deprecated interface
     /**
      * Create a new {@link PartitionMap} object.

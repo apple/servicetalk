@@ -209,6 +209,18 @@ public final class HttpHeaderNames {
      */
     public static final CharSequence DATE = newAsciiString("date");
     /**
+     * {@code "dpop"}
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc9449#section-4.1">RFC 9449, section 4.1</a>
+     */
+    public static final CharSequence DPOP = newAsciiString("dpop");
+    /**
+     * {@code "dpop-nonce"}
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc9449#name-authorization-server-provid">RFC 9449, section 8</a>
+     */
+    public static final CharSequence DPOP_NONCE = newAsciiString("dpop-nonce");
+    /**
      * {@code "etag"}
      *
      * @see <a href="https://tools.ietf.org/html/rfc7232#section-2.3">RFC7232, section 2.3</a>

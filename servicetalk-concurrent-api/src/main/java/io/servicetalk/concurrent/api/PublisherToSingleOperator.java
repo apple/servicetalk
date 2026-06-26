@@ -39,6 +39,7 @@ import java.util.function.Function;
  * @param <T> Type of items emitted by the {@link Publisher} this operator is applied.
  * @param <R> Type of items emitted by this operator.
  */
+@FunctionalInterface
 public interface PublisherToSingleOperator<T, R> extends Function<SingleSource.Subscriber<? super R>,
         PublisherSource.Subscriber<? super T>> {
     /**

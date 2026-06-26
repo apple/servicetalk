@@ -59,6 +59,8 @@ import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 class ExecutionStrategyInContextTest {
 
@@ -102,9 +104,9 @@ class ExecutionStrategyInContextTest {
                 }), customStrategy).buildStreaming();
         clientAsCloseable = client;
         if (!customStrategy) {
-            assert expectedClientStrategy == null;
+            assertThat(expectedClientStrategy, is(nullValue()));
             expectedClientStrategy = defaultStrategy();
-            assert expectedServerStrategy == null;
+            assertThat(expectedServerStrategy, is(nullValue()));
             expectedServerStrategy = offloadNone();
         }
         HttpExecutionStrategy clientStrat = client.executionContext().executionStrategy();
@@ -130,9 +132,9 @@ class ExecutionStrategyInContextTest {
                 }), customStrategy).build();
         clientAsCloseable = client;
         if (!customStrategy) {
-            assert expectedClientStrategy == null;
+            assertThat(expectedClientStrategy, is(nullValue()));
             expectedClientStrategy = customStrategyBuilder().offloadReceiveData().offloadEvent().build();
-            assert expectedServerStrategy == null;
+            assertThat(expectedServerStrategy, is(nullValue()));
             expectedServerStrategy = customStrategyBuilder().offloadReceiveData().offloadSend().build();
         }
         HttpExecutionStrategy clientStrat = client.executionContext().executionStrategy();
@@ -158,9 +160,9 @@ class ExecutionStrategyInContextTest {
                 }), customStrategy).buildBlocking();
         clientAsCloseable = client;
         if (!customStrategy) {
-            assert expectedClientStrategy == null;
+            assertThat(expectedClientStrategy, is(nullValue()));
             expectedClientStrategy = customStrategyBuilder().offloadNone().offloadEvent().build();
-            assert expectedServerStrategy == null;
+            assertThat(expectedServerStrategy, is(nullValue()));
             expectedServerStrategy = customStrategyBuilder().offloadReceiveData().build();
         }
         HttpExecutionStrategy clientStrat = client.executionContext().executionStrategy();
@@ -192,9 +194,9 @@ class ExecutionStrategyInContextTest {
         }, customStrategy).buildBlockingStreaming();
         clientAsCloseable = client;
         if (!customStrategy) {
-            assert expectedClientStrategy == null;
+            assertThat(expectedClientStrategy, is(nullValue()));
             expectedClientStrategy = customStrategyBuilder().offloadSend().offloadEvent().build();
-            assert expectedServerStrategy == null;
+            assertThat(expectedServerStrategy, is(nullValue()));
             expectedServerStrategy = customStrategyBuilder().offloadReceiveMetadata().build();
         }
         HttpExecutionStrategy clientStrat = client.executionContext().executionStrategy();
@@ -239,7 +241,7 @@ class ExecutionStrategyInContextTest {
             }
 
             @Override
-            protected boolean matchesSafely(final @Nullable ExecutionStrategy item) {
+            protected boolean matchesSafely(@Nullable final ExecutionStrategy item) {
                 return Objects.equals(expected, item);
             }
 

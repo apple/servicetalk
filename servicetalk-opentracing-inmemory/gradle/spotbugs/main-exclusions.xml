@@ -24,4 +24,9 @@
     <Method name="extract"/>
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
   </Match>
+  <Match>
+    <Class name="io.servicetalk.opentracing.inmemory.DefaultInMemorySpanLog"/>
+    <Method name="fields"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
 </FindBugsFilter>

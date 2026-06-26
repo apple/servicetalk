@@ -54,6 +54,7 @@ import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 
+@SuppressWarnings("PMD.PublicMemberInNonPublicType") // public methods are overridden in cross-package subclasses
 abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrategyInfluencer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractLifecycleObserverHttpFilter.class);

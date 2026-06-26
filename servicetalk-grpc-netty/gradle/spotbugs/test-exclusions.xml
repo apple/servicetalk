@@ -79,4 +79,12 @@
     <Method name="verifyObservers"/>
     <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
   </Match>
+  <Match>
+    <Class name="io.servicetalk.grpc.customtransport.Utils$ChannelGrpcServiceContext"/>
+    <Or>
+      <Method name="requestContext"/>
+      <Method name="responseContext"/>
+    </Or>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
 </FindBugsFilter>

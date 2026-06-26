@@ -80,6 +80,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.VARIANT_ALSO_NEGOTIATES
 /**
  * A factory for creating {@link StreamingHttpResponse}s.
  */
+@FunctionalInterface
 public interface StreamingHttpResponseFactory {
     /**
      * Create a new {@link StreamingHttpResponse} object.

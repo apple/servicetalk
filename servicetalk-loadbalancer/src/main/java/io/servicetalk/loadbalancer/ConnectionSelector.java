@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
  * An abstraction for selecting connections at the {@link Host} level connection pool.
  * @param <C> the concrete type of the connection.
  */
+@FunctionalInterface
 interface ConnectionSelector<C extends LoadBalancedConnection> {
 
     /**

@@ -80,6 +80,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.VARIANT_ALSO_NEGOTIATES
 /**
  * A factory for creating {@link BlockingStreamingHttpResponse}s.
  */
+@FunctionalInterface
 public interface BlockingStreamingHttpResponseFactory {
     /**
      * Create a new {@link StreamingHttpResponse} object.

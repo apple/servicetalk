@@ -36,6 +36,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <ResolvedAddress> The type of address after resolution.
  */
+@FunctionalInterface
 public interface HttpLoadBalancerFactory<ResolvedAddress>
         extends LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> {
 

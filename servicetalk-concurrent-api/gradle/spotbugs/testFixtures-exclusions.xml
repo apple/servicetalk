@@ -33,4 +33,17 @@
     <Method name="wakeupWaiters"/>
     <Bug pattern="NN_NAKED_NOTIFY"/>
   </Match>
+
+  <!-- Test utilities can use simplified synchronization -->
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.concurrent.api.LegacyTestCompletable"/>
+      <Class name="io.servicetalk.concurrent.api.LegacyTestSingle"/>
+    </Or>
+    <Bug pattern="USO_UNSAFE_METHOD_SYNCHRONIZATION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.TestSubscription"/>
+    <Bug pattern="USO_UNSAFE_OBJECT_SYNCHRONIZATION"/>
+  </Match>
 </FindBugsFilter>

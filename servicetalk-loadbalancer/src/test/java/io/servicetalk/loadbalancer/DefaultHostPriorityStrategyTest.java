@@ -325,7 +325,7 @@ class DefaultHostPriorityStrategyTest {
             return isHealthy;
         }
 
-        public void isHealthy(final boolean isHealthy) {
+        void isHealthy(final boolean isHealthy) {
             this.isHealthy = isHealthy;
         }
 

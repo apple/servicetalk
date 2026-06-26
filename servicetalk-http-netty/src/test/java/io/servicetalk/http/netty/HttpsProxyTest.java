@@ -255,7 +255,7 @@ class HttpsProxyTest {
     @MethodSource("protocolsAndProxyTls")
     void testClientRequest(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
         setUp(protocols, proxyTls);
-        assert client != null;
+        assertThat(client, is(notNullValue()));
         assertResponse(client.request(client.get("/path")), protocols.get(0).version, proxyTls);
     }
 
@@ -263,8 +263,8 @@ class HttpsProxyTest {
     @MethodSource("protocolsAndProxyTls")
     void testConnectionRequest(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
         setUp(protocols, proxyTls);
-        assert client != null;
-        assert proxyAddress != null;
+        assertThat(client, is(notNullValue()));
+        assertThat(proxyAddress, is(notNullValue()));
         HttpProtocolVersion expectedVersion = protocols.get(0).version;
         try (ReservedBlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
             HttpConnectionContext ctx = connection.connectionContext();
@@ -303,7 +303,7 @@ class HttpsProxyTest {
     void testProxyAuthRequired(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
         setUp(protocols, proxyTls);
         proxyTunnel.basicAuthToken(AUTH_TOKEN);
-        assert client != null;
+        assertThat(client, is(notNullValue()));
         ProxyConnectResponseException e = assertThrows(ProxyConnectResponseException.class,
                 () -> client.request(client.get("/path")));
         assertThat(e, is(not(instanceOf(RetryableException.class))));
@@ -317,7 +317,7 @@ class HttpsProxyTest {
     void testProxyAuthRequiredWithAuthInfo(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
         setUp(protocols, false, headers -> headers.set(PROXY_AUTHORIZATION, "basic " + AUTH_TOKEN), proxyTls);
         proxyTunnel.basicAuthToken(AUTH_TOKEN);
-        assert client != null;
+        assertThat(client, is(notNullValue()));
         assertResponse(client.request(client.get("/path")), protocols.get(0).version, proxyTls);
     }
 
@@ -461,7 +461,7 @@ class HttpsProxyTest {
             throw DELIBERATE_EXCEPTION;
         }, proxyTls);
         proxyTunnel.basicAuthToken(AUTH_TOKEN);
-        assert client != null;
+        assertThat(client, is(notNullValue()));
         ProxyConnectException e = assertThrows(ProxyConnectException.class,
                 () -> client.request(client.get("/path")));
         assertThat(e, is(not(instanceOf(RetryableException.class))));
@@ -476,7 +476,7 @@ class HttpsProxyTest {
     void testBadProxyResponse(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
         setUp(protocols, proxyTls);
         proxyTunnel.badResponseProxy();
-        assert client != null;
+        assertThat(client, is(notNullValue()));
         ProxyConnectResponseException e = assertThrows(ProxyConnectResponseException.class,
                 () -> client.request(client.get("/path")));
         assertThat(e, is(instanceOf(RetryableException.class)));
@@ -494,7 +494,7 @@ class HttpsProxyTest {
             os.write((protocol + ' ' + BAD_REQUEST + "\r\n\r\n").getBytes(UTF_8));
             os.flush();
         });
-        assert client != null;
+        assertThat(client, is(notNullValue()));
         ProxyConnectResponseException e = assertThrows(ProxyConnectResponseException.class,
                 () -> client.request(client.get("/path")));
         assertThat(e, is(not(instanceOf(RetryableException.class))));
@@ -510,7 +510,7 @@ class HttpsProxyTest {
         proxyTunnel.proxyRequestHandler((socket, host, port, protocol) -> {
             socket.close();
         });
-        assert client != null;
+        assertThat(client, is(notNullValue()));
         ProxyConnectException e = assertThrows(ProxyConnectException.class,
                 () -> client.request(client.get("/path")));
         assertThat(e, is(instanceOf(RetryableException.class)));
@@ -530,7 +530,7 @@ class HttpsProxyTest {
                     "\r\n").getBytes(UTF_8));
             os.flush();
         });
-        assert client != null;
+        assertThat(client, is(notNullValue()));
         ProxyConnectException e = assertThrows(ProxyConnectException.class,
                 () -> client.request(client.get("/path")));
         assertThat(e, is(instanceOf(RetryableException.class)));
@@ -549,7 +549,7 @@ class HttpsProxyTest {
             os.flush();
             socket.close();
         });
-        assert client != null;
+        assertThat(client, is(notNullValue()));
         ProxyConnectException e = assertThrows(ProxyConnectException.class,
                 () -> client.request(client.get("/path")));
         assertThat(e, is(instanceOf(RetryableException.class)));
@@ -570,7 +570,7 @@ class HttpsProxyTest {
                     "\r\n" + content).getBytes(UTF_8));
             os.flush();
         });
-        assert client != null;
+        assertThat(client, is(notNullValue()));
         ProxyConnectException e = assertThrows(ProxyConnectException.class,
                 () -> client.request(client.get("/path")));
         assertThat(e, is(instanceOf(RetryableException.class)));
@@ -582,7 +582,7 @@ class HttpsProxyTest {
     @MethodSource("protocolsAndProxyTls")
     void testHandshakeFailed(List<HttpProtocol> protocols, boolean proxyTls) throws Exception {
         setUp(protocols, true, proxyTls);
-        assert client != null;
+        assertThat(client, is(notNullValue()));
         SSLHandshakeException e = assertThrows(SSLHandshakeException.class,
                 () -> client.request(client.get("/path")));
         assertThat(e, is(not(instanceOf(RetryableException.class))));

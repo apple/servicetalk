@@ -45,6 +45,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 import javax.annotation.Priority;
@@ -131,7 +132,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
 
         private static final EnhancedEndpoint NOOP = new NoopEnhancedEndpoint();
 
-        private final ConcurrentHashMap<Method, EnhancedEndpoint> enhancements = new ConcurrentHashMap<>();
+        private final ConcurrentMap<Method, EnhancedEndpoint> enhancements = new ConcurrentHashMap<>();
 
         void enhance(final RequestScope requestScope,
                      final Provider<Ref<ConnectionContext>> ctxRefProvider,
@@ -495,7 +496,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
         }
     }
 
-    private static class NoopEnhancedEndpoint implements EnhancedEndpoint {
+    private static final class NoopEnhancedEndpoint implements EnhancedEndpoint {
         @Override
         @Nullable
         public ContainerResponse apply(final RequestProcessingContext requestProcessingContext) {

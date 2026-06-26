@@ -54,7 +54,7 @@ class MixedFiltersTest {
     private static final Key<AtomicReference<StringBuilder>> KEY = (Key<AtomicReference<StringBuilder>>)
             (Key<?>) newKey("key", AtomicReference.class);
 
-    public static Collection<List<AbstractFactoryFilter>> arguments() {
+    static Collection<List<AbstractFactoryFilter>> arguments() {
         return asList(
                 asList(new MigratedFilter(1)),
                 asList(new DeprecatedFilter(1)),

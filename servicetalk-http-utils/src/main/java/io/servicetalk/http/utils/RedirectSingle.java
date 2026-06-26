@@ -297,11 +297,9 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
             if (original == null) {
                 return false;   // Can not extract host and port from the original request => no guarantee it's relative
             }
-            if (!toHost.equalsIgnoreCase(original.hostName())) {
-                return false;
-            }
-            return inferPort(redirectRequest.port(), redirectRequest.scheme(), original.port()) ==
-                    inferPort(original.port(), originalScheme, original.port());
+            return toHost.equalsIgnoreCase(original.hostName()) &&
+                    inferPort(redirectRequest.port(), redirectRequest.scheme(), original.port()) ==
+                            inferPort(original.port(), originalScheme, original.port());
         }
 
         private static int inferPort(final int parsedPort, @Nullable final String scheme,

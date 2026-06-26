@@ -67,7 +67,7 @@ final class HttpMessageDiscardWatchdogServiceFilterTest {
     private final LoggerStringWriter loggerStringWriter = new LoggerStringWriter();
 
     @BeforeEach
-    public void setup() throws InterruptedException {
+    void setup() throws InterruptedException {
         loggerStringWriter.reset();
         // Ensure our logger is fully initialized.
         String expected = "Logger initialized";
@@ -78,7 +78,7 @@ final class HttpMessageDiscardWatchdogServiceFilterTest {
     }
 
     @AfterEach
-    public void tearDown() {
+    void tearDown() {
         loggerStringWriter.remove();
     }
 
@@ -197,6 +197,7 @@ final class HttpMessageDiscardWatchdogServiceFilterTest {
         );
     }
 
+    @FunctionalInterface
     interface ResponseTransformer extends BiFunction<
             Single<StreamingHttpResponse>, StreamingHttpResponseFactory, Single<StreamingHttpResponse>> {
     }

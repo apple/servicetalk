@@ -54,6 +54,7 @@ import static java.util.Objects.requireNonNull;
  * @param <K> The type of key.
  * @param <V> The type of value.
  */
+@SuppressWarnings("PMD.PublicMemberInNonPublicType") // implements public HttpHeaders interface
 abstract class MultiMap<K, V> {
     final BucketHead<K, V>[] entries;
     @Nullable

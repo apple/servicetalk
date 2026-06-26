@@ -51,7 +51,7 @@ class SingleAmbSubscribeThrowsTest {
         AMB_VARARGS {
             @Override
             BiFunction<Single<Integer>, Single<Integer>, Single<Integer>> get() {
-                return (first, second) -> amb(first, second);
+                return Single::amb;
             }
         },
         AMB_ITERABLE {

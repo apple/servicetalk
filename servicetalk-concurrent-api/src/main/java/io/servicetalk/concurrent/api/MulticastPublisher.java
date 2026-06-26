@@ -103,6 +103,7 @@ class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         state = new State(maxQueueSize, minSubscribers);
     }
 
+    @SuppressWarnings("PMD.LooseCoupling")
     class State extends MulticastRootSubscriber<MulticastFixedSubscriber<T>> implements Subscriber<T> {
         private final DefaultPriorityQueue<MulticastFixedSubscriber<T>> demandQueue;
         volatile int subscribeCount;

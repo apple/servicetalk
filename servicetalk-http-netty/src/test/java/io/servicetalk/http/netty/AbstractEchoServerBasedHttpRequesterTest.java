@@ -73,7 +73,7 @@ abstract class AbstractEchoServerBasedHttpRequesterTest {
         serverContext.closeAsync().toFuture().get();
     }
 
-    private static class EchoServiceStreaming implements StreamingHttpService {
+    private static final class EchoServiceStreaming implements StreamingHttpService {
 
         @Override
         public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,

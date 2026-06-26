@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.TimeSource;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpRequestMetaData;
-import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import java.time.Duration;
 import java.util.function.BiFunction;
@@ -37,9 +36,9 @@ import javax.annotation.Nullable;
  * {@link TimeoutHttpServiceFilter#TimeoutHttpServiceFilter(BiFunction, boolean)} for filters.
  */
 @Deprecated // FIXME: 0.43 - remove deprecated interface
+@FunctionalInterface
 public interface TimeoutFromRequest extends Function<HttpRequestMetaData, Duration>,
-                                            HttpExecutionStrategyInfluencer,
-                                            ExecutionStrategyInfluencer<HttpExecutionStrategy> {
+                                            HttpExecutionStrategyInfluencer {
 
     /**
      * Determine timeout duration, if present, from a request and/or apply default timeout durations.

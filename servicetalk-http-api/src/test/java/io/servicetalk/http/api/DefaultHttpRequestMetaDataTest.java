@@ -19,7 +19,7 @@ import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 
-public class DefaultHttpRequestMetaDataTest extends AbstractHttpRequestMetaDataTest<DefaultHttpRequestMetaData> {
+class DefaultHttpRequestMetaDataTest extends AbstractHttpRequestMetaDataTest<DefaultHttpRequestMetaData> {
 
     @Override
     protected void createFixture(final String uri) {

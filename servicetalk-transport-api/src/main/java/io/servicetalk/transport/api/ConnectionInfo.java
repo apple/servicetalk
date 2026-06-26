@@ -124,6 +124,7 @@ public interface ConnectionInfo {
     /**
      * Provides information about the network protocol.
      */
+    @FunctionalInterface
     interface Protocol {
 
         /**

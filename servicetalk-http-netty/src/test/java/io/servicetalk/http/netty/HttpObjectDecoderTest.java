@@ -557,7 +557,7 @@ abstract class HttpObjectDecoderTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] addSemicolon={0} crlf={1}")
     @MethodSource("biBooleanPermutationSource")
-    private void chunkedNoTrailers(boolean addSemicolon, boolean crlf) {
+    void chunkedNoTrailers(boolean addSemicolon, boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         int chunkSize = 128;
@@ -637,6 +637,89 @@ abstract class HttpObjectDecoderTest {
         DecoderException e = assertThrows(DecoderException.class, () -> writeMsg("text\r\n", channel));
         assertThat(e.getCause(), is(instanceOf(NumberFormatException.class)));
         assertThat(channel.inboundMessages(), is(not(empty())));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] chunkSize={0} expectRejected={1} crlf={2}")
+    @MethodSource("chunkSizeOverflowArgs")
+    void chunkedChunkSizeIntOverflow(String chunkSizeHex, boolean expectRejected, boolean crlf) {
+        EmbeddedChannel channel = channel(crlf);
+        String br = br(crlf);
+        writeMsg(startLineForContent() + br +
+                "Host: servicetalk.io" + br +
+                "Connection: keep-alive" + br +
+                "Transfer-Encoding: chunked" + br + br, channel);
+        if (expectRejected) {
+            DecoderException e = assertThrows(DecoderException.class,
+                    () -> writeMsg(chunkSizeHex + "\r\n", channel));
+            assertThat(e.getMessage(), startsWith("Cannot parse chunk-size"));
+            assertThat(e.getCause(), is(instanceOf(NumberFormatException.class)));
+            assertThat(channel.inboundMessages(), is(not(empty())));
+        } else {
+            // Feed the chunk-size line; no DecoderException should be thrown. We don't
+            // drain the half-finished body; tearDown() handles cleanup.
+            channel.writeInbound(fromAscii(chunkSizeHex + "\r\n"));
+            assertThat(channel.isOpen(), is(true));
+        }
+    }
+
+    private static Collection<Arguments> chunkSizeOverflowArgs() {
+        List<Arguments> arguments = new ArrayList<>();
+        for (boolean crlf : new boolean[] {true, false}) {
+            // Smallest int-overflow value: Integer.MAX_VALUE + 1 (0x80000000).
+            arguments.add(Arguments.of("80000000", true, crlf));
+            // 4 GB declaration: 9 hex chars, value 0x100000000.
+            arguments.add(Arguments.of("100000000", true, crlf));
+            // Largest hex that fits within the current chunk-size line cap
+            // (14 chars + CRLF = 16). Value 0x3FFFFFFFFFFFFF (~1.8 * 10^16).
+            arguments.add(Arguments.of("FFFFFFFFFFFFFF", true, crlf));
+            // Boundary success: exactly Integer.MAX_VALUE (0x7FFFFFFF) must be accepted.
+            arguments.add(Arguments.of("7FFFFFFF", false, crlf));
+        }
+        return arguments;
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void chunkedChunkSizeStartsWithExtension(boolean crlf) {
+        EmbeddedChannel channel = channel(crlf);
+        String br = br(crlf);
+        writeMsg(startLineForContent() + br +
+                "Host: servicetalk.io" + br +
+                "Connection: keep-alive" + br +
+                "Transfer-Encoding: chunked" + br + br, channel);
+        // Leading chunk-extension delimiter: chunk-size token is empty after substring.
+        DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(";ext\r\n", channel));
+        assertThat(e.getMessage(), startsWith("Cannot parse chunk-size"));
+        assertThat(e.getCause(), is(instanceOf(NumberFormatException.class)));
+        assertThat(channel.inboundMessages(), is(not(empty())));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] hex={0}")
+    @ValueSource(strings = {
+            // 16 hex F's: parseUnsignedLong -> -1L (0xFFFFFFFFFFFFFFFF). Exercises value < 0.
+            "FFFFFFFFFFFFFFFF",
+            // 16 hex chars where the high bit is set: parseUnsignedLong returns Long.MIN_VALUE
+            // (= 0x8000000000000000), also negative.
+            "8000000000000000",
+    })
+    void getChunkSizeRejectsNegativeWrappedValues(String hex) {
+        DecoderException e = assertThrows(DecoderException.class, () -> HttpObjectDecoder.getChunkSize(hex));
+        assertThat(e.getMessage(), startsWith("Cannot parse chunk-size"));
+        assertThat(e.getCause(), is(instanceOf(NumberFormatException.class)));
+        assertThat(e.getCause().getMessage(), startsWith("Chunk size "));
+    }
+
+    @Test
+    void getChunkSizeAcceptsIntegerMaxValue() {
+        assertThat(HttpObjectDecoder.getChunkSize("7FFFFFFF"), is(Integer.MAX_VALUE));
+    }
+
+    @Test
+    void getChunkSizeRejectsIntegerMaxValuePlusOne() {
+        DecoderException e = assertThrows(DecoderException.class,
+                () -> HttpObjectDecoder.getChunkSize("80000000"));
+        assertThat(e.getMessage(), startsWith("Cannot parse chunk-size"));
+        assertThat(e.getCause(), is(instanceOf(NumberFormatException.class)));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")

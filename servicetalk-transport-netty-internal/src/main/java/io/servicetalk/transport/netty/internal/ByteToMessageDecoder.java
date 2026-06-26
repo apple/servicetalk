@@ -114,6 +114,7 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
      * cumulation.
      * @throws IllegalArgumentException if the provided {@code cumulationAllocator} is not unpooled.
      */
+    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     protected ByteToMessageDecoder(final ByteBufAllocator cumulationAllocator) {
         if (cumulationAllocator.isDirectBufferPooled()) {
             throw new IllegalArgumentException("ByteBufAllocator must be unpooled");

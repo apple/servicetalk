@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Single;
@@ -57,9 +56,8 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     private BlockingIterator<Buffer> mockIterator;
 
     private final TestPublisher<Buffer> publisher = new TestPublisher<>();
-    private final BufferAllocator allocator = DEFAULT_ALLOCATOR;
     private final StreamingHttpRequestResponseFactory reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
-            allocator, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1);
+            DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1);
 
     protected abstract <T extends StreamingHttpRequester & TestHttpRequester>
     T newAsyncRequester(StreamingHttpRequestResponseFactory factory, HttpExecutionContext executionContext,
@@ -68,6 +66,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
 
     protected abstract BlockingStreamingHttpRequester toBlockingStreamingRequester(StreamingHttpRequester requester);
 
+    @FunctionalInterface
     protected interface TestHttpRequester {
         boolean isClosed();
     }
@@ -94,14 +93,14 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     @Test
     void asyncToSyncWithPayload() throws Exception {
         StreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
-                req -> succeeded(reqRespFactory.ok().payloadBody(from(allocator.fromAscii("hello")))));
+                req -> succeeded(reqRespFactory.ok().payloadBody(from(DEFAULT_ALLOCATOR.fromAscii("hello")))));
         BlockingStreamingHttpRequester syncRequester = toBlockingStreamingRequester(asyncRequester);
         BlockingStreamingHttpResponse syncResponse = syncRequester.request(syncRequester.get("/"));
         assertEquals(HTTP_1_1, syncResponse.version());
         assertEquals(OK, syncResponse.status());
         BlockingIterator<Buffer> iterator = syncResponse.payloadBody().iterator();
         assertTrue(iterator.hasNext());
-        assertEquals(allocator.fromAscii("hello"), iterator.next());
+        assertEquals(DEFAULT_ALLOCATOR.fromAscii("hello"), iterator.next());
         assertFalse(iterator.hasNext());
     }
 
@@ -110,7 +109,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
         String expectedPayload = "hello";
         byte[] expectedPayloadBytes = expectedPayload.getBytes(US_ASCII);
         StreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
-                req -> succeeded(reqRespFactory.ok().payloadBody(from(allocator.fromAscii(expectedPayload)))));
+                req -> succeeded(reqRespFactory.ok().payloadBody(from(DEFAULT_ALLOCATOR.fromAscii(expectedPayload)))));
         BlockingStreamingHttpRequester syncRequester = toBlockingStreamingRequester(asyncRequester);
         BlockingStreamingHttpResponse syncResponse = syncRequester.request(syncRequester.get("/"));
         assertEquals(HTTP_1_1, syncResponse.version());
@@ -142,7 +141,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
         assertEquals(OK, syncResponse.status());
         BlockingIterator iterator = syncResponse.payloadBody().iterator();
         publisher.onSubscribe(subscription);
-        publisher.onNext(allocator.fromAscii("hello"));
+        publisher.onNext(DEFAULT_ALLOCATOR.fromAscii("hello"));
         assertTrue(iterator.hasNext());
         iterator.close();
         assertTrue(subscription.isCancelled());

@@ -472,7 +472,7 @@ final class RetryingHttpRequesterFilterTest {
                 .waitForLoadBalancer(true)
                 .maxTotalRetries(Integer.MAX_VALUE);
         if (mayReplayRequestPayload) {
-            builder.responseMapper(resp -> resp.status().statusClass().equals(SERVER_ERROR_5XX) ?
+            builder.responseMapper(resp -> resp.status().statusClass() == SERVER_ERROR_5XX ?
                             new HttpResponseException("failed", resp) : null)
                     .retryResponses((req, throwable) -> ofImmediate(Integer.MAX_VALUE - 1));
         } else {

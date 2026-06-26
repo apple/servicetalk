@@ -27,7 +27,6 @@ public interface NonBlockingThread {
     /**
      * This exception is thrown when a blocking operation is performed on a {@link NonBlockingThread}.
      */
-    @SuppressWarnings("PMD.ConstantsInInterface")   // false positive
     final class IllegalBlockingOperationException extends IllegalStateException {
         private static final long serialVersionUID = 3300479887443202673L;
 

@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
@@ -59,7 +60,7 @@ final class SingleFlatMapPublisherTest {
 
     @Test
     void testFirstAndSecondPropagate() {
-        toSource(succeeded(1).flatMapPublisher(s1 -> from(new String[]{"Hello1", "Hello2"}).map(str1 -> str1 + s1)))
+        toSource(succeeded(1).flatMapPublisher(s1 -> from("Hello1", "Hello2").map(str1 -> str1 + s1)))
                 .subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
         assertThat(subscriber.takeOnNext(2), contains("Hello11", "Hello21"));
@@ -152,7 +153,7 @@ final class SingleFlatMapPublisherTest {
     void subscribeOnOriginalIsPreserved() throws Exception {
         final Thread testThread = currentThread();
         final CountDownLatch analyzed = new CountDownLatch(1);
-        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        Queue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         Single.never()
                 .beforeCancel(() -> {
                     if (currentThread() == testThread) {

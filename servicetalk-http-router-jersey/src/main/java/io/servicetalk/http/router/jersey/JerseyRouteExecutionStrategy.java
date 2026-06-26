@@ -71,7 +71,7 @@ class JerseyRouteExecutionStrategy implements HttpExecutionStrategy {
         return merged == delegate ? this : new JerseyRouteExecutionStrategy(merged, executor);
     }
 
-    public Executor executor() {
+    Executor executor() {
         return executor;
     }
 }

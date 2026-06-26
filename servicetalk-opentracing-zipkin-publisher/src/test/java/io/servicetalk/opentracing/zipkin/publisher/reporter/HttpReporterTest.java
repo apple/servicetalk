@@ -76,7 +76,7 @@ final class HttpReporterTest {
     }
 
     @AfterEach
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         CompositeCloseable closeable = AsyncCloseables.newCompositeCloseable();
         if (reporter != null) {
             closeable.append(reporter);

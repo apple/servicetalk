@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-public class PublisherJsonResourcesTest extends AbstractStreamingJsonResourcesTest {
+class PublisherJsonResourcesTest extends AbstractStreamingJsonResourcesTest {
 
     @Override
     protected String testUri(final String path) {

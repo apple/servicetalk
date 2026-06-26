@@ -15,32 +15,25 @@
   ~ limitations under the License.
   -->
 <FindBugsFilter>
-  <!-- Fields are usually initialized in @BeforeClass/@Before methods instead of constructors for tests -->
   <Match>
     <Source name="~.*Test\.java"/>
-    <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
-  </Match>
-  <!-- Not interested in returned values -->
-  <Match>
-    <Source name="~.*Test\.java"/>
-    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+    <Or>
+      <!-- Fields are usually initialized in @BeforeClass/@Before methods instead of constructors for tests -->
+      <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
+      <!-- Not interested in returned values -->
+      <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+      <!-- Tests methods can throw any exception type -->
+      <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
+      <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+      <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
+      <!-- Other patterns we would like to ignore for tests -->
+      <Bug pattern="EI_EXPOSE_REP"/>
+    </Or>
   </Match>
   <!-- SpotBugs incorrectly detects number of usages -->
   <Match>
     <Class name="io.servicetalk.dns.discovery.netty.DnsTestUtils"/>
     <Method name="index"/>
     <Bug pattern="DMI_RANDOM_USED_ONLY_ONCE"/>
-  </Match>
-  <Match>
-    <Source name="~.*Test\.java"/>
-    <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
-  </Match>
-  <Match>
-    <Source name="~.*Test\.java"/>
-    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
-  </Match>
-  <Match>
-    <Source name="~.*Test\.java"/>
-    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
   </Match>
 </FindBugsFilter>

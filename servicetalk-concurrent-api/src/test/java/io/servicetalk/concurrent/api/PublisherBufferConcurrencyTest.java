@@ -170,7 +170,7 @@ class PublisherBufferConcurrencyTest {
                 .get();
     }
 
-    private static class SummingAccumulator implements Accumulator<Integer, Integer> {
+    private static final class SummingAccumulator implements Accumulator<Integer, Integer> {
         private int sum;
 
         @Override

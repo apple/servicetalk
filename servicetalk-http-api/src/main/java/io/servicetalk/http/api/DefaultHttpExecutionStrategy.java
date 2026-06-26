@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import java.util.EnumSet;
+import java.util.Set;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_CLOSE;
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_EVENT;
@@ -81,7 +82,7 @@ enum DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
 
     private final byte offloads;
 
-    DefaultHttpExecutionStrategy(EnumSet<HttpExecutionStrategies.HttpOffload> offloads) {
+    DefaultHttpExecutionStrategy(Set<HttpExecutionStrategies.HttpOffload> offloads) {
         this.offloads = toMask(offloads);
     }
 

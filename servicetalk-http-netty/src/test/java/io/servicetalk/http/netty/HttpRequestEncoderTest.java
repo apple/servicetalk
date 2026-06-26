@@ -42,6 +42,7 @@ import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
+import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -159,6 +160,19 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
                                                          GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
 
         assertThrows(IllegalArgumentException.class, () -> request.addHeader(" " + CONNECTION, KEEP_ALIVE));
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @ParameterizedTest(name = "{index}")
+    @ValueSource(strings = {"/safe\r\nX-Injected: yes", "/safe\nX-Injected: yes", "/safe\rX-Injected: yes",
+            "/safe\f/target", "/safe\u007Ftarget", "/safe\u0000target", "/safe\ttarget", "/safe\u000Btarget",
+            "/path with space", "\u0001/safe", "/safe\u001F"})
+    void requestTargetProhibitedCharacterThrows(final String requestTarget) {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        HttpRequestMetaData request = newRequestMetaData(HTTP_1_1, GET, requestTarget, INSTANCE.newHeaders());
+
+        IOException e = assertThrows(IOException.class, () -> channel.writeOutbound(request));
+        assertTrue(e.getCause() instanceof IllegalCharacterException);
         assertFalse(channel.finishAndReleaseAll());
     }
 
@@ -449,7 +463,7 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
                                             }), defaultStrategy(), mock(Protocol.class), observer, false, __ -> false),
                             connection -> { }, null, null).toFuture().get());
             ReadOnlyHttpClientConfig cConfig = new HttpClientConfig().asReadOnly();
-            assert cConfig.h1Config() != null;
+            assertNotNull(cConfig.h1Config());
 
             NettyConnection<Object, Object> conn = resources.prepend(
                     TcpConnector.connect(null, serverHostAndPort(serverContext), cConfig.tcpConfig(), false,

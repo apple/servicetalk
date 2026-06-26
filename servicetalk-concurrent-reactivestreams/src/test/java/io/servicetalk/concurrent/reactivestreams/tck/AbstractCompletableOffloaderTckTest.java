@@ -27,12 +27,12 @@ abstract class AbstractCompletableOffloaderTckTest extends AbstractCompletableOp
     private static Executor executor;
 
     @BeforeClass
-    public static void beforeClass() {
+    static void beforeClass() {
         executor = newCachedThreadExecutor();
     }
 
     @AfterClass
-    public static void afterClass() throws Exception {
+    static void afterClass() throws Exception {
         executor.closeAsync().toFuture().get();
     }
 

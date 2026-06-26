@@ -60,12 +60,12 @@ class UdpReporterTest {
     private EventLoopGroup group;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         group = new NioEventLoopGroup(2);
     }
 
     @AfterEach
-    public void tearDown() {
+    void tearDown() {
         group.shutdownGracefully(0, 0, SECONDS);
     }
 

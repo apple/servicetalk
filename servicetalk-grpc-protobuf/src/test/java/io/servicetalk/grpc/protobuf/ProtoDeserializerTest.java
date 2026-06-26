@@ -45,7 +45,7 @@ class ProtoDeserializerTest {
 
     @Test
     void zeroLengthMessageAligned() throws IOException {
-        List<String> deserialized = deserialize(grpcBufferFor(new String[]{null}));
+        List<String> deserialized = deserialize(grpcBufferFor((String) null));
         assertThat("Unexpected messages deserialized.", deserialized, contains(""));
     }
 
@@ -75,7 +75,7 @@ class ProtoDeserializerTest {
 
     @Test
     void singleMessageAlignedAsIterable() throws IOException {
-        List<String> deserialized = deserialize(new Buffer[]{grpcBufferFor("Hello")});
+        List<String> deserialized = deserialize(grpcBufferFor("Hello"));
         assertThat("Unexpected messages deserialized.", deserialized, contains("Hello"));
     }
 

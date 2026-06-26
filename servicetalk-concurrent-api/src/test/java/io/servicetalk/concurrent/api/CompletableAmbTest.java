@@ -45,7 +45,7 @@ class CompletableAmbTest {
         AMB_VARARGS {
             @Override
             BiFunction<Completable, Completable, Completable> get() {
-                return (first, second) -> amb(first, second);
+                return Completable::amb;
             }
         },
         AMB_ITERABLE {

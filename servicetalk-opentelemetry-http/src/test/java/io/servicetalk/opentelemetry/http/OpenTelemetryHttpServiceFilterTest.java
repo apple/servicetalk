@@ -381,7 +381,7 @@ class OpenTelemetryHttpServiceFilterTest {
             request.payloadBody(Publisher.from(client.executionContext().bufferAllocator().fromAscii("bar"))
                     .concat(Publisher.failed(DELIBERATE_EXCEPTION)));
             ExecutionException ex = assertThrows(ExecutionException.class, () -> streamingClient.request(request)
-                    .flatMap(response -> response.toResponse()).toFuture().get());
+                    .flatMap(StreamingHttpResponse::toResponse).toFuture().get());
             assertThat(ex.getCause()).isSameAs(DELIBERATE_EXCEPTION);
             sleep();
             otelTesting.assertTraces()
@@ -476,6 +476,7 @@ class OpenTelemetryHttpServiceFilterTest {
         }
     }
 
+    @FunctionalInterface
     private interface RunWithClient {
         void run(HttpClient client) throws Exception;
     }

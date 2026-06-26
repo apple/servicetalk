@@ -22,7 +22,6 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
-import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.jupiter.api.Test;
@@ -153,8 +152,7 @@ class HttpServerFilterOrderTest {
         return new NonOffloadingFilterFactory(filter);
     }
 
-    private static class NonOffloadingFilterFactory implements StreamingHttpServiceFilterFactory,
-                                                               ExecutionStrategyInfluencer<HttpExecutionStrategy> {
+    private static class NonOffloadingFilterFactory implements StreamingHttpServiceFilterFactory {
 
         private final StreamingHttpService filter;
 

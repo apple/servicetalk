@@ -34,6 +34,7 @@ import static java.util.Collections.unmodifiableMap;
 /**
  * Read only view of {@link AbstractTcpConfig}.
  */
+@SuppressWarnings("PMD.PublicMemberInNonPublicType") // public methods are exposed via public subclasses
 abstract class AbstractReadOnlyTcpConfig {
     @SuppressWarnings("rawtypes")
     private final Map<ChannelOption, Object> options;

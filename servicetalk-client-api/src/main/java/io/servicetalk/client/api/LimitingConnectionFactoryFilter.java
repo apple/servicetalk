@@ -176,7 +176,6 @@ public final class LimitingConnectionFactoryFilter<ResolvedAddress, C extends Li
         private static final AtomicIntegerFieldUpdater<MaxConnectionsLimiter> countUpdater =
                 newUpdater(MaxConnectionsLimiter.class, "count");
 
-        @SuppressWarnings("unused")
         private volatile int count;
         private final int maxAllowed;
 

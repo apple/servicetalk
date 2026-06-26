@@ -57,7 +57,7 @@ abstract class OpenTelemetryFilterBuilder<T extends OpenTelemetryFilterBuilder<T
      * @see HttpClientAttributesExtractorBuilder#setCapturedRequestHeaders(List)
      * @see HttpServerAttributesExtractorBuilder#setCapturedRequestHeaders(List)
      */
-    public final T capturedRequestHeaders(final List<String> capturedRequestHeaders) {
+    final T capturedRequestHeaders(final List<String> capturedRequestHeaders) {
         requireNonNull(capturedRequestHeaders, "capturedRequestHeaders");
         this.capturedRequestHeaders =
                 capturedRequestHeaders.isEmpty() ? emptyList() :
@@ -74,7 +74,7 @@ abstract class OpenTelemetryFilterBuilder<T extends OpenTelemetryFilterBuilder<T
      * @see HttpClientAttributesExtractorBuilder#setCapturedResponseHeaders(List)
      * @see HttpServerAttributesExtractorBuilder#setCapturedResponseHeaders(List)
      */
-    public final T capturedResponseHeaders(final List<String> capturedResponseHeaders) {
+    final T capturedResponseHeaders(final List<String> capturedResponseHeaders) {
         requireNonNull(capturedResponseHeaders, "capturedResponseHeaders");
         this.capturedResponseHeaders =
                 capturedResponseHeaders.isEmpty() ? emptyList() :
@@ -90,7 +90,7 @@ abstract class OpenTelemetryFilterBuilder<T extends OpenTelemetryFilterBuilder<T
      * @param openTelemetry the {@link OpenTelemetry} instance
      * @return {@code this}
      */
-    public final T openTelemetry(OpenTelemetry openTelemetry) {
+    final T openTelemetry(OpenTelemetry openTelemetry) {
         this.openTelemetry = requireNonNull(openTelemetry, "openTelemetry");
         return thisInstance();
     }

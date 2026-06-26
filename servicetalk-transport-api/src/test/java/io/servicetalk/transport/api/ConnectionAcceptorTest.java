@@ -25,6 +25,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -53,7 +54,7 @@ class ConnectionAcceptorTest {
     @Test
     void factoryAppend() throws Exception {
         ConnectionAcceptorFactory f = ConnectionAcceptorFactory.identity();
-        ConcurrentLinkedQueue<Integer> order = new ConcurrentLinkedQueue<>();
+        Queue<Integer> order = new ConcurrentLinkedQueue<>();
         f.append(original -> new OrderVerifyingConnectionAcceptor(original, order, 1))
                 .append(original -> new OrderVerifyingConnectionAcceptor(original, order, 2))
                 .append(original -> new OrderVerifyingConnectionAcceptor(original, order, 3))
@@ -101,16 +102,16 @@ class ConnectionAcceptorTest {
     }
 
     protected void applyFilters() {
-        ConnectionAcceptorFactory f = (original -> original.append(ctx -> second.accept(ctx)));
-        f = f.append(original -> original.append(ctx -> first.accept(ctx)));
+        ConnectionAcceptorFactory f = (original -> original.append(second::accept));
+        f = f.append(original -> original.append(first::accept));
         toSource(f.create(ACCEPT_ALL).accept(context)).subscribe(listener);
     }
 
     private static class OrderVerifyingConnectionAcceptor extends DelegatingConnectionAcceptor {
-        private final ConcurrentLinkedQueue<Integer> order;
+        private final Queue<Integer> order;
         private final int index;
 
-        OrderVerifyingConnectionAcceptor(final ConnectionAcceptor original, final ConcurrentLinkedQueue<Integer> order,
+        OrderVerifyingConnectionAcceptor(final ConnectionAcceptor original, final Queue<Integer> order,
                                          final int index) {
             super(original);
             this.order = order;

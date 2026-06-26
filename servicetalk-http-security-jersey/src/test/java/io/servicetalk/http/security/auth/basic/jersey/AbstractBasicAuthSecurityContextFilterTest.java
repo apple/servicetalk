@@ -88,7 +88,8 @@ public abstract class AbstractBasicAuthSecurityContextFilterTest {
             this.userId = requireNonNull(userId);
         }
 
-        public String userId() {
+        @Override
+        public String toString() {
             return userId;
         }
 

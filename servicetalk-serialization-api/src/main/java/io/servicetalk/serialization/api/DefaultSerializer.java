@@ -344,7 +344,7 @@ public final class DefaultSerializer implements Serializer {
         return value;
     }
 
-    @SuppressWarnings("PMD.AvoidInstanceofChecksInCatchClause")
+    @SuppressWarnings("PMD.PreserveStackTrace") // false positive - does not recognize addSuppressed
     private static void closeIterator(CloseableIterator<?> iterator, @Nullable SerializationException cause) {
         try {
             iterator.close(); // May throw in case of incomplete accumulated data

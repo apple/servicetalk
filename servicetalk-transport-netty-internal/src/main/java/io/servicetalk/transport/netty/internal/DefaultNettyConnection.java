@@ -676,7 +676,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         if (eventLoop.inEventLoop()) {
             invokeUserCloseHandler();
         } else {
-            eventLoop.execute(DefaultNettyConnection.this::invokeUserCloseHandler);
+            eventLoop.execute(this::invokeUserCloseHandler);
         }
     }
 

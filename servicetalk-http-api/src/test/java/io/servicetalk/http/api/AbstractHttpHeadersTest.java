@@ -112,7 +112,7 @@ public abstract class AbstractHttpHeadersTest {
         assertTrue(name2Itr.hasNext());
         assertEquals("value2", name2Itr.next()); // The first value is eagerly loaded.
         // this value has already been removed!
-        assertThrows(ConcurrentModificationException.class, () -> name2Itr.remove());
+        assertThrows(ConcurrentModificationException.class, name2Itr::remove);
     }
 
     @Test
@@ -485,7 +485,7 @@ public abstract class AbstractHttpHeadersTest {
         headers.add("name1", "value1");
         final Iterator<Entry<CharSequence, CharSequence>> itr = headers.iterator();
         assertTrue(itr.hasNext());
-        assertThrows(IllegalStateException.class, () -> itr.remove());
+        assertThrows(IllegalStateException.class, itr::remove);
     }
 
     @Test
@@ -500,7 +500,7 @@ public abstract class AbstractHttpHeadersTest {
         itr.remove();
         assertTrue(headers.isEmpty());
         assertEquals(0, headers.size());
-        assertThrows(IllegalStateException.class, () -> itr.remove());
+        assertThrows(IllegalStateException.class, itr::remove);
     }
 
     @Test
@@ -532,7 +532,7 @@ public abstract class AbstractHttpHeadersTest {
     void iterateEmptyHeadersShouldThrow() {
         final Iterator<Entry<CharSequence, CharSequence>> iterator = newHeaders().iterator();
         assertFalse(iterator.hasNext());
-        assertThrows(NoSuchElementException.class, () -> iterator.next());
+        assertThrows(NoSuchElementException.class, iterator::next);
     }
 
     @Test

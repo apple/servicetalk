@@ -48,6 +48,7 @@ public abstract class GroupedPublisher<Key, T> extends SubscribablePublisher<T> 
      * @deprecated Use {@link Publisher#groupBy(Function, int)} instead.
      */
     @Deprecated
+    @FunctionalInterface
     public interface QueueSizeProvider {
         /**
          * Calculate the maximum queue size for a particular {@link GroupedPublisher} key.

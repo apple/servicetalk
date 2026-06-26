@@ -21,6 +21,7 @@ package io.servicetalk.capacity.limiter.api;
 final class Preconditions {
 
     private Preconditions() {
+        // No instances
     }
 
     /**
@@ -31,7 +32,7 @@ final class Preconditions {
      * @return the passed value if all checks pass
      * @throws IllegalArgumentException if the passed float is not greater than zero
      */
-    public static float ensurePositive(final float value, final String name) {
+    static float ensurePositive(final float value, final String name) {
         if (value <= 0.0) {
             throw new IllegalArgumentException(name + ": " + value + " (expected > 0.0)");
         }
@@ -47,7 +48,7 @@ final class Preconditions {
      * @return the passed value if all checks pass
      * @throws IllegalArgumentException if the passed float doesn't meet the requirements
      */
-    public static float ensureGreaterThan(final float value, final float min, final String field) {
+    static float ensureGreaterThan(final float value, final float min, final String field) {
         if (value <= min) {
             throw new IllegalArgumentException(field + ": " + value + " (expected: > " + min + ")");
         }
@@ -62,7 +63,7 @@ final class Preconditions {
      * @return the passed value if all checks pass
      * @throws IllegalArgumentException if the passed float doesn't meet the requirements
      */
-    public static float ensureBetweenZeroAndOne(final float value, final String field) {
+    static float ensureBetweenZeroAndOne(final float value, final String field) {
         if (value < 0.0f || value > 1.0f) {
             throw new IllegalArgumentException(field + ": " + value + " (expected: 0.0f <= " + field + " <= 1.0f)");
         }
@@ -79,7 +80,7 @@ final class Preconditions {
      * @return the passed value if all checks pass
      * @throws IllegalArgumentException if the passed int doesn't meet the requirements
      */
-    public static int ensureRange(final int value, final int min, final int max, final String field) {
+    static int ensureRange(final int value, final int min, final int max, final String field) {
         if (value < min || value > max) {
             throw new IllegalArgumentException(field + ": " + value +
                     " (expected: " + min + " <= " + field + " <= " + max + ")");
@@ -95,7 +96,7 @@ final class Preconditions {
      * @return the passed value if all checks pass
      * @throws IllegalArgumentException if the passed float doesn't meet the requirements
      */
-    public static float ensureBetweenZeroAndOneExclusive(final float value, final String field) {
+    static float ensureBetweenZeroAndOneExclusive(final float value, final String field) {
         if (value <= 0.0f || value >= 1.0f) {
             throw new IllegalArgumentException(field + ": " + value + " (expected: 0.0f < " + field + " < 1.0f)");
         }

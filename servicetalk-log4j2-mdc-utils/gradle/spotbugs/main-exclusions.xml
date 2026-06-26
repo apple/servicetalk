@@ -22,11 +22,4 @@
     </Or>
     <Bug pattern="ES_COMPARING_PARAMETER_STRING_WITH_EQ"/>
   </Match>
-
-  <!-- Class constructor throws exception by design for validation -->
-  <Match>
-    <Class name="io.servicetalk.log4j2.mdc.utils.ServiceTalkThreadContextMap"/>
-    <Method name="&lt;init&gt;"/>
-    <Bug pattern="CT_CONSTRUCTOR_THROW"/>
-  </Match>
 </FindBugsFilter>
