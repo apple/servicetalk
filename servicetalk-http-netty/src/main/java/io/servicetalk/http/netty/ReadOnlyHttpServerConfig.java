@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 
+import java.util.function.LongConsumer;
 import javax.annotation.Nullable;
 
 final class ReadOnlyHttpServerConfig {
@@ -28,6 +29,7 @@ final class ReadOnlyHttpServerConfig {
     @Nullable
     private final H2ProtocolConfig h2Config;
     private final boolean allowDropTrailers;
+    private final LongConsumer payloadSizeLimiter;
     @Nullable
     private final HttpLifecycleObserver lifecycleObserver;
 
@@ -37,6 +39,7 @@ final class ReadOnlyHttpServerConfig {
         h1Config = configs.h1Config();
         h2Config = configs.h2Config();
         allowDropTrailers = configs.allowDropTrailersReadFromTransport();
+        payloadSizeLimiter = configs.newAggregatedPayloadSizeLimiter();
         lifecycleObserver = from.lifecycleObserver();
     }
 
@@ -56,6 +59,10 @@ final class ReadOnlyHttpServerConfig {
 
     boolean allowDropTrailersReadFromTransport() {
         return allowDropTrailers;
+    }
+
+    LongConsumer payloadSizeLimiter() {
+        return payloadSizeLimiter;
     }
 
     boolean isH2PriorKnowledge() {

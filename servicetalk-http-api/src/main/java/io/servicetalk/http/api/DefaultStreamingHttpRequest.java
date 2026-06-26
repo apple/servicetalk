@@ -25,6 +25,7 @@ import io.servicetalk.encoding.api.ContentCodec;
 
 import java.nio.charset.Charset;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
@@ -38,12 +39,14 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
                                 @Nullable final ContextMap context,
                                 @Nullable final ContentCodec encoding, @Nullable final BufferEncoder encoder,
                                 final BufferAllocator allocator, @Nullable final Publisher<?> payloadBody,
-                                final DefaultPayloadInfo payloadInfo, final HttpHeadersFactory headersFactory) {
+                                final DefaultPayloadInfo payloadInfo, final HttpHeadersFactory headersFactory,
+                                final LongConsumer payloadSizeLimiter) {
         super(method, requestTarget, version, headers, context);
         if (encoding != null) {
             encoding(encoding);
         }
-        payloadHolder = new StreamingHttpPayloadHolder(headers, allocator, payloadBody, payloadInfo, headersFactory);
+        payloadHolder = new StreamingHttpPayloadHolder(headers, allocator, payloadBody, payloadInfo, headersFactory,
+                payloadSizeLimiter);
         this.contentEncoding(encoder);
     }
 

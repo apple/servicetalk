@@ -163,6 +163,42 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
     SingleAddressHttpClientBuilder<U, R> allowDropResponseTrailers(boolean allowDrop);
 
     /**
+     * Sets the maximum size, in bytes, of an aggregated response payload body that this client will buffer in memory.
+     * <p>
+     * This limit applies only when a response is <strong>aggregated</strong> &mdash; for example when the client uses
+     * an {@link HttpResponse aggregated programming paradigm}, or when a filter calls
+     * {@link StreamingHttpResponse#toResponse()}. Responses that are consumed purely as a
+     * {@link StreamingHttpResponse#payloadBody() stream} are not affected. When the aggregated payload would exceed
+     * this limit a {@link PayloadTooLargeException} is raised to the caller.
+     * <p>
+     * The limit is measured against the fully decoded payload buffered in memory at the point of aggregation &mdash;
+     * that is, <em>after</em> any decompression or body transformation applied by filters earlier in the pipeline
+     * &mdash; not the number of bytes received from the network nor any declared {@code Content-Length}. A small
+     * compressed response that expands beyond this limit once decoded will therefore be rejected.
+     * <p>
+     * The default value is 4 MiB. Pass {@code 0} to disable the limit, or {@code -1} for <strong>warn-only</strong>
+     * mode: oversized aggregated responses are still delivered, but a warning (rate-limited to once every five minutes
+     * per client) is logged so the limit can be evaluated before it is enforced. Users who unexpectedly hit the default
+     * limit can temporarily set the {@code io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize} system
+     * property to change the default globally; it accepts the same values as this method (including {@code -1} to warn
+     * globally), and an explicit call to this method takes precedence over the property. This is a temporary property
+     * that will be removed in future releases.
+     * <p>
+     * For an independent, opt-in limit that can fail fast on {@code Content-Length} or bound bytes at a chosen position
+     * in the filter chain (e.g. before a decompressor), see {@code PayloadSizeLimitingHttpRequesterFilter}; both apply.
+     *
+     * @param maxAggregatedPayloadSize the maximum number of payload bytes to buffer when a response is aggregated,
+     * {@code 0} to disable the limit, or {@code -1} to warn (but not reject) when the default limit is exceeded. Other
+     * negative values are rejected.
+     * @return {@code this}
+     */
+    // FIXME: 0.43 - consider removing default impl
+    default SingleAddressHttpClientBuilder<U, R> maxAggregatedPayloadSize(int maxAggregatedPayloadSize) {
+        throw new UnsupportedOperationException("Setting maxAggregatedPayloadSize is not yet supported by " +
+                getClass().getName());
+    }
+
+    /**
      * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
      * builder.
      * <p>

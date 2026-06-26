@@ -18,6 +18,8 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 
+import java.util.function.LongConsumer;
+
 import static io.servicetalk.http.api.DefaultPayloadInfo.forTransportReceive;
 import static io.servicetalk.http.api.DefaultPayloadInfo.forUserCreated;
 
@@ -43,7 +45,7 @@ public final class StreamingHttpResponses {
             final HttpResponseStatus status, final HttpProtocolVersion version, final HttpHeaders headers,
             final BufferAllocator allocator, final HttpHeadersFactory headersFactory) {
         return new DefaultStreamingHttpResponse(status, version, headers, null, allocator, null, forUserCreated(),
-                headersFactory);
+                headersFactory, StreamingHttpPayloadHolder.NO_AGGREGATED_PAYLOAD_LIMIT);
     }
 
     /**
@@ -61,12 +63,45 @@ public final class StreamingHttpResponses {
      * header is required to accept trailers. {@code false} assumes trailers may be present if other criteria allows.
      * @param headersFactory {@link HttpHeadersFactory} to use.
      * @return a new {@link StreamingHttpResponse}.
+     * @deprecated Use {@link #newTransportResponse(HttpResponseStatus, HttpProtocolVersion, HttpHeaders,
+     * BufferAllocator, Publisher, boolean, HttpHeadersFactory, LongConsumer)} which allows bounding the
+     * size of the payload buffered during aggregation. This overload leaves the aggregated payload unbounded.
      */
+    @Deprecated
     public static StreamingHttpResponse newTransportResponse(
             final HttpResponseStatus status, final HttpProtocolVersion version, final HttpHeaders headers,
             final BufferAllocator allocator, final Publisher<Object> messageBody,
             final boolean requireTrailerHeader, final HttpHeadersFactory headersFactory) {
+        return newTransportResponse(status, version, headers, allocator, messageBody, requireTrailerHeader,
+                headersFactory, StreamingHttpPayloadHolder.NO_AGGREGATED_PAYLOAD_LIMIT);
+    }
+
+    /**
+     * Creates a new {@link StreamingHttpResponse} which is read from the transport, applying a limit to the size of the
+     * payload that may be buffered when the response is later aggregated. If the response contains
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a> then the passed {@code payload}
+     * {@link Publisher} should also emit {@link HttpHeaders} before completion.
+     *
+     * @param status the {@link HttpResponseStatus} of the response.
+     * @param version the {@link HttpProtocolVersion} of the response.
+     * @param headers the {@link HttpHeaders} of the response.
+     * @param allocator the allocator used for serialization purposes if necessary.
+     * @param messageBody a {@link Publisher} for payload that optionally emits {@link HttpHeaders} if the
+     * response contains <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
+     * @param requireTrailerHeader {@code true} if <a href="https://tools.ietf.org/html/rfc7230#section-4.4">Trailer</a>
+     * header is required to accept trailers. {@code false} assumes trailers may be present if other criteria allows.
+     * @param headersFactory {@link HttpHeadersFactory} to use.
+     * @param payloadSizeLimiter invoked with the running aggregated payload size (in bytes) as the response is
+     * aggregated (e.g. via {@link StreamingHttpResponse#toResponse()}); it may reject an oversized message by throwing
+     * a {@link PayloadTooLargeException}. Use {@code size -> { }} to leave the payload unbounded.
+     * @return a new {@link StreamingHttpResponse}.
+     */
+    public static StreamingHttpResponse newTransportResponse(
+            final HttpResponseStatus status, final HttpProtocolVersion version, final HttpHeaders headers,
+            final BufferAllocator allocator, final Publisher<Object> messageBody,
+            final boolean requireTrailerHeader, final HttpHeadersFactory headersFactory,
+            final LongConsumer payloadSizeLimiter) {
         return new DefaultStreamingHttpResponse(status, version, headers, null, allocator, messageBody,
-                forTransportReceive(requireTrailerHeader, version, headers), headersFactory);
+                forTransportReceive(requireTrailerHeader, version, headers), headersFactory, payloadSizeLimiter);
     }
 }

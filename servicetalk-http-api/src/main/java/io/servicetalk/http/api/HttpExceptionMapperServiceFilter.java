@@ -85,6 +85,8 @@ public final class HttpExceptionMapperServiceFilter implements StreamingHttpServ
                     ctx, request.method(), request.requestTarget(), request.version(), status, cause);
         } else if (cause instanceof PayloadTooLargeException) {
             status = PAYLOAD_TOO_LARGE;
+            LOGGER.info("Payload too large for connection='{}', request='{} {} {}'. Returning: {}",
+                    ctx, request.method(), request.requestTarget(), request.version(), status, cause);
         } else {
             status = INTERNAL_SERVER_ERROR;
             LOGGER.error("Unexpected exception during service processing for connection='{}', request='{} {} {}'. " +

@@ -287,6 +287,12 @@ class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
+    public final HttpServerBuilder maxAggregatedPayloadSize(final int maxAggregatedPayloadSize) {
+        config.httpConfig().maxAggregatedPayloadSize(maxAggregatedPayloadSize);
+        return this;
+    }
+
+    @Override
     public final HttpServerBuilder executor(final Executor executor) {
         executionContextBuilder.executor(executor);
         return this;

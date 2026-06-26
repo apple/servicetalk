@@ -584,6 +584,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     @Override
+    public DefaultSingleAddressHttpClientBuilder<U, R> maxAggregatedPayloadSize(final int maxAggregatedPayloadSize) {
+        config.protocolConfigs().maxAggregatedPayloadSize(maxAggregatedPayloadSize);
+        return this;
+    }
+
+    @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendClientFilter(
             final Predicate<StreamingHttpRequest> predicate, final StreamingHttpClientFilterFactory factory) {
         checkIfRetryingHttpRequesterFilter(factory);

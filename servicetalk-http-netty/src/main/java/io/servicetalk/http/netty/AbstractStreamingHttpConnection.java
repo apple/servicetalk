@@ -42,6 +42,7 @@ import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.function.LongConsumer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
@@ -79,11 +80,13 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     private final StreamingHttpRequestResponseFactory reqRespFactory;
     private final HttpHeadersFactory headersFactory;
     private final boolean allowDropTrailersReadFromTransport;
+    private final LongConsumer payloadSizeLimiter;
 
     AbstractStreamingHttpConnection(final CC conn, final int maxPipelinedRequests,
                                     final StreamingHttpRequestResponseFactory reqRespFactory,
                                     final HttpHeadersFactory headersFactory,
-                                    final boolean allowDropTrailersReadFromTransport) {
+                                    final boolean allowDropTrailersReadFromTransport,
+                                    final LongConsumer payloadSizeLimiter) {
         this.connection = requireNonNull(conn);
         this.connectionContext = new DefaultNettyHttpConnectionContext(conn);
         this.reqRespFactory = requireNonNull(reqRespFactory);
@@ -95,6 +98,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                 .concat(succeeded(ZERO_MAX_CONCURRENCY_EVENT));
         this.headersFactory = headersFactory;
         this.allowDropTrailersReadFromTransport = allowDropTrailersReadFromTransport;
+        this.payloadSizeLimiter = payloadSizeLimiter;
     }
 
     @Override
@@ -251,7 +255,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
         HttpResponseMetaData meta = (HttpResponseMetaData) head;
         return newTransportResponse(meta.status(), meta.version(), meta.headers(),
                 connectionContext.executionContext().bufferAllocator(), tail,
-                allowDropTrailersReadFromTransport, headersFactory);
+                allowDropTrailersReadFromTransport, headersFactory, payloadSizeLimiter);
     }
 
     @Override

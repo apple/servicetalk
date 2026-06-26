@@ -55,7 +55,8 @@ class StreamingHttpPayloadHolderDrainTest {
     void resubscribeDrainOriginalSource(Publisher<?> payload) throws Exception {
         AtomicInteger completeCount = new AtomicInteger();
         StreamingHttpPayloadHolder holder = new StreamingHttpPayloadHolder(H_FACTORY.newHeaders(), ALLOCATOR,
-                payload.afterFinally(completeCount::incrementAndGet), forUserCreated(), H_FACTORY);
+                payload.afterFinally(completeCount::incrementAndGet), forUserCreated(), H_FACTORY,
+                StreamingHttpPayloadHolder.NO_AGGREGATED_PAYLOAD_LIMIT);
         holder.payloadBody(from(ALLOCATOR.fromAscii("second")));
         // Subscribe twice and verify the results are the same both times (from supports multiple subscribes), and that
         // the original payload has been subscribed to and consumed.

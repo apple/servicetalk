@@ -82,6 +82,7 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.LongConsumer;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -188,7 +189,7 @@ final class NettyHttpServer {
                 HTTP_1_1, observer, false, __ -> false)
                 .map(conn -> new NettyHttpServerConnection(conn, service,
                         HTTP_1_1, h1Config.headersFactory(),
-                        config.allowDropTrailersReadFromTransport())),
+                        config.allowDropTrailersReadFromTransport(), config.payloadSizeLimiter())),
                 HTTP_1_1, channel);
     }
 
@@ -270,12 +271,14 @@ final class NettyHttpServer {
         private final HttpExecutionContext executionContext;
         private final ChangingFlushStrategy flushStrategy;
         private final boolean requireTrailerHeader;
+        private final LongConsumer payloadSizeLimiter;
 
         NettyHttpServerConnection(final NettyConnection<Object, Object> connection,
                                   final StreamingHttpService service,
                                   final HttpProtocolVersion version,
                                   final HttpHeadersFactory headersFactory,
-                                  final boolean requireTrailerHeader) {
+                                  final boolean requireTrailerHeader,
+                                  final LongConsumer payloadSizeLimiter) {
             super(headersFactory,
                     new DefaultHttpResponseFactory(headersFactory, connection.executionContext().bufferAllocator(),
                             version),
@@ -292,6 +295,7 @@ final class NettyHttpServer {
             this.flushStrategy = new ChangingFlushStrategy(new FlushStrategyHolder(connection.defaultFlushStrategy()));
             connection.updateFlushStrategy((current, isCurrentOriginal) -> flushStrategy);
             this.requireTrailerHeader = requireTrailerHeader;
+            this.payloadSizeLimiter = payloadSizeLimiter;
         }
 
         void process(final boolean handleMultipleRequests) {
@@ -303,7 +307,7 @@ final class NettyHttpServer {
                     connection.read().firstAndTail((head, payload) -> {
                         HttpRequestMetaData meta = (HttpRequestMetaData) head;
                         return newTransportRequest(meta, executionContext().bufferAllocator(), payload,
-                                requireTrailerHeader, headersFactory);
+                                requireTrailerHeader, headersFactory, payloadSizeLimiter);
                     });
             toSource(handleRequestAndWriteResponse(requestSingle, handleMultipleRequests))
                     .subscribe(new ErrorLoggingHttpSubscriber(this));
