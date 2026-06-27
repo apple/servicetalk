@@ -37,8 +37,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 class GradientCapacityLimiterTest {
 
-    private static final Exception SAD_EXCEPTION = new Exception("sad");
-
     private static final Classification DEFAULT = () -> 0;
 
     private final Observer observer = mock(Observer.class);
@@ -71,7 +69,7 @@ class GradientCapacityLimiterTest {
             CapacityLimiter.Ticket ticket = capacityLimiter.tryAcquire(DEFAULT, null);
             assertThat(ticket, is(notNullValue()));
             currentTime.addAndGet(Duration.ofMillis(10).toNanos());
-            int capacity = ticket.failed(SAD_EXCEPTION);
+            int capacity = ticket.dropped();
             if (capacity == DEFAULT_MIN_LIMIT) {
                 break;
             }
@@ -105,9 +103,9 @@ class GradientCapacityLimiterTest {
         CapacityLimiter.Ticket ticket = capacityLimiter.tryAcquire(DEFAULT, null);
         assertThat(ticket, is(notNullValue()));
         currentTime.addAndGet(Duration.ofMillis(10).toNanos());
-        ticket.failed(SAD_EXCEPTION);
+        ticket.dropped();
 
-        // ticket failure will not use gradient
+        // ticket drop will not use gradient
         verify(observer).onLimitChange(eq(-1.0), eq(-1.0), eq(-1.0), eq(100.0), eq(50.0));
 
         ticket = capacityLimiter.tryAcquire(DEFAULT, null);
@@ -116,5 +114,19 @@ class GradientCapacityLimiterTest {
         // Ticket success should adjust observation upward.
         ticket.completed();
         verify(observer).onLimitChange(not(eq(-1.0)), not(eq(-1.0)), not(eq(-1.0)), anyDouble(), anyDouble());
+    }
+
+    @Test
+    void failedTicketDoesNotChangeLimit() {
+        CapacityLimiter.Ticket ticket = capacityLimiter.tryAcquire(DEFAULT, null);
+        assertThat(ticket, is(notNullValue()));
+        verify(observer).onActiveRequestsIncr();
+        currentTime.addAndGet(Duration.ofMillis(10).toNanos());
+
+        ticket.failed(new Exception("sad"));
+
+        // failed() must release the slot but leave the limit untouched (no onLimitChange).
+        verify(observer).onActiveRequestsDecr();
+        verifyNoMoreInteractions(observer);
     }
 }
