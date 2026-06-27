@@ -16,8 +16,9 @@
 
 package io.servicetalk.concurrent.internal;
 
-import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.PreInterruptCallback;
+import org.junit.jupiter.api.extension.PreInterruptContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,9 +35,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -53,10 +52,13 @@ import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static java.util.regex.Pattern.UNICODE_CASE;
 
 /**
- * Junit extension which will print information about all threads if unit test method throws
- * {@link TimeoutException}.
+ * Junit extension which prints information about all threads when a unit test method exceeds its timeout.
+ * <p>
+ * This is a {@link PreInterruptCallback}, so it runs immediately <em>before</em> JUnit interrupts the timed-out test
+ * thread. The dump also includes lock ownership and held monitors/synchronizers (via {@link ThreadMXBean}), which
+ * JUnit's built-in {@code junit.jupiter.execution.timeout.threaddump.enabled} printer does not.
  */
-public final class TimeoutTracingInfoExtension implements AfterEachCallback {
+public final class TimeoutTracingInfoExtension implements PreInterruptCallback {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -99,15 +101,17 @@ public final class TimeoutTracingInfoExtension implements AfterEachCallback {
     }
 
     @Override
-    public void afterEach(ExtensionContext context) {
-        Optional<Throwable> executionException = context.getExecutionException();
-        if (executionException.isPresent() && executionException.get() instanceof TimeoutException) {
-            dumpAllStacks();
-        }
+    public void beforeThreadInterrupt(PreInterruptContext preInterruptContext, ExtensionContext extensionContext) {
+        final Thread threadToInterrupt = preInterruptContext.getThreadToInterrupt();
+        final String threadName = threadToInterrupt == null ? "<unknown>" : threadToInterrupt.getName();
+        final long threadToInterruptId = threadToInterrupt == null ? -1 : threadToInterrupt.getId();
+        LOGGER.warn("Test '{}' exceeded its timeout; dumping all thread stacks before interrupting thread \"{}\".",
+                extensionContext.getDisplayName(), threadName);
+        dumpAllStacks(threadToInterruptId);
     }
 
     @SuppressWarnings({"UseOfSystemOutOrSystemErr", "PMD.SystemPrintln", "PMD.ConsecutiveLiteralAppends"})
-    static void dumpAllStacks() {
+    static void dumpAllStacks(long threadToInterruptId) {
         ThreadMXBean bean = ManagementFactory.getThreadMXBean();
         List<ThreadInfo> threadInfos = Stream.of(bean.getThreadInfo(bean.getAllThreadIds(),
                 bean.isObjectMonitorUsageSupported(),
@@ -120,6 +124,9 @@ public final class TimeoutTracingInfoExtension implements AfterEachCallback {
             sb.append('"').append(info.getThreadName()).append('"')
                     .append(" #").append(info.getThreadId())
                     .append(' ').append(info.getThreadState().toString().toLowerCase(Locale.ENGLISH));
+            if (info.getThreadId() == threadToInterruptId) {
+                sb.append(" (timed out - will be interrupted)");
+            }
             if (info.getLockName() != null) {
                 sb.append(" on ").append(info.getLockName());
             }
