@@ -69,11 +69,16 @@ final class DeferredServerChannelBinder {
 
         return TcpServerBinder.bind(listenAddress, tcpConfig, executionContext, connectionAcceptor, channelInit,
                 serverConnection -> {
-                    // Start processing requests on http/1.1 connection:
+                    // Notify connection established after all acceptors have completed:
                     if (serverConnection instanceof NettyHttpServerConnection) {
-                        ((NettyHttpServerConnection) serverConnection).process(true);
+                        ((NettyHttpServerConnection) serverConnection).notifyConnectionEstablishedAndProcess();
+                    } else if (serverConnection instanceof H2ServerParentConnectionContext) {
+                        ((H2ServerParentConnectionContext) serverConnection)
+                                .notifyConnectionEstablishedAndEnableAutoRead();
+                    } else {
+                        throw new IllegalStateException("Unexpected connection type: " +
+                                serverConnection.getClass().getName());
                     }
-                    // Nothing to do otherwise as h2 uses auto read on the parent channel
                 }, earlyConnectionAcceptor, lateConnectionAcceptor)
                 .map(delegate -> {
                     LOGGER.debug("Started HTTP server with ALPN for address {}", delegate.listenAddress());

@@ -102,7 +102,14 @@ final class OptionalSslNegotiator {
 
         final Consumer<NettyConnectionContext> connectionConsumer = serverConnection -> {
             if (serverConnection instanceof NettyHttpServer.NettyHttpServerConnection) {
-                ((NettyHttpServer.NettyHttpServerConnection) serverConnection).process(true);
+                ((NettyHttpServer.NettyHttpServerConnection) serverConnection)
+                        .notifyConnectionEstablishedAndProcess();
+            } else if (serverConnection instanceof H2ServerParentConnectionContext) {
+                ((H2ServerParentConnectionContext) serverConnection)
+                        .notifyConnectionEstablishedAndEnableAutoRead();
+            } else {
+                throw new IllegalStateException("Unexpected connection type: " +
+                        serverConnection.getClass().getName());
             }
         };
 
