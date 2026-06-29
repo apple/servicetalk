@@ -50,6 +50,7 @@ import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedEx
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -515,6 +516,12 @@ class GracefulConnectionClosureHandlingTest {
 
         awaitConnectionClosed();
         assertNextRequestFails();
+    }
+
+    @RepeatedTest(1000)
+    void repro() throws Exception {
+        closePipelinedAfterTwoRequestsSentBeforeAnyResponseReceived(
+                HttpProtocol.HTTP_1, true, false, false, true);
     }
 
     @ParameterizedTest(name = "{index}: protocol={0} secure={1} initiateClosureFromClient={2} useUds={3} viaProxy={4}")
