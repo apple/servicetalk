@@ -70,6 +70,7 @@ import org.slf4j.LoggerFactory;
 import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.LongConsumer;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -117,7 +118,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                                         @Nullable SslConfig sslConfig,
                                                         ChannelInitializer initializer,
                                                         ConnectionObserver observer,
-                                                        boolean allowDropTrailersReadFromTransport) {
+                                                        boolean allowDropTrailersReadFromTransport,
+                                                        LongConsumer payloadSizeLimiter) {
         return showPipeline(new SubscribableSingle<H2ClientParentConnection>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super H2ClientParentConnection> subscriber) {
@@ -143,7 +145,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     delayedCancellable = new DelayedCancellable();
                     parentChannelInitializer = new DefaultH2ClientParentConnection(connection, subscriber,
                             delayedCancellable, shouldWaitForSslHandshake(sslSession, sslConfig),
-                            allowDropTrailersReadFromTransport, config.headersFactory(), reqRespFactory, observer);
+                            allowDropTrailersReadFromTransport, config.headersFactory(), reqRespFactory, observer,
+                            payloadSizeLimiter);
                 } catch (Throwable cause) {
                     ChannelCloseUtils.close(channel, cause);
                     deliverErrorFromSource(subscriber, cause);
@@ -175,6 +178,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                 newPublisherProcessorDropHeadOnOverflow(16);
         private final Publisher<ConsumableEvent<Integer>> maxConcurrencyPublisher;
         private final boolean allowDropTrailersReadFromTransport;
+        private final LongConsumer payloadSizeLimiter;
         @Nullable
         private Subscriber<? super H2ClientParentConnection> subscriber;
         private MultiplexedObserver multiplexedObserver = NoopMultiplexedObserver.INSTANCE;
@@ -186,12 +190,14 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                         boolean allowDropTrailersReadFromTransport,
                                         HttpHeadersFactory headersFactory,
                                         StreamingHttpRequestResponseFactory reqRespFactory,
-                                        ConnectionObserver observer) {
+                                        ConnectionObserver observer,
+                                        LongConsumer payloadSizeLimiter) {
             super(connection, delayedCancellable, waitForSslHandshake, observer);
             this.subscriber = requireNonNull(subscriber);
             this.headersFactory = requireNonNull(headersFactory);
             this.reqRespFactory = requireNonNull(reqRespFactory);
             this.allowDropTrailersReadFromTransport = allowDropTrailersReadFromTransport;
+            this.payloadSizeLimiter = payloadSizeLimiter;
             // Set maxConcurrency to the initial value recommended by the HTTP/2 spec
             maxConcurrencyProcessor.onNext(DEFAULT_H2_MAX_CONCURRENCY_EVENT);
             bs = new Http2StreamChannelBootstrap(connection.channel());
@@ -318,11 +324,11 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     final Runnable onCloseRunnable = ownedRunnable;
                     if (promise.isDone()) {
                         childChannelActive(promise, subscriber, sequentialCancellable, request, observer,
-                                allowDropTrailersReadFromTransport, onCloseRunnable);
+                                allowDropTrailersReadFromTransport, onCloseRunnable, payloadSizeLimiter);
                     } else {
                         promise.addListener((FutureListener<Http2StreamChannel>) future -> childChannelActive(
                                 future, subscriber, sequentialCancellable, request, observer,
-                                allowDropTrailersReadFromTransport, onCloseRunnable));
+                                allowDropTrailersReadFromTransport, onCloseRunnable, payloadSizeLimiter));
                     }
                 }
             };
@@ -355,7 +361,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                         StreamingHttpRequest request,
                                         StreamObserver streamObserver,
                                         boolean allowDropTrailersReadFromTransport,
-                                        @Nullable Runnable onCloseRunnable) {
+                                        @Nullable Runnable onCloseRunnable,
+                                        LongConsumer payloadSizeLimiter) {
             final SingleSource<StreamingHttpResponse> responseSingle;
             Throwable futureCause = future.cause(); // assume this doesn't throw
             if (futureCause == null) {
@@ -387,7 +394,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     // pipelining on a stream so we can use the non-pipelined connection which is more light weight.
                     // https://tools.ietf.org/html/rfc7540#section-8.1
                     responseSingle = toSource(new NonPipelinedStreamingHttpConnection(nettyConnection,
-                            reqRespFactory, headersFactory, allowDropTrailersReadFromTransport).request(request));
+                            reqRespFactory, headersFactory, allowDropTrailersReadFromTransport,
+                            payloadSizeLimiter).request(request));
                 } catch (Throwable cause) {
                     if (streamChannel != null) {
                         try {

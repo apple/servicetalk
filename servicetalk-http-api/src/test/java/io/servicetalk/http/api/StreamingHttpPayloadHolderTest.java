@@ -20,10 +20,12 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
+import io.servicetalk.http.api.HttpDataSourceTransformations.PayloadAndTrailers;
 import io.servicetalk.serializer.api.StreamingSerializerDeserializer;
 import io.servicetalk.serializer.utils.FixedLengthStreamingSerializer;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -31,7 +33,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
@@ -48,12 +52,14 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -115,7 +121,7 @@ class StreamingHttpPayloadHolderTest {
             payloadInfo.setMayHaveTrailers(false);
         }
         payloadHolder = new StreamingHttpPayloadHolder(headers, DEFAULT_ALLOCATOR, payloadSource, payloadInfo,
-                headersFactory);
+                headersFactory, StreamingHttpPayloadHolder.NO_AGGREGATED_PAYLOAD_LIMIT);
 
         if (sourceType == SourceType.Trailers) {
             assertThat("Unexpected payload info trailer indication.", payloadHolder.mayHaveTrailers(), is(true));
@@ -289,6 +295,71 @@ class StreamingHttpPayloadHolderTest {
                         eq(DELIBERATE_EXCEPTION), any());
             }
         }
+    }
+
+    @Test
+    void aggregateUnderLimitAggregates() throws Exception {
+        assertThat(aggregate(enforcing(16), ascii(5), ascii(5)).payload.readableBytes(), is(10));
+    }
+
+    @Test
+    void aggregateAtLimitAggregates() throws Exception {
+        assertThat(aggregate(enforcing(10), ascii(5), ascii(5)).payload.readableBytes(), is(10));
+    }
+
+    @Test
+    void aggregateOverLimitAcrossMultipleBuffersFails() {
+        ExecutionException e = assertThrows(ExecutionException.class,
+                () -> aggregate(enforcing(9), ascii(5), ascii(5)));
+        assertThat(e.getCause(), is(instanceOf(PayloadTooLargeException.class)));
+    }
+
+    @Test
+    void aggregateOverLimitSingleBufferFails() {
+        ExecutionException e = assertThrows(ExecutionException.class, () -> aggregate(enforcing(4), ascii(5)));
+        assertThat(e.getCause(), is(instanceOf(PayloadTooLargeException.class)));
+    }
+
+    @Test
+    void aggregateNoLimitAggregates() throws Exception {
+        assertThat(aggregate(StreamingHttpPayloadHolder.NO_AGGREGATED_PAYLOAD_LIMIT, ascii(64)).payload.readableBytes(),
+                is(64));
+    }
+
+    @Test
+    void aggregateInvokesLimiterWithRunningTotals() throws Exception {
+        final List<Long> totals = new ArrayList<>();
+        aggregate(totals::add, ascii(5), ascii(3), ascii(2));
+        assertThat(totals, contains(5L, 8L, 10L));
+    }
+
+    // Mimics the enforcing limiter (whose real implementation lives in servicetalk-http-netty): reject once the
+    // running aggregated size exceeds maxAggregatedSize.
+    private static LongConsumer enforcing(final int maxAggregatedSize) {
+        return total -> {
+            if (total > maxAggregatedSize) {
+                throw new PayloadTooLargeException("Maximum aggregated payload size=" + maxAggregatedSize +
+                        " total payload size=" + total);
+            }
+        };
+    }
+
+    private static PayloadAndTrailers aggregate(final LongConsumer payloadSizeLimiter, final Buffer... payload)
+            throws Exception {
+        final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
+        final DefaultPayloadInfo payloadInfo = forTransportReceive(false, HTTP_1_1, headers);
+        final StreamingHttpPayloadHolder holder = new StreamingHttpPayloadHolder(headers, DEFAULT_ALLOCATOR,
+                Publisher.from((Object[]) payload), payloadInfo, DefaultHttpHeadersFactory.INSTANCE,
+                payloadSizeLimiter);
+        return holder.aggregate().toFuture().get();
+    }
+
+    private static Buffer ascii(final int size) {
+        final StringBuilder sb = new StringBuilder(size);
+        for (int i = 0; i < size; i++) {
+            sb.append('x');
+        }
+        return DEFAULT_ALLOCATOR.fromAscii(sb);
     }
 
     private void simulateAndVerifyPayloadRead(final TestPublisherSubscriber<?> subscriber) throws Exception {

@@ -113,7 +113,11 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
 
     private GrpcClientCallFactory newGrpcClientCallFactory() {
         SingleAddressHttpClientBuilder<U, R> builder = httpClientBuilderSupplier.get()
-            .protocols(h2Default());
+            .protocols(h2Default())
+            // gRPC frames its own messages, so the HTTP-level aggregated payload limit doesn't map cleanly to gRPC
+            // message size. Disable it here and rely on gRPC-specific message-size limits (tracked separately) instead
+            // of silently capping gRPC payloads at the HTTP default.
+            .maxAggregatedPayloadSize(0);
         builder.appendClientFilter(CatchAllHttpClientFilter.INSTANCE);
         if (appendTimeoutFilter) {
             builder.appendClientFilter(newGrpcDeadlineClientFilterFactory());

@@ -23,6 +23,7 @@ import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.ContentCodec;
 
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
@@ -35,9 +36,11 @@ final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
                                  final HttpHeaders headers, @Nullable final ContextMap context,
                                  final BufferAllocator allocator,
                                  @Nullable final Publisher<?> payloadBody, final DefaultPayloadInfo payloadInfo,
-                                 final HttpHeadersFactory headersFactory) {
+                                 final HttpHeadersFactory headersFactory,
+                                 final LongConsumer payloadSizeLimiter) {
         super(status, version, headers, context);
-        payloadHolder = new StreamingHttpPayloadHolder(headers, allocator, payloadBody, payloadInfo, headersFactory);
+        payloadHolder = new StreamingHttpPayloadHolder(headers, allocator, payloadBody, payloadInfo, headersFactory,
+                payloadSizeLimiter);
     }
 
     @Override

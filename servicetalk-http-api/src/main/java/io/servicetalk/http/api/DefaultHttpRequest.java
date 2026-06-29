@@ -288,7 +288,7 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
                 .setMayHaveTrailersAndGenericTypeBuffer(trailers != null);
         return new DefaultStreamingHttpRequest(method(), requestTarget(), version(), headers(), context0(), encoding(),
                 contentEncoding(), original.payloadHolder().allocator(), payload, payloadInfo,
-                original.payloadHolder().headersFactory());
+                original.payloadHolder().headersFactory(), StreamingHttpPayloadHolder.NO_AGGREGATED_PAYLOAD_LIMIT);
     }
 
     @Override
