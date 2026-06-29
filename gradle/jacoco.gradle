@@ -36,9 +36,15 @@ dependencies {
     // from the project's regular repositories.
     sub.name != "servicetalk-gradle-plugin-internal" &&
     !sub.path.contains("examples") &&
-    // jersey3-jakarta modules are copies of the jersey modules with identical class names;
-    // including them causes "Can't add different class with same name" in JaCoCo analysis.
-    !sub.name.contains("-jersey3-jakarta")
+    // The Jakarta variants (-jersey3-jakarta9, -jersey3-jakarta10, -jersey4-jakarta11) are
+    // generated copies of the base -jersey modules: they reuse the same package and class
+    // names, so including them alongside the base module makes JaCoCo fail with
+    // "Can't add different class with same name". We keep the base -jersey module and skip
+    // the copies (their coverage is identical).
+    !sub.name.contains("jakarta") &&
+    // servicetalk-data-jackson3 likewise copies its sources from servicetalk-data-jackson
+    // (same io.servicetalk.data.jackson package), so it collides with the base module too.
+    sub.name != "servicetalk-data-jackson3"
   }.each { sub ->
     jacocoAggregation project(sub.path)
   }
