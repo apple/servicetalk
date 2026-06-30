@@ -43,7 +43,6 @@ dependencies {
   testImplementation project(":servicetalk-concurrent-test-internal")
   testImplementation project(":servicetalk-http-netty")
   testImplementation project(":servicetalk-test-resources")
-  testRuntimeOnly "io.netty:netty-common"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.junit.jupiter:junit-jupiter-params"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
