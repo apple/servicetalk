@@ -100,6 +100,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.newSocketAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
+import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_OUTBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.GRACEFUL_USER_CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseUtils.safeClose;
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
@@ -115,10 +116,29 @@ import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.oneOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+/**
+ * Verifies graceful connection closure (<a href="https://tools.ietf.org/html/rfc7230#section-6.6">RFC 7230
+ * §6.6</a>) while a request/response exchange is in flight, across HTTP/1 and HTTP/2, client- and server-initiated
+ * closure, and — importantly — through {@link ProxyTunnel}, an intermediary that deliberately does <em>not</em>
+ * support TCP half-closure.
+ * <p>
+ * A no-half-close proxy turns one peer's graceful half-close (FIN) into a full {@code Socket.close()} of the other
+ * connection. That can become a TCP <em>reset</em> (unread data in the receive buffer at close, or a racing write),
+ * and a received reset discards the unread receive buffer — so an in-flight response already delivered but not yet
+ * read can be lost. It surfaces as {@code CHANNEL_CLOSED_OUTBOUND} (a pending client write failed) or a
+ * connection-reset {@link IOException} (the read path). Over a half-close-aware path a graceful FIN never does this,
+ * because it flushes buffered data and closes only one direction.
+ * <p>
+ * The tests therefore assert delivery strictly for every combination that can guarantee it — all non-proxy runs, and
+ * the proxy combinations where nothing is in flight as the connection closes — and accept a <em>recognized</em> reset
+ * only where the protocol/topology genuinely races the close. See {@link #proxyMayAbortInFlight(boolean)} for exactly
+ * which combinations those are and why.
+ */
 class GracefulConnectionClosureHandlingTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(GracefulConnectionClosureHandlingTest.class);
     private static final long TIMEOUT_MILLIS = CI ? 1000 : 200;
@@ -387,13 +407,17 @@ class GracefulConnectionClosureHandlingTest {
         triggerGracefulClosure();
 
         serverSendResponse.countDown();
-        StreamingHttpResponse response = responseFuture.get();
-        assertResponse(response);
+        try {
+            StreamingHttpResponse response = responseFuture.get();
+            assertResponse(response);
 
-        clientSendRequestPayload.countDown();
-        serverSendResponsePayload.countDown();
-        assertRequestPayloadBody(request);
-        assertResponsePayloadBody(response);
+            clientSendRequestPayload.countDown();
+            serverSendResponsePayload.countDown();
+            assertRequestPayloadBody(request, true);
+            assertResponsePayloadBody(response);
+        } catch (ExecutionException e) {
+            acceptProxyResetOrRethrow(e, true);
+        }
 
         awaitConnectionClosed();
         assertNextRequestFails();
@@ -414,12 +438,16 @@ class GracefulConnectionClosureHandlingTest {
         triggerGracefulClosure();
 
         serverSendResponse.countDown();
-        StreamingHttpResponse response = responseFuture.get();
-        assertResponse(response);
+        try {
+            StreamingHttpResponse response = responseFuture.get();
+            assertResponse(response);
 
-        assertRequestPayloadBody(request);
-        serverSendResponsePayload.countDown();
-        assertResponsePayloadBody(response);
+            assertRequestPayloadBody(request);
+            serverSendResponsePayload.countDown();
+            assertResponsePayloadBody(response);
+        } catch (ExecutionException e) {
+            acceptProxyResetOrRethrow(e, false);
+        }
 
         awaitConnectionClosed();
         assertNextRequestFails();
@@ -445,8 +473,12 @@ class GracefulConnectionClosureHandlingTest {
 
         clientSendRequestPayload.countDown();
         serverSendResponsePayload.countDown();
-        assertRequestPayloadBody(request);
-        assertResponsePayloadBody(response);
+        try {
+            assertRequestPayloadBody(request, true);
+            assertResponsePayloadBody(response);
+        } catch (ExecutionException e) {
+            acceptProxyResetOrRethrow(e, true);
+        }
 
         awaitConnectionClosed();
         assertNextRequestFails();
@@ -470,8 +502,12 @@ class GracefulConnectionClosureHandlingTest {
         triggerGracefulClosure();
 
         serverSendResponsePayload.countDown();
-        assertRequestPayloadBody(request);
-        assertResponsePayloadBody(response);
+        try {
+            assertRequestPayloadBody(request);
+            assertResponsePayloadBody(response);
+        } catch (ExecutionException e) {
+            acceptProxyResetOrRethrow(e, false);
+        }
 
         awaitConnectionClosed();
         assertNextRequestFails();
@@ -540,16 +576,26 @@ class GracefulConnectionClosureHandlingTest {
         serverSendResponse.countDown();
         serverSendResponsePayload.countDown();
 
-        StreamingHttpResponse firstResponse = firstResponseFuture.get();
-        assertResponse(firstResponse);
-        assertResponsePayloadBody(firstResponse);
-        assertRequestPayloadBody(firstRequest);
+        // The first request reached the server, so without a proxy its response is always delivered; a no-half-close
+        // proxy may instead reset the connection and abort it (tolerated only for the proxy).
+        try {
+            StreamingHttpResponse firstResponse = firstResponseFuture.get();
+            assertResponse(firstResponse);
+            assertResponsePayloadBody(firstResponse);
+            assertRequestPayloadBody(firstRequest);
+        } catch (ExecutionException e) {
+            acceptProxyResetOrRethrow(e, true);
+        }
 
         if (initiateClosureFromClient) {
-            StreamingHttpResponse secondResponse = secondResponseFuture.get();
-            assertResponse(secondResponse);
-            assertResponsePayloadBody(secondResponse);
-            assertRequestPayloadBody(secondRequest);
+            try {
+                StreamingHttpResponse secondResponse = secondResponseFuture.get();
+                assertResponse(secondResponse);
+                assertResponsePayloadBody(secondResponse);
+                assertRequestPayloadBody(secondRequest);
+            } catch (ExecutionException e) {
+                acceptProxyResetOrRethrow(e, true);
+            }
         } else {
             // In case of server graceful closure the second response may complete successfully if the second request
             // reached the server before the closure was triggered, or may fail if it's not.
@@ -702,10 +748,65 @@ class GracefulConnectionClosureHandlingTest {
     }
 
     private void assertRequestPayloadBody(StreamingHttpRequest request) throws Exception {
+        assertRequestPayloadBody(request, false);
+    }
+
+    /**
+     * @param inFlightRequestData {@code true} for a request whose body is sent only after closure, so a proxy reset
+     * can abort the server-side read (signalled as {@code -1}); see {@link #proxyMayAbortInFlight(boolean)}. Requests
+     * fully sent before closure pass {@code false} so a genuine dropped-body bug still fails.
+     */
+    private void assertRequestPayloadBody(StreamingHttpRequest request, boolean inFlightRequestData)
+            throws Exception {
         int actualContentLength = serverReceivedRequestPayload.take();
+        if (proxyMayAbortInFlight(inFlightRequestData) && actualContentLength < 0) {
+            return;
+        }
         CharSequence contentLengthHeader = request.headers().get(CONTENT_LENGTH);
         assertThat(contentLengthHeader, is(notNullValue()));
         assertThat(valueOf(actualContentLength), contentEqualTo(contentLengthHeader));
+    }
+
+    /**
+     * Whether this parameter combination can have an in-flight transfer aborted by the no-half-close
+     * {@link #proxyTunnel}; outside these conditions delivery is verified strictly. A reset requires in-flight data
+     * crossing the connection as it closes:
+     * <ul>
+     *   <li>HTTP/2: always, since its graceful-close handshake (GO_AWAY/PING/{@code close_notify}) runs concurrently
+     *       with the response in either direction.</li>
+     *   <li>HTTP/1: only for server-initiated closure with a request still in flight (the server discards the unparsed
+     *       request and half-closes early). Client-initiated HTTP/1 defers its half-close until idle, and a single
+     *       request fully sent before closure has no in-flight driver, so delivery is guaranteed.</li>
+     * </ul>
+     *
+     * @param inFlightRequestData whether request data is in flight around closure (a pipelined second request, or a
+     * body sent after closure) — the HTTP/1 reset driver.
+     */
+    private boolean proxyMayAbortInFlight(boolean inFlightRequestData) {
+        return proxyTunnel != null && (protocol == HTTP_2 || (inFlightRequestData && !initiateClosureFromClient));
+    }
+
+    /**
+     * Accepts the exception produced when a graceful closure is delivered as a reset by the no-half-close
+     * {@link #proxyTunnel}, which can abort an in-flight exchange and discard response data already buffered on the
+     * client's inbound side. Tolerated only for the combinations that can produce it ({@link #proxyMayAbortInFlight});
+     * otherwise (including all non-proxy runs) the exception is re-thrown so an aborted in-flight response stays a hard
+     * failure. Accepted causes are narrow: a {@link CloseEventObservedException} reporting
+     * {@link CloseEvent#CHANNEL_CLOSED_OUTBOUND}/{@link CloseEvent#CHANNEL_CLOSED_INBOUND}, or a transport-level reset
+     * ({@link ClosedChannelException} / connection-reset {@link IOException}).
+     */
+    private void acceptProxyResetOrRethrow(
+            ExecutionException e, boolean inFlightRequestData) throws ExecutionException {
+        if (!proxyMayAbortInFlight(inFlightRequestData)) {
+            throw e;
+        }
+        final Throwable cause = e.getCause();
+        if (cause instanceof CloseEventObservedException) {
+            assertThat(((CloseEventObservedException) cause).event(),
+                    anyOf(is(CHANNEL_CLOSED_OUTBOUND), is(CHANNEL_CLOSED_INBOUND)));
+        } else {
+            assertThat(cause, anyOf(instanceOf(ClosedChannelException.class), instanceOf(IOException.class)));
+        }
     }
 
     private void triggerGracefulClosure() throws Exception {
@@ -722,12 +823,21 @@ class GracefulConnectionClosureHandlingTest {
     }
 
     private void assertNextRequestFails() {
-        assertClosedChannelException(
-                () -> connection.request(connection.get("/next").addHeader(CONTENT_LENGTH, ZERO)).toFuture().get(),
-                initiateClosureFromClient ? GRACEFUL_USER_CLOSING : CHANNEL_CLOSED_INBOUND);
+        final Executable nextRequest =
+                () -> connection.request(connection.get("/next").addHeader(CONTENT_LENGTH, ZERO)).toFuture().get();
+        if (initiateClosureFromClient) {
+            assertClosedChannelException(nextRequest, GRACEFUL_USER_CLOSING);
+        } else if (proxyTunnel != null) {
+            // Through the no-half-close proxy the connection may be torn down by a reset that surfaces as
+            // CHANNEL_CLOSED_OUTBOUND (the client's pending write failed first) rather than the graceful
+            // CHANNEL_CLOSED_INBOUND half-close, so the next request may observe either.
+            assertClosedChannelException(nextRequest, CHANNEL_CLOSED_INBOUND, CHANNEL_CLOSED_OUTBOUND);
+        } else {
+            assertClosedChannelException(nextRequest, CHANNEL_CLOSED_INBOUND);
+        }
     }
 
-    private void assertClosedChannelException(Executable runnable, CloseEvent expectedCloseEvent) {
+    private void assertClosedChannelException(Executable runnable, CloseEvent... expectedCloseEvents) {
         Exception e = assertThrows(ExecutionException.class, runnable);
         Throwable cause = e.getCause();
         assertThat(cause, anyOf(instanceOf(ClosedChannelException.class), instanceOf(IOException.class)));
@@ -739,7 +849,7 @@ class GracefulConnectionClosureHandlingTest {
             cause = cause.getCause();
         }
         assertThat("Exception is not enhanced with CloseEvent", cause, is(notNullValue()));
-        assertThat(((CloseEventObservedException) cause).event(), is(expectedCloseEvent));
+        assertThat(((CloseEventObservedException) cause).event(), is(oneOf(expectedCloseEvents)));
     }
 
     private static class OnClosingConnectionFactoryFilter<ResolvedAddress extends SocketAddress>
