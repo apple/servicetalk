@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -218,6 +219,11 @@ final class ReplayPublisherTest extends MulticastPublisherTest {
         assertThat(subscriber4.pollOnNext(10, MILLISECONDS), nullValue());
 
         threeSubscribersTerminate(onError);
+    }
+
+    @RepeatedTest(1000)
+    void repro() throws Exception {
+        concurrentTTL(true, false);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] onError={0} lazy={1}")
