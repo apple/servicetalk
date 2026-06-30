@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.DomainSocketAddress;
 import io.servicetalk.transport.api.FileDescriptorSocketAddress;
+import io.servicetalk.utils.internal.PlatformDependent;
 
 import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
@@ -26,7 +27,6 @@ import io.netty.channel.kqueue.KQueue;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.incubator.channel.uring.IOUring;
 import io.netty.incubator.channel.uring.IOUringEventLoopGroup;
-import io.netty.util.internal.PlatformDependent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,8 +56,8 @@ final class NativeTransportUtils {
 
     static {
         final String os = PlatformDependent.normalizedOs();
-        IS_LINUX = "linux".equals(os);
-        IS_OSX_OR_BSD = "osx".equals(os) || os.contains("bsd");
+        IS_LINUX = PlatformDependent.isLinux();
+        IS_OSX_OR_BSD = PlatformDependent.isOsx() || os.contains("bsd");
         TRY_IO_URING = new AtomicBoolean(getBoolean(TRY_IO_URING_NAME));
 
         LOGGER.debug("-D{}: {}", REQUIRE_NATIVE_LIBS_NAME, REQUIRE_NATIVE_LIBS);

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2024 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2024, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.netty.util.internal.PlatformDependent.normalizedOs;
 import static io.servicetalk.capacity.limiter.api.CapacityLimiters.fixedCapacity;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -73,6 +72,7 @@ import static io.servicetalk.transport.api.ServiceTalkSocketOptions.CONNECT_TIME
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.SO_BACKLOG;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static io.servicetalk.utils.internal.PlatformDependent.isLinux;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -91,7 +91,7 @@ import static org.mockito.Mockito.when;
 
 class TrafficResilienceHttpServiceFilterTest {
 
-    private static final boolean IS_LINUX = "linux".equals(normalizedOs());
+    private static final boolean IS_LINUX = isLinux();
 
     // There is an off-by-one behavior difference between macOS & Linux.
     // Linux has a greater-than check
