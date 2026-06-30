@@ -81,6 +81,33 @@ $ idea .
 $ open servicetalk.ipr
 ----
 
+=== Code Coverage
+
+ServiceTalk uses link:https://www.jacoco.org/jacoco[JaCoCo] for code coverage. Coverage is not wired into
+`./gradlew build` to keep the default build fast; it is generated on demand.
+
+To generate an aggregate coverage report across all modules, run:
+
+[source,shell]
+----
+$ ./gradlew testCodeCoverageReport
+----
+
+This runs the tests first, then merges the per-module coverage data. The combined report is written to:
+
+* HTML: `build/reports/jacoco/aggregate/html/index.html`
+* XML: `build/reports/jacoco/aggregate/jacocoAggregateReport.xml` (for CI tooling)
+
+To generate a report for a single module instead, run its `jacocoTestReport` task, for example:
+
+[source,shell]
+----
+$ ./gradlew :servicetalk-concurrent-api:jacocoTestReport
+----
+
+The aggregate report configuration lives in `gradle/jacoco.gradle`; the per-module setup is applied by the
+ServiceTalk Gradle plugin.
+
 === Lock files
 
 We use lock files to ensure that all changes to dependencies are intentional, and don't go unnoticed.

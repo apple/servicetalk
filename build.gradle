@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import io.servicetalk.gradle.plugin.internal.Versions
-
 if (!repositories) {
   allprojects {
     buildscript {
@@ -92,6 +90,9 @@ dependencyAnalysis {
 }
 
 quality.dependsOn buildHealth
+
+// JaCoCo code coverage: per-module reports plus a root-level aggregate report.
+apply from: "gradle/jacoco.gradle"
 
 task validateLocalDocSite(type: Exec) {
   group = 'Documentation'
