@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -31,7 +30,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -41,7 +39,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static java.lang.Thread.NORM_PRIORITY;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofNanos;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -53,15 +50,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
 final class ReplayPublisherTest extends MulticastPublisherTest {
-
-    @RegisterExtension
-    static final ExecutorExtension<Executor> TIMER_EXECUTOR = ExecutorExtension.withExecutor(() -> {
-        ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(2,
-                new DefaultThreadFactory("replay-ttl-timer", true, NORM_PRIORITY));
-        scheduler.setRemoveOnCancelPolicy(true);
-        return Executors.from(scheduler);
-    }).setClassLevel(true);
-
     private final TestPublisherSubscriber<Integer> subscriber4 = new TestPublisherSubscriber<>();
     private final TestExecutor executor = new TestExecutor();
 
@@ -237,43 +225,48 @@ final class ReplayPublisherTest extends MulticastPublisherTest {
     void concurrentTTL(boolean onError, boolean lazy) throws Exception {
         final Duration ttl = ofNanos(1);
         final int queueLimit = Integer.MAX_VALUE;
-        ScheduleQueueExecutor queueExecutor = new ScheduleQueueExecutor(TIMER_EXECUTOR.executor());
+        Executor executor2 = Executors.newCachedThreadExecutor();
+        ScheduleQueueExecutor queueExecutor = new ScheduleQueueExecutor(executor2);
         Publisher<Integer> publisher = source.replay(
                 ReplayStrategies.<Integer>historyTtlBuilder(2, ttl, queueExecutor, lazy)
                 .queueLimitHint(queueLimit).build());
-        toSource(publisher).subscribe(subscriber1);
-        toSource(publisher).subscribe(subscriber2);
-        subscriber1.awaitSubscription().request(Long.MAX_VALUE);
-        subscriber2.awaitSubscription().request(Long.MAX_VALUE);
-        subscription.awaitRequestN(queueLimit);
-        // The goal is to race onNext (which calls accumulate) with the timer expiration. We don't verify all the
-        // signals are delivered but instead verify that the timer and max elements are always enforced even after
-        // the concurrent operations.
-        for (int i = 0; i < 10_000; ++i) {
-            source.onNext(1);
-            Thread.yield(); // Increase likelihood that timer expires some signals.
-        }
+        try {
+            toSource(publisher).subscribe(subscriber1);
+            toSource(publisher).subscribe(subscriber2);
+            subscriber1.awaitSubscription().request(Long.MAX_VALUE);
+            subscriber2.awaitSubscription().request(Long.MAX_VALUE);
+            subscription.awaitRequestN(queueLimit);
+            // The goal is to race onNext (which calls accumulate) with the timer expiration. We don't verify all the
+            // signals are delivered but instead verify that the timer and max elements are always enforced even after
+            // the concurrent operations.
+            for (int i = 0; i < 10_000; ++i) {
+                source.onNext(1);
+                Thread.yield(); // Increase likelihood that timer expires some signals.
+            }
 
-        // Wait for the timer to expire all signals.
-        waitForReplayQueueToDrain(publisher);
+            // Wait for the timer to expire all signals.
+            waitForReplayQueueToDrain(publisher);
 
-        queueExecutor.enableScheduleQueue();
-        source.onNext(2, 3);
-        toSource(publisher).subscribe(subscriber3);
-        subscriber3.awaitSubscription().request(Long.MAX_VALUE);
-        assertThat(subscriber3.takeOnNext(2), contains(2, 3));
+            queueExecutor.enableScheduleQueue();
+            source.onNext(2, 3);
+            toSource(publisher).subscribe(subscriber3);
+            subscriber3.awaitSubscription().request(Long.MAX_VALUE);
+            assertThat(subscriber3.takeOnNext(2), contains(2, 3));
 
-        // Test that advancing the timer past expiration still expires events and there were no race conditions
-        queueExecutor.drainScheduleQueue();
-        waitForReplayQueueToDrain(publisher);
+            // Test that advancing the timer past expiration still expires events and there were no race conditions
+            queueExecutor.drainScheduleQueue();
+            waitForReplayQueueToDrain(publisher);
 
-        // We don't consume signals for subscriber1 and subscriber2, so just test termination of subscriber3.
-        if (onError) {
-            source.onError(DELIBERATE_EXCEPTION);
-            assertThat(subscriber3.awaitOnError(), is(DELIBERATE_EXCEPTION));
-        } else {
-            source.onComplete();
-            subscriber3.awaitOnComplete();
+            // We don't consume signals for subscriber1 and subscriber2, so just test termination of subscriber3.
+            if (onError) {
+                source.onError(DELIBERATE_EXCEPTION);
+                assertThat(subscriber3.awaitOnError(), is(DELIBERATE_EXCEPTION));
+            } else {
+                source.onComplete();
+                subscriber3.awaitOnComplete();
+            }
+        } finally {
+            executor2.closeAsync().toFuture().get();
         }
     }
 
