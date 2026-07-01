@@ -450,7 +450,9 @@ public final class OutlierDetectorConfig {
         private int failurePercentageRequestVolume = DEFAULT_FAILURE_PERCENTAGE_REQUEST_VOLUME;
         private Duration maxEjectionTime = DEFAULT_MAX_EJECTION_TIME;
 
-        // Note that xDS defines its default jitter as 0 seconds.
+        // Note that xDS defines its default jitter as 0 seconds, but we intentionally add a small amount of jitter to
+        // desynchronize revival of correlated ejections (e.g. rolling deploys, dependency blips) and avoid a
+        // thundering herd back onto freshly-revived hosts.
         private Duration ejectionTimeJitter = DEFAULT_HEALTH_CHECK_JITTER;
 
         /**
@@ -866,7 +868,7 @@ public final class OutlierDetectorConfig {
         /**
          * Set the maximum amount of time a host can be ejected regardless of the number of consecutive ejections.
          * <p>
-         * Defaults to a max ejection time of 300 seconds and 0 seconds jitter.
+         * Defaults to a max ejection time of 300 seconds.
          *
          * @param maxEjectionTime the maximum amount of time a host can be ejected regardless of the number of
          *                        consecutive ejections.
