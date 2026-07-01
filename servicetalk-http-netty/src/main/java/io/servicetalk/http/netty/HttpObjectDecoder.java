@@ -762,14 +762,12 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             // RFC 9112 section 6.3: Transfer-Encoding overrides Content-Length. Drop any received
             // Content-Length now so it can never be used to frame the body, in any branch below.
             if (contentLength >= 0L) {
-                // https://tools.ietf.org/html/rfc7230#section-3.3.3, item 3.
                 message.headers().remove(CONTENT_LENGTH);
                 this.contentLength = Long.MIN_VALUE;
             }
             // RFC 9112 section 6.1: chunked must be the final coding. There may be multiple
             // Transfer-Encoding header lines, so check the last value of the last line.
-            final Iterator<? extends CharSequence> encodingIt =
-                    message.headers().valuesIterator(TRANSFER_ENCODING);
+            final Iterator<? extends CharSequence> encodingIt = message.headers().valuesIterator(TRANSFER_ENCODING);
             CharSequence lastValue = encodingIt.next();
             while (encodingIt.hasNext()) {
                 lastValue = encodingIt.next();
@@ -1083,23 +1081,24 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     }
 
     /**
-     * Returns {@code true} if {@code value} ends with the {@code chunked} token (case-insensitive),
-     * either as the entire value or as the final comma-separated token. The character preceding
-     * {@code chunked} must be a comma or OWS (space/tab) to avoid matching tokens like
-     * {@code notchunked}.
+     * Checks if the given value ends with exactly {@code chunked} (case-insensitive).
+     *
+     * @param value the value to check
+     * @return returns {@code true} if {@code value} ends with the {@code chunked} token (case-insensitive),
+     * either as the entire value or as the final comma-separated token.
      */
     private static boolean endsWithChunkedToken(final CharSequence value) {
-        final int vLen = value.length();
-        final int chunkedLen = CHUNKED.length();
-        if (vLen < chunkedLen) {
+        final int valueLength = value.length();
+        final int chunkedLength = CHUNKED.length();
+        if (valueLength < chunkedLength) {
             return false;
         }
-        if (vLen == chunkedLen) {
+        if (valueLength == chunkedLength) {
             return contentEqualsIgnoreCase(value, CHUNKED);
         }
-        final char before = value.charAt(vLen - chunkedLen - 1);
+        final char before = value.charAt(valueLength - chunkedLength - 1);
         if (before == ',' || before == ' ' || before == '\t') {
-            return regionMatches(value, true, vLen - chunkedLen, CHUNKED, 0, chunkedLen);
+            return regionMatches(value, true, valueLength - chunkedLength, CHUNKED, 0, chunkedLength);
         }
         return false;
     }
