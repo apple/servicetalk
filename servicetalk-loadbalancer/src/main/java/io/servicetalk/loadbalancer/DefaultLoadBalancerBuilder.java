@@ -24,7 +24,11 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ExecutionStrategy;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collection;
+import java.util.Locale;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -34,6 +38,20 @@ import static java.util.Objects.requireNonNull;
 
 final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection>
         implements LoadBalancerBuilder<ResolvedAddress, C> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultLoadBalancerBuilder.class);
+
+    /**
+     * System property that determines the {@link LoadBalancingPolicy} used when a load balancer is built without an
+     * explicit call to {@link #loadBalancingPolicy(LoadBalancingPolicy)}. Recognized values are
+     * {@code round-robin} (the default) and {@code p2c}. Unrecognized values are ignored with a warning and fall back
+     * to {@code round-robin}.
+     */
+    static final String DEFAULT_LB_POLICY_PROPERTY_NAME = "io.servicetalk.loadbalancer.defaultLoadBalancingPolicy";
+
+    private static final String LB_POLICY_ROUND_ROBIN = "round-robin";
+    private static final String LB_POLICY_P2C = "p2c";
+    private static final String DEFAULT_LB_POLICY = readDefaultLoadBalancingPolicyProperty(LB_POLICY_ROUND_ROBIN);
 
     private final String id;
 
@@ -200,7 +218,23 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
     private static <ResolvedAddress, C extends LoadBalancedConnection>
     LoadBalancingPolicy<ResolvedAddress, C> defaultLoadBalancingPolicy() {
+        if (LB_POLICY_P2C.equals(DEFAULT_LB_POLICY)) {
+            return LoadBalancingPolicies.p2c().build();
+        }
         return LoadBalancingPolicies.roundRobin().build();
+    }
+
+    private static String readDefaultLoadBalancingPolicyProperty(String fallbackPolicyName) {
+        final String value = System.getProperty(DEFAULT_LB_POLICY_PROPERTY_NAME, fallbackPolicyName);
+        final String normalized = value.trim().toLowerCase(Locale.ENGLISH);
+        if (LB_POLICY_ROUND_ROBIN.equals(normalized) || LB_POLICY_P2C.equals(normalized)) {
+            LOGGER.debug("-D{}: {}", DEFAULT_LB_POLICY_PROPERTY_NAME, normalized);
+            return normalized;
+        }
+        LOGGER.warn("Unrecognized value '{}' for -D{}, expected one of [{}, {}]. Using default of {}.",
+                value, DEFAULT_LB_POLICY_PROPERTY_NAME, LB_POLICY_ROUND_ROBIN, LB_POLICY_P2C,
+                fallbackPolicyName);
+        return fallbackPolicyName;
     }
 
     private static <C extends LoadBalancedConnection>
