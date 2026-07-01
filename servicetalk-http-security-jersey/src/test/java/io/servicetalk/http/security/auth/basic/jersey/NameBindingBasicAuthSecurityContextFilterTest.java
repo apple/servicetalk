@@ -27,9 +27,10 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import javax.ws.rs.core.Application;
 
-import static io.servicetalk.http.api.HttpResponseStatus.UNAUTHORIZED;
 import static java.util.Collections.singleton;
 
+// application() uses the deprecated no-arg forNameBinding() for the no-user-info case on purpose.
+@SuppressWarnings("deprecation")
 class NameBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthSecurityContextFilterTest {
 
     @Override
@@ -53,18 +54,17 @@ class NameBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthSec
     }
 
     /**
-     * No userInfo key wired and no custom principal function: per the security fix in
-     * {@code AbstractBasicAuthSecurityContextFilter} and {@code NoUserInfoBuilder},
-     * {@code @BasicAuthenticated} resources must fail closed even with valid credentials,
-     * because there is no source of identity for the filter to publish.
+     * No userInfo key wired and no custom principal function: when the upstream {@code BasicAuthHttpServiceFilter}
+     * authenticates the request it sets the {@code AUTHENTICATED} marker, so a {@code @BasicAuthenticated} resource
+     * proceeds with a {@code null} user principal rather than rejecting an already-authenticated request.
      */
     @Test
-    void noUserInfoFailsClosedEvenWithValidCredentials() throws Exception {
+    void noUserInfoProceedsWithNullPrincipalWhenAuthenticated() throws Exception {
         setUp(false);
         // Non-@BasicAuthenticated resource: filter does not run, default Jersey context applies.
         assertBasicAuthSecurityContextAbsent(GlobalBindingResource.PATH, true);
-        // @BasicAuthenticated resource: filter runs, default returns null, abortWith(401).
-        assertBasicAuthSecurityContextAbsent(NameBindingResource.PATH, true, UNAUTHORIZED);
+        // @BasicAuthenticated resource: filter runs, no identity to publish, proceeds with a null principal.
+        assertBasicAuthSecurityContextAbsent(NameBindingResource.PATH, true);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] withUserInfo={0}, withNewKey={1}")

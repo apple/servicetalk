@@ -27,9 +27,10 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import javax.ws.rs.core.Application;
 
-import static io.servicetalk.http.api.HttpResponseStatus.UNAUTHORIZED;
 import static java.util.Collections.singleton;
 
+// application() uses the deprecated no-arg forGlobalBinding() for the no-user-info case on purpose.
+@SuppressWarnings("deprecation")
 class GlobalBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthSecurityContextFilterTest {
 
     @Override
@@ -53,16 +54,15 @@ class GlobalBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthS
     }
 
     /**
-     * No userInfo key wired and no custom principal function: per the security fix in
-     * {@code AbstractBasicAuthSecurityContextFilter} and {@code NoUserInfoBuilder},
-     * the global filter must fail closed for every resource even with valid credentials,
-     * because there is no source of identity for the filter to publish.
+     * No userInfo key wired and no custom principal function: when the upstream {@code BasicAuthHttpServiceFilter}
+     * authenticates the request it sets the {@code AUTHENTICATED} marker, so the global filter proceeds with a
+     * {@code null} user principal for every resource rather than rejecting an already-authenticated request.
      */
     @Test
-    void noUserInfoFailsClosedEvenWithValidCredentials() throws Exception {
+    void noUserInfoProceedsWithNullPrincipalWhenAuthenticated() throws Exception {
         setUp(false);
-        assertBasicAuthSecurityContextAbsent(GlobalBindingResource.PATH, true, UNAUTHORIZED);
-        assertBasicAuthSecurityContextAbsent(NameBindingResource.PATH, true, UNAUTHORIZED);
+        assertBasicAuthSecurityContextAbsent(GlobalBindingResource.PATH, true);
+        assertBasicAuthSecurityContextAbsent(NameBindingResource.PATH, true);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] withUserInfo={0}")

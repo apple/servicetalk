@@ -19,7 +19,9 @@ import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.security.auth.basic.jersey.BasicAuthSecurityContextFilters.NoUserInfoBuilder;
 import io.servicetalk.http.security.auth.basic.jersey.BasicAuthSecurityContextFilters.UserInfoBuilder;
+import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -51,6 +53,8 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
+// This suite exercises the deprecated no-user-info builders on purpose.
+@SuppressWarnings("deprecation")
 class BasicAuthSecurityContextFiltersTest {
     private static final Principal TEST_PRINCIPAL = () -> "test-name";
     private static final String TEST_USER_INFO = "test-user-info";
@@ -69,12 +73,26 @@ class BasicAuthSecurityContextFiltersTest {
         when(requestCtx.getUriInfo()).thenReturn(uriInfo);
     }
 
+    @AfterEach
+    void clearAsyncContext() {
+        AsyncContext.clear();
+    }
+
+    /**
+     * Marks the current request as authenticated, mimicking what {@code BasicAuthHttpServiceFilter} does upstream on a
+     * successful authentication.
+     */
+    private static void authenticate() {
+        AsyncContext.put(BasicAuthHttpServiceFilter.AUTHENTICATED, Boolean.TRUE);
+    }
+
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void principalNoUserInfo(final boolean globalFilter) throws Exception {
+    void notAuthenticatedAbortsWith401(final boolean globalFilter) throws Exception {
         this.globalFilter = globalFilter;
         final ContainerRequestFilter filter = newFilterBuilder().build();
 
+        // No AUTHENTICATED marker in AsyncContext: BasicAuthHttpServiceFilter did not run upstream.
         filter.filter(requestCtx);
 
         final ArgumentCaptor<Response> respCaptor = ArgumentCaptor.forClass(Response.class);
@@ -86,13 +104,30 @@ class BasicAuthSecurityContextFiltersTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
+    void authenticatedNoUserInfoProceedsWithoutPrincipal(final boolean globalFilter) throws Exception {
+        this.globalFilter = globalFilter;
+        final ContainerRequestFilter filter = newFilterBuilder().build();
+
+        authenticate();
+        filter.filter(requestCtx);
+
+        // Authenticated upstream but the no-user-info filter has no identity to publish: proceed as-is.
+        verify(requestCtx, never()).setSecurityContext(any(SecurityContext.class));
+        verify(requestCtx, never()).abortWith(any(Response.class));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     void principalUserInfo(final boolean globalFilter) throws Exception {
         this.globalFilter = globalFilter;
         final ContextMap.Key<Principal> userInfoKey = newKey("basicPrincipal", Principal.class);
         final ContainerRequestFilter filter = newFilterBuilder(userInfoKey).build();
 
+        // Authenticated, but no user info is available under the configured key: proceed with a null principal.
+        authenticate();
         filter.filter(requestCtx);
-        verify(requestCtx).abortWith(any(Response.class));
+        verify(requestCtx, never()).setSecurityContext(any(SecurityContext.class));
+        verify(requestCtx, never()).abortWith(any(Response.class));
         clearInvocations(requestCtx);
 
         AsyncContext.put(userInfoKey, TEST_PRINCIPAL);
@@ -111,6 +146,7 @@ class BasicAuthSecurityContextFiltersTest {
                 .principalFunction(__ -> TEST_PRINCIPAL)
                 .build();
 
+        authenticate();
         final ArgumentCaptor<SecurityContext> securityCtxCaptor = ArgumentCaptor.forClass(SecurityContext.class);
         filter.filter(requestCtx);
 
@@ -127,8 +163,9 @@ class BasicAuthSecurityContextFiltersTest {
                 .principalFunction((__, userInfo) -> TEST_USER_INFO.equals(userInfo) ? TEST_PRINCIPAL : null)
                 .build();
 
+        authenticate();
         filter.filter(requestCtx);
-        verify(requestCtx).abortWith(any(Response.class));
+        verify(requestCtx, never()).setSecurityContext(any(SecurityContext.class));
         clearInvocations(requestCtx);
 
         AsyncContext.put(userInfoKey, TEST_USER_INFO);
@@ -149,6 +186,7 @@ class BasicAuthSecurityContextFiltersTest {
                 .securityContextFunction(__ -> securityContext)
                 .build();
 
+        authenticate();
         final ArgumentCaptor<SecurityContext> securityCtxCaptor = ArgumentCaptor.forClass(SecurityContext.class);
         filter.filter(requestCtx);
 
@@ -167,8 +205,9 @@ class BasicAuthSecurityContextFiltersTest {
                 .securityContextFunction((__, userInfo) -> TEST_USER_INFO.equals(userInfo) ? securityContext : null)
                 .build();
 
+        authenticate();
         filter.filter(requestCtx);
-        verify(requestCtx).abortWith(any(Response.class));
+        verify(requestCtx, never()).setSecurityContext(any(SecurityContext.class));
         clearInvocations(requestCtx);
 
         AsyncContext.put(userInfoKey, TEST_USER_INFO);

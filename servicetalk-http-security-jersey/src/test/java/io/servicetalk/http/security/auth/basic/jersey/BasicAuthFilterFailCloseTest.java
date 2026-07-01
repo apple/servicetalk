@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.security.auth.basic.jersey;
 
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
@@ -55,6 +56,7 @@ import javax.ws.rs.core.UriInfo;
 
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
+import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.UNAUTHORIZED;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -73,22 +75,22 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Tests for the fail-close pattern when either auth filter is missing or wrongly
- * configured:
+ * Tests for the fail-close pattern that relies on the {@link BasicAuthHttpServiceFilter#AUTHENTICATED} marker:
  *
  * <ol>
- *   <li>{@link AbstractBasicAuthSecurityContextFilter#filter} calls
- *       {@code abortWith()}, so when {@code BasicAuthHttpServiceFilter} is missing
- *       upstream the request never proceeds with Jersey's default
- *       {@link SecurityContext}.</li>
- *   <li>The {@code NoUserInfoBuilder} default never installs a {@link SecurityContext}
- *       whose principal is a non-null anonymous principal, defeating any
- *       {@code getUserPrincipal() != null} guard.</li>
+ *   <li>{@link AbstractBasicAuthSecurityContextFilter#filter} calls {@code abortWith()} with {@code 401} when the
+ *       request was not authenticated by {@code BasicAuthHttpServiceFilter} (the marker is absent), so a missing
+ *       upstream filter never lets the request proceed with Jersey's default {@link SecurityContext}.</li>
+ *   <li>The {@code NoUserInfoBuilder} default never installs a {@link SecurityContext} whose principal is a non-null
+ *       anonymous principal, so any {@code getUserPrincipal() != null} guard cannot be defeated.</li>
+ *   <li>When the request <em>was</em> authenticated but no user info is available (for example a key mismatch), the
+ *       filter proceeds with a {@code null} user principal instead of rejecting an already-authenticated request.</li>
  * </ol>
- *
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
+// Some cases exercise the deprecated no-user-info builder on purpose.
+@SuppressWarnings("deprecation")
 class BasicAuthFilterFailCloseTest {
 
     @Mock
@@ -102,6 +104,7 @@ class BasicAuthFilterFailCloseTest {
 
     @AfterEach
     void teardown() throws Exception {
+        AsyncContext.clear();
         try {
             if (httpClient != null) {
                 httpClient.close();
@@ -158,20 +161,23 @@ class BasicAuthFilterFailCloseTest {
     }
 
     /**
-     * The {@code NoUserInfoBuilder} default never installs a {@link SecurityContext}
-     * with a non-null e.g. {@code ANONYMOUS_PRINCIPAL}. Any caller gating on
-     * {@code getUserPrincipal() != null} won't treat the request as authenticated.
-     *
-     * <p>No {@code SecurityContext} is installed (fail-closed
-     * via {@code abortWith}) so that
-     * {@code getUserPrincipal() != null} must NOT pass.
+     * The {@code NoUserInfoBuilder} default never installs a {@link SecurityContext} with a non-null principal (such
+     * as the removed {@code ANONYMOUS_PRINCIPAL}). Even when the request was authenticated upstream, the filter has no
+     * identity to publish, so it proceeds without installing a principal — any caller gating on
+     * {@code getUserPrincipal() != null} will not treat the request as carrying an identity.
      */
     @Test
-    void noUserInfoDefaultDoesNotInstallNonNullPrincipal() throws IOException {
+    void noUserInfoDefaultInstallsNoPrincipalWhenAuthenticated() throws IOException {
         stubUriInfo();
+
+        // Authenticated upstream, but the deprecated no-user-info filter has no identity to publish.
+        AsyncContext.put(BasicAuthHttpServiceFilter.AUTHENTICATED, Boolean.TRUE);
 
         final ContainerRequestFilter filter = BasicAuthSecurityContextFilters.forNameBinding().build();
         filter.filter(requestCtx);
+
+        // The removed anonymous-principal behavior must not resurface, and an authenticated request is not rejected.
+        verify(requestCtx, never()).abortWith(any(Response.class));
 
         final ArgumentCaptor<SecurityContext> scCaptor = ArgumentCaptor.forClass(SecurityContext.class);
         verify(requestCtx, atMost(1)).setSecurityContext(scCaptor.capture());
@@ -227,7 +233,7 @@ class BasicAuthFilterFailCloseTest {
     }
 
     @Test
-    void jerseyFilterFailsClosedWhenUpstreamPublishesUnderDifferentKey() throws Exception {
+    void jerseyProceedsWithNullPrincipalWhenUpstreamPublishesUnderDifferentKey() throws Exception {
         // Upstream filter publishes here.
         final ContextMap.Key<Principal> upstreamKey = newKey("upstream", Principal.class);
         // Jersey filter looks up here. Intentional mismatch — the misconfiguration.
@@ -268,8 +274,10 @@ class BasicAuthFilterFailCloseTest {
                 .appendPathSegments("security-context")
                 .setHeader(AUTHORIZATION, authHeader));
 
-        // Pre-fix: 200 (anonymous principal injected). Post-fix: 401.
-        assertThat(res.status(), is(UNAUTHORIZED));
+        // The request WAS authenticated by the upstream filter (it set the AUTHENTICATED marker); the identity is
+        // simply not available under the key the Jersey filter reads. It is safe to proceed with a null user
+        // principal rather than reject an already-authenticated request.
+        assertThat(res.status(), is(OK));
     }
 
     private void stubUriInfo() {

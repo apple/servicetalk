@@ -17,6 +17,7 @@ package io.servicetalk.http.security.auth.basic.jersey;
 
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +36,8 @@ abstract class AbstractBasicAuthSecurityContextFilter<UserInfo> implements Conta
     private final BiFunction<ContainerRequestContext, UserInfo, SecurityContext> securityContextFunction;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractBasicAuthSecurityContextFilter.class);
-    private static final AtomicBoolean MISCONFIG_WARNED = new AtomicBoolean();
+    private static final AtomicBoolean NOT_AUTHENTICATED_WARNED = new AtomicBoolean();
+    private static final AtomicBoolean NO_USER_INFO_WARNED = new AtomicBoolean();
 
     AbstractBasicAuthSecurityContextFilter(
             @Nullable final ContextMap.Key<UserInfo> userInfoKey,
@@ -46,20 +48,36 @@ abstract class AbstractBasicAuthSecurityContextFilter<UserInfo> implements Conta
 
     @Override
     public void filter(final ContainerRequestContext requestCtx) {
+        if (!Boolean.TRUE.equals(AsyncContext.get(BasicAuthHttpServiceFilter.AUTHENTICATED))) {
+            // The request was not authenticated by a BasicAuthHttpServiceFilter. Either that filter is not installed
+            // upstream of the Jersey router, or AsyncContext is disabled. Fail closed rather than exposing a
+            // @BasicAuthenticated resource to an unauthenticated caller.
+            if (NOT_AUTHENTICATED_WARNED.compareAndSet(false, true)) {
+                LOGGER.warn("Rejecting request to a @BasicAuthenticated resource with 401: the request was not " +
+                        "authenticated by a BasicAuthHttpServiceFilter. Ensure BasicAuthHttpServiceFilter is " +
+                        "installed upstream of the Jersey router (e.g. via HttpServerBuilder#appendServiceFilter) " +
+                        "and that AsyncContext is enabled. Further occurrences will not be logged.");
+            }
+            requestCtx.abortWith(Response.status(Response.Status.UNAUTHORIZED).build());
+            return;
+        }
+
         final SecurityContext securityContext = securityContext(requestCtx);
         if (securityContext != null) {
             requestCtx.setSecurityContext(securityContext);
-        } else {
-            if (MISCONFIG_WARNED.compareAndSet(false, true)) {
-                LOGGER.warn("Rejecting request to a @BasicAuthenticated resource with 401: " +
-                        "no UserInfo present in AsyncContext. This usually means " +
-                        "BasicAuthHttpServiceFilter is not installed upstream of the Jersey router, " +
-                        "or its userInfoAsyncContextKey does not match the key passed to " +
-                        "BasicAuthSecurityContextFilters.forNameBinding/forGlobalBinding(...). " +
-                        "Further occurrences will not be logged.");
-            }
-            requestCtx.abortWith(Response.status(Response.Status.UNAUTHORIZED).build());
+        } else if (userInfoKey != null && NO_USER_INFO_WARNED.compareAndSet(false, true)) {
+            // Authenticated, but no user info was found under the configured key. The request is authenticated, so it
+            // proceeds with a null user principal; this most often indicates a key mismatch between the upstream
+            // BasicAuthHttpServiceFilter and the key passed to BasicAuthSecurityContextFilters.
+            LOGGER.warn("Request authenticated by BasicAuthHttpServiceFilter but no user info was found under the " +
+                    "configured key in AsyncContext; proceeding with a null user principal. Verify that the key " +
+                    "passed to BasicAuthSecurityContextFilters.forNameBinding/forGlobalBinding(...) matches " +
+                    "BasicAuthHttpServiceFilter.Builder#userInfoAsyncContextKey(...). Further occurrences will not " +
+                    "be logged.");
         }
+        // Otherwise the request is authenticated but there is no SecurityContext to install (for example the
+        // deprecated no-user-info filter): the request proceeds with a null user principal, which is expected when
+        // no identity is published for the application to consume.
     }
 
     @Nullable
