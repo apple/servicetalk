@@ -241,16 +241,27 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
 
         @Override
         int secondEntry(Random random, int firstPick) {
-            int result;
-            int iteration = 0;
-            do {
-                result = pick(random);
-            } while (result == firstPick && iteration++ < maxEffort);
-            if (firstPick == result) {
-                LOGGER.debug("{}: failed to pick two unique indices after {} selection attempts",
-                        lbDescription(), maxEffort);
+            // With only two entries the distinct index is trivially the other one. Short-circuit to
+            // avoid the weighted retry loop below, which would otherwise waste draws colliding with
+            // firstPick (firstEntry stays weighted, so the weighted tie-break is unaffected).
+            if (aliases.length == 2) {
+                return firstPick == 0 ? 1 : 0;
             }
-            return 0;
+            // Try to draw a weight-respecting index distinct from firstPick. This is best-effort:
+            // with skewed weights the draw may keep landing on firstPick, so cap the attempts.
+            for (int i = 0; i < maxEffort; i++) {
+                final int result = pick(random);
+                if (result != firstPick) {
+                    return result;
+                }
+            }
+            // Weighted retries exhausted. Fall back to a uniform pick among the other indices so the
+            // two candidates are always distinct: P2C needs two different hosts to compare, and the
+            // caller may only examine this single pair (see the size == 2 case in p2c()).
+            LOGGER.debug("{}: failed to pick two unique indices via weighted selection after {} "
+                    + "attempts, falling back to uniform selection", lbDescription(), maxEffort);
+            final int result = random.nextInt(aliases.length - 1);
+            return result < firstPick ? result : result + 1;
         }
 
         @Override
