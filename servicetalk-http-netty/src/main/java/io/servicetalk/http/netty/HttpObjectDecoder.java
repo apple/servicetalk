@@ -54,6 +54,7 @@ import io.netty.handler.codec.http.HttpExpectationFailedEvent;
 import io.netty.util.AsciiString;
 import io.netty.util.ByteProcessor;
 
+import java.util.Iterator;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpConstants.COLON;
@@ -62,8 +63,10 @@ import static io.netty.handler.codec.http.HttpConstants.HT;
 import static io.netty.handler.codec.http.HttpConstants.LF;
 import static io.netty.handler.codec.http.HttpConstants.SP;
 import static io.netty.util.ByteProcessor.FIND_LF;
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.buffer.api.CharSequences.emptyAsciiString;
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
+import static io.servicetalk.buffer.api.CharSequences.regionMatches;
 import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
@@ -72,7 +75,9 @@ import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY1;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY2;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_LOCATION;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_ORIGIN;
+import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.UPGRADE;
+import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
@@ -748,15 +753,46 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         if (isContentAlwaysEmpty(message)) {
             removeTransferEncodingChunked(message.headers());
             return State.SKIP_CONTROL_CHARS;
-        } else if (isTransferEncodingChunked(message.headers())) {
-            if (contentLength >= 0L && HTTP_1_1.equals(message.version())) {
-                // Remove the received content-length header(s), keep only "transfer-encoding: chunked"
-                // See https://tools.ietf.org/html/rfc7230#section-3.3.3, item 3.
-                message.headers().remove(CONTENT_LENGTH);
-                this.contentLength = Long.MIN_VALUE;
+        }
+        if (message.headers().contains(TRANSFER_ENCODING)) {
+            // RFC 9112 section 6.1: Transfer-Encoding is HTTP/1.1-only.
+            if (!HTTP_1_1.equals(message.version())) {
+                throw new StacklessDecoderException("Transfer-Encoding is only allowed in HTTP/1.1");
             }
-            return State.READ_CHUNK_SIZE;
-        } else if (contentLength >= 0L) {
+
+            // There may be multiple Transfer-Encoding header lines; only the last coding of the last line
+            // decides whether chunked framing applies, so a single pass tracks the last value seen.
+            final Iterator<? extends CharSequence> encodingIt = message.headers().valuesIterator(TRANSFER_ENCODING);
+            CharSequence lastValue = encodingIt.next();
+            while (encodingIt.hasNext()) {
+                lastValue = encodingIt.next();
+            }
+            // RFC 9112 section 6.1: chunked must be the final coding to apply chunked framing. If it isn't,
+            // fall back to a full scan to tell "chunked absent" (e.g. plain "gzip", framing unaffected) apart
+            // from "chunked present but not final" (e.g. "chunked, gzip", which still overrides Content-Length).
+            final boolean chunkedIsFinal = endsWithChunkedToken(lastValue);
+            if (chunkedIsFinal || isTransferEncodingChunked(message.headers())) {
+                // RFC 9112 section 6.3: Transfer-Encoding overrides Content-Length. Drop any received
+                // Content-Length now so it can never be used to frame the body, in any branch below.
+                if (contentLength >= 0L) {
+                    message.headers().remove(CONTENT_LENGTH);
+                    this.contentLength = Long.MIN_VALUE;
+                }
+                if (chunkedIsFinal) {
+                    return State.READ_CHUNK_SIZE;
+                }
+                // RFC 9112 section 6.3: chunked is not the final coding. A request cannot be framed
+                // reliably and MUST be rejected; a response is framed by reading until connection close.
+                if (isDecodingRequest()) {
+                    throw new StacklessDecoderException(
+                            "chunked must be the final Transfer-Encoding coding in requests");
+                }
+                return State.READ_VARIABLE_LENGTH_CONTENT;
+            }
+            // Transfer-Encoding present but chunked never appears (e.g. "gzip"): it doesn't govern framing,
+            // so Content-Length (if any) is left untouched and continues to determine the body length below.
+        }
+        if (contentLength >= 0L) {
             return State.READ_FIXED_LENGTH_CONTENT;
         } else {
             return State.READ_VARIABLE_LENGTH_CONTENT;
@@ -1054,6 +1090,29 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         return value >= '!' && value <= '~';
     }
 
+    /**
+     * Checks if the given value ends with exactly {@code chunked} (case-insensitive).
+     *
+     * @param value the value to check
+     * @return returns {@code true} if {@code value} ends with the {@code chunked} token (case-insensitive),
+     * either as the entire value or as the final comma-separated token.
+     */
+    private static boolean endsWithChunkedToken(final CharSequence value) {
+        final int valueLength = value.length();
+        final int chunkedLength = CHUNKED.length();
+        if (valueLength < chunkedLength) {
+            return false;
+        }
+        if (valueLength == chunkedLength) {
+            return contentEqualsIgnoreCase(value, CHUNKED);
+        }
+        final char before = value.charAt(valueLength - chunkedLength - 1);
+        if (before == ',' || before == ' ' || before == '\t') {
+            return regionMatches(value, true, valueLength - chunkedLength, CHUNKED, 0, chunkedLength);
+        }
+        return false;
+    }
+
     private static boolean isObsText(final byte value) {
         return value < 0; // x80-xFF
     }
@@ -1074,6 +1133,10 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
     static final class StacklessDecoderException extends DecoderException {
         private static final long serialVersionUID = 7611225180490304156L;
+
+        StacklessDecoderException(final String message) {
+            super(message);
+        }
 
         StacklessDecoderException(final String message, final Throwable cause) {
             super(message, cause);

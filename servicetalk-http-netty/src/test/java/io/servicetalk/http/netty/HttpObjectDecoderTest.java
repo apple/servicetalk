@@ -786,6 +786,208 @@ abstract class HttpObjectDecoderTest {
         assertFalse(channel.finishAndReleaseAll());
     }
 
+    /**
+     * RFC 9112 section 6.1: {@code Transfer-Encoding} is HTTP/1.1-only. Today the
+     * decoder ignores the protocol version and accepts {@code Transfer-Encoding: chunked}
+     * on HTTP/1.0, which lets a peer desync framing with HTTP/1.0 intermediaries that
+     * reject TE. After the fix the decoder must reject TE on any non-1.1 message.
+     */
+    @ParameterizedTest(name = "{displayName} [{index}] httpVersion={0} expectRejected={1} crlf={2}")
+    @MethodSource("transferEncodingProtocolVersionArgs")
+    void transferEncodingRejectedOnNonHttp11(String httpVersion, boolean expectRejected, boolean crlf) {
+        EmbeddedChannel channel = channel(crlf);
+        String br = br(crlf);
+        String msg = startLineForContent().replace("HTTP/1.1", httpVersion) + br +
+                "Host: servicetalk.io" + br +
+                "Transfer-Encoding: chunked" + br + br;
+        if (expectRejected) {
+            DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(msg, channel));
+            assertThat(e.getMessage(), startsWith("Transfer-Encoding is only allowed in HTTP/1.1"));
+        } else {
+            // HTTP/1.1 path is unchanged: feed the message and the last-chunk to confirm the
+            // decoder progresses through chunked parsing without throwing.
+            writeMsg(msg, channel);
+            writeLastChunk(channel);
+            assertThat(channel.isOpen(), is(true));
+        }
+    }
+
+    private static Collection<Arguments> transferEncodingProtocolVersionArgs() {
+        final List<Arguments> arguments = new ArrayList<>();
+        for (boolean crlf : new boolean[] {true, false}) {
+            // HTTP/1.0 + Transfer-Encoding: chunked must be rejected.
+            arguments.add(Arguments.of("HTTP/1.0", true, crlf));
+            // HTTP/1.1 sanity: continues to be accepted.
+            arguments.add(Arguments.of("HTTP/1.1", false, crlf));
+        }
+        return arguments;
+    }
+
+    /**
+     * RFC 9112 section 6.1: {@code chunked} must be the final coding applied to the message body. When it is, the
+     * message is chunked-framed (requests and responses alike). When it is not, RFC 9112 section 6.3 splits by
+     * direction: a request cannot be framed reliably and MUST be rejected, while a response is framed by reading
+     * until the connection closes.
+     */
+    @ParameterizedTest(name = "{displayName} [{index}] transferEncoding=\"{0}\" chunkedIsFinal={1} crlf={2}")
+    @MethodSource("transferEncodingChunkedLastArgs")
+    void transferEncodingChunkedMustBeLast(String transferEncoding, boolean chunkedIsFinal, boolean crlf) {
+        EmbeddedChannel channel = channel(crlf);
+        String br = br(crlf);
+        String msg = startLineForContent() + br +
+                "Host: servicetalk.io" + br +
+                "Transfer-Encoding: " + transferEncoding + br + br;
+        if (chunkedIsFinal) {
+            // chunked is the final coding: chunked framing for both requests and responses. We don't drain the
+            // body (the decoder transitions to READ_CHUNK_SIZE awaiting more data); tearDown handles cleanup.
+            writeMsg(msg, channel);
+            HttpMetaData metaData = assertStartLineForContent(channel);
+            assertTrue(isTransferEncodingChunked(metaData.headers()));
+        } else if (isDecodingRequest()) {
+            // RFC 9112 6.3: a request not framed by chunked cannot be framed reliably and is rejected.
+            DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(msg, channel));
+            assertThat(e.getMessage(), startsWith("chunked must be the final Transfer-Encoding coding"));
+        } else {
+            // RFC 9112 6.3: a response not framed by chunked is read until connection close. The headers must
+            // parse and progress without throwing.
+            writeMsg(msg, channel);
+            HttpMetaData metaData = assertStartLineForContent(channel);
+            assertThat(metaData, is(notNullValue()));
+        }
+    }
+
+    private static Collection<Arguments> transferEncodingChunkedLastArgs() {
+        final List<Arguments> arguments = new ArrayList<>();
+        for (boolean crlf : new boolean[] {true, false}) {
+            final String br = crlf ? "\r\n" : "\n";
+            // Single value: chunked alone - chunked-framed.
+            arguments.add(Arguments.of("chunked", true, crlf));
+            // Comma-separated, chunked last - chunked-framed.
+            arguments.add(Arguments.of("gzip, chunked", true, crlf));
+            // No space after comma - still chunked-framed (chunked still last).
+            arguments.add(Arguments.of("gzip,chunked", true, crlf));
+            // Comma-separated, case-insensitive match - chunked-framed.
+            arguments.add(Arguments.of("gzip, ChUnKeD", true, crlf));
+            // HTAB as the OWS separating the previous coding from chunked - chunked-framed.
+            arguments.add(Arguments.of("gzip,\tchunked", true, crlf));
+            // Case-insensitive match - chunked-framed.
+            arguments.add(Arguments.of("ChUnKeD", true, crlf));
+            // Trailing OWS - chunked-framed.
+            arguments.add(Arguments.of("chunked  ", true, crlf));
+            // Repeated chunked as final coding - chunked-framed (RFC 9112 only requires the last be chunked).
+            arguments.add(Arguments.of("chunked, chunked", true, crlf));
+            // Comma-separated, chunked NOT last - request rejects, response reads until close.
+            arguments.add(Arguments.of("chunked, gzip", false, crlf));
+            // Same with whitespace before comma - request rejects, response reads until close.
+            arguments.add(Arguments.of("chunked , gzip", false, crlf));
+            // Multi-header: gzip first, chunked last - chunked-framed.
+            arguments.add(Arguments.of("gzip" + br + "Transfer-Encoding: chunked", true, crlf));
+            // Multi-header: chunked first, gzip last (length 4) - chunked not final.
+            arguments.add(Arguments.of("chunked" + br + "Transfer-Encoding: gzip", false, crlf));
+            // Multi-header: chunked first, deflate last (length 7, same as "chunked") - chunked not final.
+            // This case demonstrates the gap closed vs Netty's permissive check.
+            arguments.add(Arguments.of("chunked" + br + "Transfer-Encoding: deflate", false, crlf));
+            // Multi-header: chunked first, notchunked last - chunked not final. The "chunked" suffix of
+            // "notchunked" must NOT be treated as a token boundary match.
+            arguments.add(Arguments.of("chunked" + br + "Transfer-Encoding: notchunked", false, crlf));
+            // Multi-header: chunked first, empty value last - chunked not final (empty cannot end in chunked).
+            arguments.add(Arguments.of("chunked" + br + "Transfer-Encoding: ", false, crlf));
+        }
+        return arguments;
+    }
+
+    /**
+     * RFC 9112 section 6.3 item 4 only overrides framing (and overrides {@code Content-Length}) when
+     * {@code chunked} governs the message, i.e. it appears somewhere in the {@code Transfer-Encoding} value(s).
+     * When {@code Transfer-Encoding} is present but {@code chunked} never appears at all (e.g. a lone
+     * {@code gzip}), it doesn't govern framing under item 4, so {@code Content-Length} - if present - is left
+     * untouched and continues to determine the body length per item 6, exactly as it would if
+     * {@code Transfer-Encoding} were absent. This mirrors Netty's {@code HttpObjectDecoder}, which only enters
+     * its Transfer-Encoding/Content-Length conflict handling inside the {@code isTransferEncodingChunked} branch.
+     */
+    @ParameterizedTest(name = "{displayName} [{index}] transferEncoding=\"{0}\" withContentLength={1} crlf={2}")
+    @MethodSource("transferEncodingWithoutChunkedAnywhereArgs")
+    void transferEncodingWithoutChunkedAnywhere(String transferEncoding, boolean withContentLength, boolean crlf) {
+        EmbeddedChannel channel = channel(crlf);
+        String br = br(crlf);
+        StringBuilder sb = new StringBuilder()
+                .append(startLineForContent()).append(br)
+                .append("Host: servicetalk.io").append(br)
+                .append("Connection: keep-alive").append(br)
+                .append("Transfer-Encoding: ").append(transferEncoding).append(br);
+        if (withContentLength) {
+            sb.append("Content-Length: 0").append(br);
+        }
+        sb.append(br);
+        writeMsg(sb.toString(), channel);
+        HttpMetaData metaData = assertStartLineForContent(channel);
+        assertThat(metaData, is(notNullValue()));
+        assertFalse(isTransferEncodingChunked(metaData.headers()));
+        // Content-Length is untouched: present iff it was sent, since chunked never governed framing.
+        assertThat("Content-Length presence must be unaffected by a non-chunked Transfer-Encoding",
+                metaData.headers().contains(CONTENT_LENGTH), is(withContentLength));
+    }
+
+    private static Collection<Arguments> transferEncodingWithoutChunkedAnywhereArgs() {
+        final List<Arguments> arguments = new ArrayList<>();
+        for (boolean crlf : new boolean[] {true, false}) {
+            // gzip alone: chunked never appears, Content-Length (if any) is left alone.
+            arguments.add(Arguments.of("gzip", false, crlf));
+            arguments.add(Arguments.of("gzip", true, crlf));
+            // Empty TE value: chunked never appears either.
+            arguments.add(Arguments.of("", false, crlf));
+            arguments.add(Arguments.of("", true, crlf));
+        }
+        return arguments;
+    }
+
+    /**
+     * RFC 9112 section 6.3 item 4: once {@code chunked} appears anywhere in {@code Transfer-Encoding}, it governs
+     * framing and overrides {@code Content-Length}, whether or not {@code chunked} is the final coding. When it is
+     * not the final coding, a request cannot be reliably framed and MUST be rejected, while a response is framed by
+     * reading until connection close. In both cases a stray {@code Content-Length} must be dropped since it must
+     * never be used to frame the body once {@code Transfer-Encoding} contains {@code chunked}.
+     */
+    @ParameterizedTest(name = "{displayName} [{index}] transferEncoding=\"{0}\" withContentLength={1} crlf={2}")
+    @MethodSource("transferEncodingChunkedNotFinalArgs")
+    void transferEncodingChunkedNotFinal(String transferEncoding, boolean withContentLength, boolean crlf) {
+        EmbeddedChannel channel = channel(crlf);
+        String br = br(crlf);
+        StringBuilder sb = new StringBuilder()
+                .append(startLineForContent()).append(br)
+                .append("Host: servicetalk.io").append(br)
+                .append("Transfer-Encoding: ").append(transferEncoding).append(br);
+        if (withContentLength) {
+            sb.append("Content-Length: 0").append(br);
+        }
+        sb.append(br);
+        String msg = sb.toString();
+        if (isDecodingRequest()) {
+            DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(msg, channel));
+            assertThat(e.getMessage(), startsWith("chunked must be the final Transfer-Encoding coding"));
+        } else {
+            // Response side: a non-chunked-final TE is legal under RFC 9112 6.3 and frames by connection close.
+            // Feed the headers and confirm decoding progresses.
+            writeMsg(msg, channel);
+            HttpMetaData metaData = assertStartLineForContent(channel);
+            assertThat(metaData, is(notNullValue()));
+            // Transfer-Encoding overrides Content-Length: it must be dropped, never used to frame the body.
+            assertThat("Content-Length must be stripped when Transfer-Encoding contains chunked",
+                    metaData.headers().contains(CONTENT_LENGTH), is(false));
+        }
+    }
+
+    private static Collection<Arguments> transferEncodingChunkedNotFinalArgs() {
+        final List<Arguments> arguments = new ArrayList<>();
+        for (boolean crlf : new boolean[] {true, false}) {
+            // chunked present but NOT the final coding.
+            arguments.add(Arguments.of("chunked, gzip", false, crlf));
+            // chunked-not-final + Content-Length: Transfer-Encoding must override Content-Length on the response.
+            arguments.add(Arguments.of("chunked, gzip", true, crlf));
+        }
+        return arguments;
+    }
+
     @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
     @ValueSource(booleans = {true, false})
     void unexpectedTrailersAfterContentLength(boolean crlf) {
