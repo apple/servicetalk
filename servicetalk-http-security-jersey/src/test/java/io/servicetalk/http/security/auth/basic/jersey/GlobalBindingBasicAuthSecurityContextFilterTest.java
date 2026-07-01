@@ -19,6 +19,7 @@ import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.security.auth.basic.jersey.resources.GlobalBindingResource;
 import io.servicetalk.http.security.auth.basic.jersey.resources.NameBindingResource;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -28,6 +29,8 @@ import javax.ws.rs.core.Application;
 
 import static java.util.Collections.singleton;
 
+// application() uses the deprecated no-arg forGlobalBinding() for the no-user-info case on purpose.
+@SuppressWarnings("deprecation")
 class GlobalBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthSecurityContextFilterTest {
 
     @Override
@@ -43,12 +46,23 @@ class GlobalBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthS
         };
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] withUserInfo={0}")
-    @ValueSource(booleans = {true, false})
-    void authenticated(final boolean withUserInfo) throws Exception {
-        setUp(withUserInfo);
+    @Test
+    void authenticatedWithUserInfo() throws Exception {
+        setUp(true);
         assertBasicAuthSecurityContextPresent(GlobalBindingResource.PATH);
         assertBasicAuthSecurityContextPresent(NameBindingResource.PATH);
+    }
+
+    /**
+     * No userInfo key wired and no custom principal function: when the upstream {@code BasicAuthHttpServiceFilter}
+     * authenticates the request it sets the {@code AUTHENTICATED} marker, so the global filter proceeds with a
+     * {@code null} user principal for every resource rather than rejecting an already-authenticated request.
+     */
+    @Test
+    void noUserInfoProceedsWithNullPrincipalWhenAuthenticated() throws Exception {
+        setUp(false);
+        assertBasicAuthSecurityContextAbsent(GlobalBindingResource.PATH, true);
+        assertBasicAuthSecurityContextAbsent(NameBindingResource.PATH, true);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] withUserInfo={0}")
