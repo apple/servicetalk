@@ -69,7 +69,9 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.api.CharSequences.regionMatches;
 import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
+import static io.servicetalk.http.api.HeaderUtils.isConnectionClose;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
+import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY1;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY2;
@@ -78,6 +80,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_ORIGIN;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.UPGRADE;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
+import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
@@ -759,28 +762,39 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             if (!HTTP_1_1.equals(message.version())) {
                 throw new StacklessDecoderException("Transfer-Encoding is only allowed in HTTP/1.1");
             }
-            // RFC 9112 section 6.3: Transfer-Encoding overrides Content-Length. Drop any received
-            // Content-Length now so it can never be used to frame the body, in any branch below.
-            if (contentLength >= 0L) {
-                message.headers().remove(CONTENT_LENGTH);
-                this.contentLength = Long.MIN_VALUE;
-            }
-            // RFC 9112 section 6.1: chunked must be the final coding. There may be multiple
-            // Transfer-Encoding header lines, so check the last value of the last line.
+
+            // There may be multiple Transfer-Encoding header lines; only the last coding of the last line
+            // decides whether chunked framing applies, so a single pass tracks the last value seen.
             final Iterator<? extends CharSequence> encodingIt = message.headers().valuesIterator(TRANSFER_ENCODING);
             CharSequence lastValue = encodingIt.next();
             while (encodingIt.hasNext()) {
                 lastValue = encodingIt.next();
             }
-            if (endsWithChunkedToken(lastValue)) {
-                return State.READ_CHUNK_SIZE;
+            // RFC 9112 section 6.1: chunked must be the final coding to apply chunked framing. Deliberate
+            // deviation from RFC 9112 section 6.3, which would otherwise let some non-chunked-final shapes
+            // fall back to Content-Length (e.g. plain "gzip") or to framing a response by connection close
+            // (e.g. "chunked, gzip"): any Transfer-Encoding whose final coding isn't chunked is rejected
+            // outright here, for both requests and responses, since it's an ambiguous/smuggling-adjacent
+            // signal regardless of whether chunked appears earlier in the list or not at all.
+            if (!endsWithChunkedToken(lastValue)) {
+                throw new StacklessDecoderException("chunked must be the final Transfer-Encoding coding");
             }
-            // RFC 9112 section 6.3: chunked is not the final coding. A request cannot be framed
-            // reliably and MUST be rejected; a response is framed by reading until connection close.
-            if (isDecodingRequest()) {
-                throw new StacklessDecoderException("chunked must be the final Transfer-Encoding coding in requests");
+            // RFC 9112 section 6.3: Transfer-Encoding overrides Content-Length. Drop any received
+            // Content-Length now so it can never be used to frame the body.
+            if (contentLength >= 0L) {
+                // RFC 9112 section 6.1: this is the forbidden Content-Length + Transfer-Encoding
+                // combination. Process per Transfer-Encoding alone and force Connection: close -
+                // the shouldClose(message) check below signals the close handler so the connection
+                // is torn down after this exchange to avoid request smuggling attacks.
+                message.headers().remove(CONTENT_LENGTH);
+                this.contentLength = Long.MIN_VALUE;
+                // Preserve any Connection values the peer already sent (e.g. upgrade, keep-alive) and
+                // only add close if it isn't there yet, rather than overriding with set(...).
+                if (!isConnectionClose(message.headers())) {
+                    message.headers().add(CONNECTION, CLOSE);
+                }
             }
-            return State.READ_VARIABLE_LENGTH_CONTENT;
+            return State.READ_CHUNK_SIZE;
         }
         if (contentLength >= 0L) {
             return State.READ_FIXED_LENGTH_CONTENT;

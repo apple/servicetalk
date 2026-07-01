@@ -184,7 +184,9 @@ class ContentHeadersTest extends AbstractNettyHttpServerTest {
                 new ResponseTest(streamingResponse(NOT_MODIFIED), GET, defaults(), HAVE_NEITHER),
                 new ResponseTest(streamingResponse(NOT_MODIFIED), GET, withoutPayload(), HAVE_NEITHER),
 
-                new ResponseTest(aggregatedResponse(OK), GET, transferEncodingGzip(), HAVE_CONTENT_LENGTH),
+                // A lone "Transfer-Encoding: gzip" (no chunked) is now rejected outright by the decoder rather
+                // than tolerated and papered over with the aggregated response's Content-Length - see
+                // HttpObjectDecoderTest#transferEncodingChunkedMustBeLast for the decoder-level coverage.
                 new ResponseTest(aggregatedResponse(OK), GET, transferEncodingChunked(),
                         HAVE_TRANSFER_ENCODING_CHUNKED),
                 new ResponseTest(aggregatedResponse(OK), GET, transferEncodingGzipAndChunked(),
@@ -249,13 +251,6 @@ class ContentHeadersTest extends AbstractNettyHttpServerTest {
                 throw new IllegalStateException();
             }
         }, "WithoutPayload");
-    }
-
-    private static UnaryOperator<HttpMetaData> transferEncodingGzip() {
-        return describe(input -> {
-            input.headers().set(TRANSFER_ENCODING, "gzip");
-            return input;
-        }, "ExistingTransferEncodingGzip");
     }
 
     private static UnaryOperator<HttpMetaData> transferEncodingGzipAndChunked() {

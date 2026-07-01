@@ -20,6 +20,7 @@ import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -117,6 +118,13 @@ class HttpRequestDecoderTest extends HttpObjectDecoderTest {
                 false,  // allowPrematureClosureBeforePayloadBody
                 false,  // allowLFWithoutCR
                 UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
+    }
+
+    @Override
+    EmbeddedChannel channelWithCloseHandler(CloseHandler closeHandler) {
+        return new EmbeddedChannel(new HttpRequestDecoder(new ArrayDeque<>(), getByteBufAllocator(DEFAULT_ALLOCATOR),
+                DefaultHttpHeadersFactory.INSTANCE, DEFAULT_MAX_START_LINE_LENGTH, DEFAULT_MAX_HEADER_FIELD_LENGTH,
+                DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH, false, false, closeHandler));
     }
 
     @Test

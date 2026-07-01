@@ -39,6 +39,7 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.netty.HttpResponseDecoder.Signal;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -162,6 +163,16 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
                 false,  // allowPrematureClosureBeforePayloadBody
                 false,  // allowLFWithoutCR
                 UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
+    }
+
+    @Override
+    EmbeddedChannel channelWithCloseHandler(CloseHandler closeHandler) {
+        final Deque<Signal> signalsQueue = new PollLikePeakArrayDeque<>();
+        signalsQueue.offer(REQUEST_SIGNAL);
+        return new EmbeddedChannel(new HttpResponseDecoder(methodQueue, signalsQueue,
+                getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE,
+                DEFAULT_MAX_START_LINE_LENGTH, DEFAULT_MAX_HEADER_FIELD_LENGTH, DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH,
+                false, false, closeHandler));
     }
 
     @Test
