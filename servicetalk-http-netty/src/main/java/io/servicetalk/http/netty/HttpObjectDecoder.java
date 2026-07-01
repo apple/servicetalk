@@ -759,28 +759,38 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             if (!HTTP_1_1.equals(message.version())) {
                 throw new StacklessDecoderException("Transfer-Encoding is only allowed in HTTP/1.1");
             }
-            // RFC 9112 section 6.3: Transfer-Encoding overrides Content-Length. Drop any received
-            // Content-Length now so it can never be used to frame the body, in any branch below.
-            if (contentLength >= 0L) {
-                message.headers().remove(CONTENT_LENGTH);
-                this.contentLength = Long.MIN_VALUE;
-            }
-            // RFC 9112 section 6.1: chunked must be the final coding. There may be multiple
-            // Transfer-Encoding header lines, so check the last value of the last line.
+
+            // There may be multiple Transfer-Encoding header lines; only the last coding of the last line
+            // decides whether chunked framing applies, so a single pass tracks the last value seen.
             final Iterator<? extends CharSequence> encodingIt = message.headers().valuesIterator(TRANSFER_ENCODING);
             CharSequence lastValue = encodingIt.next();
             while (encodingIt.hasNext()) {
                 lastValue = encodingIt.next();
             }
-            if (endsWithChunkedToken(lastValue)) {
-                return State.READ_CHUNK_SIZE;
+            // RFC 9112 section 6.1: chunked must be the final coding to apply chunked framing. If it isn't,
+            // fall back to a full scan to tell "chunked absent" (e.g. plain "gzip", framing unaffected) apart
+            // from "chunked present but not final" (e.g. "chunked, gzip", which still overrides Content-Length).
+            final boolean chunkedIsFinal = endsWithChunkedToken(lastValue);
+            if (chunkedIsFinal || isTransferEncodingChunked(message.headers())) {
+                // RFC 9112 section 6.3: Transfer-Encoding overrides Content-Length. Drop any received
+                // Content-Length now so it can never be used to frame the body, in any branch below.
+                if (contentLength >= 0L) {
+                    message.headers().remove(CONTENT_LENGTH);
+                    this.contentLength = Long.MIN_VALUE;
+                }
+                if (chunkedIsFinal) {
+                    return State.READ_CHUNK_SIZE;
+                }
+                // RFC 9112 section 6.3: chunked is not the final coding. A request cannot be framed
+                // reliably and MUST be rejected; a response is framed by reading until connection close.
+                if (isDecodingRequest()) {
+                    throw new StacklessDecoderException(
+                            "chunked must be the final Transfer-Encoding coding in requests");
+                }
+                return State.READ_VARIABLE_LENGTH_CONTENT;
             }
-            // RFC 9112 section 6.3: chunked is not the final coding. A request cannot be framed
-            // reliably and MUST be rejected; a response is framed by reading until connection close.
-            if (isDecodingRequest()) {
-                throw new StacklessDecoderException("chunked must be the final Transfer-Encoding coding in requests");
-            }
-            return State.READ_VARIABLE_LENGTH_CONTENT;
+            // Transfer-Encoding present but chunked never appears (e.g. "gzip"): it doesn't govern framing,
+            // so Content-Length (if any) is left untouched and continues to determine the body length below.
         }
         if (contentLength >= 0L) {
             return State.READ_FIXED_LENGTH_CONTENT;
