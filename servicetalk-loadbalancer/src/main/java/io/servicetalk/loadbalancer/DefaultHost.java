@@ -660,7 +660,12 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             for (int i = 0, j = 0; i < newSize; i++) {
                 newList.add(i == insertionIndex ? connection : connections.get(j++));
             }
-            return new ConnState(newList, State.ACTIVE, 0, null);
+            // Adding a connection means the host is reachable, so if it was ACTIVE or UNHEALTHY we (re)mark it
+            // ACTIVE and reset the failure counter. If the host was EXPIRED by service discovery we must preserve
+            // that state: a connection that completes after expiry (e.g. one that was in-flight when the EXPIRED
+            // event arrived) must not resurrect a host that service discovery asked us to drain.
+            final State nextState = state == State.ACTIVE || state == State.UNHEALTHY ? State.ACTIVE : state;
+            return new ConnState(newList, nextState, 0, null);
         }
 
         boolean isActive() {
