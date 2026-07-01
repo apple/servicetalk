@@ -100,6 +100,61 @@ class P2CSelectorTest {
     }
 
     @Test
+    void weightedSelectorFallsBackToDistinctIndexWhenWeightedPicksCollide() throws Exception {
+        List<Host<String, TestLoadBalancedConnection>> hosts = generateHosts(3);
+        when(hosts.get(0).weight()).thenReturn(3.0);
+        when(hosts.get(1).weight()).thenReturn(1.0);
+        when(hosts.get(2).weight()).thenReturn(1.0);
+        when(hosts.get(0).score()).thenReturn(0);
+        when(hosts.get(1).score()).thenReturn(1); // host 1 has the better score, so it wins the pair
+        // firstEntry consumes one nextInt, then maxEffort colliding weighted picks, then one fallback.
+        int[] alwaysZero = new int[maxEffort + 2];
+        selector = new P2CSelector<>(hosts, "testResource", false, maxEffort, failOpen,
+                scriptedRandom(alwaysZero));
+        TestLoadBalancedConnection connection = selector.selectConnection(
+                PREDICATE, null, false).toFuture().get();
+        assertThat(connection.address(), equalTo(hosts.get(1).address()));
+    }
+
+    @Test
+    void twoHostWeightedSelectionIsWeightProportionalOnScoreTies() throws Exception {
+        List<Host<String, TestLoadBalancedConnection>> hosts = generateHosts(2);
+        when(hosts.get(0).weight()).thenReturn(3.0);
+        when(hosts.get(1).weight()).thenReturn(1.0);
+        init(hosts);
+        checkProbabilities(hosts);
+    }
+
+    @Test
+    void weightedSelectorComparesExactlyTheTwoDrawnCandidates() throws Exception {
+        // Unequal weights force the weighted alias-table path (equal weights bypass it) and every
+        // host gets a distinct score. A scripted Random drives firstEntry/secondEntry to chosen
+        // indices - returning 0.0 from nextDouble keeps pick() on the drawn index instead of its
+        // alias - so we can assert that for every ordered pair P2C compares exactly those two hosts
+        // and selects the better-scored one. A selector that pins the second candidate to a fixed
+        // index picks the wrong host for most pairs.
+        final int numHosts = 5;
+        List<Host<String, TestLoadBalancedConnection>> hosts = generateHosts(numHosts);
+        for (int i = 0; i < numHosts; i++) {
+            when(hosts.get(i).weight()).thenReturn(i + 1.0);
+            when(hosts.get(i).score()).thenReturn(i); // higher index == higher (better) score
+        }
+        for (int first = 0; first < numHosts; first++) {
+            for (int second = 0; second < numHosts; second++) {
+                if (first == second) {
+                    continue;
+                }
+                selector = new P2CSelector<>(hosts, "testResource", false, maxEffort, failOpen,
+                        scriptedRandom(first, second));
+                TestLoadBalancedConnection connection = selector.selectConnection(
+                        PREDICATE, null, false).toFuture().get();
+                assertThat("drawn pair (" + first + ", " + second + ")",
+                        connection.address(), equalTo(hosts.get(Math.max(first, second)).address()));
+            }
+        }
+    }
+
+    @Test
     void negativeWeightsTurnIntoUnweightedSelection() throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = SelectorTestHelpers.generateHosts(2);
         when(hosts.get(0).weight()).thenReturn(-1.0);
@@ -324,6 +379,27 @@ class P2CSelectorTest {
         Exception e = assertThrows(ExecutionException.class, () -> selector.selectConnection(
                 PREDICATE, null, false).toFuture().get());
         assertThat(e.getCause(), isA(NoActiveHostException.class));
+    }
+
+    // A Random that hands out a fixed sequence of nextInt() results to drive the two host picks.
+    private static Random scriptedRandom(int... nextInts) {
+        return new Random() {
+            private int index;
+
+            @Override
+            public int nextInt(int bound) {
+                return nextInts[index++] % bound;
+            }
+
+            @Override
+            public double nextDouble() {
+                // pick() follows a host's alias only when `nextDouble() > pp` (pp in [0, 1]), so 0.0
+                // never redirects: pick() collapses to nextInt(len) and the scripted indices win.
+                // This bypasses weight-biasing (covered by unequalWeightDistribution()); here we only
+                // assert which two candidates get compared.
+                return 0.0;
+            }
+        };
     }
 
     private void checkProbabilities(List<Host<String, TestLoadBalancedConnection>> hosts) throws Exception {
