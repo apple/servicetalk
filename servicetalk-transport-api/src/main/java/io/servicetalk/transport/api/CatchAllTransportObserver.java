@@ -55,6 +55,10 @@ final class CatchAllTransportObserver implements TransportObserver {
         this.observer = requireNonNull(observer);
     }
 
+    TransportObserver observer() {
+        return observer;
+    }
+
     @Override
     public ConnectionObserver onNewConnection(@Nullable final Object localAddress, final Object remoteAddress) {
         return safeReport(() -> observer.onNewConnection(localAddress, remoteAddress), observer, "new connection",
