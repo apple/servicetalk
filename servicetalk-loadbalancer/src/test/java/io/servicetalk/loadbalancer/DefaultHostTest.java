@@ -144,6 +144,22 @@ class DefaultHostTest {
     }
 
     @Test
+    void expiredHostNotResurrectedByLateConnection() throws Exception {
+        buildHost();
+        // Establish a connection so the host stays EXPIRED (draining) instead of closing immediately.
+        host.newConnection(any(), false, null).toFuture().get();
+        host.markExpired();
+        verify(mockHostObserver, times(1)).onHostMarkedExpired(1);
+        assertThat(host.canMakeNewConnections(), is(false));
+
+        // A connection that completes after expiry (e.g. one in-flight when the EXPIRED event arrived) must not
+        // resurrect the host back to ACTIVE.
+        host.newConnection(any(), false, null).toFuture().get();
+        assertThat(host.canMakeNewConnections(), is(false));
+        assertThat(host.onClose().toFuture().isDone(), is(false));
+    }
+
+    @Test
     void l4ConsecutiveFailuresAreDetected() throws Exception {
         TestLoadBalancedConnection testLoadBalancedConnection = TestLoadBalancedConnection.mockConnection(
                 DEFAULT_ADDRESS);
