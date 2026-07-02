@@ -38,6 +38,14 @@ final class BiTransportObserver implements TransportObserver {
         this.second = asSafeObserver(second);
     }
 
+    TransportObserver first() {
+        return first;
+    }
+
+    TransportObserver second() {
+        return second;
+    }
+
     @Override
     public ConnectionObserver onNewConnection(@Nullable final Object localAddress, final Object remoteAddress) {
         return new BiConnectionObserver(first.onNewConnection(localAddress, remoteAddress),
