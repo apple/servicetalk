@@ -29,7 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -211,14 +210,24 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
         private void sequentialCheckOutliers() {
             assert sequentialExecutor.isCurrentThreadDraining();
 
+            // Snapshot the indicator set into a list so every algorithm and the verdict-application loop below
+            // observe the same hosts in the same order.
+            final List<XdsHealthIndicatorImpl> currentIndicators = new ArrayList<>(indicators);
+            final boolean[] outliers = new boolean[currentIndicators.size()];
             for (XdsOutlierDetectorAlgorithm<ResolvedAddress, C> outlierDetector : algorithms) {
-                outlierDetector.detectOutliers(config, indicators);
+                outlierDetector.detectOutliers(config, currentIndicators, outliers);
+            }
+
+            for (int i = 0; i < currentIndicators.size(); i++) {
+                XdsHealthIndicatorImpl indicator = currentIndicators.get(i);
+                indicator.updateOutlierStatus(config, outliers[i]);
+                indicator.resetCounters();
             }
             cancellable.nextCancellable(scheduleNextOutliersCheck(config));
 
             // Check to see if any of our health states changed from the previous scan and fire an event if they did.
             boolean emitChange = false;
-            for (XdsHealthIndicatorImpl indicator : indicators) {
+            for (XdsHealthIndicatorImpl indicator : currentIndicators) {
                 boolean currentlyIsHealthy = indicator.isHealthy();
                 if (indicator.lastObservedHealthy != currentlyIsHealthy) {
                     indicator.lastObservedHealthy = currentlyIsHealthy;
@@ -240,35 +249,6 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
         if (config.enforcingSuccessRate() > 0) {
             detectors.add(new SuccessRateXdsOutlierDetectorAlgorithm<>());
         }
-        // We need at least one failure detector so that we can decrement the failure multiplier on each interval.
-        if (detectors.isEmpty()) {
-            detectors.add(new AlwaysHealthyOutlierDetectorAlgorithm<>());
-        }
         return detectors;
-    }
-
-    private static final class AlwaysHealthyOutlierDetectorAlgorithm<ResolvedAddress, C extends LoadBalancedConnection>
-            implements XdsOutlierDetectorAlgorithm<ResolvedAddress, C> {
-
-        @Override
-        public void detectOutliers(final OutlierDetectorConfig config,
-                                   final Collection<? extends XdsHealthIndicator<ResolvedAddress, C>> indicators) {
-            int unhealthy = 0;
-            for (XdsHealthIndicator<ResolvedAddress, C> indicator : indicators) {
-                // Hosts can still be marked unhealthy due to consecutive failures.
-                final boolean isHealthy = indicator.isHealthy();
-                if (isHealthy) {
-                    // If the indicator is healthy we need to mark it as health to make sure
-                    // we decrement the failure multiplier.
-                    indicator.updateOutlierStatus(config, false);
-                } else {
-                    unhealthy++;
-                }
-            }
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("NoopOutlierDetector found {} unhealthy instances out of a total of {}.",
-                        unhealthy, indicators.size());
-            }
-        }
     }
 }

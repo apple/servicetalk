@@ -20,7 +20,7 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
+import java.util.List;
 
 import static io.servicetalk.loadbalancer.OutlierDetectorConfig.enforcing;
 
@@ -30,20 +30,21 @@ final class FailurePercentageXdsOutlierDetectorAlgorithm<ResolvedAddress, C exte
     private static final Logger LOGGER = LoggerFactory.getLogger(FailurePercentageXdsOutlierDetectorAlgorithm.class);
 
     // We use a sentinel value to mark values as 'skipped' so we don't need to create a dynamically sized
-    // data structure for doubles which would require boxing.
+    // data structure for longs which would require boxing.
     private static final long NOT_EVALUATED = Long.MAX_VALUE;
 
     @Override
     public void detectOutliers(final OutlierDetectorConfig config,
-                               final Collection<? extends XdsHealthIndicator<ResolvedAddress, C>> indicators) {
+                               final List<? extends XdsHealthIndicator<ResolvedAddress, C>> indicators,
+                               final boolean[] outliers) {
         final long[] failurePercentages = new long[indicators.size()];
         int i = 0;
         int enoughVolumeHosts = 0;
-        int alreadyEjectedHosts = 0;
         for (XdsHealthIndicator<?, ?> indicator : indicators) {
             if (!indicator.isHealthy()) {
+                // Already-ejected hosts are excluded from analysis and left to the caller to keep ejected; we
+                // don't OR them into the verdict.
                 failurePercentages[i] = NOT_EVALUATED;
-                alreadyEjectedHosts++;
             } else {
                 long successes = indicator.getSuccesses();
                 long failures = indicator.getFailures();
@@ -54,7 +55,6 @@ final class FailurePercentageXdsOutlierDetectorAlgorithm<ResolvedAddress, C exte
                 failurePercentages[i] = totalRequests == 0L ? 0 : failures * 100L / totalRequests;
             }
             i++;
-            indicator.resetCounters();
         }
 
         if (enoughVolumeHosts < config.failurePercentageMinimumHosts()) {
@@ -68,19 +68,18 @@ final class FailurePercentageXdsOutlierDetectorAlgorithm<ResolvedAddress, C exte
         }
 
         final double failurePercentageThreshold = config.failurePercentageThreshold();
-        int ejectedCount = 0;
-        i = 0;
-        for (XdsHealthIndicator<?, ?> indicator : indicators) {
-            long failurePercentage = failurePercentages[i++];
-            if (indicator.updateOutlierStatus(config, failurePercentage == NOT_EVALUATED ||
-                    failurePercentage >= failurePercentageThreshold &&
-                            enforcing(config.enforcingFailurePercentage()))) {
-                ejectedCount++;
+        int flaggedCount = 0;
+        for (i = 0; i < failurePercentages.length; i++) {
+            long failurePercentage = failurePercentages[i];
+            if (failurePercentage != NOT_EVALUATED && failurePercentage >= failurePercentageThreshold &&
+                    enforcing(config.enforcingFailurePercentage())) {
+                outliers[i] = true;
+                flaggedCount++;
             }
         }
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Finished host ejection. of {} total hosts {} hosts were already " +
-                    "ejected and {} were newly ejected.", indicators.size(), alreadyEjectedHosts, ejectedCount);
+            LOGGER.debug("Finished failure percentage analysis. Of {} total hosts {} were flagged as outliers.",
+                    indicators.size(), flaggedCount);
         }
     }
 }

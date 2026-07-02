@@ -17,19 +17,33 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
 
-import java.util.Collection;
+import java.util.List;
 
 /**
- * Logic that can detect outliers and attempts to mark them as an outlier so that the load balancer
- * can try to route traffic to more healthy hosts.
+ * Logic that identifies outlier hosts based on the request stats collected since the last detection round.
+ * <p>
+ * Multiple algorithms can be active simultaneously (e.g. success-rate and failure-percentage). To match the XDS
+ * model where every dimension is evaluated against the same accumulated dataset, algorithms are pure: they only read
+ * the current stats and mark outliers. They must not mutate host state, reset the stats counters, or eject hosts. The
+ * caller ({@link XdsOutlierDetector}) collects all algorithms' verdicts, applies the combined result to each host
+ * exactly once per round, and resets the counters afterwards.
  */
 @FunctionalInterface
 interface XdsOutlierDetectorAlgorithm<ResolvedAddress, C extends LoadBalancedConnection> {
     /**
-     * Analyze and potentially eject outlier hosts.
+     * Analyze the current stats and mark outlier hosts.
+     * <p>
+     * Implementations read stats from {@code indicators} but must not reset them or change host status. For each host
+     * this algorithm considers an outlier, set the corresponding entry in {@code outliers} to {@code true}. Entries
+     * must only ever be set to {@code true} (never back to {@code false}) because verdicts from all active algorithms
+     * are combined via logical OR. Hosts that are already unhealthy are handled by the caller and should be left out
+     * of the verdict (but may be excluded from statistical analysis as appropriate).
      * @param config the current {@link OutlierDetectorConfig} to use.
-     * @param indicators an ordered list of {@link HealthIndicator} instances to collect stats from.
+     * @param indicators an ordered list of {@link XdsHealthIndicator} instances to collect stats from.
+     * @param outliers a mutable array, indexed in the same order as {@code indicators}, into which this algorithm ORs
+     *                 its outlier verdict.
      */
     void detectOutliers(OutlierDetectorConfig config,
-                        Collection<? extends XdsHealthIndicator<ResolvedAddress, C>> indicators);
+                        List<? extends XdsHealthIndicator<ResolvedAddress, C>> indicators,
+                        boolean[] outliers);
 }
