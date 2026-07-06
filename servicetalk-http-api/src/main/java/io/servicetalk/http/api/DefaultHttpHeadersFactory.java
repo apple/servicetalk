@@ -32,7 +32,8 @@ public final class DefaultHttpHeadersFactory implements HttpHeadersFactory {
             "io.servicetalk.http.api.temporaryDefaultValidateHeaderValues";
     private static final boolean DEFAULT_VALIDATE_VALUES = defaultValidateValues();
 
-    public static final HttpHeadersFactory INSTANCE = new DefaultHttpHeadersFactory(true, true, DEFAULT_VALIDATE_VALUES);
+    public static final HttpHeadersFactory INSTANCE =
+            new DefaultHttpHeadersFactory(true, true, DEFAULT_VALIDATE_VALUES);
 
     static {
         if (!DEFAULT_VALIDATE_VALUES) {
