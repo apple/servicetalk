@@ -1110,11 +1110,15 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         if (valueLength == chunkedLength) {
             return contentEqualsIgnoreCase(value, CHUNKED);
         }
-        final char before = value.charAt(valueLength - chunkedLength - 1);
-        if (before == ',' || before == ' ' || before == '\t') {
-            return regionMatches(value, true, valueLength - chunkedLength, CHUNKED, 0, chunkedLength);
+        // List elements are comma-separated (RFC 9110 section 5.6.1): skip any OWS (SP/HTAB) immediately
+        // preceding "chunked", then require a comma. A bare SP/HTAB with no comma (e.g. "gzip chunked") is not
+        // a valid element separator and must not be mistaken for "chunked" being a distinct, final coding.
+        int sepIndex = valueLength - chunkedLength - 1;
+        while (sepIndex >= 0 && (value.charAt(sepIndex) == ' ' || value.charAt(sepIndex) == '\t')) {
+            sepIndex--;
         }
-        return false;
+        return sepIndex >= 0 && value.charAt(sepIndex) == ','
+                && regionMatches(value, true, valueLength - chunkedLength, CHUNKED, 0, chunkedLength);
     }
 
     private static boolean isObsText(final byte value) {

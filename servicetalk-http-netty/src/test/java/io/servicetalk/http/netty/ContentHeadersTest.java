@@ -184,9 +184,6 @@ class ContentHeadersTest extends AbstractNettyHttpServerTest {
                 new ResponseTest(streamingResponse(NOT_MODIFIED), GET, defaults(), HAVE_NEITHER),
                 new ResponseTest(streamingResponse(NOT_MODIFIED), GET, withoutPayload(), HAVE_NEITHER),
 
-                // A lone "Transfer-Encoding: gzip" (no chunked) is now rejected outright by the decoder rather
-                // than tolerated and papered over with the aggregated response's Content-Length - see
-                // HttpObjectDecoderTest#transferEncodingChunkedMustBeLast for the decoder-level coverage.
                 new ResponseTest(aggregatedResponse(OK), GET, transferEncodingChunked(),
                         HAVE_TRANSFER_ENCODING_CHUNKED),
                 new ResponseTest(aggregatedResponse(OK), GET, transferEncodingGzipAndChunked(),

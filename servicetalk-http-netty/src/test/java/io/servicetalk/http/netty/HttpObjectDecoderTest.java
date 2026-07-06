@@ -971,7 +971,9 @@ abstract class HttpObjectDecoderTest {
             arguments.add(Arguments.of("gzip,\tchunked", true, crlf));
             // Case-insensitive match - chunked-framed.
             arguments.add(Arguments.of("ChUnKeD", true, crlf));
-            // Trailing OWS - chunked-framed.
+            // Trailing OWS: the header-value parser already strips leading/trailing OWS from the whole field
+            // value (see #testHeaderFiledValue), so this reaches endsWithChunkedToken as plain "chunked" -
+            // chunked-framed, same as the "chunked" case above; kept for documentation purposes.
             arguments.add(Arguments.of("chunked  ", true, crlf));
             // Repeated chunked as final coding - chunked-framed (RFC 9112 only requires the last be chunked).
             arguments.add(Arguments.of("chunked, chunked", true, crlf));
@@ -979,6 +981,11 @@ abstract class HttpObjectDecoderTest {
             arguments.add(Arguments.of("chunked, gzip", false, crlf));
             // Same with whitespace before comma - rejected regardless of role.
             arguments.add(Arguments.of("chunked , gzip", false, crlf));
+            // SP with no comma is not a valid list separator (RFC 9110 section 5.6.1 requires "#" elements to be
+            // comma-separated) - must not be mistaken for "chunked" being a distinct, final coding.
+            arguments.add(Arguments.of("gzip chunked", false, crlf));
+            // Same with HTAB instead of SP - still not a valid separator without a comma.
+            arguments.add(Arguments.of("gzip\tchunked", false, crlf));
             // Multi-header: gzip first, chunked last - chunked-framed.
             arguments.add(Arguments.of("gzip" + br + "Transfer-Encoding: chunked", true, crlf));
             // Multi-header: chunked first, gzip last (length 4) - chunked not final.
@@ -1003,36 +1010,17 @@ abstract class HttpObjectDecoderTest {
      * RFC 9112 section 6.3 item 4: once {@code chunked} appears anywhere in {@code Transfer-Encoding}, it governs
      * framing and overrides {@code Content-Length}, whether or not {@code chunked} is the final coding. The RFC
      * would let a response where chunked is not final fall back to framing by connection close, but this decoder
-     * deliberately deviates from that and rejects the ambiguous encoding unconditionally, for both requests and
-     * responses, rather than tolerating it on the response side.
+     * deliberately deviates from that and rejects the ambiguous encoding unconditionally - even when a
+     * {@code Content-Length} is also present, proving the rejection happens before {@code Content-Length} could
+     * ever be consulted as a fallback.
      */
-    @ParameterizedTest(name = "{displayName} [{index}] transferEncoding=\"{0}\" withContentLength={1} crlf={2}")
-    @MethodSource("transferEncodingChunkedNotFinalArgs")
-    void transferEncodingChunkedNotFinal(String transferEncoding, boolean withContentLength, boolean crlf) {
-        EmbeddedChannel channel = channel(crlf);
-        String br = br(crlf);
-        StringBuilder sb = new StringBuilder()
-                .append(startLineForContent()).append(br)
-                .append("Host: servicetalk.io").append(br)
-                .append("Transfer-Encoding: ").append(transferEncoding).append(br);
-        if (withContentLength) {
-            sb.append("Content-Length: 0").append(br);
-        }
-        sb.append(br);
-        String msg = sb.toString();
-        DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(msg, channel));
+    @Test
+    void transferEncodingChunkedNotFinalRejectedEvenWithContentLength() {
+        DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + "\r\n" +
+                "Host: servicetalk.io\r\n" +
+                "Transfer-Encoding: chunked, gzip\r\n" +
+                "Content-Length: 0\r\n\r\n"));
         assertThat(e.getMessage(), startsWith("chunked must be the final Transfer-Encoding coding"));
-    }
-
-    private static Collection<Arguments> transferEncodingChunkedNotFinalArgs() {
-        final List<Arguments> arguments = new ArrayList<>();
-        for (boolean crlf : new boolean[] {true, false}) {
-            // chunked present but NOT the final coding.
-            arguments.add(Arguments.of("chunked, gzip", false, crlf));
-            // chunked-not-final + Content-Length: rejected regardless of Content-Length presence.
-            arguments.add(Arguments.of("chunked, gzip", true, crlf));
-        }
-        return arguments;
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
