@@ -575,7 +575,11 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
     }
 
     @Override
-    protected CharSequence validateValue(final CharSequence value) {
+    protected CharSequence validateValue(final CharSequence name, @Nullable final CharSequence value) {
+        if (value == null) {
+            throw new IllegalArgumentException(
+                    "Null values are not allowed, encountered null for header name: " + name);
+        }
         if (validateValues) {
             validateHeaderValue(value);
         }

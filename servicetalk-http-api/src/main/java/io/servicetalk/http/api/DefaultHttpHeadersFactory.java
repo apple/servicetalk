@@ -15,12 +15,33 @@
  */
 package io.servicetalk.http.api;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static java.lang.Boolean.parseBoolean;
+import static java.lang.System.getProperty;
+
 /**
  * Default implementation of {@link HttpHeadersFactory}.
  */
 public final class DefaultHttpHeadersFactory implements HttpHeadersFactory {
 
-    public static final HttpHeadersFactory INSTANCE = new DefaultHttpHeadersFactory(true, true, false);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultHttpHeadersFactory.class);
+    // FIXME: 0.43 - remove this temporary property
+    static final String DEFAULT_VALIDATE_VALUES_PROPERTY =
+            "io.servicetalk.http.api.temporaryDefaultValidateHeaderValues";
+    private static final boolean DEFAULT_VALIDATE_VALUES = defaultValidateValues();
+
+    public static final HttpHeadersFactory INSTANCE =
+            new DefaultHttpHeadersFactory(true, true, DEFAULT_VALIDATE_VALUES);
+
+    static {
+        if (!DEFAULT_VALIDATE_VALUES) {
+            LOGGER.warn("-D{}: {}. This property will be removed in the future releases. " +
+                            "Configure this value via DefaultHttpHeadersFactory constructor instead.",
+                    DEFAULT_VALIDATE_VALUES_PROPERTY, DEFAULT_VALIDATE_VALUES);
+        }
+    }
 
     private final boolean validateNames;
     private final boolean validateCookies;
@@ -87,6 +108,10 @@ public final class DefaultHttpHeadersFactory implements HttpHeadersFactory {
     @Override
     public boolean validateValues() {
         return validateValues;
+    }
+
+    static boolean defaultValidateValues() {
+        return parseBoolean(getProperty(DEFAULT_VALIDATE_VALUES_PROPERTY, "true"));
     }
 
     @Override
