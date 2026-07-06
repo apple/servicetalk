@@ -33,11 +33,17 @@ final class FailurePercentageXdsOutlierDetectorAlgorithm<ResolvedAddress, C exte
     // data structure for longs which would require boxing.
     private static final long NOT_EVALUATED = Long.MAX_VALUE;
 
+    private long[] failurePercentages = new long[0];
+
     @Override
     public void detectOutliers(final OutlierDetectorConfig config,
                                final List<? extends XdsHealthIndicator<ResolvedAddress, C>> indicators,
                                final boolean[] outliers) {
-        final long[] failurePercentages = new long[indicators.size()];
+        final int size = indicators.size();
+        // Because we always overwrite every element before accessing there is no need to zero the array on reuse.
+        if (failurePercentages.length != size) {
+            failurePercentages = new long[size];
+        }
         int i = 0;
         int enoughVolumeHosts = 0;
         for (XdsHealthIndicator<?, ?> indicator : indicators) {

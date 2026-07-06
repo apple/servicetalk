@@ -43,12 +43,18 @@ final class SuccessRateXdsOutlierDetectorAlgorithm<ResolvedAddress, C extends Lo
     // data structure for doubles which would require boxing.
     private static final double NOT_EVALUATED = Double.MAX_VALUE;
 
+    private double[] successRates = new double[0];
+
     @Override
     public void detectOutliers(final OutlierDetectorConfig config,
                                final List<? extends XdsHealthIndicator<ResolvedAddress, C>> indicators,
                                final boolean[] outliers) {
         LOGGER.debug("Started outlier detection.");
-        final double[] successRates = new double[indicators.size()];
+        final int size = indicators.size();
+        // Because we always overwrite every element before accessing there is no need to zero the array on reuse.
+        if (successRates.length != size) {
+            successRates = new double[size];
+        }
         int i = 0;
         int enoughVolumeHosts = 0;
         for (XdsHealthIndicator<?, ?> indicator : indicators) {
