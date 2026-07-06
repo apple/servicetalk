@@ -271,8 +271,8 @@ class ServerPipelineControlFlowTest {
             IOException e = assertThrows(IOException.class, () -> {
                 switch (protocol) {
                     case HTTP_1:
-                        // \r\n is illegal inside header values
-                        client.request(client.get("/").setHeader("some-header", "invalid\r\nvalue"));
+                        // \r is illegal inside request-target
+                        client.request(client.get("/\r/path"));
                         break;
                     case HTTP_2:
                         // TRACE methods can not have content-length header
