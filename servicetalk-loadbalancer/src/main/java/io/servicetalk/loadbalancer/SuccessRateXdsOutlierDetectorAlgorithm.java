@@ -70,8 +70,13 @@ final class SuccessRateXdsOutlierDetectorAlgorithm<ResolvedAddress, C extends Lo
                 long totalRequests = successes + failures;
                 if (totalRequests >= config.successRateRequestVolume()) {
                     enoughVolumeHosts++;
+                    successRates[i] = (double) successes / totalRequests;
+                } else {
+                    // Hosts that don't meet the request volume threshold (including idle hosts with no
+                    // requests) are excluded from the success rate statistics and are not eligible for
+                    // ejection.
+                    successRates[i] = NOT_EVALUATED;
                 }
-                successRates[i] = totalRequests > 0 ? (double) successes / (totalRequests) : 1d;
             }
             i++;
         }
