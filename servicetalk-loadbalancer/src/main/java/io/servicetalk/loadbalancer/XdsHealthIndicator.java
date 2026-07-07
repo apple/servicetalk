@@ -212,6 +212,8 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
             // If we are evicted or just transitioned out of eviction we shouldn't be marked as an outlier this round.
             // Note that this differs from the envoy behavior. If we want to mimic it, then I think we need to just
             // fall through and maybe attempt to eject again.
+            // Note: we deliberately don't decrement `failureMultiplier` on this revival path because that lets the
+            //       multiplier grow if the host continues to be unhealthy in consecutive intervals.
             return false;
         } else if (isOutlier) {
             final boolean result = sequentialTryEject(config, OUTLIER_DETECTOR_CAUSE);
