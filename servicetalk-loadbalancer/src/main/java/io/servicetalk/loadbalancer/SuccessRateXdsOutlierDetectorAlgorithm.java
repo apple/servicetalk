@@ -57,11 +57,13 @@ final class SuccessRateXdsOutlierDetectorAlgorithm<ResolvedAddress, C extends Lo
         }
         int i = 0;
         int enoughVolumeHosts = 0;
+        int alreadyEjectedHosts = 0;
         for (XdsHealthIndicator<?, ?> indicator : indicators) {
             if (!indicator.isHealthy()) {
                 // Already-ejected hosts are excluded from the statistical analysis and left to the caller to
                 // keep ejected; we don't OR them into the verdict.
                 successRates[i] = NOT_EVALUATED;
+                alreadyEjectedHosts++;
             } else {
                 long successes = indicator.getSuccesses();
                 long failures = indicator.getFailures();
@@ -97,8 +99,9 @@ final class SuccessRateXdsOutlierDetectorAlgorithm<ResolvedAddress, C extends Lo
             }
         }
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Finished success rate analysis. Of {} total hosts {} were flagged as outliers.",
-                    indicators.size(), flaggedCount);
+            LOGGER.debug("Finished success rate analysis. Of {} total hosts {} were already ejected by any algorithm " +
+                            "and {} were flagged as outliers by {} algorithm.",
+                    indicators.size(), alreadyEjectedHosts, flaggedCount, this.getClass().getSimpleName());
         }
     }
 

@@ -235,23 +235,20 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
                 outlierDetector.detectOutliers(config, currentIndicators, outliers);
             }
 
+            boolean emitChange = false;
             for (int i = 0; i < size; i++) {
                 XdsHealthIndicatorImpl indicator = currentIndicators.get(i);
                 indicator.updateOutlierStatus(config, outliers[i]);
                 indicator.resetCounters();
-            }
-            cancellable.nextCancellable(scheduleNextOutliersCheck(config));
 
-            // Check to see if any of our health states changed from the previous scan and fire an event if they did.
-            boolean emitChange = false;
-            for (int i = 0; i < size; i++) {
-                XdsHealthIndicatorImpl indicator = currentIndicators.get(i);
+                // Check to see if any of our health states changed from the previous scan
                 boolean currentlyIsHealthy = indicator.isHealthy();
                 if (indicator.lastObservedHealthy != currentlyIsHealthy) {
                     indicator.lastObservedHealthy = currentlyIsHealthy;
                     emitChange = true;
                 }
             }
+            cancellable.nextCancellable(scheduleNextOutliersCheck(config));
             if (emitChange) {
                 LOGGER.debug("Health status change observed. Emitting event.");
                 healthStatusChangeProcessor.onNext(null);
