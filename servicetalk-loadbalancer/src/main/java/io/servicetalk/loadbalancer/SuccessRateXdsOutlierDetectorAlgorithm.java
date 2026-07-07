@@ -20,7 +20,7 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
+import java.util.List;
 
 import static io.servicetalk.loadbalancer.OutlierDetectorConfig.enforcing;
 
@@ -43,16 +43,25 @@ final class SuccessRateXdsOutlierDetectorAlgorithm<ResolvedAddress, C extends Lo
     // data structure for doubles which would require boxing.
     private static final double NOT_EVALUATED = Double.MAX_VALUE;
 
+    private double[] successRates = new double[0];
+
     @Override
     public void detectOutliers(final OutlierDetectorConfig config,
-                               final Collection<? extends XdsHealthIndicator<ResolvedAddress, C>> indicators) {
+                               final List<? extends XdsHealthIndicator<ResolvedAddress, C>> indicators,
+                               final boolean[] outliers) {
         LOGGER.debug("Started outlier detection.");
-        final double[] successRates = new double[indicators.size()];
+        final int size = indicators.size();
+        // Because we always overwrite every element before accessing there is no need to zero the array on reuse.
+        if (successRates.length != size) {
+            successRates = new double[size];
+        }
         int i = 0;
         int enoughVolumeHosts = 0;
         int alreadyEjectedHosts = 0;
         for (XdsHealthIndicator<?, ?> indicator : indicators) {
             if (!indicator.isHealthy()) {
+                // Already-ejected hosts are excluded from the statistical analysis and left to the caller to
+                // keep ejected; we don't OR them into the verdict.
                 successRates[i] = NOT_EVALUATED;
                 alreadyEjectedHosts++;
             } else {
@@ -65,13 +74,12 @@ final class SuccessRateXdsOutlierDetectorAlgorithm<ResolvedAddress, C extends Lo
                 successRates[i] = totalRequests > 0 ? (double) successes / (totalRequests) : 1d;
             }
             i++;
-            indicator.resetCounters();
         }
 
         if (enoughVolumeHosts < config.successRateMinimumHosts()) {
             // not enough hosts with enough volume to do the analysis.
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Not enough hosts  with sufficient volume to perform ejection: " +
+                LOGGER.debug("Not enough hosts with sufficient volume to perform ejection: " +
                         "{} total hosts and {} had sufficient volume. Minimum {} required.",
                         indicators.size(), enoughVolumeHosts, config.successRateMinimumHosts());
             }
@@ -81,18 +89,19 @@ final class SuccessRateXdsOutlierDetectorAlgorithm<ResolvedAddress, C extends Lo
         final double mean = mean(successRates);
         final double stdev = stdev(successRates, mean);
         final double requiredSuccessRate = mean - stdev * (config.successRateStdevFactor() / 1000d);
-        int ejectedCount = 0;
-        i = 0;
-        for (XdsHealthIndicator<?, ?> indicator : indicators) {
-            double successRate = successRates[i++];
-            if (indicator.updateOutlierStatus(config, successRate == NOT_EVALUATED ||
-                    successRate < requiredSuccessRate && enforcing(config.enforcingSuccessRate()))) {
-                ejectedCount++;
+        int flaggedCount = 0;
+        for (i = 0; i < successRates.length; i++) {
+            double successRate = successRates[i];
+            if (successRate != NOT_EVALUATED && successRate < requiredSuccessRate &&
+                    enforcing(config.enforcingSuccessRate())) {
+                outliers[i] = true;
+                flaggedCount++;
             }
         }
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Finished host ejection. of {} total hosts {} hosts were already " +
-                    "ejected and {} were newly ejected.", indicators.size(), alreadyEjectedHosts, ejectedCount);
+            LOGGER.debug("Finished success rate analysis. Of {} total hosts {} were already ejected by any algorithm " +
+                            "and {} were flagged as outliers.",
+                    indicators.size(), alreadyEjectedHosts, flaggedCount);
         }
     }
 

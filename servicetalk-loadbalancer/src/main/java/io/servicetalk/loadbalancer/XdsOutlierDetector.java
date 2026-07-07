@@ -29,7 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -187,6 +187,11 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
         private final SequentialCancellable cancellable;
         private final List<XdsOutlierDetectorAlgorithm<ResolvedAddress, C>> algorithms;
         private final OutlierDetectorConfig config;
+        // Reused across detection rounds to avoid per-interval garbage. Only accessed on the
+        // `sequentialExecutor` drain thread during a detection pass, and regrown only when the indicator set size
+        // changes.
+        private final List<XdsHealthIndicatorImpl> currentIndicators = new ArrayList<>();
+        private boolean[] outliers = new boolean[0];
 
         Kernel(final OutlierDetectorConfig config) {
             this.config = config;
@@ -211,20 +216,39 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
         private void sequentialCheckOutliers() {
             assert sequentialExecutor.isCurrentThreadDraining();
 
-            for (XdsOutlierDetectorAlgorithm<ResolvedAddress, C> outlierDetector : algorithms) {
-                outlierDetector.detectOutliers(config, indicators);
-            }
-            cancellable.nextCancellable(scheduleNextOutliersCheck(config));
-
-            // Check to see if any of our health states changed from the previous scan and fire an event if they did.
-            boolean emitChange = false;
+            // Snapshot the indicator set so every algorithm and the verdict-application loop observe the same
+            // hosts in the same order. The snapshot list and `outliers` buffer are reused across rounds; we fill
+            // the list manually (rather than addAll) to avoid the intermediate array it would allocate.
+            currentIndicators.clear();
             for (XdsHealthIndicatorImpl indicator : indicators) {
+                currentIndicators.add(indicator);
+            }
+            final int size = currentIndicators.size();
+            boolean[] outliers = this.outliers;
+            if (outliers.length != size) {
+                outliers = this.outliers = new boolean[size];
+            } else {
+                Arrays.fill(outliers, false);
+            }
+
+            for (XdsOutlierDetectorAlgorithm<ResolvedAddress, C> outlierDetector : algorithms) {
+                outlierDetector.detectOutliers(config, currentIndicators, outliers);
+            }
+
+            boolean emitChange = false;
+            for (int i = 0; i < size; i++) {
+                XdsHealthIndicatorImpl indicator = currentIndicators.get(i);
+                indicator.updateOutlierStatus(config, outliers[i]);
+                indicator.resetCounters();
+
+                // Check to see if any of our health states changed from the previous scan
                 boolean currentlyIsHealthy = indicator.isHealthy();
                 if (indicator.lastObservedHealthy != currentlyIsHealthy) {
                     indicator.lastObservedHealthy = currentlyIsHealthy;
                     emitChange = true;
                 }
             }
+            cancellable.nextCancellable(scheduleNextOutliersCheck(config));
             if (emitChange) {
                 LOGGER.debug("Health status change observed. Emitting event.");
                 healthStatusChangeProcessor.onNext(null);
@@ -240,35 +264,6 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
         if (config.enforcingSuccessRate() > 0) {
             detectors.add(new SuccessRateXdsOutlierDetectorAlgorithm<>());
         }
-        // We need at least one failure detector so that we can decrement the failure multiplier on each interval.
-        if (detectors.isEmpty()) {
-            detectors.add(new AlwaysHealthyOutlierDetectorAlgorithm<>());
-        }
         return detectors;
-    }
-
-    private static final class AlwaysHealthyOutlierDetectorAlgorithm<ResolvedAddress, C extends LoadBalancedConnection>
-            implements XdsOutlierDetectorAlgorithm<ResolvedAddress, C> {
-
-        @Override
-        public void detectOutliers(final OutlierDetectorConfig config,
-                                   final Collection<? extends XdsHealthIndicator<ResolvedAddress, C>> indicators) {
-            int unhealthy = 0;
-            for (XdsHealthIndicator<ResolvedAddress, C> indicator : indicators) {
-                // Hosts can still be marked unhealthy due to consecutive failures.
-                final boolean isHealthy = indicator.isHealthy();
-                if (isHealthy) {
-                    // If the indicator is healthy we need to mark it as health to make sure
-                    // we decrement the failure multiplier.
-                    indicator.updateOutlierStatus(config, false);
-                } else {
-                    unhealthy++;
-                }
-            }
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("NoopOutlierDetector found {} unhealthy instances out of a total of {}.",
-                        unhealthy, indicators.size());
-            }
-        }
     }
 }
