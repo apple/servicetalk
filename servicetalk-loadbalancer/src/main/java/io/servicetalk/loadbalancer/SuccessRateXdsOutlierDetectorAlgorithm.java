@@ -100,7 +100,7 @@ final class SuccessRateXdsOutlierDetectorAlgorithm<ResolvedAddress, C extends Lo
         }
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Finished success rate analysis. Of {} total hosts {} were already ejected by any algorithm " +
-                            "and {} were flagged as outliers by {} algorithm.",
+                            "and {} were flagged as outliers by {}.",
                     indicators.size(), alreadyEjectedHosts, flaggedCount, this.getClass().getSimpleName());
         }
     }
