@@ -86,9 +86,9 @@ final class FailurePercentageXdsOutlierDetectorAlgorithm<ResolvedAddress, C exte
             }
         }
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Finished failure percentage analysis. Of {} total hosts {} were already ejected by any algorithm " +
-                            "and {} were flagged as outliers by {}.",
-                    indicators.size(), alreadyEjectedHosts, flaggedCount, this.getClass().getSimpleName());
+            LOGGER.debug("Finished failure percentage analysis. Of {} total hosts {} were already ejected by any " +
+                            "algorithm and {} were flagged as outliers.",
+                    indicators.size(), alreadyEjectedHosts, flaggedCount);
         }
     }
 }
