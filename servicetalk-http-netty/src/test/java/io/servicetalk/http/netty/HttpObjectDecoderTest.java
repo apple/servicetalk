@@ -926,82 +926,105 @@ abstract class HttpObjectDecoderTest {
     }
 
     /**
-     * RFC 9112 section 6.1: {@code chunked} must be the final coding applied to the message body. When it is, the
-     * message is chunked-framed (requests and responses alike). Otherwise - whether some other coding is last (e.g.
-     * {@code chunked, gzip}) or chunked never appears at all (e.g. a lone {@code gzip}, or an empty value) - RFC
-     * 9112 section 6.3 would tolerate several of these shapes (falling back to Content-Length, or framing a
-     * response by connection close); this decoder deliberately deviates from that and rejects all of them
-     * unconditionally, for both requests and responses, since an ambiguous Transfer-Encoding is a
-     * smuggling-adjacent signal regardless of which shape it takes.
+     * RFC 9112 section 6.1: {@code chunked} must be the final coding applied to the message body, and a sender
+     * "MUST NOT apply the chunked transfer coding more than once to a message body (i.e., chunking an already
+     * chunked message is not allowed)". When chunked is the final coding and appears exactly once, the message is
+     * chunked-framed (requests and responses alike). Otherwise - whether some other coding is last (e.g.
+     * {@code chunked, gzip}), chunked never appears at all (e.g. a lone {@code gzip}, or an empty value), or
+     * chunked appears more than once (e.g. {@code chunked, chunked}) - this decoder rejects the message
+     * unconditionally, for both requests and responses, since an ambiguous or non-conformant Transfer-Encoding is
+     * a smuggling-adjacent signal regardless of which shape it takes. RFC 9112 section 6.3 would otherwise tolerate
+     * some non-chunked-final shapes (falling back to Content-Length, or framing a response by connection close);
+     * this decoder deliberately deviates from that.
      */
-    @ParameterizedTest(name = "{displayName} [{index}] transferEncoding=\"{0}\" chunkedIsFinal={1} crlf={2}")
+    @ParameterizedTest(name = "{displayName} [{index}] transferEncoding=\"{0}\" rejectionMessage={1} crlf={2}")
     @MethodSource("transferEncodingChunkedLastArgs")
-    void transferEncodingChunkedMustBeLast(String transferEncoding, boolean chunkedIsFinal, boolean crlf) {
+    void transferEncodingChunkedMustBeLastAndUnique(String transferEncoding, @Nullable String rejectionMessage,
+                                                    boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         String msg = startLineForContent() + br +
                 "Host: servicetalk.io" + br +
                 "Transfer-Encoding: " + transferEncoding + br + br;
-        if (chunkedIsFinal) {
-            // chunked is the final coding: chunked framing for both requests and responses. We don't drain the
-            // body (the decoder transitions to READ_CHUNK_SIZE awaiting more data); tearDown handles cleanup.
+        if (rejectionMessage == null) {
+            // chunked is the final coding and appears exactly once: chunked framing for both requests and
+            // responses. We don't drain the body (the decoder transitions to READ_CHUNK_SIZE awaiting more data);
+            // tearDown handles cleanup.
             writeMsg(msg, channel);
             HttpMetaData metaData = assertStartLineForContent(channel);
             assertTrue(isTransferEncodingChunked(metaData.headers()));
         } else {
             // Deliberate deviation from RFC 9112 6.3: rejected for both requests and responses, not just requests.
             DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(msg, channel));
-            assertThat(e.getMessage(), startsWith("chunked must be the final Transfer-Encoding coding"));
+            assertThat(e.getMessage(), startsWith(rejectionMessage));
         }
     }
 
     private static Collection<Arguments> transferEncodingChunkedLastArgs() {
+        final String notFinal = "chunked must be the final Transfer-Encoding coding";
+        final String appliedMoreThanOnce = "chunked transfer coding must not be applied more than once";
         final List<Arguments> arguments = new ArrayList<>();
         for (boolean crlf : new boolean[] {true, false}) {
             final String br = crlf ? "\r\n" : "\n";
             // Single value: chunked alone - chunked-framed.
-            arguments.add(Arguments.of("chunked", true, crlf));
+            arguments.add(Arguments.of("chunked", null, crlf));
             // Comma-separated, chunked last - chunked-framed.
-            arguments.add(Arguments.of("gzip, chunked", true, crlf));
+            arguments.add(Arguments.of("gzip, chunked", null, crlf));
             // No space after comma - still chunked-framed (chunked still last).
-            arguments.add(Arguments.of("gzip,chunked", true, crlf));
+            arguments.add(Arguments.of("gzip,chunked", null, crlf));
             // Comma-separated, case-insensitive match - chunked-framed.
-            arguments.add(Arguments.of("gzip, ChUnKeD", true, crlf));
+            arguments.add(Arguments.of("gzip, ChUnKeD", null, crlf));
             // HTAB as the OWS separating the previous coding from chunked - chunked-framed.
-            arguments.add(Arguments.of("gzip,\tchunked", true, crlf));
+            arguments.add(Arguments.of("gzip,\tchunked", null, crlf));
             // Case-insensitive match - chunked-framed.
-            arguments.add(Arguments.of("ChUnKeD", true, crlf));
+            arguments.add(Arguments.of("ChUnKeD", null, crlf));
             // Trailing OWS: the header-value parser already strips leading/trailing OWS from the whole field
             // value (see #testHeaderFiledValue), so this reaches endsWithChunkedToken as plain "chunked" -
             // chunked-framed, same as the "chunked" case above; kept for documentation purposes.
-            arguments.add(Arguments.of("chunked  ", true, crlf));
-            // Repeated chunked as final coding - chunked-framed (RFC 9112 only requires the last be chunked).
-            arguments.add(Arguments.of("chunked, chunked", true, crlf));
+            arguments.add(Arguments.of("chunked  ", null, crlf));
+            // RFC 9112 section 6.1: a sender MUST NOT apply chunked more than once. Repeated chunked as the final
+            // coding is still rejected even though chunked is technically last.
+            arguments.add(Arguments.of("chunked, chunked", appliedMoreThanOnce, crlf));
+            // Repeated chunked with another coding first - still rejected as applied more than once.
+            arguments.add(Arguments.of("gzip, chunked, chunked", appliedMoreThanOnce, crlf));
+            // Repeated chunked with another coding in between - chunked is still final, but appears twice overall.
+            arguments.add(Arguments.of("chunked, gzip, chunked", appliedMoreThanOnce, crlf));
+            // Case-insensitive duplicate - still rejected as applied more than once.
+            arguments.add(Arguments.of("CHUNKED, chunked", appliedMoreThanOnce, crlf));
+            // No space between the duplicated tokens - still rejected as applied more than once.
+            arguments.add(Arguments.of("chunked,chunked", appliedMoreThanOnce, crlf));
             // Comma-separated, chunked NOT last - rejected regardless of role.
-            arguments.add(Arguments.of("chunked, gzip", false, crlf));
+            arguments.add(Arguments.of("chunked, gzip", notFinal, crlf));
             // Same with whitespace before comma - rejected regardless of role.
-            arguments.add(Arguments.of("chunked , gzip", false, crlf));
+            arguments.add(Arguments.of("chunked , gzip", notFinal, crlf));
             // SP with no comma is not a valid list separator (RFC 9110 section 5.6.1 requires "#" elements to be
             // comma-separated) - must not be mistaken for "chunked" being a distinct, final coding.
-            arguments.add(Arguments.of("gzip chunked", false, crlf));
+            arguments.add(Arguments.of("gzip chunked", notFinal, crlf));
             // Same with HTAB instead of SP - still not a valid separator without a comma.
-            arguments.add(Arguments.of("gzip\tchunked", false, crlf));
+            arguments.add(Arguments.of("gzip\tchunked", notFinal, crlf));
             // Multi-header: gzip first, chunked last - chunked-framed.
-            arguments.add(Arguments.of("gzip" + br + "Transfer-Encoding: chunked", true, crlf));
+            arguments.add(Arguments.of("gzip" + br + "Transfer-Encoding: chunked", null, crlf));
             // Multi-header: chunked first, gzip last (length 4) - chunked not final.
-            arguments.add(Arguments.of("chunked" + br + "Transfer-Encoding: gzip", false, crlf));
+            arguments.add(Arguments.of("chunked" + br + "Transfer-Encoding: gzip", notFinal, crlf));
             // Multi-header: chunked first, deflate last (length 7, same as "chunked") - chunked not final.
             // This case demonstrates the gap closed vs Netty's permissive check.
-            arguments.add(Arguments.of("chunked" + br + "Transfer-Encoding: deflate", false, crlf));
+            arguments.add(Arguments.of("chunked" + br + "Transfer-Encoding: deflate", notFinal, crlf));
             // Multi-header: chunked first, notchunked last - chunked not final. The "chunked" suffix of
             // "notchunked" must NOT be treated as a token boundary match.
-            arguments.add(Arguments.of("chunked" + br + "Transfer-Encoding: notchunked", false, crlf));
+            arguments.add(Arguments.of("chunked" + br + "Transfer-Encoding: notchunked", notFinal, crlf));
             // Multi-header: chunked first, empty value last - chunked not final (empty cannot end in chunked).
-            arguments.add(Arguments.of("chunked" + br + "Transfer-Encoding: ", false, crlf));
+            arguments.add(Arguments.of("chunked" + br + "Transfer-Encoding: ", notFinal, crlf));
+            // Multi-header: chunked repeated across separate header lines - RFC 9110 section 5.2 requires combining
+            // multiple field lines of the same name into one comma-joined list, so this is equivalent to
+            // "chunked, chunked" and must be rejected as applied more than once.
+            arguments.add(Arguments.of("chunked" + br + "Transfer-Encoding: chunked", appliedMoreThanOnce, crlf));
+            // Multi-header: gzip then chunked, then chunked again on a third line - applied more than once.
+            arguments.add(Arguments.of("gzip" + br + "Transfer-Encoding: chunked" + br +
+                    "Transfer-Encoding: chunked", appliedMoreThanOnce, crlf));
             // Transfer-Encoding present but chunked never appears at all - rejected the same as chunked-not-final.
-            arguments.add(Arguments.of("gzip", false, crlf));
+            arguments.add(Arguments.of("gzip", notFinal, crlf));
             // Empty Transfer-Encoding value - chunked cannot be the final coding either.
-            arguments.add(Arguments.of("", false, crlf));
+            arguments.add(Arguments.of("", notFinal, crlf));
         }
         return arguments;
     }
@@ -1021,6 +1044,20 @@ abstract class HttpObjectDecoderTest {
                 "Transfer-Encoding: chunked, gzip\r\n" +
                 "Content-Length: 0\r\n\r\n"));
         assertThat(e.getMessage(), startsWith("chunked must be the final Transfer-Encoding coding"));
+    }
+
+    /**
+     * Same defense-in-depth property as {@link #transferEncodingChunkedNotFinalRejectedEvenWithContentLength()},
+     * but for the RFC 9112 section 6.1 "chunked applied more than once" violation: rejection happens before
+     * {@code Content-Length} could ever be consulted as a fallback.
+     */
+    @Test
+    void transferEncodingChunkedAppliedMoreThanOnceRejectedEvenWithContentLength() {
+        DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + "\r\n" +
+                "Host: servicetalk.io\r\n" +
+                "Transfer-Encoding: chunked, chunked\r\n" +
+                "Content-Length: 0\r\n\r\n"));
+        assertThat(e.getMessage(), startsWith("chunked transfer coding must not be applied more than once"));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")

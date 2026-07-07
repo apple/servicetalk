@@ -63,7 +63,6 @@ import static io.netty.handler.codec.http.HttpConstants.HT;
 import static io.netty.handler.codec.http.HttpConstants.LF;
 import static io.netty.handler.codec.http.HttpConstants.SP;
 import static io.netty.util.ByteProcessor.FIND_LF;
-import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.buffer.api.CharSequences.emptyAsciiString;
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.api.CharSequences.regionMatches;
@@ -763,22 +762,14 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 throw new StacklessDecoderException("Transfer-Encoding is only allowed in HTTP/1.1");
             }
 
-            // There may be multiple Transfer-Encoding header lines; only the last coding of the last line
-            // decides whether chunked framing applies, so a single pass tracks the last value seen.
-            final Iterator<? extends CharSequence> encodingIt = message.headers().valuesIterator(TRANSFER_ENCODING);
-            CharSequence lastValue = encodingIt.next();
-            while (encodingIt.hasNext()) {
-                lastValue = encodingIt.next();
-            }
-            // RFC 9112 section 6.1: chunked must be the final coding to apply chunked framing. Deliberate
+            // RFC 9112 section 6.1: chunked must be the final coding to apply chunked framing, and a sender
+            // "MUST NOT apply the chunked transfer coding more than once to a message body". Deliberate
             // deviation from RFC 9112 section 6.3, which would otherwise let some non-chunked-final shapes
             // fall back to Content-Length (e.g. plain "gzip") or to framing a response by connection close
-            // (e.g. "chunked, gzip"): any Transfer-Encoding whose final coding isn't chunked is rejected
-            // outright here, for both requests and responses, since it's an ambiguous/smuggling-adjacent
-            // signal regardless of whether chunked appears earlier in the list or not at all.
-            if (!endsWithChunkedToken(lastValue)) {
-                throw new StacklessDecoderException("chunked must be the final Transfer-Encoding coding");
-            }
+            // (e.g. "chunked, gzip"): any Transfer-Encoding whose final coding isn't chunked, or that names
+            // chunked more than once, is rejected outright here, for both requests and responses, since it's
+            // an ambiguous/smuggling-adjacent signal regardless of the shape it takes.
+            validateTransferEncodingChunked(message.headers().valuesIterator(TRANSFER_ENCODING));
             // RFC 9112 section 6.3: Transfer-Encoding overrides Content-Length. Drop any received
             // Content-Length now so it can never be used to frame the body.
             if (contentLength >= 0L) {
@@ -1095,30 +1086,55 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     }
 
     /**
-     * Checks if the given value ends with exactly {@code chunked} (case-insensitive).
+     * Validates that {@code chunked} appears exactly once across all {@code Transfer-Encoding} header field-lines
+     * and that it is the final coding, per RFC 9112 section 6.1: chunked must be the final transfer coding to
+     * apply chunked framing, and a sender "MUST NOT apply the chunked transfer coding more than once to a message
+     * body (i.e., chunking an already chunked message is not allowed)". Stops scanning as soon as a second
+     * {@code chunked} token is found, without inspecting the remaining tokens or header lines.
      *
-     * @param value the value to check
-     * @return returns {@code true} if {@code value} ends with the {@code chunked} token (case-insensitive),
-     * either as the entire value or as the final comma-separated token.
+     * @param encodingIt an iterator over each {@code Transfer-Encoding} header field-line value, in wire order
+     * @throws StacklessDecoderException if chunked is not the final coding, or appears more than once
      */
-    private static boolean endsWithChunkedToken(final CharSequence value) {
-        final int valueLength = value.length();
+    private static void validateTransferEncodingChunked(final Iterator<? extends CharSequence> encodingIt) {
         final int chunkedLength = CHUNKED.length();
-        if (valueLength < chunkedLength) {
-            return false;
+        boolean chunkedSeen = false;
+        boolean lastTokenIsChunked = false;
+        while (encodingIt.hasNext()) {
+            final CharSequence value = encodingIt.next();
+            final int valueLength = value.length();
+            int tokenStart = 0;
+            // List elements are comma-separated (RFC 9110 section 5.6.1); walk tokens left-to-right, trimming
+            // any OWS (SP/HTAB) at their edges, so a bare SP/HTAB with no comma (e.g. "gzip chunked") is not
+            // mistaken for two distinct tokens.
+            for (int i = 0; i <= valueLength; i++) {
+                if (i == valueLength || value.charAt(i) == ',') {
+                    int tokenEnd = i;
+                    while (tokenStart < tokenEnd && isOWSChar(value.charAt(tokenStart))) {
+                        tokenStart++;
+                    }
+                    while (tokenEnd > tokenStart && isOWSChar(value.charAt(tokenEnd - 1))) {
+                        tokenEnd--;
+                    }
+                    lastTokenIsChunked = tokenEnd - tokenStart == chunkedLength &&
+                            regionMatches(value, true, tokenStart, CHUNKED, 0, chunkedLength);
+                    if (lastTokenIsChunked) {
+                        if (chunkedSeen) {
+                            throw new StacklessDecoderException(
+                                    "chunked transfer coding must not be applied more than once");
+                        }
+                        chunkedSeen = true;
+                    }
+                    tokenStart = i + 1;
+                }
+            }
         }
-        if (valueLength == chunkedLength) {
-            return contentEqualsIgnoreCase(value, CHUNKED);
+        if (!lastTokenIsChunked) {
+            throw new StacklessDecoderException("chunked must be the final Transfer-Encoding coding");
         }
-        // List elements are comma-separated (RFC 9110 section 5.6.1): skip any OWS (SP/HTAB) immediately
-        // preceding "chunked", then require a comma. A bare SP/HTAB with no comma (e.g. "gzip chunked") is not
-        // a valid element separator and must not be mistaken for "chunked" being a distinct, final coding.
-        int sepIndex = valueLength - chunkedLength - 1;
-        while (sepIndex >= 0 && (value.charAt(sepIndex) == ' ' || value.charAt(sepIndex) == '\t')) {
-            sepIndex--;
-        }
-        return sepIndex >= 0 && value.charAt(sepIndex) == ','
-                && regionMatches(value, true, valueLength - chunkedLength, CHUNKED, 0, chunkedLength);
+    }
+
+    private static boolean isOWSChar(final char value) {
+        return value == ' ' || value == '\t';
     }
 
     private static boolean isObsText(final byte value) {
