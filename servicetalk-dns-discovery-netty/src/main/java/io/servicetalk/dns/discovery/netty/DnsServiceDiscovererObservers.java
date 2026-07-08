@@ -38,7 +38,7 @@ public final class DnsServiceDiscovererObservers {
      * @return a safe version of the passed {@link DnsServiceDiscovererObserver} that catches and logs all exceptions,
      * but does not rethrow them.
      */
-    public static DnsServiceDiscovererObserver asSafeObserver(final DnsServiceDiscovererObserver observer) {
+    static DnsServiceDiscovererObserver asSafeObserver(final DnsServiceDiscovererObserver observer) {
         if (observer instanceof CatchAllDnsServiceDiscovererObserver) {
             return observer;
         }
