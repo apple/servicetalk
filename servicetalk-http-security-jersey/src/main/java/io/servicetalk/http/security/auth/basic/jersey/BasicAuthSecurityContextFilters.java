@@ -112,26 +112,19 @@ public final class BasicAuthSecurityContextFilters {
 
     /**
      * A builder that can be used when no user info is stored in {@link AsyncContext}.
-     *
-     * @deprecated This builder cannot associate an authenticated request with a {@link Principal}: the previous
-     * behavior of synthesizing an anonymous principal has been removed. When the upstream
-     * {@code BasicAuthHttpServiceFilter} authenticated the request the resulting filter proceeds with a {@code null}
-     * user principal, and when it did not the request is rejected with {@code 401}. To associate a {@link Principal}
-     * with authenticated requests use {@link #forNameBinding(ContextMap.Key)} or
-     * {@link #forGlobalBinding(ContextMap.Key)} together with
-     * {@code BasicAuthHttpServiceFilter.Builder#userInfoAsyncContextKey(ContextMap.Key)}.
      */
-    // FIXME: 0.43 - remove deprecated class
-    @Deprecated
     public abstract static class NoUserInfoBuilder extends AbstractBuilder<NoUserInfoBuilder,
             Function<ContainerRequestContext, Principal>,
             Function<ContainerRequestContext, SecurityContext>> {
 
         NoUserInfoBuilder() {
             super(BasicAuthSecurityContextFilters::asSecurityContextFunction,
-                    requestCtx -> null);
+                    BasicAuthSecurityContextFilters::newAnonymousSecurityContext);
         }
     }
+
+    // Visible for testing
+    static final Principal ANONYMOUS_PRINCIPAL = () -> "ANONYMOUS";
 
     private BasicAuthSecurityContextFilters() {
         // no instances
@@ -160,11 +153,7 @@ public final class BasicAuthSecurityContextFilters {
      * globally bound to the JAX-RS {@link Application}.
      *
      * @return a new {@link NoUserInfoBuilder} instance
-     * @deprecated Use {@link #forGlobalBinding(ContextMap.Key)} with a {@code userInfo} key so that authenticated
-     * requests are associated with a {@link Principal}. See {@link NoUserInfoBuilder} for details.
      */
-    // FIXME: 0.43 - remove deprecated method
-    @Deprecated
     public static NoUserInfoBuilder forGlobalBinding() {
         return new NoUserInfoBuilder() {
             @Override
@@ -198,11 +187,7 @@ public final class BasicAuthSecurityContextFilters {
      * explicitly bound to resources via the {@link BasicAuthenticated} annotation.
      *
      * @return a new {@link NoUserInfoBuilder} instance
-     * @deprecated Use {@link #forNameBinding(ContextMap.Key)} with a {@code userInfo} key so that authenticated
-     * requests are associated with a {@link Principal}. See {@link NoUserInfoBuilder} for details.
      */
-    // FIXME: 0.43 - remove deprecated method
-    @Deprecated
     public static NoUserInfoBuilder forNameBinding() {
         return new NoUserInfoBuilder() {
             @Override
@@ -211,6 +196,10 @@ public final class BasicAuthSecurityContextFilters {
                         asSecurityContextBiFunction(securityContextFunction()));
             }
         };
+    }
+
+    private static SecurityContext newAnonymousSecurityContext(final ContainerRequestContext requestCtx) {
+        return new BasicAuthSecurityContext(ANONYMOUS_PRINCIPAL, isRequestSecure(requestCtx));
     }
 
     private static <UserInfo> SecurityContext newSecurityContext(final ContainerRequestContext requestCtx,

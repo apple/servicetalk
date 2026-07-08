@@ -41,6 +41,7 @@ import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
+import static io.servicetalk.http.security.auth.basic.jersey.BasicAuthSecurityContextFilters.ANONYMOUS_PRINCIPAL;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
@@ -53,8 +54,6 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-// This suite exercises the deprecated no-user-info builders on purpose.
-@SuppressWarnings("deprecation")
 class BasicAuthSecurityContextFiltersTest {
     private static final Principal TEST_PRINCIPAL = () -> "test-name";
     private static final String TEST_USER_INFO = "test-user-info";
@@ -104,15 +103,17 @@ class BasicAuthSecurityContextFiltersTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void authenticatedNoUserInfoProceedsWithoutPrincipal(final boolean globalFilter) throws Exception {
+    void authenticatedNoUserInfoInstallsAnonymousPrincipal(final boolean globalFilter) throws Exception {
         this.globalFilter = globalFilter;
         final ContainerRequestFilter filter = newFilterBuilder().build();
+        final ArgumentCaptor<SecurityContext> securityCtxCaptor = ArgumentCaptor.forClass(SecurityContext.class);
 
         authenticate();
         filter.filter(requestCtx);
 
-        // Authenticated upstream but the no-user-info filter has no identity to publish: proceed as-is.
-        verify(requestCtx, never()).setSecurityContext(any(SecurityContext.class));
+        // Authenticated upstream and no user info to publish: install the anonymous principal.
+        verify(requestCtx).setSecurityContext(securityCtxCaptor.capture());
+        assertThat(securityCtxCaptor.getValue().getUserPrincipal(), is(sameInstance(ANONYMOUS_PRINCIPAL)));
         verify(requestCtx, never()).abortWith(any(Response.class));
     }
 

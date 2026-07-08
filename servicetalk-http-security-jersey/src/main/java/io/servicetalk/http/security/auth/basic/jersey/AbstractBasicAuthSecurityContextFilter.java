@@ -36,7 +36,6 @@ abstract class AbstractBasicAuthSecurityContextFilter<UserInfo> implements Conta
     private final BiFunction<ContainerRequestContext, UserInfo, SecurityContext> securityContextFunction;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractBasicAuthSecurityContextFilter.class);
-    private static final AtomicBoolean NOT_AUTHENTICATED_WARNED = new AtomicBoolean();
     private static final AtomicBoolean NO_USER_INFO_WARNED = new AtomicBoolean();
 
     AbstractBasicAuthSecurityContextFilter(
@@ -52,12 +51,10 @@ abstract class AbstractBasicAuthSecurityContextFilter<UserInfo> implements Conta
             // The request was not authenticated by a BasicAuthHttpServiceFilter. Either that filter is not installed
             // upstream of the Jersey router, or AsyncContext is disabled. Fail closed rather than exposing a
             // @BasicAuthenticated resource to an unauthenticated caller.
-            if (NOT_AUTHENTICATED_WARNED.compareAndSet(false, true)) {
-                LOGGER.warn("Rejecting request to a @BasicAuthenticated resource with 401: the request was not " +
-                        "authenticated by a BasicAuthHttpServiceFilter. Ensure BasicAuthHttpServiceFilter is " +
-                        "installed upstream of the Jersey router (e.g. via HttpServerBuilder#appendServiceFilter) " +
-                        "and that AsyncContext is enabled. Further occurrences will not be logged.");
-            }
+            LOGGER.warn("Rejecting request to a @BasicAuthenticated resource with 401: the request was not " +
+                    "authenticated by a BasicAuthHttpServiceFilter. Ensure BasicAuthHttpServiceFilter is " +
+                    "installed upstream of the Jersey router (e.g. via HttpServerBuilder#appendServiceFilter) " +
+                    "and that AsyncContext is enabled.");
             requestCtx.abortWith(Response.status(Response.Status.UNAUTHORIZED).build());
             return;
         }
@@ -75,9 +72,10 @@ abstract class AbstractBasicAuthSecurityContextFilter<UserInfo> implements Conta
                     "BasicAuthHttpServiceFilter.Builder#userInfoAsyncContextKey(...). Further occurrences will not " +
                     "be logged.");
         }
-        // Otherwise the request is authenticated but there is no SecurityContext to install (for example the
-        // deprecated no-user-info filter): the request proceeds with a null user principal, which is expected when
-        // no identity is published for the application to consume.
+        // Otherwise the request is authenticated but there is no SecurityContext to install (for example a userInfo
+        // key was configured but no user info was found under it): the request proceeds with a null user principal,
+        // which is expected when no identity is published for the application to consume. The no-user-info filter
+        // instead installs an anonymous principal via its securityContextFunction and is handled above.
     }
 
     @Nullable

@@ -29,7 +29,6 @@ import io.servicetalk.http.security.auth.basic.jersey.resources.GlobalBindingRes
 import io.servicetalk.http.security.auth.basic.jersey.resources.NameBindingResource;
 import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter;
 import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter.CredentialsVerifier;
-
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.jupiter.api.AfterEach;
@@ -58,6 +57,7 @@ import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.UNAUTHORIZED;
+import static io.servicetalk.http.security.auth.basic.jersey.BasicAuthSecurityContextFilters.ANONYMOUS_PRINCIPAL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
@@ -67,7 +67,7 @@ import static java.util.Collections.singleton;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.never;
@@ -81,16 +81,16 @@ import static org.mockito.Mockito.when;
  *   <li>{@link AbstractBasicAuthSecurityContextFilter#filter} calls {@code abortWith()} with {@code 401} when the
  *       request was not authenticated by {@code BasicAuthHttpServiceFilter} (the marker is absent), so a missing
  *       upstream filter never lets the request proceed with Jersey's default {@link SecurityContext}.</li>
- *   <li>The {@code NoUserInfoBuilder} default never installs a {@link SecurityContext} whose principal is a non-null
- *       anonymous principal, so any {@code getUserPrincipal() != null} guard cannot be defeated.</li>
- *   <li>When the request <em>was</em> authenticated but no user info is available (for example a key mismatch), the
- *       filter proceeds with a {@code null} user principal instead of rejecting an already-authenticated request.</li>
+ *   <li>When the request <em>was</em> authenticated, the {@code NoUserInfoBuilder} default installs a
+ *       {@link SecurityContext} whose principal is the anonymous principal, so an already-authenticated request is
+ *       never rejected for lacking user info.</li>
+ *   <li>When the request <em>was</em> authenticated but no user info is available under a configured key (for example
+ *       a key mismatch), the filter proceeds with a {@code null} user principal instead of rejecting an
+ *       already-authenticated request.</li>
  * </ol>
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-// Some cases exercise the deprecated no-user-info builder on purpose.
-@SuppressWarnings("deprecation")
 class BasicAuthFilterFailCloseTest {
 
     @Mock
@@ -161,22 +161,21 @@ class BasicAuthFilterFailCloseTest {
     }
 
     /**
-     * The {@code NoUserInfoBuilder} default never installs a {@link SecurityContext} with a non-null principal (such
-     * as the removed {@code ANONYMOUS_PRINCIPAL}). Even when the request was authenticated upstream, the filter has no
-     * identity to publish, so it proceeds without installing a principal — any caller gating on
-     * {@code getUserPrincipal() != null} will not treat the request as carrying an identity.
+     * The {@code NoUserInfoBuilder} default installs a {@link SecurityContext} whose principal is the
+     * {@code ANONYMOUS_PRINCIPAL}. When the request was authenticated upstream but no user info is published, the
+     * filter still associates the request with the anonymous principal rather than rejecting it.
      */
     @Test
-    void noUserInfoDefaultInstallsNoPrincipalWhenAuthenticated() throws IOException {
+    void noUserInfoDefaultInstallsAnonymousPrincipalWhenAuthenticated() throws IOException {
         stubUriInfo();
 
-        // Authenticated upstream, but the deprecated no-user-info filter has no identity to publish.
+        // Authenticated upstream, but the no-user-info filter has no user info to publish.
         AsyncContext.put(BasicAuthHttpServiceFilter.AUTHENTICATED, Boolean.TRUE);
 
         final ContainerRequestFilter filter = BasicAuthSecurityContextFilters.forNameBinding().build();
         filter.filter(requestCtx);
 
-        // The removed anonymous-principal behavior must not resurface, and an authenticated request is not rejected.
+        // An authenticated request is not rejected; it proceeds with the anonymous principal installed.
         verify(requestCtx, never()).abortWith(any(Response.class));
 
         final ArgumentCaptor<SecurityContext> scCaptor = ArgumentCaptor.forClass(SecurityContext.class);
@@ -184,8 +183,8 @@ class BasicAuthFilterFailCloseTest {
 
         final List<SecurityContext> installed = scCaptor.getAllValues();
         for (final SecurityContext sc : installed) {
-            assertThat("default no-userInfo path must not install a non-null principal",
-                    sc.getUserPrincipal(), is(nullValue()));
+            assertThat("default no-userInfo path must install the anonymous principal",
+                    sc.getUserPrincipal(), is(sameInstance(ANONYMOUS_PRINCIPAL)));
         }
     }
 
@@ -244,6 +243,7 @@ class BasicAuthFilterFailCloseTest {
             public Single<Principal> apply(final String id, final String pwd) {
                 return Single.succeeded(() -> id);
             }
+
             @Override
             public Completable closeAsync() {
                 return Completable.completed();
@@ -256,10 +256,13 @@ class BasicAuthFilterFailCloseTest {
                         .buildServer();
 
         final Application app = new Application() {
-            @Override public Set<Class<?>> getClasses() {
+            @Override
+            public Set<Class<?>> getClasses() {
                 return new HashSet<>(asList(NameBindingResource.class));
             }
-            @Override public Set<Object> getSingletons() {
+
+            @Override
+            public Set<Object> getSingletons() {
                 return singleton(BasicAuthSecurityContextFilters.forNameBinding(jerseyKey).build());
             }
         };

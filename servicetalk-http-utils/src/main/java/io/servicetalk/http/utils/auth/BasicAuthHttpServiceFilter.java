@@ -72,9 +72,8 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements StreamingHttp
      * A {@link ContextMap.Key} whose presence with the value {@link Boolean#TRUE} indicates that the current request
      * was successfully authenticated by a {@link BasicAuthHttpServiceFilter}.
      * <p>
-     * This marker is stored in both {@link AsyncContext} and the {@link HttpRequestMetaData#context() request context}
-     * on every successful authentication, regardless of whether a {@code userInfo} key was configured via
-     * {@link Builder#userInfoAsyncContextKey(ContextMap.Key)} or
+     * This marker is stored in {@link AsyncContext} on every successful authentication, regardless of whether a
+     * {@code userInfo} key was configured via {@link Builder#userInfoAsyncContextKey(ContextMap.Key)} or
      * {@link Builder#userInfoRequestContextKey(ContextMap.Key)}. Downstream components (for example the ServiceTalk
      * Jersey {@code BasicAuthSecurityContextFilters}) can use it to tell a request that was authenticated but for
      * which no user info was published apart from a request that never went through Basic authentication.
@@ -399,7 +398,6 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements StreamingHttp
             // Always mark the request as authenticated so that downstream components can distinguish an
             // authenticated request that carries no user info from a request that never went through Basic auth.
             AsyncContext.put(AUTHENTICATED, Boolean.TRUE);
-            request.context().put(AUTHENTICATED, Boolean.TRUE);
             if (config.userInfoAsyncContextKey != null) {
                 AsyncContext.put(config.userInfoAsyncContextKey, userInfo);
             }

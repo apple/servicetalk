@@ -28,8 +28,6 @@ import javax.ws.rs.core.Application;
 
 import static io.servicetalk.http.api.HttpResponseStatus.FORBIDDEN;
 
-// application() uses the deprecated no-arg forGlobalBinding() for the no-user-info case on purpose.
-@SuppressWarnings("deprecation")
 class RoleProtectedBasicAuthSecurityContextFilterTest extends AbstractBasicAuthSecurityContextFilterTest {
 
     @Override

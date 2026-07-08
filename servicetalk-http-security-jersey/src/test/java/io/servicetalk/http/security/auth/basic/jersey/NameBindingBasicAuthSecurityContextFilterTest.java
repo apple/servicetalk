@@ -19,7 +19,6 @@ import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.security.auth.basic.jersey.resources.GlobalBindingResource;
 import io.servicetalk.http.security.auth.basic.jersey.resources.NameBindingResource;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -29,8 +28,6 @@ import javax.ws.rs.core.Application;
 
 import static java.util.Collections.singleton;
 
-// application() uses the deprecated no-arg forNameBinding() for the no-user-info case on purpose.
-@SuppressWarnings("deprecation")
 class NameBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthSecurityContextFilterTest {
 
     @Override
@@ -46,25 +43,18 @@ class NameBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthSec
         };
     }
 
-    @Test
-    void authenticatedWithUserInfo() throws Exception {
-        setUp(true);
+    /**
+     * The name-binding filter only runs for {@code @BasicAuthenticated} resources. With a userInfo key wired it
+     * publishes the resolved principal; with no user info it publishes the anonymous principal. Either way the
+     * {@code @BasicAuthenticated} resource carries a {@link javax.ws.rs.core.SecurityContext} while the unannotated
+     * resource does not.
+     */
+    @ParameterizedTest(name = "{displayName} [{index}] withUserInfo={0}")
+    @ValueSource(booleans = {true, false})
+    void authenticated(final boolean withUserInfo) throws Exception {
+        setUp(withUserInfo);
         assertBasicAuthSecurityContextAbsent(GlobalBindingResource.PATH, true);
         assertBasicAuthSecurityContextPresent(NameBindingResource.PATH);
-    }
-
-    /**
-     * No userInfo key wired and no custom principal function: when the upstream {@code BasicAuthHttpServiceFilter}
-     * authenticates the request it sets the {@code AUTHENTICATED} marker, so a {@code @BasicAuthenticated} resource
-     * proceeds with a {@code null} user principal rather than rejecting an already-authenticated request.
-     */
-    @Test
-    void noUserInfoProceedsWithNullPrincipalWhenAuthenticated() throws Exception {
-        setUp(false);
-        // Non-@BasicAuthenticated resource: filter does not run, default Jersey context applies.
-        assertBasicAuthSecurityContextAbsent(GlobalBindingResource.PATH, true);
-        // @BasicAuthenticated resource: filter runs, no identity to publish, proceeds with a null principal.
-        assertBasicAuthSecurityContextAbsent(NameBindingResource.PATH, true);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] withUserInfo={0}, withNewKey={1}")
