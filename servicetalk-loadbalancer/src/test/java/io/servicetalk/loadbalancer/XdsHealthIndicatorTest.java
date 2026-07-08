@@ -60,6 +60,10 @@ class XdsHealthIndicatorTest {
         return new OutlierDetectorConfig.Builder()
                 .maxEjectionTime(ofSeconds(MAX_EJECTION_SECONDS))
                 .baseEjectionTime(ofSeconds(1))
+                // The failure multiplier only decays after a full interval has elapsed since revival (the grace
+                // period). Pin the interval to the base ejection time with no jitter so the decay boundaries are
+                // deterministic in these tests.
+                .failureDetectorInterval(ofSeconds(1), ZERO)
                 .ejectionTimeJitter(ZERO);
     }
 
@@ -126,6 +130,28 @@ class XdsHealthIndicatorTest {
     }
 
     @Test
+    void outlierOnTheExpiringIntervalRevivesButDoesNotReEjectThatRound() {
+        ejectIndicator(true);
+        assertEquals(1, healthIndicator.ejectionCount);
+        assertFalse(healthIndicator.isHealthy());
+
+        // Let the ejection time elapse, then run a round that still judges the host an outlier. updateOutlierStatus
+        // revives it and returns without re-evaluating the verdict this round -- the counters still hold the
+        // pre-revival stats, so re-ejecting on them would double-count. The host becomes healthy and the ejection
+        // count is unchanged; it can only be re-ejected on a subsequent round (on fresh data).
+        testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos(), TimeUnit.NANOSECONDS);
+        ejectIndicator(true);
+        assertTrue(healthIndicator.isHealthy());
+        assertEquals(1, healthIndicator.revivalCount);
+        assertEquals(1, healthIndicator.ejectionCount);
+
+        // A following round can eject the now-healthy host again.
+        ejectIndicator(true);
+        assertFalse(healthIndicator.isHealthy());
+        assertEquals(2, healthIndicator.ejectionCount);
+    }
+
+    @Test
     void failureMultiplier() {
         ejectIndicator(true);
         assertEquals(1, healthIndicator.ejectionCount);
@@ -149,9 +175,31 @@ class XdsHealthIndicatorTest {
         assertTrue(healthIndicator.isHealthy());
 
         // Give it a healthy round and the multiplier should go down to two. This means the next eviction will
-        // be evicted for three * baseEjectionTime.
+        // be evicted for three * baseEjectionTime. The decrement only happens once a full interval has elapsed
+        // since the host was revived (the grace period), so advance one interval before the healthy round.
+        testExecutor.advanceTimeBy(config.failureDetectorInterval().toNanos(), TimeUnit.NANOSECONDS);
         ejectIndicator(false);
         // now see how long it was ejected
+        ejectIndicator(true);
+        testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos() * 3 - 1, TimeUnit.NANOSECONDS);
+        assertFalse(healthIndicator.isHealthy());
+        testExecutor.advanceTimeBy(1, TimeUnit.NANOSECONDS);
+        assertTrue(healthIndicator.isHealthy());
+    }
+
+    @Test
+    void failureMultiplierDoesNotDecayWithinTheGracePeriodAfterRevival() {
+        // Eject twice in a row so the multiplier grows to 2.
+        ejectIndicator(true);
+        testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos(), TimeUnit.NANOSECONDS);
+        assertTrue(healthIndicator.isHealthy());
+        ejectIndicator(true);
+        testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos() * 2, TimeUnit.NANOSECONDS);
+        assertTrue(healthIndicator.isHealthy());
+
+        // A healthy round within the grace period (before a full interval has elapsed since revival) must NOT
+        // decay the multiplier, so the next ejection still lasts 3x base (1 + the un-decayed multiplier of 2).
+        ejectIndicator(false);
         ejectIndicator(true);
         testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos() * 3 - 1, TimeUnit.NANOSECONDS);
         assertFalse(healthIndicator.isHealthy());
@@ -188,7 +236,9 @@ class XdsHealthIndicatorTest {
         assertTrue(healthIndicator.isHealthy());
 
         // now set it healthy 8 times in a row to decrement the multiplier and make sure we get the right
-        // delay for the next failure which should be 2x the base.
+        // delay for the next failure which should be 2x the base. Advance one interval first so the grace period
+        // since revival has elapsed; after that every healthy round decrements.
+        testExecutor.advanceTimeBy(config.failureDetectorInterval().toNanos(), TimeUnit.NANOSECONDS);
         for (int i = 0; i < 8; i++) {
             ejectIndicator(false);
         }
