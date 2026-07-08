@@ -303,7 +303,7 @@ class DnsServiceDiscovererObserversTest {
         // one of our types it must stay a single opaque leaf: unpack must not descend into it.
         DnsServiceDiscovererObserver aggregated = combine(mock(DnsServiceDiscovererObserver.class),
                 mock(DnsServiceDiscovererObserver.class));
-        DnsServiceDiscovererObserver thirdParty = name -> aggregated.onNewDiscovery(name);
+        DnsServiceDiscovererObserver thirdParty = aggregated::onNewDiscovery;
 
         assertThat(unpack(thirdParty), contains(thirdParty));
     }
