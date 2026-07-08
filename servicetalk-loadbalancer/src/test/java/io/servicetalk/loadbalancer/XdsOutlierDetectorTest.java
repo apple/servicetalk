@@ -210,6 +210,48 @@ final class XdsOutlierDetectorTest {
     }
 
     @Test
+    void lowVolumeHostsWithGoodSuccessRateAreExcludedFromStatistics() {
+        // Only the success rate detector should run and it should only consider hosts with sufficient volume.
+        config = new OutlierDetectorConfig.Builder(config)
+                .enforcingConsecutive5xx(0)
+                .enforcingFailurePercentage(0)
+                .enforcingSuccessRate(100)
+                .successRateMinimumHosts(3)
+                .successRateRequestVolume(10)
+                .maxEjectionPercentage(100)
+                .build();
+        init();
+
+        List<HealthIndicator<String, TestLoadBalancedConnection>> healthy = newIndicators("healthy-", 3);
+        HealthIndicator<String, TestLoadBalancedConnection> borderline = newIndicator("borderline");
+        List<HealthIndicator<String, TestLoadBalancedConnection>> lowVolumeGood = newIndicators("low-volume-good-", 3);
+
+        // Three hosts have a perfect success rate at sufficient volume.
+        for (HealthIndicator<String, TestLoadBalancedConnection> indicator : healthy) {
+            record(indicator, 10, 0);
+        }
+        // The borderline host has an 80% success rate at sufficient volume; it survives only when the low-volume
+        // hosts are excluded. If their perfect-but-low-volume rate were counted the mean would rise and the stdev
+        // shrink, ejecting it - the same distortion idle hosts would cause.
+        record(borderline, 8, 2);
+        // These hosts have a perfect success rate but below the request volume threshold.
+        for (HealthIndicator<String, TestLoadBalancedConnection> indicator : lowVolumeGood) {
+            record(indicator, 5, 0);
+        }
+
+        executor.advanceTimeBy(config.failureDetectorInterval().toNanos(), TimeUnit.NANOSECONDS);
+
+        for (HealthIndicator<String, TestLoadBalancedConnection> indicator : healthy) {
+            assertThat(indicator.isHealthy(), equalTo(true));
+        }
+        assertThat(borderline.isHealthy(), equalTo(true));
+        for (HealthIndicator<String, TestLoadBalancedConnection> indicator : lowVolumeGood) {
+            assertThat(indicator.isHealthy(), equalTo(true));
+        }
+        assertThat(xdsOutlierDetector.ejectedHostCount(), equalTo(0));
+    }
+
+    @Test
     void lowVolumeHostsAreNotEjectedByFailurePercentage() {
         // Only the failure percentage detector should run and it should only consider hosts with sufficient volume.
         config = new OutlierDetectorConfig.Builder(config)
