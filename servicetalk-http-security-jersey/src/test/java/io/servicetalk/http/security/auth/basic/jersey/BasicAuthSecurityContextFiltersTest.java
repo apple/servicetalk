@@ -78,8 +78,7 @@ class BasicAuthSecurityContextFiltersTest {
     }
 
     /**
-     * Marks the current request as authenticated, mimicking what {@code BasicAuthHttpServiceFilter} does upstream on a
-     * successful authentication.
+     * Marks the request authenticated, as {@code BasicAuthHttpServiceFilter} does upstream on success.
      */
     private static void authenticate() {
         AsyncContext.put(BasicAuthHttpServiceFilter.AUTHENTICATED, Boolean.TRUE);

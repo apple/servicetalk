@@ -44,9 +44,8 @@ class GlobalBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthS
     }
 
     /**
-     * The global filter runs for every resource. With a userInfo key wired it publishes the resolved principal; with
-     * no user info it publishes the anonymous principal. Either way an authenticated request carries a
-     * {@link javax.ws.rs.core.SecurityContext} on every resource.
+     * The global filter runs for every resource, publishing the resolved principal when a userInfo key is wired and
+     * the anonymous principal otherwise, so an authenticated request always carries a security context.
      */
     @ParameterizedTest(name = "{displayName} [{index}] withUserInfo={0}")
     @ValueSource(booleans = {true, false})

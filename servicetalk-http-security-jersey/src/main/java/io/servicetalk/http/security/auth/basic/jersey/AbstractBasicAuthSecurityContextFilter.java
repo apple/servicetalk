@@ -48,9 +48,8 @@ abstract class AbstractBasicAuthSecurityContextFilter<UserInfo> implements Conta
     @Override
     public void filter(final ContainerRequestContext requestCtx) {
         if (!Boolean.TRUE.equals(AsyncContext.get(BasicAuthHttpServiceFilter.AUTHENTICATED))) {
-            // The request was not authenticated by a BasicAuthHttpServiceFilter. Either that filter is not installed
-            // upstream of the Jersey router, or AsyncContext is disabled. Fail closed rather than exposing a
-            // @BasicAuthenticated resource to an unauthenticated caller.
+            // Not authenticated by an upstream BasicAuthHttpServiceFilter (missing filter or disabled AsyncContext):
+            // fail closed rather than exposing a @BasicAuthenticated resource to an unauthenticated caller.
             LOGGER.warn("Rejecting request to a @BasicAuthenticated resource with 401: the request was not " +
                     "authenticated by a BasicAuthHttpServiceFilter. Ensure BasicAuthHttpServiceFilter is " +
                     "installed upstream of the Jersey router (e.g. via HttpServerBuilder#appendServiceFilter) " +
@@ -63,19 +62,15 @@ abstract class AbstractBasicAuthSecurityContextFilter<UserInfo> implements Conta
         if (securityContext != null) {
             requestCtx.setSecurityContext(securityContext);
         } else if (userInfoKey != null && NO_USER_INFO_WARNED.compareAndSet(false, true)) {
-            // Authenticated, but no user info was found under the configured key. The request is authenticated, so it
-            // proceeds with a null user principal; this most often indicates a key mismatch between the upstream
-            // BasicAuthHttpServiceFilter and the key passed to BasicAuthSecurityContextFilters.
+            // Authenticated, but no user info under the configured key (usually a key mismatch); warn once
             LOGGER.warn("Request authenticated by BasicAuthHttpServiceFilter but no user info was found under the " +
                     "configured key in AsyncContext; proceeding with a null user principal. Verify that the key " +
                     "passed to BasicAuthSecurityContextFilters.forNameBinding/forGlobalBinding(...) matches " +
                     "BasicAuthHttpServiceFilter.Builder#userInfoAsyncContextKey(...). Further occurrences will not " +
                     "be logged.");
         }
-        // Otherwise the request is authenticated but there is no SecurityContext to install (for example a userInfo
-        // key was configured but no user info was found under it): the request proceeds with a null user principal,
-        // which is expected when no identity is published for the application to consume. The no-user-info filter
-        // instead installs an anonymous principal via its securityContextFunction and is handled above.
+        // No SecurityContext was resolved above, so the request proceeds with a null user principal. The
+        // no-user-info builder never reaches here: its securityContextFunction always resolves an anonymous principal.
     }
 
     @Nullable
