@@ -324,12 +324,13 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
             LOGGER.debug("{}-{}: host revived", lbDescription, address);
         }
         final Long evictedUntilNanos = this.evictedUntilNanos;
+        assert evictedUntilNanos != null;
         this.evictedUntilNanos = null;
         // Anchor the decay grace period at the scheduled end of the ejection rather than the moment revival was
         // processed, so the multiplier decays on the same schedule whether the host was revived eagerly (isHealthy)
-        // or lazily on a later interval tick. evictedUntilNanos is non-null here (every caller guards on it); on the
-        // cancel path it may be in the future, but the stamp is irrelevant then since `cancelled` short-circuits.
-        revivedAtNanos = evictedUntilNanos == null ? currentTimeNanos() : evictedUntilNanos;
+        // or lazily on a later interval tick. On the cancel path evictedUntilNanos may be in the future, but the
+        // stamp is irrelevant then since `cancelled` short-circuits updateOutlierStatus.
+        revivedAtNanos = evictedUntilNanos;
         // Envoy resets the `consecutive5xx` counter on revival. I'm not sure that's the best because chances
         // are reasonable that it's still a bad host, so we'll want to mark it as an outlier again immediately if
         // the next request also fails.
