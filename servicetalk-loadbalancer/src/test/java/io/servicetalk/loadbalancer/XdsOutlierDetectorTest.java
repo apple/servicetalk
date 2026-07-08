@@ -209,6 +209,41 @@ final class XdsOutlierDetectorTest {
         assertThat(xdsOutlierDetector.ejectedHostCount(), equalTo(0));
     }
 
+    @Test
+    void lowVolumeHostsAreNotEjectedByFailurePercentage() {
+        // Only the failure percentage detector should run and it should only consider hosts with sufficient volume.
+        config = new OutlierDetectorConfig.Builder(config)
+                .enforcingConsecutive5xx(0)
+                .enforcingSuccessRate(0)
+                .enforcingFailurePercentage(100)
+                .failurePercentageMinimumHosts(3)
+                .failurePercentageRequestVolume(10)
+                .maxEjectionPercentage(100)
+                .build();
+        init();
+
+        List<HealthIndicator<String, TestLoadBalancedConnection>> healthy = newIndicators("healthy-", 3);
+        HealthIndicator<String, TestLoadBalancedConnection> highVolumeBad = newIndicator("high-volume-bad");
+        HealthIndicator<String, TestLoadBalancedConnection> lowVolumeBad = newIndicator("low-volume-bad");
+
+        for (HealthIndicator<String, TestLoadBalancedConnection> indicator : healthy) {
+            record(indicator, 10, 0);
+        }
+        // A host above the failure threshold with sufficient volume must still be ejected.
+        record(highVolumeBad, 1, 9);
+        // A host at 100% failure but below the request volume threshold is not eligible for ejection.
+        record(lowVolumeBad, 0, 3);
+
+        executor.advanceTimeBy(config.failureDetectorInterval().toNanos(), TimeUnit.NANOSECONDS);
+
+        for (HealthIndicator<String, TestLoadBalancedConnection> indicator : healthy) {
+            assertThat(indicator.isHealthy(), equalTo(true));
+        }
+        assertThat(highVolumeBad.isHealthy(), equalTo(false));
+        assertThat(lowVolumeBad.isHealthy(), equalTo(true));
+        assertThat(xdsOutlierDetector.ejectedHostCount(), equalTo(1));
+    }
+
     private List<HealthIndicator<String, TestLoadBalancedConnection>> newIndicators(String prefix, int count) {
         List<HealthIndicator<String, TestLoadBalancedConnection>> result = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {

@@ -59,8 +59,14 @@ final class FailurePercentageXdsOutlierDetectorAlgorithm<ResolvedAddress, C exte
                 long totalRequests = successes + failures;
                 if (totalRequests >= config.failurePercentageRequestVolume()) {
                     enoughVolumeHosts++;
+                    failurePercentages[i] = failures * 100L / totalRequests;
+                } else {
+                    // Hosts that don't meet the request volume threshold (including idle hosts with no
+                    // requests) are not eligible for ejection. This mirrors Envoy, which only ejects hosts with
+                    // sufficient volume; otherwise a single failure on a low-traffic host would read as 100%
+                    // failure and eject it.
+                    failurePercentages[i] = NOT_EVALUATED;
                 }
-                failurePercentages[i] = totalRequests == 0L ? 0 : failures * 100L / totalRequests;
             }
             i++;
         }
