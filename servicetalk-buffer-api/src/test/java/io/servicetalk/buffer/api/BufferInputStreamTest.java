@@ -27,6 +27,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class BufferInputStreamTest {
 
@@ -67,6 +68,27 @@ class BufferInputStreamTest {
     @Test
     void skipMoreThanIntegerMax() throws Exception {
         testSkip(Long.MAX_VALUE, DATA.length(), "");
+    }
+
+    @Test
+    void readZeroLengthAtEnd() throws Exception {
+        InputStream empty = new BufferInputStream(DEFAULT_RO_ALLOCATOR.fromAscii(""));
+        assertThat(empty.read(new byte[1], 0, 0), is(0));
+    }
+
+    @Test
+    void readValidatesNullArrayAtEnd() {
+        InputStream empty = new BufferInputStream(DEFAULT_RO_ALLOCATOR.fromAscii(""));
+        assertThrows(NullPointerException.class, () -> empty.read(null, 0, 0));
+    }
+
+    @Test
+    void readValidatesBoundsAtEnd() {
+        InputStream empty = new BufferInputStream(DEFAULT_RO_ALLOCATOR.fromAscii(""));
+        byte[] bytes = new byte[1];
+        assertThrows(IndexOutOfBoundsException.class, () -> empty.read(bytes, -1, 0));
+        assertThrows(IndexOutOfBoundsException.class, () -> empty.read(bytes, 0, -1));
+        assertThrows(IndexOutOfBoundsException.class, () -> empty.read(bytes, 1, 1));
     }
 
     private void testSkip(long n, long skipped, String expected) throws Exception {

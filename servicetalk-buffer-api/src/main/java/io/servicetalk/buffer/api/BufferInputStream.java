@@ -40,6 +40,13 @@ final class BufferInputStream extends InputStream {
 
     @Override
     public int read(byte[] b, int off, int len) {
+        requireNonNull(b);
+        if ((off | len) < 0 || len > b.length - off) {
+            throw new IndexOutOfBoundsException();
+        }
+        if (len == 0) {
+            return 0;
+        }
         int readableBytes = buffer.readableBytes();
         if (readableBytes == 0) {
             return -1;
