@@ -31,18 +31,20 @@ final class CatchAllLoadBalancerObserver implements LoadBalancerObserver {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CatchAllLoadBalancerObserver.class);
 
+    private final String lbDescription;
     private final LoadBalancerObserver delegate;
 
-    private CatchAllLoadBalancerObserver(LoadBalancerObserver delegate) {
+    private CatchAllLoadBalancerObserver(String lbDescription, LoadBalancerObserver delegate) {
+        this.lbDescription = lbDescription;
         this.delegate = delegate;
     }
 
     @Override
     public HostObserver hostObserver(Object resolvedAddress) {
         try {
-            return new CatchAllHostObserver(delegate.hostObserver(resolvedAddress));
+            return new CatchAllHostObserver(lbDescription, delegate.hostObserver(resolvedAddress));
         } catch (Throwable ex) {
-            LOGGER.warn("Unexpected exception from {} while getting a HostObserver", delegate, ex);
+            LOGGER.warn("{}: Unexpected exception from {} while getting a HostObserver", lbDescription, delegate, ex);
             return NoopLoadBalancerObserver.NoopHostObserver.INSTANCE;
         }
     }
@@ -52,8 +54,8 @@ final class CatchAllLoadBalancerObserver implements LoadBalancerObserver {
         try {
             delegate.onServiceDiscoveryEvent(events);
         } catch (Throwable unexpected) {
-            LOGGER.warn("Unexpected exception from {} while reporting an onServiceDiscoveryEvent event",
-                    delegate, unexpected);
+            LOGGER.warn("{}: Unexpected exception from {} while reporting an onServiceDiscoveryEvent event",
+                    lbDescription, delegate, unexpected);
         }
     }
 
@@ -62,7 +64,8 @@ final class CatchAllLoadBalancerObserver implements LoadBalancerObserver {
         try {
             delegate.onHostsUpdate(oldHosts, newHosts);
         } catch (Throwable unexpected) {
-            LOGGER.warn("Unexpected exception from {} while reporting an onHostsUpdate event", delegate, unexpected);
+            LOGGER.warn("{}: Unexpected exception from {} while reporting an onHostsUpdate event",
+                    lbDescription, delegate, unexpected);
         }
     }
 
@@ -71,8 +74,8 @@ final class CatchAllLoadBalancerObserver implements LoadBalancerObserver {
         try {
             delegate.onNoAvailableHostException(exception);
         } catch (Throwable unexpected) {
-            LOGGER.warn("Unexpected exception from {} while reporting an onNoAvailableHostException event",
-                    delegate, unexpected);
+            LOGGER.warn("{}: Unexpected exception from {} while reporting an onNoAvailableHostException event",
+                    lbDescription, delegate, unexpected);
         }
     }
 
@@ -81,16 +84,18 @@ final class CatchAllLoadBalancerObserver implements LoadBalancerObserver {
         try {
             delegate.onNoActiveHostException(hosts, exception);
         } catch (Throwable unexpected) {
-            LOGGER.warn("Unexpected exception from {} while reporting an onNoActiveHostException event",
-                    delegate, unexpected);
+            LOGGER.warn("{}: Unexpected exception from {} while reporting an onNoActiveHostException event",
+                    lbDescription, delegate, unexpected);
         }
     }
 
     private static final class CatchAllHostObserver implements HostObserver {
 
+        private final String lbDescription;
         private final HostObserver delegate;
 
-        CatchAllHostObserver(HostObserver delegate) {
+        CatchAllHostObserver(String lbDescription, HostObserver delegate) {
+            this.lbDescription = lbDescription;
             this.delegate = requireNonNull(delegate, "delegate");
         }
 
@@ -99,8 +104,8 @@ final class CatchAllLoadBalancerObserver implements LoadBalancerObserver {
             try {
                 delegate.onHostMarkedExpired(connectionCount);
             } catch (Throwable unexpected) {
-                LOGGER.warn("Unexpected exception from {} while reporting an onHostMarkedExpired event",
-                        delegate, unexpected);
+                LOGGER.warn("{}: Unexpected exception from {} while reporting an onHostMarkedExpired event",
+                        lbDescription, delegate, unexpected);
             }
         }
 
@@ -109,8 +114,8 @@ final class CatchAllLoadBalancerObserver implements LoadBalancerObserver {
             try {
                 delegate.onActiveHostRemoved(connectionCount);
             } catch (Throwable unexpected) {
-                LOGGER.warn("Unexpected exception from {} while reporting an onActiveHostRemoved event",
-                        delegate, unexpected);
+                LOGGER.warn("{}: Unexpected exception from {} while reporting an onActiveHostRemoved event",
+                        lbDescription, delegate, unexpected);
             }
         }
 
@@ -119,8 +124,8 @@ final class CatchAllLoadBalancerObserver implements LoadBalancerObserver {
             try {
                 delegate.onExpiredHostRevived(connectionCount);
             } catch (Throwable unexpected) {
-                LOGGER.warn("Unexpected exception from {} while reporting an onExpiredHostRevived event",
-                        delegate, unexpected);
+                LOGGER.warn("{}: Unexpected exception from {} while reporting an onExpiredHostRevived event",
+                        lbDescription, delegate, unexpected);
             }
         }
 
@@ -129,8 +134,8 @@ final class CatchAllLoadBalancerObserver implements LoadBalancerObserver {
             try {
                 delegate.onExpiredHostRemoved(connectionCount);
             } catch (Throwable unexpected) {
-                LOGGER.warn("Unexpected exception from {} while reporting an onExpiredHostRemoved event",
-                        delegate, unexpected);
+                LOGGER.warn("{}: Unexpected exception from {} while reporting an onExpiredHostRemoved event",
+                        lbDescription, delegate, unexpected);
             }
         }
 
@@ -139,8 +144,8 @@ final class CatchAllLoadBalancerObserver implements LoadBalancerObserver {
             try {
                 delegate.onHostMarkedUnhealthy(cause);
             } catch (Throwable unexpected) {
-                LOGGER.warn("Unexpected exception from {} while reporting an onHostMarkedUnhealthy event",
-                        delegate, unexpected);
+                LOGGER.warn("{}: Unexpected exception from {} while reporting an onHostMarkedUnhealthy event",
+                        lbDescription, delegate, unexpected);
             }
         }
 
@@ -149,13 +154,13 @@ final class CatchAllLoadBalancerObserver implements LoadBalancerObserver {
             try {
                 delegate.onHostRevived();
             } catch (Throwable unexpected) {
-                LOGGER.warn("Unexpected exception from {} while reporting an onHostRevived event",
-                        delegate, unexpected);
+                LOGGER.warn("{}: Unexpected exception from {} while reporting an onHostRevived event",
+                        lbDescription, delegate, unexpected);
             }
         }
     }
 
-    static LoadBalancerObserver wrap(LoadBalancerObserver observer) {
+    static LoadBalancerObserver wrap(String lbDescription, LoadBalancerObserver observer) {
         requireNonNull(observer, "observer");
         if (observer instanceof CatchAllLoadBalancerObserver) {
             return observer;
@@ -163,6 +168,6 @@ final class CatchAllLoadBalancerObserver implements LoadBalancerObserver {
         if (observer instanceof NoopLoadBalancerObserver) {
             return observer;
         }
-        return new CatchAllLoadBalancerObserver(observer);
+        return new CatchAllLoadBalancerObserver(lbDescription, observer);
     }
 }

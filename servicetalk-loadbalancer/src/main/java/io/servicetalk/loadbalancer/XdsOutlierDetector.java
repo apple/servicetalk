@@ -250,7 +250,7 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
             }
             cancellable.nextCancellable(scheduleNextOutliersCheck(config));
             if (emitChange) {
-                LOGGER.debug("Health status change observed. Emitting event.");
+                LOGGER.debug("{}: Health status change observed. Emitting event.", lbDescription);
                 healthStatusChangeProcessor.onNext(null);
             }
         }
@@ -259,10 +259,10 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
     private List<XdsOutlierDetectorAlgorithm<ResolvedAddress, C>> getAlgorithms(OutlierDetectorConfig config) {
         List<XdsOutlierDetectorAlgorithm<ResolvedAddress, C>> detectors = new ArrayList<>(2);
         if (config.enforcingFailurePercentage() > 0) {
-            detectors.add(new FailurePercentageXdsOutlierDetectorAlgorithm<>());
+            detectors.add(new FailurePercentageXdsOutlierDetectorAlgorithm<>(lbDescription));
         }
         if (config.enforcingSuccessRate() > 0) {
-            detectors.add(new SuccessRateXdsOutlierDetectorAlgorithm<>());
+            detectors.add(new SuccessRateXdsOutlierDetectorAlgorithm<>(lbDescription));
         }
         return detectors;
     }
