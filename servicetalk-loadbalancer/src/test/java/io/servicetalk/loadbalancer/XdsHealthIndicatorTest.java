@@ -109,18 +109,18 @@ class XdsHealthIndicatorTest {
     @Test
     void wontEjectWithoutHelperSayingItsOkayToDoSo() {
         healthIndicator.mayEjectHost = false;
-        ejectIndicator(true);
+        updateStatus(true);
         assertTrue(healthIndicator.isHealthy());
 
         // how try to eject if the helper allows
         healthIndicator.mayEjectHost = true;
-        ejectIndicator(true);
+        updateStatus(true);
         assertFalse(healthIndicator.isHealthy());
     }
 
     @Test
     void hostRevival() {
-        ejectIndicator(true);
+        updateStatus(true);
         assertEquals(1, healthIndicator.ejectionCount);
         assertFalse(healthIndicator.isHealthy());
 
@@ -131,26 +131,26 @@ class XdsHealthIndicatorTest {
 
     @Test
     void outlierOnTheExpiringIntervalRevivesButDoesNotReEjectThatRound() {
-        ejectIndicator(true);
+        updateStatus(true);
         assertEquals(1, healthIndicator.ejectionCount);
         assertFalse(healthIndicator.isHealthy());
 
         // Once the ejection elapses, an outlier round revives without re-ejecting on that round's (stale) stats.
         testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos(), TimeUnit.NANOSECONDS);
-        ejectIndicator(true);
+        updateStatus(true);
         assertTrue(healthIndicator.isHealthy());
         assertEquals(1, healthIndicator.revivalCount);
         assertEquals(1, healthIndicator.ejectionCount);
 
         // A later round can eject the now-healthy host again.
-        ejectIndicator(true);
+        updateStatus(true);
         assertFalse(healthIndicator.isHealthy());
         assertEquals(2, healthIndicator.ejectionCount);
     }
 
     @Test
     void failureMultiplier() {
-        ejectIndicator(true);
+        updateStatus(true);
         assertEquals(1, healthIndicator.ejectionCount);
         assertFalse(healthIndicator.isHealthy());
 
@@ -158,14 +158,14 @@ class XdsHealthIndicatorTest {
         assertTrue(healthIndicator.isHealthy());
 
         // Now the ejection time should grow by 2x since it was ejected twice in a row.
-        ejectIndicator(true);
+        updateStatus(true);
         testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos() * 2 - 1, TimeUnit.NANOSECONDS);
         assertFalse(healthIndicator.isHealthy());
         testExecutor.advanceTimeBy(1, TimeUnit.NANOSECONDS);
         assertTrue(healthIndicator.isHealthy());
 
         // one more failure in a row to get our multiplier to 3.
-        ejectIndicator(true);
+        updateStatus(true);
         testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos() * 3 - 1, TimeUnit.NANOSECONDS);
         assertFalse(healthIndicator.isHealthy());
         testExecutor.advanceTimeBy(1, TimeUnit.NANOSECONDS);
@@ -174,9 +174,9 @@ class XdsHealthIndicatorTest {
         // Give it a healthy round and the multiplier should go down to two, so the next eviction lasts 3x base.
         // Decay only happens a full interval after revival (the grace period), so advance one interval first.
         testExecutor.advanceTimeBy(config.failureDetectorInterval().toNanos(), TimeUnit.NANOSECONDS);
-        ejectIndicator(false);
+        updateStatus(false);
         // now see how long it was ejected
-        ejectIndicator(true);
+        updateStatus(true);
         testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos() * 3 - 1, TimeUnit.NANOSECONDS);
         assertFalse(healthIndicator.isHealthy());
         testExecutor.advanceTimeBy(1, TimeUnit.NANOSECONDS);
@@ -186,16 +186,16 @@ class XdsHealthIndicatorTest {
     @Test
     void failureMultiplierDoesNotDecayWithinTheGracePeriodAfterRevival() {
         // Grow the multiplier to 2.
-        ejectIndicator(true);
+        updateStatus(true);
         testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos(), TimeUnit.NANOSECONDS);
         assertTrue(healthIndicator.isHealthy());
-        ejectIndicator(true);
+        updateStatus(true);
         testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos() * 2, TimeUnit.NANOSECONDS);
         assertTrue(healthIndicator.isHealthy());
 
         // A healthy round within the grace period must not decay, so the next ejection still lasts 3x base.
-        ejectIndicator(false);
-        ejectIndicator(true);
+        updateStatus(false);
+        updateStatus(true);
         testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos() * 3 - 1, TimeUnit.NANOSECONDS);
         assertFalse(healthIndicator.isHealthy());
         testExecutor.advanceTimeBy(1, TimeUnit.NANOSECONDS);
@@ -204,21 +204,21 @@ class XdsHealthIndicatorTest {
 
     @Test
     void failureMultiplierDecayIsAnchoredAtScheduledEjectionEndNotRevivalTime() {
-        ejectIndicator(true);
+        updateStatus(true);
         assertFalse(healthIndicator.isHealthy());
 
         // Advance past the ejection end without calling isHealthy() (which would revive eagerly), then revive
         // lazily via a detector tick.
         testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos() + config.failureDetectorInterval().toNanos(),
                 TimeUnit.NANOSECONDS);
-        ejectIndicator(false);
+        updateStatus(false);
         assertTrue(healthIndicator.isHealthy());
         assertEquals(1, healthIndicator.revivalCount);
 
         // Decay happens on the very next round with no further wait: the grace period runs from the scheduled
         // ejection end, not the (later) revival time. So the next ejection is only 1x base.
-        ejectIndicator(false);
-        ejectIndicator(true);
+        updateStatus(false);
+        updateStatus(true);
         testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos() - 1, TimeUnit.NANOSECONDS);
         assertFalse(healthIndicator.isHealthy());
         testExecutor.advanceTimeBy(1, TimeUnit.NANOSECONDS);
@@ -259,7 +259,7 @@ class XdsHealthIndicatorTest {
     @Test
     void consecutive5xxReEjectionDuringGracePeriodRestartsGraceAtNewEjectionEnd() {
         // Eject and revive so the host is healthy but still within the decay grace period (multiplier 1).
-        ejectIndicator(true);
+        updateStatus(true);
         testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos(), TimeUnit.NANOSECONDS);
         assertTrue(healthIndicator.isHealthy());
 
@@ -275,8 +275,8 @@ class XdsHealthIndicatorTest {
         // does not decay, so the multiplier is still 2 and the next ejection is 3x base.
         testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos() * 2, TimeUnit.NANOSECONDS);
         assertTrue(healthIndicator.isHealthy());
-        ejectIndicator(false);
-        ejectIndicator(true);
+        updateStatus(false);
+        updateStatus(true);
         testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos() * 3 - 1, TimeUnit.NANOSECONDS);
         assertFalse(healthIndicator.isHealthy());
         testExecutor.advanceTimeBy(1, TimeUnit.NANOSECONDS);
@@ -292,7 +292,7 @@ class XdsHealthIndicatorTest {
 
         // Eject as many times in a row to get the ejection time maxed out.
         for (long i = 0; i < MAX_EJECTION_SECONDS; i++) {
-            ejectIndicator(true);
+            updateStatus(true);
             // ensure the indicator is ejected until the very last nanosecond.
             testExecutor.advanceTimeBy(ofSeconds(i + 1).toNanos() - 1, TimeUnit.NANOSECONDS);
             assertFalse(healthIndicator.isHealthy());
@@ -302,7 +302,7 @@ class XdsHealthIndicatorTest {
         }
 
         // Eject again and we should still be unhealthy only until maxEjectionTime.
-        ejectIndicator(true);
+        updateStatus(true);
         assertFalse(healthIndicator.isHealthy());
         // ensure the indicator is ejected until the very last nanosecond.
         testExecutor.advanceTimeBy(config.maxEjectionTime().toNanos() - 1, TimeUnit.NANOSECONDS);
@@ -316,9 +316,9 @@ class XdsHealthIndicatorTest {
         // since revival has elapsed; after that every healthy round decrements.
         testExecutor.advanceTimeBy(config.failureDetectorInterval().toNanos(), TimeUnit.NANOSECONDS);
         for (int i = 0; i < 8; i++) {
-            ejectIndicator(false);
+            updateStatus(false);
         }
-        ejectIndicator(true);
+        updateStatus(true);
         testExecutor.advanceTimeBy(ofSeconds(2).toNanos() - 1, TimeUnit.NANOSECONDS);
         assertFalse(healthIndicator.isHealthy());
         testExecutor.advanceTimeBy(1, TimeUnit.NANOSECONDS);
@@ -338,7 +338,7 @@ class XdsHealthIndicatorTest {
         assertTrue(healthIndicator.cancelled);
     }
 
-    private void ejectIndicator(boolean isOutlier) {
+    private void updateStatus(boolean isOutlier) {
         updateStatus(healthIndicator, isOutlier);
     }
 
