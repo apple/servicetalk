@@ -86,6 +86,14 @@ class ReadOnlyByteBufferTest {
     }
 
     @Test
+    void skipNegativeLength() {
+        Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
+        int readerIndex = buffer.readerIndex();
+        assertThrows(IllegalArgumentException.class, () -> buffer.skipBytes(-1));
+        assertEquals(readerIndex, buffer.readerIndex());
+    }
+
+    @Test
     void testIndexOf() {
         Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
 
