@@ -56,6 +56,17 @@ class ReadOnlyByteBufferTest {
     }
 
     @Test
+    void getUnsignedShort() {
+        ByteBuffer expectedBuffer = allocateDirect(4);
+        expectedBuffer.putShort((short) 0xffff);
+        expectedBuffer.putShort((short) 0xf234);
+        expectedBuffer.flip();
+        Buffer buffer1 = DEFAULT_RO_ALLOCATOR.wrap(expectedBuffer);
+        assertEquals(0xffff, buffer1.getUnsignedShort(buffer1.readerIndex()));
+        assertEquals(0xf234, buffer1.getUnsignedShort(buffer1.readerIndex() + 2));
+    }
+
+    @Test
     void copy() {
         Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
         assertEquals(buffer, buffer.copy());
