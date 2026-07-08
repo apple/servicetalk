@@ -131,7 +131,7 @@ abstract class AbstractBuffer implements Buffer {
 
     @Override
     public final int getUnsignedShort(int index) {
-        return getShort(index) & 0xfff;
+        return getShort(index) & 0xffff;
     }
 
     @Override
