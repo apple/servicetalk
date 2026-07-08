@@ -43,13 +43,19 @@ final class SuccessRateXdsOutlierDetectorAlgorithm<ResolvedAddress, C extends Lo
     // data structure for doubles which would require boxing.
     private static final double NOT_EVALUATED = Double.MAX_VALUE;
 
+    private final String lbDescription;
+
     private double[] successRates = new double[0];
+
+    SuccessRateXdsOutlierDetectorAlgorithm(final String lbDescription) {
+        this.lbDescription = lbDescription;
+    }
 
     @Override
     public void detectOutliers(final OutlierDetectorConfig config,
                                final List<? extends XdsHealthIndicator<ResolvedAddress, C>> indicators,
                                final boolean[] outliers) {
-        LOGGER.debug("Started outlier detection.");
+        LOGGER.debug("{}: Started outlier detection.", lbDescription);
         final int size = indicators.size();
         // Because we always overwrite every element before accessing there is no need to zero the array on reuse.
         if (successRates.length != size) {
@@ -84,9 +90,9 @@ final class SuccessRateXdsOutlierDetectorAlgorithm<ResolvedAddress, C extends Lo
         if (enoughVolumeHosts < config.successRateMinimumHosts()) {
             // not enough hosts with enough volume to do the analysis.
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Not enough hosts with sufficient volume to perform ejection: " +
+                LOGGER.debug("{}: Not enough hosts with sufficient volume to perform ejection: " +
                         "{} total hosts and {} had sufficient volume. Minimum {} required.",
-                        indicators.size(), enoughVolumeHosts, config.successRateMinimumHosts());
+                        lbDescription, indicators.size(), enoughVolumeHosts, config.successRateMinimumHosts());
             }
             return;
         }
@@ -104,9 +110,9 @@ final class SuccessRateXdsOutlierDetectorAlgorithm<ResolvedAddress, C extends Lo
             }
         }
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Finished success rate analysis. Of {} total hosts {} were already ejected by any algorithm " +
-                            "and {} were flagged as outliers.",
-                    indicators.size(), alreadyEjectedHosts, flaggedCount);
+            LOGGER.debug("{}: Finished success rate analysis. Of {} total hosts {} were already ejected by any " +
+                            "algorithm and {} were flagged as outliers.",
+                    lbDescription, indicators.size(), alreadyEjectedHosts, flaggedCount);
         }
     }
 

@@ -163,7 +163,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.
         this.connectionFactory = connectionFactory;
         this.minConnectionsPerHost = minConnectionsPerHost;
-        this.loadBalancerObserver = CatchAllLoadBalancerObserver.wrap(
+        this.loadBalancerObserver = CatchAllLoadBalancerObserver.wrap(lbDescription,
                 loadBalancerObserverFactory.newObserver(lbDescription));
         this.healthCheckConfig = healthCheckConfig;
         this.sequentialExecutor = new SequentialExecutor((uncaughtException) ->
@@ -319,9 +319,9 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final Map<ResolvedAddress, ServiceDiscovererEvent<ResolvedAddress>> eventMap = new HashMap<>();
             for (ServiceDiscovererEvent<ResolvedAddress> event : events) {
                 ServiceDiscovererEvent<ResolvedAddress> old = eventMap.put(event.address(), event);
-                if (old != null) {
-                    LOGGER.debug("Multiple ServiceDiscoveryEvent's detected for address {}. Event: {}.",
-                            event.address(), event);
+                if (old != null && LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("{}: Multiple ServiceDiscoveryEvent's detected for address {}. Event: {}.",
+                            DefaultLoadBalancer.this, event.address(), event);
                 }
             }
 
@@ -364,7 +364,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                     }
                 } else if (UNAVAILABLE.equals(event.status())) {
                     host.closeAsyncGracefully()
-                            .beforeOnError(error -> LOGGER.warn("Closing host {} failed.", host.address(), error))
+                            .beforeOnError(error -> LOGGER.warn("{}: Closing host {} failed.",
+                                    DefaultLoadBalancer.this, host.address(), error))
                             .subscribe();
                     hostSetChanged = true;
                 } else {
@@ -666,7 +667,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         if (event instanceof RichServiceDiscovererEvent<?>) {
             weight = ((RichServiceDiscovererEvent<?>) event).loadBalancingWeight();
             if (weight < 0) {
-                LOGGER.debug("{} Unexpected negative weight {} for host {} being set to 1.0",
+                LOGGER.debug("{}: Unexpected negative weight {} for host {} being set to 1.0",
                         lbDescription, weight, event.address());
                 weight = 1;
             }
@@ -679,7 +680,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         if (event instanceof RichServiceDiscovererEvent<?>) {
             priority = ((RichServiceDiscovererEvent<?>) event).priority();
             if (priority < 0) {
-                LOGGER.debug("{} Unexpected negative priority {} for host {} being set to 0",
+                LOGGER.debug("{}: Unexpected negative priority {} for host {} being set to 0",
                         lbDescription, priority, event.address());
                 priority = 0;
             }

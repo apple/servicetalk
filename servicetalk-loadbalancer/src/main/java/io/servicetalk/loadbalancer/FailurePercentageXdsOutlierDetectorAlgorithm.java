@@ -33,7 +33,13 @@ final class FailurePercentageXdsOutlierDetectorAlgorithm<ResolvedAddress, C exte
     // data structure for longs which would require boxing.
     private static final long NOT_EVALUATED = Long.MAX_VALUE;
 
+    private final String lbDescription;
+
     private long[] failurePercentages = new long[0];
+
+    FailurePercentageXdsOutlierDetectorAlgorithm(final String lbDescription) {
+        this.lbDescription = lbDescription;
+    }
 
     @Override
     public void detectOutliers(final OutlierDetectorConfig config,
@@ -74,9 +80,9 @@ final class FailurePercentageXdsOutlierDetectorAlgorithm<ResolvedAddress, C exte
         if (enoughVolumeHosts < config.failurePercentageMinimumHosts()) {
             // not enough hosts with enough volume to do the analysis.
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Not enough hosts with sufficient volume to perform ejection: " +
+                LOGGER.debug("{}: Not enough hosts with sufficient volume to perform ejection: " +
                                 "{} total hosts and {} had sufficient volume. Minimum {} required.",
-                        indicators.size(), enoughVolumeHosts, config.failurePercentageMinimumHosts());
+                        lbDescription, indicators.size(), enoughVolumeHosts, config.failurePercentageMinimumHosts());
             }
             return;
         }
@@ -92,9 +98,9 @@ final class FailurePercentageXdsOutlierDetectorAlgorithm<ResolvedAddress, C exte
             }
         }
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Finished failure percentage analysis. Of {} total hosts {} were already ejected by any " +
-                            "algorithm and {} were flagged as outliers.",
-                    indicators.size(), alreadyEjectedHosts, flaggedCount);
+            LOGGER.debug("{}: Finished failure percentage analysis. Of {} total hosts {} were already ejected by " +
+                            "any algorithm and {} were flagged as outliers.",
+                    lbDescription, indicators.size(), alreadyEjectedHosts, flaggedCount);
         }
     }
 }
