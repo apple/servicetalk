@@ -21,6 +21,8 @@ import io.servicetalk.concurrent.api.TestExecutor;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
@@ -138,6 +140,178 @@ final class XdsOutlierDetectorTest {
         for (int i = 0; i < config.consecutive5xx(); i++) {
             indicator.onRequestError(indicator.beforeConnectStart(),
                     RequestTracker.ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
+        }
+    }
+
+    @Test
+    void idleHostsAreExcludedFromSuccessRateStatistics() {
+        // Only the success rate detector should run and it should only consider hosts with sufficient volume.
+        config = new OutlierDetectorConfig.Builder(config)
+                .enforcingConsecutive5xx(0)
+                .enforcingFailurePercentage(0)
+                .enforcingSuccessRate(100)
+                .successRateMinimumHosts(3)
+                .successRateRequestVolume(10)
+                .maxEjectionPercentage(100)
+                .build();
+        init();
+
+        List<HealthIndicator<String, TestLoadBalancedConnection>> healthy = newIndicators("healthy-", 3);
+        HealthIndicator<String, TestLoadBalancedConnection> borderline = newIndicator("borderline");
+        List<HealthIndicator<String, TestLoadBalancedConnection>> idle = newIndicators("idle-", 3);
+
+        // Three hosts have a perfect success rate at sufficient volume.
+        for (HealthIndicator<String, TestLoadBalancedConnection> indicator : healthy) {
+            record(indicator, 10, 0);
+        }
+        // The borderline host has an 80% success rate at sufficient volume. It is within 1.9 stdev of the
+        // mean when only real-traffic hosts are considered, so it must not be ejected. If the idle hosts were
+        // counted at a fabricated 1.0 success rate, the mean would rise and the stdev shrink, ejecting it.
+        record(borderline, 8, 2);
+        // The idle hosts receive no requests at all.
+
+        executor.advanceTimeBy(config.failureDetectorInterval().toNanos(), TimeUnit.NANOSECONDS);
+
+        for (HealthIndicator<String, TestLoadBalancedConnection> indicator : healthy) {
+            assertThat(indicator.isHealthy(), equalTo(true));
+        }
+        assertThat(borderline.isHealthy(), equalTo(true));
+        for (HealthIndicator<String, TestLoadBalancedConnection> indicator : idle) {
+            assertThat(indicator.isHealthy(), equalTo(true));
+        }
+        assertThat(xdsOutlierDetector.ejectedHostCount(), equalTo(0));
+    }
+
+    @Test
+    void lowVolumeHostsAreNotEjectedBySuccessRate() {
+        config = new OutlierDetectorConfig.Builder(config)
+                .enforcingConsecutive5xx(0)
+                .enforcingFailurePercentage(0)
+                .enforcingSuccessRate(100)
+                .successRateMinimumHosts(3)
+                .successRateRequestVolume(10)
+                .maxEjectionPercentage(100)
+                .build();
+        init();
+
+        List<HealthIndicator<String, TestLoadBalancedConnection>> healthy = newIndicators("healthy-", 5);
+        HealthIndicator<String, TestLoadBalancedConnection> lowVolume = newIndicator("low-volume");
+
+        for (HealthIndicator<String, TestLoadBalancedConnection> indicator : healthy) {
+            record(indicator, 10, 0);
+        }
+        // A host with a terrible success rate but below the request volume threshold is not eligible for ejection.
+        record(lowVolume, 0, 3);
+
+        executor.advanceTimeBy(config.failureDetectorInterval().toNanos(), TimeUnit.NANOSECONDS);
+
+        assertThat(lowVolume.isHealthy(), equalTo(true));
+        assertThat(xdsOutlierDetector.ejectedHostCount(), equalTo(0));
+    }
+
+    @Test
+    void lowVolumeHostsWithGoodSuccessRateAreExcludedFromStatistics() {
+        // Only the success rate detector should run and it should only consider hosts with sufficient volume.
+        config = new OutlierDetectorConfig.Builder(config)
+                .enforcingConsecutive5xx(0)
+                .enforcingFailurePercentage(0)
+                .enforcingSuccessRate(100)
+                .successRateMinimumHosts(3)
+                .successRateRequestVolume(10)
+                .maxEjectionPercentage(100)
+                .build();
+        init();
+
+        List<HealthIndicator<String, TestLoadBalancedConnection>> healthy = newIndicators("healthy-", 3);
+        HealthIndicator<String, TestLoadBalancedConnection> borderline = newIndicator("borderline");
+        List<HealthIndicator<String, TestLoadBalancedConnection>> lowVolumeGood = newIndicators("low-volume-good-", 3);
+
+        // Three hosts have a perfect success rate at sufficient volume.
+        for (HealthIndicator<String, TestLoadBalancedConnection> indicator : healthy) {
+            record(indicator, 10, 0);
+        }
+        // The borderline host has an 80% success rate at sufficient volume; it survives only when the low-volume
+        // hosts are excluded. If their perfect-but-low-volume rate were counted the mean would rise and the stdev
+        // shrink, ejecting it - the same distortion idle hosts would cause.
+        record(borderline, 8, 2);
+        // These hosts have a perfect success rate but below the request volume threshold.
+        for (HealthIndicator<String, TestLoadBalancedConnection> indicator : lowVolumeGood) {
+            record(indicator, 5, 0);
+        }
+
+        executor.advanceTimeBy(config.failureDetectorInterval().toNanos(), TimeUnit.NANOSECONDS);
+
+        for (HealthIndicator<String, TestLoadBalancedConnection> indicator : healthy) {
+            assertThat(indicator.isHealthy(), equalTo(true));
+        }
+        assertThat(borderline.isHealthy(), equalTo(true));
+        for (HealthIndicator<String, TestLoadBalancedConnection> indicator : lowVolumeGood) {
+            assertThat(indicator.isHealthy(), equalTo(true));
+        }
+        assertThat(xdsOutlierDetector.ejectedHostCount(), equalTo(0));
+    }
+
+    @Test
+    void lowVolumeHostsAreNotEjectedByFailurePercentage() {
+        // Only the failure percentage detector should run and it should only consider hosts with sufficient volume.
+        config = new OutlierDetectorConfig.Builder(config)
+                .enforcingConsecutive5xx(0)
+                .enforcingSuccessRate(0)
+                .enforcingFailurePercentage(100)
+                .failurePercentageMinimumHosts(3)
+                .failurePercentageRequestVolume(10)
+                .maxEjectionPercentage(100)
+                .build();
+        init();
+
+        List<HealthIndicator<String, TestLoadBalancedConnection>> healthy = newIndicators("healthy-", 3);
+        HealthIndicator<String, TestLoadBalancedConnection> highVolumeBad = newIndicator("high-volume-bad");
+        HealthIndicator<String, TestLoadBalancedConnection> lowVolumeBad = newIndicator("low-volume-bad");
+
+        for (HealthIndicator<String, TestLoadBalancedConnection> indicator : healthy) {
+            record(indicator, 10, 0);
+        }
+        // A host above the failure threshold with sufficient volume must still be ejected.
+        record(highVolumeBad, 1, 9);
+        // A host at 100% failure but below the request volume threshold is not eligible for ejection.
+        record(lowVolumeBad, 0, 3);
+
+        executor.advanceTimeBy(config.failureDetectorInterval().toNanos(), TimeUnit.NANOSECONDS);
+
+        for (HealthIndicator<String, TestLoadBalancedConnection> indicator : healthy) {
+            assertThat(indicator.isHealthy(), equalTo(true));
+        }
+        assertThat(highVolumeBad.isHealthy(), equalTo(false));
+        assertThat(lowVolumeBad.isHealthy(), equalTo(true));
+        assertThat(xdsOutlierDetector.ejectedHostCount(), equalTo(1));
+    }
+
+    private List<HealthIndicator<String, TestLoadBalancedConnection>> newIndicators(String prefix, int count) {
+        List<HealthIndicator<String, TestLoadBalancedConnection>> result = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            result.add(newIndicator(prefix + i));
+        }
+        return result;
+    }
+
+    private HealthIndicator<String, TestLoadBalancedConnection> newIndicator(String address) {
+        return xdsOutlierDetector.newHealthIndicator(
+                address, NoopLoadBalancerObserver.instance().hostObserver(address));
+    }
+
+    private static void record(HealthIndicator<String, TestLoadBalancedConnection> indicator,
+                               int successes, int failures) {
+        // Spread the failures evenly across the successes rather than emitting them in a trailing block, so
+        // these tests never build an unintended consecutive-failure streak that a future change could let the
+        // consecutive-5xx detector act on.
+        final int total = successes + failures;
+        for (int i = 0; i < total; i++) {
+            if ((i + 1) * failures / total > i * failures / total) {
+                indicator.onRequestError(indicator.beforeRequestStart(),
+                        RequestTracker.ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
+            } else {
+                indicator.onRequestSuccess(indicator.beforeRequestStart());
+            }
         }
     }
 }
