@@ -208,6 +208,31 @@ class XdsHealthIndicatorTest {
     }
 
     @Test
+    void failureMultiplierDecayIsAnchoredAtScheduledEjectionEndNotRevivalTime() {
+        // Eject once: multiplier 0 -> 1, ejected until t == baseEjectionTime.
+        ejectIndicator(true);
+        assertFalse(healthIndicator.isHealthy());
+
+        // Advance well past the ejection end WITHOUT calling isHealthy() (which would revive eagerly), then run a
+        // detection round so the host is revived lazily by updateOutlierStatus rather than by a selector.
+        testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos() + config.failureDetectorInterval().toNanos(),
+                TimeUnit.NANOSECONDS);
+        ejectIndicator(false);
+        assertTrue(healthIndicator.isHealthy());
+        assertEquals(1, healthIndicator.revivalCount);
+
+        // The very next healthy round decays the multiplier even though no time has passed since the lazy revival:
+        // the grace period is measured from the scheduled ejection end, not from when the revival was processed. So
+        // the next ejection lasts only 1x base (multiplier decayed 1 -> 0).
+        ejectIndicator(false);
+        ejectIndicator(true);
+        testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos() - 1, TimeUnit.NANOSECONDS);
+        assertFalse(healthIndicator.isHealthy());
+        testExecutor.advanceTimeBy(1, TimeUnit.NANOSECONDS);
+        assertTrue(healthIndicator.isHealthy());
+    }
+
+    @Test
     void failureMultiplierOverflow() {
         // make sure out configuration is actually correct
         assertEquals(ofSeconds(1), config.baseEjectionTime());
