@@ -15,7 +15,6 @@
  */
 package io.servicetalk.buffer.api;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -200,7 +199,6 @@ class CharSequencesTest {
     }
 
     @Test
-    @Disabled("ReadOnlyByteBuffer#slice() does not account for the slice offset")
     void parseLongFromSlice() {
         Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("text42text");
         assertThat("Unexpected result for AsciiBuffer representation",
