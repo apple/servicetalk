@@ -19,6 +19,8 @@ import io.servicetalk.buffer.api.Buffer;
 
 import org.junit.jupiter.api.Test;
 
+import java.nio.ByteBuffer;
+
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -57,5 +59,38 @@ class ReadOnlyBufferTest {
         readOnly.writerIndex(2);
         assertEquals(2, readOnly.writerIndex());
         assertEquals(buffer.writerIndex(), readOnly.writerIndex());
+    }
+
+    @Test
+    void sliceStartsAtSliceOffset() {
+        Buffer buffer = DEFAULT_ALLOCATOR.fromAscii("text42text").asReadOnly();
+        Buffer slice = buffer.slice(4, 2);
+
+        assertEquals(0, slice.readerIndex());
+        assertEquals(2, slice.writerIndex());
+        assertEquals(2, slice.capacity());
+        assertEquals('4', (char) slice.getByte(0));
+        assertEquals('2', (char) slice.getByte(1));
+    }
+
+    @Test
+    void wrapPartialArrayStartsAtOffset() {
+        Buffer buffer = DEFAULT_ALLOCATOR.wrap("text42text".getBytes(US_ASCII), 4, 2).asReadOnly();
+
+        assertEquals(0, buffer.readerIndex());
+        assertEquals(2, buffer.writerIndex());
+        assertEquals(2, buffer.capacity());
+        assertEquals('4', (char) buffer.getByte(0));
+        assertEquals('2', (char) buffer.getByte(1));
+    }
+
+    @Test
+    void toNioBufferStartsAtSliceOffset() {
+        ByteBuffer nioBuffer = DEFAULT_ALLOCATOR.fromAscii("text42text").asReadOnly().toNioBuffer(4, 2);
+
+        assertEquals(0, nioBuffer.position());
+        assertEquals(2, nioBuffer.remaining());
+        assertEquals('4', (char) nioBuffer.get(0));
+        assertEquals('2', (char) nioBuffer.get(1));
     }
 }
