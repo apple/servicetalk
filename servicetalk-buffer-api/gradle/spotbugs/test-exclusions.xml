@@ -23,4 +23,13 @@
     <Source name="~.*Test\.java"/>
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
   </Match>
+  <!-- Test intentionally validates incorrect behavior -->
+  <Match>
+    <Class name="io.servicetalk.buffer.api.BufferInputStreamTest"/>
+    <Or>
+      <Bug pattern="RANGE_ARRAY_LENGTH"/>
+      <Bug pattern="RANGE_ARRAY_OFFSET"/>
+      <Bug pattern="RR_NOT_CHECKED"/>
+    </Or>
+  </Match>
 </FindBugsFilter>
