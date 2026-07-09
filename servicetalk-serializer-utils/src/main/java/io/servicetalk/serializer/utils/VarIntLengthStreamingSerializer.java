@@ -51,14 +51,18 @@ public final class VarIntLengthStreamingSerializer<T> implements StreamingSerial
     private final int maxMessageSize;
 
     /**
-     * Create a new instance with no limit on the deserialized message size.
+     * Create a new instance that limits deserialized messages to the default maximum size
+     * ({@value StreamingSerializerDefaults#DEFAULT_MAX_MESSAGE_SIZE_VALUE} bytes, overridable via the
+     * {@value StreamingSerializerDefaults#DEFAULT_MAX_MESSAGE_SIZE_PROPERTY} system property). Use
+     * {@link #VarIntLengthStreamingSerializer(SerializerDeserializer, ToIntFunction, int)} to configure a different
+     * limit, or {@code 0} to disable it.
      *
      * @param serializer The {@link SerializerDeserializer} used to serialize/deserialize individual objects.
      * @param bytesEstimator Estimates the length in bytes for each {@link T} being serialized.
      */
     public VarIntLengthStreamingSerializer(final SerializerDeserializer<T> serializer,
                                            final ToIntFunction<T> bytesEstimator) {
-        this(serializer, bytesEstimator, 0);
+        this(serializer, bytesEstimator, StreamingSerializerDefaults.DEFAULT_MAX_MESSAGE_SIZE);
     }
 
     /**

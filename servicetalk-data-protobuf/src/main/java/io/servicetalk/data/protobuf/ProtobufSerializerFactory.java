@@ -27,6 +27,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.ToIntFunction;
 
 /**
  * Caches instances of {@link SerializerDeserializer} and {@link StreamingSerializerDeserializer} for
@@ -74,7 +75,10 @@ public final class ProtobufSerializerFactory {
 
     /**
      * Get a {@link StreamingSerializerDeserializer} which supports &lt;VarInt length, value&gt; encoding as described
-     * in <a href="https://developers.google.com/protocol-buffers/docs/techniques">Protobuf Streaming</a>.
+     * in <a href="https://developers.google.com/protocol-buffers/docs/techniques">Protobuf Streaming</a>. The
+     * deserialized message size is limited to the default maximum (see
+     * {@link VarIntLengthStreamingSerializer#VarIntLengthStreamingSerializer(SerializerDeserializer, ToIntFunction)});
+     * use {@link #streamingSerializerDeserializer(Parser, int)} to configure a different limit.
      * @param parser The {@link Parser} used to serialize and deserialize.
      * @param <T> The type to serialize and deserialize.
      * @return a {@link StreamingSerializerDeserializer} which supports &lt;VarInt length, value&gt; encoding as
@@ -92,6 +96,24 @@ public final class ProtobufSerializerFactory {
     /**
      * Get a {@link StreamingSerializerDeserializer} which supports &lt;VarInt length, value&gt; encoding as described
      * in <a href="https://developers.google.com/protocol-buffers/docs/techniques">Protobuf Streaming</a>.
+     * @param parser The {@link Parser} used to serialize and deserialize.
+     * @param maxMessageSize The maximum length (in bytes) declared by a frame's length prefix that will be accepted
+     * during deserialization. A frame declaring a larger length is rejected before any of its bytes are buffered. A
+     * value {@code <= 0} disables the limit.
+     * @param <T> The type to serialize and deserialize.
+     * @return a {@link StreamingSerializerDeserializer} which supports &lt;VarInt length, value&gt; encoding as
+     * described in <a href="https://developers.google.com/protocol-buffers/docs/techniques">Protobuf Streaming</a>.
+     * @see VarIntLengthStreamingSerializer
+     */
+    public <T extends MessageLite> StreamingSerializerDeserializer<T> streamingSerializerDeserializer(
+            Parser<T> parser, int maxMessageSize) {
+        return new VarIntLengthStreamingSerializer<>(serializerDeserializer(parser),
+                MessageLite::getSerializedSize, maxMessageSize);
+    }
+
+    /**
+     * Get a {@link StreamingSerializerDeserializer} which supports &lt;VarInt length, value&gt; encoding as described
+     * in <a href="https://developers.google.com/protocol-buffers/docs/techniques">Protobuf Streaming</a>.
      * @param clazz Used to obtain a {@link Parser} which is used to serialize and deserialize.
      * @param <T> The type to serialize and deserialize.
      * @return a {@link StreamingSerializerDeserializer} which supports &lt;VarInt length, value&gt; encoding as
@@ -102,6 +124,25 @@ public final class ProtobufSerializerFactory {
     public <T extends MessageLite> StreamingSerializerDeserializer<T> streamingSerializerDeserializer(Class<T> clazz) {
         return streamingSerializerDeserializer(
                 (Parser<T>) parserMap.computeIfAbsent(clazz, clazz2 -> newParser((Class<T>) clazz2)));
+    }
+
+    /**
+     * Get a {@link StreamingSerializerDeserializer} which supports &lt;VarInt length, value&gt; encoding as described
+     * in <a href="https://developers.google.com/protocol-buffers/docs/techniques">Protobuf Streaming</a>.
+     * @param clazz Used to obtain a {@link Parser} which is used to serialize and deserialize.
+     * @param maxMessageSize The maximum length (in bytes) declared by a frame's length prefix that will be accepted
+     * during deserialization. A frame declaring a larger length is rejected before any of its bytes are buffered. A
+     * value {@code <= 0} disables the limit.
+     * @param <T> The type to serialize and deserialize.
+     * @return a {@link StreamingSerializerDeserializer} which supports &lt;VarInt length, value&gt; encoding as
+     * described in <a href="https://developers.google.com/protocol-buffers/docs/techniques">Protobuf Streaming</a>.
+     * @see VarIntLengthStreamingSerializer
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends MessageLite> StreamingSerializerDeserializer<T> streamingSerializerDeserializer(
+            Class<T> clazz, int maxMessageSize) {
+        return streamingSerializerDeserializer(
+                (Parser<T>) parserMap.computeIfAbsent(clazz, clazz2 -> newParser((Class<T>) clazz2)), maxMessageSize);
     }
 
     @SuppressWarnings("unchecked")

@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.serializer.utils.StreamingSerializerDefaults.DEFAULT_MAX_MESSAGE_SIZE;
 import static io.servicetalk.serializer.utils.StringSerializer.stringSerializer;
 import static io.servicetalk.serializer.utils.VarIntLengthStreamingSerializer.FOUR_BYTE_VAL;
 import static io.servicetalk.serializer.utils.VarIntLengthStreamingSerializer.MAX_LENGTH_BYTES;
@@ -87,6 +88,18 @@ class VarIntLengthStreamingSerializerTest {
 
         assertThat(serializer.deserialize(serializer.serialize(from("foo", "bar"), DEFAULT_ALLOCATOR),
                 DEFAULT_ALLOCATOR).toFuture().get(), contains("foo", "bar"));
+    }
+
+    @Test
+    void defaultConstructorRejectsFrameAboveDefaultLimit() {
+        VarIntLengthStreamingSerializer<String> serializer = new VarIntLengthStreamingSerializer<>(
+                stringSerializer(UTF_8), String::length);
+        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer(MAX_LENGTH_BYTES).writerIndex(MAX_LENGTH_BYTES);
+        setVarInt(DEFAULT_MAX_MESSAGE_SIZE + 1, buffer, buffer.readerIndex());
+
+        ExecutionException e = assertThrows(ExecutionException.class,
+                () -> serializer.deserialize(from(buffer), DEFAULT_ALLOCATOR).toFuture().get());
+        assertThat(e.getCause(), instanceOf(SerializationException.class));
     }
 
     @Test

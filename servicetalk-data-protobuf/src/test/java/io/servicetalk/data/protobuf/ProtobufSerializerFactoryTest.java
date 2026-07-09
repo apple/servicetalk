@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.data.protobuf.test.TestProtos.DummyMessage;
 import io.servicetalk.data.protobuf.test.TestProtos.MapMessage;
+import io.servicetalk.serializer.api.SerializationException;
 import io.servicetalk.serializer.api.SerializerDeserializer;
 import io.servicetalk.serializer.api.StreamingSerializerDeserializer;
 
@@ -34,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import static io.servicetalk.buffer.api.Buffer.asInputStream;
@@ -48,6 +50,8 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ProtobufSerializerFactoryTest {
     private static final List<Arguments> POJOS = Arrays.asList(
@@ -99,13 +103,15 @@ class ProtobufSerializerFactoryTest {
     @ParameterizedTest(name = "pojos={0}")
     @MethodSource("pojos")
     void streamingWriteDelimitedToDeserialized(Collection<DummyMessage> msgs) throws Exception {
-        streamingWriteDelimitedToDeserialized(PROTOBUF.streamingSerializerDeserializer(DummyMessage.parser()), msgs);
+        // The boundary POJOs include a message larger than the default max message size to exercise VarInt prefix
+        // encoding across sizes, so disable the limit rather than exercising it here.
+        streamingWriteDelimitedToDeserialized(PROTOBUF.streamingSerializerDeserializer(DummyMessage.parser(), 0), msgs);
     }
 
     @ParameterizedTest(name = "pojos={0}")
     @MethodSource("pojos")
     void streamingWriteDelimitedToDeserializedClass(Collection<DummyMessage> msgs) throws Exception {
-        streamingWriteDelimitedToDeserialized(PROTOBUF.streamingSerializerDeserializer(DummyMessage.class), msgs);
+        streamingWriteDelimitedToDeserialized(PROTOBUF.streamingSerializerDeserializer(DummyMessage.class, 0), msgs);
     }
 
     private static void streamingWriteDelimitedToDeserialized(StreamingSerializerDeserializer<DummyMessage> serializer,
@@ -142,6 +148,18 @@ class ProtobufSerializerFactoryTest {
             deserialized.add(parser.parseDelimitedFrom(asInputStream(buf)));
         }
         assertThat(deserialized, contains(msgs.toArray()));
+    }
+
+    @Test
+    void streamingSerializerRejectsFrameAboveConfiguredLimit() throws Exception {
+        StreamingSerializerDeserializer<DummyMessage> serializer =
+                PROTOBUF.streamingSerializerDeserializer(DummyMessage.parser(), 8);
+        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer();
+        newMsg("aaaaaaaaaa").writeDelimitedTo(asOutputStream(buffer));
+
+        ExecutionException e = assertThrows(ExecutionException.class,
+                () -> serializer.deserialize(from(buffer), DEFAULT_ALLOCATOR).toFuture().get());
+        assertThat(e.getCause(), instanceOf(SerializationException.class));
     }
 
     @SuppressWarnings("unused")

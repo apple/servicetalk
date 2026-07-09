@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.serializer.utils.StreamingSerializerDefaults.DEFAULT_MAX_MESSAGE_SIZE;
 import static io.servicetalk.serializer.utils.StringSerializer.stringSerializer;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -39,6 +40,17 @@ class FixedLengthStreamingSerializerTest {
 
         assertThat(serializer.deserialize(serializer.serialize(from("foo", "bar"), DEFAULT_ALLOCATOR),
                 DEFAULT_ALLOCATOR).toFuture().get(), contains("foo", "bar"));
+    }
+
+    @Test
+    void defaultConstructorRejectsFrameAboveDefaultLimit() {
+        FixedLengthStreamingSerializer<String> serializer = new FixedLengthStreamingSerializer<>(
+                stringSerializer(UTF_8), String::length);
+        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer().writeInt(DEFAULT_MAX_MESSAGE_SIZE + 1);
+
+        ExecutionException e = assertThrows(ExecutionException.class,
+                () -> serializer.deserialize(from(buffer), DEFAULT_ALLOCATOR).toFuture().get());
+        assertThat(e.getCause(), instanceOf(SerializationException.class));
     }
 
     @Test
