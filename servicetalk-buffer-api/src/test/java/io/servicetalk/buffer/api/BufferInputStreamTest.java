@@ -72,25 +72,28 @@ class BufferInputStreamTest {
 
     @Test
     void readZeroLengthAtEnd() throws Exception {
-        InputStream empty = new BufferInputStream(DEFAULT_RO_ALLOCATOR.fromAscii(""));
-        assertThat(empty.read(new byte[1], 0, 0), is(0));
+        try (InputStream empty = new BufferInputStream(DEFAULT_RO_ALLOCATOR.fromAscii(""))) {
+            assertThat(empty.read(new byte[1], 0, 0), is(0));
+        }
     }
 
     @Test
-    void readValidatesNullArrayAtEnd() {
-        InputStream empty = new BufferInputStream(DEFAULT_RO_ALLOCATOR.fromAscii(""));
-        assertThrows(NullPointerException.class, () -> empty.read(null, 0, 0));
+    void readValidatesNullArrayAtEnd() throws Exception {
+        try (InputStream empty = new BufferInputStream(DEFAULT_RO_ALLOCATOR.fromAscii(""))) {
+            assertThrows(NullPointerException.class, () -> empty.read(null, 0, 0));
+        }
     }
 
     @Test
-    void readValidatesBoundsAtEnd() {
-        InputStream empty = new BufferInputStream(DEFAULT_RO_ALLOCATOR.fromAscii(""));
-        byte[] bytes = new byte[1];
-        assertThrows(IndexOutOfBoundsException.class, () -> empty.read(bytes, -1, 0));
-        assertThrows(IndexOutOfBoundsException.class, () -> empty.read(bytes, 0, -1));
-        assertThrows(IndexOutOfBoundsException.class, () -> empty.read(bytes, 1, 1));
-        assertThrows(IndexOutOfBoundsException.class, () -> empty.read(bytes, 0, Integer.MAX_VALUE));
-        assertThrows(IndexOutOfBoundsException.class, () -> empty.read(bytes, Integer.MAX_VALUE, 1));
+    void readValidatesBoundsAtEnd() throws Exception {
+        try (InputStream empty = new BufferInputStream(DEFAULT_RO_ALLOCATOR.fromAscii(""))) {
+            byte[] bytes = new byte[1];
+            assertThrows(IndexOutOfBoundsException.class, () -> empty.read(bytes, -1, 0));
+            assertThrows(IndexOutOfBoundsException.class, () -> empty.read(bytes, 0, -1));
+            assertThrows(IndexOutOfBoundsException.class, () -> empty.read(bytes, 1, 1));
+            assertThrows(IndexOutOfBoundsException.class, () -> empty.read(bytes, 0, Integer.MAX_VALUE));
+            assertThrows(IndexOutOfBoundsException.class, () -> empty.read(bytes, Integer.MAX_VALUE, 1));
+        }
     }
 
     private void testSkip(long n, long skipped, String expected) throws Exception {
