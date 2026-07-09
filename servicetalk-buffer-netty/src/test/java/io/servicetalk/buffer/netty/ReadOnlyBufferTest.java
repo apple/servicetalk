@@ -16,34 +16,48 @@
 package io.servicetalk.buffer.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Named;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.ByteBuffer;
+import java.util.stream.Stream;
 
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_DIRECT_ALLOCATOR;
+import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_HEAP_ALLOCATOR;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ReadOnlyBufferTest {
 
-    @Test
-    void capacity() {
-        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer(10).writeBytes("test".getBytes(US_ASCII));
+    private static Stream<Named<BufferAllocator>> allocators() {
+        return Stream.of(
+                Named.of("heap", PREFER_HEAP_ALLOCATOR),
+                Named.of("direct", PREFER_DIRECT_ALLOCATOR));
+    }
+
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void capacity(BufferAllocator allocator) {
+        Buffer buffer = allocator.newBuffer(10).writeBytes("test".getBytes(US_ASCII));
         Buffer readOnly = buffer.asReadOnly();
         assertEquals(buffer.capacity(), readOnly.capacity());
     }
 
-    @Test
-    void maxCapacity() {
-        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer(10).writeBytes("test".getBytes(US_ASCII));
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void maxCapacity(BufferAllocator allocator) {
+        Buffer buffer = allocator.newBuffer(10).writeBytes("test".getBytes(US_ASCII));
         Buffer readOnly = buffer.asReadOnly();
         assertEquals(buffer.maxCapacity(), readOnly.maxCapacity());
     }
 
-    @Test
-    void changeReaderIndexViaReadOnlyView() {
-        Buffer buffer = DEFAULT_ALLOCATOR.fromAscii("test");
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void changeReaderIndexViaReadOnlyView(BufferAllocator allocator) {
+        Buffer buffer = allocator.fromAscii("test");
         Buffer readOnly = buffer.asReadOnly();
         assertEquals(buffer.readerIndex(), readOnly.readerIndex());
         readOnly.skipBytes(2);
@@ -51,9 +65,10 @@ class ReadOnlyBufferTest {
         assertEquals(buffer.readerIndex(), readOnly.readerIndex());
     }
 
-    @Test
-    void changeWriterIndexViaReadOnlyView() {
-        Buffer buffer = DEFAULT_ALLOCATOR.fromAscii("test");
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void changeWriterIndexViaReadOnlyView(BufferAllocator allocator) {
+        Buffer buffer = allocator.fromAscii("test");
         Buffer readOnly = buffer.asReadOnly();
         assertEquals(buffer.writerIndex(), readOnly.writerIndex());
         readOnly.writerIndex(2);
@@ -61,9 +76,10 @@ class ReadOnlyBufferTest {
         assertEquals(buffer.writerIndex(), readOnly.writerIndex());
     }
 
-    @Test
-    void sliceStartsAtSliceOffset() {
-        Buffer buffer = DEFAULT_ALLOCATOR.fromAscii("text42text").asReadOnly();
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void sliceStartsAtSliceOffset(BufferAllocator allocator) {
+        Buffer buffer = allocator.fromAscii("text42text").asReadOnly();
         Buffer slice = buffer.slice(4, 2);
 
         assertEquals(0, slice.readerIndex());
@@ -73,9 +89,10 @@ class ReadOnlyBufferTest {
         assertEquals('2', (char) slice.getByte(1));
     }
 
-    @Test
-    void wrapPartialArrayStartsAtOffset() {
-        Buffer buffer = DEFAULT_ALLOCATOR.wrap("text42text".getBytes(US_ASCII), 4, 2).asReadOnly();
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void wrapPartialArrayStartsAtOffset(BufferAllocator allocator) {
+        Buffer buffer = allocator.wrap("text42text".getBytes(US_ASCII), 4, 2).asReadOnly();
 
         assertEquals(0, buffer.readerIndex());
         assertEquals(2, buffer.writerIndex());
@@ -84,13 +101,42 @@ class ReadOnlyBufferTest {
         assertEquals('2', (char) buffer.getByte(1));
     }
 
-    @Test
-    void toNioBufferStartsAtSliceOffset() {
-        ByteBuffer nioBuffer = DEFAULT_ALLOCATOR.fromAscii("text42text").asReadOnly().toNioBuffer(4, 2);
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void toNioBufferStartsAtSliceOffset(BufferAllocator allocator) {
+        ByteBuffer nioBuffer = allocator.fromAscii("text42text").asReadOnly().toNioBuffer(4, 2);
 
         assertEquals(0, nioBuffer.position());
         assertEquals(2, nioBuffer.remaining());
         assertEquals('4', (char) nioBuffer.get(0));
         assertEquals('2', (char) nioBuffer.get(1));
+    }
+
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void sliceOfSliceComposesOffsets(BufferAllocator allocator) {
+        Buffer buffer = allocator.fromAscii("text42text").asReadOnly();
+        Buffer outer = buffer.slice(2, 6);    // "xt42te"
+        Buffer inner = outer.slice(2, 2);     // "42"
+
+        assertEquals(0, inner.readerIndex());
+        assertEquals(2, inner.writerIndex());
+        assertEquals(2, inner.capacity());
+        assertEquals('4', (char) inner.getByte(0));
+        assertEquals('2', (char) inner.getByte(1));
+    }
+
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void sliceAndWrapPartialArrayAreEquivalent(BufferAllocator allocator) {
+        // slice(off, len) on a full wrap and wrap(bytes, off, len) should produce the same read-only buffer.
+        byte[] bytes = "text42text".getBytes(US_ASCII);
+        Buffer viaSlice = allocator.wrap(bytes).asReadOnly().slice(4, 2);
+        Buffer viaWrap = allocator.wrap(bytes, 4, 2).asReadOnly();
+
+        assertEquals(viaSlice, viaWrap);
+        assertEquals(viaSlice.capacity(), viaWrap.capacity());
+        assertEquals(viaSlice.readerIndex(), viaWrap.readerIndex());
+        assertEquals(viaSlice.writerIndex(), viaWrap.writerIndex());
     }
 }
