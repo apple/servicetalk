@@ -15,25 +15,38 @@
  */
 package io.servicetalk.buffer.api;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Named;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.ByteBuffer;
+import java.util.stream.Stream;
 
-import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_DIRECT_RO_ALLOCATOR;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_HEAP_RO_ALLOCATOR;
 import static java.nio.ByteBuffer.allocateDirect;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ReadOnlyByteBufferTest {
-    @Test
-    void directFromString() {
+
+    private static Stream<Named<BufferAllocator>> allocators() {
+        return Stream.of(
+                Named.of("heap", PREFER_HEAP_RO_ALLOCATOR),
+                Named.of("direct", PREFER_DIRECT_RO_ALLOCATOR));
+    }
+
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void directFromString(BufferAllocator allocator) {
         String expectedString = "testing";
         ByteBuffer expectedBuffer = allocateDirect(expectedString.length());
         expectedBuffer.put(expectedString.getBytes(US_ASCII));
         expectedBuffer.flip();
-        Buffer buffer1 = DEFAULT_RO_ALLOCATOR.wrap(expectedBuffer);
-        Buffer buffer2 = DEFAULT_RO_ALLOCATOR.fromAscii("testing");
+        Buffer buffer1 = allocator.wrap(expectedBuffer);
+        Buffer buffer2 = allocator.fromAscii("testing");
         assertEquals(buffer1, buffer2);
         assertEquals(expectedBuffer, buffer1.toNioBuffer());
         assertEquals(expectedBuffer, buffer2.toNioBuffer());
@@ -46,59 +59,144 @@ class ReadOnlyByteBufferTest {
         assertEquals("testing", buffer1.toString(US_ASCII));
     }
 
-    @Test
-    void getLong() {
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void getLong(BufferAllocator allocator) {
         ByteBuffer expectedBuffer = allocateDirect(8);
         expectedBuffer.putLong(Long.MAX_VALUE);
         expectedBuffer.flip();
-        Buffer buffer1 = DEFAULT_RO_ALLOCATOR.wrap(expectedBuffer);
+        Buffer buffer1 = allocator.wrap(expectedBuffer);
         assertEquals(Long.MAX_VALUE, buffer1.getLong(buffer1.readerIndex()));
     }
 
-    @Test
-    void getUnsignedShort() {
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void getUnsignedShort(BufferAllocator allocator) {
         ByteBuffer expectedBuffer = allocateDirect(4);
         expectedBuffer.putShort((short) 0xffff);
         expectedBuffer.putShort((short) 0xf234);
         expectedBuffer.flip();
-        Buffer buffer1 = DEFAULT_RO_ALLOCATOR.wrap(expectedBuffer);
+        Buffer buffer1 = allocator.wrap(expectedBuffer);
         assertEquals(0xffff, buffer1.getUnsignedShort(buffer1.readerIndex()));
         assertEquals(0xf234, buffer1.getUnsignedShort(buffer1.readerIndex() + 2));
     }
 
-    @Test
-    void copy() {
-        Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void sliceOfLittleEndianBufferPreservesOrder(BufferAllocator allocator) {
+        ByteBuffer src = ByteBuffer.allocate(4).order(LITTLE_ENDIAN)
+                .putShort((short) 0x1234).putShort((short) 0x5678);
+        src.flip();
+        Buffer buffer = allocator.wrap(src).slice(2, 2);
+        // With LE preserved: 0x5678 stored as bytes 0x78 0x56, so getShortLE() reads 0x5678.
+        // If order were dropped to BE, we'd read 0x7856 instead.
+        assertEquals((short) 0x5678, buffer.getShortLE(0));
+    }
+
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void sliceStartsAtSliceOffset(BufferAllocator allocator) {
+        Buffer buffer = allocator.fromAscii("text42text");
+        Buffer slice = buffer.slice(4, 2);
+
+        assertEquals(0, slice.readerIndex());
+        assertEquals(2, slice.writerIndex());
+        assertEquals(2, slice.capacity());
+        assertEquals('4', (char) slice.getByte(0));
+        assertEquals('2', (char) slice.getByte(1));
+    }
+
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void wrapPartialArrayStartsAtOffset(BufferAllocator allocator) {
+        Buffer buffer = allocator.wrap("text42text".getBytes(US_ASCII), 4, 2);
+
+        assertEquals(0, buffer.readerIndex());
+        assertEquals(2, buffer.writerIndex());
+        assertEquals(2, buffer.capacity());
+        assertEquals('4', (char) buffer.getByte(0));
+        assertEquals('2', (char) buffer.getByte(1));
+    }
+
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void toNioBufferStartsAtSliceOffset(BufferAllocator allocator) {
+        ByteBuffer nioBuffer = allocator.fromAscii("text42text").toNioBuffer(4, 2);
+
+        assertEquals(0, nioBuffer.position());
+        assertEquals(2, nioBuffer.remaining());
+        assertEquals('4', (char) nioBuffer.get(0));
+        assertEquals('2', (char) nioBuffer.get(1));
+    }
+
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void sliceOfSliceComposesOffsets(BufferAllocator allocator) {
+        Buffer buffer = allocator.fromAscii("text42text");
+        Buffer outer = buffer.slice(2, 6);    // "xt42te"
+        Buffer inner = outer.slice(2, 2);     // "42"
+
+        assertEquals(0, inner.readerIndex());
+        assertEquals(2, inner.writerIndex());
+        assertEquals(2, inner.capacity());
+        assertEquals('4', (char) inner.getByte(0));
+        assertEquals('2', (char) inner.getByte(1));
+    }
+
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void sliceAndWrapPartialArrayAreEquivalent(BufferAllocator allocator) {
+        // slice(off, len) on a full wrap and wrap(bytes, off, len) should produce the same buffer under the fixed
+        // coordinate system.
+        byte[] bytes = "text42text".getBytes(US_ASCII);
+        Buffer viaSlice = allocator.wrap(bytes).slice(4, 2);
+        Buffer viaWrap = allocator.wrap(bytes, 4, 2);
+
+        assertEquals(viaSlice, viaWrap);
+        assertEquals(viaSlice.capacity(), viaWrap.capacity());
+        assertEquals(viaSlice.readerIndex(), viaWrap.readerIndex());
+        assertEquals(viaSlice.writerIndex(), viaWrap.writerIndex());
+    }
+
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void copy(BufferAllocator allocator) {
+        Buffer buffer = allocator.fromAscii("test");
         assertEquals(buffer, buffer.copy());
     }
 
-    @Test
-    void setNegativeReaderIndex() {
-        Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void setNegativeReaderIndex(BufferAllocator allocator) {
+        Buffer buffer = allocator.fromAscii("test");
         assertThrows(IndexOutOfBoundsException.class, () -> buffer.readerIndex(-1));
     }
 
-    @Test
-    void setReaderIndexHigherThanWriterIndex() {
-        Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void setReaderIndexHigherThanWriterIndex(BufferAllocator allocator) {
+        Buffer buffer = allocator.fromAscii("test");
         assertThrows(IndexOutOfBoundsException.class, () -> buffer.readerIndex(buffer.writerIndex() + 1));
     }
 
-    @Test
-    void setWriterIndexLowerThanReaderIndex() {
-        Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void setWriterIndexLowerThanReaderIndex(BufferAllocator allocator) {
+        Buffer buffer = allocator.fromAscii("test");
         assertThrows(IndexOutOfBoundsException.class, () -> buffer.writerIndex(buffer.readerIndex() - 1));
     }
 
-    @Test
-    void setWriterIndexHigherThanCapacity() {
-        Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void setWriterIndexHigherThanCapacity(BufferAllocator allocator) {
+        Buffer buffer = allocator.fromAscii("test");
         assertThrows(IndexOutOfBoundsException.class, () -> buffer.writerIndex(buffer.capacity() + 1));
     }
 
-    @Test
-    void testIndexOf() {
-        Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
+    @ParameterizedTest
+    @MethodSource("allocators")
+    void testIndexOf(BufferAllocator allocator) {
+        Buffer buffer = allocator.fromAscii("test");
 
         assertEquals(-1, buffer.indexOf(0, 4, (byte) 'a'));
 

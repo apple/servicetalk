@@ -44,8 +44,8 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
     private final ByteBuffer buffer;
 
     ReadOnlyByteBuffer(ByteBuffer buffer) {
-        super(buffer.position(), buffer.limit());
-        this.buffer = buffer;
+        super(0, buffer.remaining());
+        this.buffer = sliceAndPreserveOrder(buffer);
     }
 
     @Override
@@ -421,9 +421,16 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
         return sliceByteBuffer0(index, length);
     }
 
-    @SuppressWarnings("PMD.UnnecessaryCast") // false positive
     private ByteBuffer sliceByteBuffer0(int index, int length) {
-        return (ByteBuffer) buffer.duplicate().position(index).limit(index + length);
+        ByteBuffer duplicate = buffer.duplicate();
+        duplicate.position(index).limit(index + length);
+        return sliceAndPreserveOrder(duplicate);
+    }
+
+    // ByteBuffer.slice() drops the source's byte order (always returns BIG_ENDIAN). Restore it so LE-source buffers
+    // keep reading LE after a slice.
+    private static ByteBuffer sliceAndPreserveOrder(ByteBuffer buffer) {
+        return buffer.slice().order(buffer.order());
     }
 
     @Override
