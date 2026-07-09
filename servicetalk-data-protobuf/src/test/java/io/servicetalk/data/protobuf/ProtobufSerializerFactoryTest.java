@@ -19,10 +19,11 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.data.protobuf.test.TestProtos.DummyMessage;
 import io.servicetalk.data.protobuf.test.TestProtos.MapMessage;
-import io.servicetalk.serializer.api.SerializationException;
+import io.servicetalk.serializer.api.MaxMessageSizeExceededException;
 import io.servicetalk.serializer.api.SerializerDeserializer;
 import io.servicetalk.serializer.api.StreamingSerializerDeserializer;
 
+import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import org.junit.jupiter.api.Test;
@@ -159,7 +160,23 @@ class ProtobufSerializerFactoryTest {
 
         ExecutionException e = assertThrows(ExecutionException.class,
                 () -> serializer.deserialize(from(buffer), DEFAULT_ALLOCATOR).toFuture().get());
-        assertThat(e.getCause(), instanceOf(SerializationException.class));
+        assertThat(e.getCause(), instanceOf(MaxMessageSizeExceededException.class));
+    }
+
+    @Test
+    void streamingSerializerAppliesDefaultLimit() throws Exception {
+        StreamingSerializerDeserializer<DummyMessage> serializer =
+                PROTOBUF.streamingSerializerDeserializer(DummyMessage.class);
+        // Only the length prefix is written, declaring a length far above the default limit, so the guard fires
+        // before any payload is buffered.
+        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer();
+        CodedOutputStream cos = CodedOutputStream.newInstance(asOutputStream(buffer));
+        cos.writeUInt32NoTag(100 * 1024 * 1024);
+        cos.flush();
+
+        ExecutionException e = assertThrows(ExecutionException.class,
+                () -> serializer.deserialize(from(buffer), DEFAULT_ALLOCATOR).toFuture().get());
+        assertThat(e.getCause(), instanceOf(MaxMessageSizeExceededException.class));
     }
 
     @SuppressWarnings("unused")

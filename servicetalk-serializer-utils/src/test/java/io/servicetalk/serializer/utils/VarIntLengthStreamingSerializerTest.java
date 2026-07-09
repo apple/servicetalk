@@ -16,6 +16,7 @@
 package io.servicetalk.serializer.utils;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.serializer.api.MaxMessageSizeExceededException;
 import io.servicetalk.serializer.api.SerializationException;
 
 import com.google.protobuf.CodedInputStream;
@@ -99,7 +100,7 @@ class VarIntLengthStreamingSerializerTest {
 
         ExecutionException e = assertThrows(ExecutionException.class,
                 () -> serializer.deserialize(from(buffer), DEFAULT_ALLOCATOR).toFuture().get());
-        assertThat(e.getCause(), instanceOf(SerializationException.class));
+        assertThat(e.getCause(), instanceOf(MaxMessageSizeExceededException.class));
     }
 
     @Test
@@ -129,7 +130,7 @@ class VarIntLengthStreamingSerializerTest {
 
         ExecutionException e = assertThrows(ExecutionException.class,
                 () -> serializer.deserialize(from(buffer), DEFAULT_ALLOCATOR).toFuture().get());
-        assertThat(e.getCause(), instanceOf(SerializationException.class));
+        assertThat(e.getCause(), instanceOf(MaxMessageSizeExceededException.class));
     }
 
     @Test
@@ -143,7 +144,7 @@ class VarIntLengthStreamingSerializerTest {
 
         ExecutionException e = assertThrows(ExecutionException.class,
                 () -> serializer.deserialize(from(first, second), DEFAULT_ALLOCATOR).toFuture().get());
-        assertThat(e.getCause(), instanceOf(SerializationException.class));
+        assertThat(e.getCause(), instanceOf(MaxMessageSizeExceededException.class));
     }
 
     @Test

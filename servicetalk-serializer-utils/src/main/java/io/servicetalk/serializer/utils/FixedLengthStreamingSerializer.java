@@ -18,6 +18,7 @@ package io.servicetalk.serializer.utils;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.serializer.api.MaxMessageSizeExceededException;
 import io.servicetalk.serializer.api.SerializationException;
 import io.servicetalk.serializer.api.SerializerDeserializer;
 import io.servicetalk.serializer.api.StreamingSerializerDeserializer;
@@ -109,7 +110,7 @@ public final class FixedLengthStreamingSerializer<T> implements StreamingSeriali
                     throw new SerializationException("Invalid length: " + expectedLength);
                 }
                 if (maxMessageSize > 0 && expectedLength > maxMessageSize) {
-                    throw new SerializationException("Message-Length " + expectedLength +
+                    throw new MaxMessageSizeExceededException("Message-Length " + expectedLength +
                             " exceeds maximum " + maxMessageSize);
                 }
             }
