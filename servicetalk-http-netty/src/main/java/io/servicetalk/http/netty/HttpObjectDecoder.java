@@ -54,6 +54,7 @@ import io.netty.handler.codec.http.HttpExpectationFailedEvent;
 import io.netty.util.AsciiString;
 import io.netty.util.ByteProcessor;
 
+import java.util.Iterator;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpConstants.COLON;
@@ -64,15 +65,21 @@ import static io.netty.handler.codec.http.HttpConstants.SP;
 import static io.netty.util.ByteProcessor.FIND_LF;
 import static io.servicetalk.buffer.api.CharSequences.emptyAsciiString;
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
+import static io.servicetalk.buffer.api.CharSequences.regionMatches;
 import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
+import static io.servicetalk.http.api.HeaderUtils.isConnectionClose;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
+import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY1;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY2;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_LOCATION;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_ORIGIN;
+import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.UPGRADE;
+import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
+import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
@@ -748,15 +755,39 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         if (isContentAlwaysEmpty(message)) {
             removeTransferEncodingChunked(message.headers());
             return State.SKIP_CONTROL_CHARS;
-        } else if (isTransferEncodingChunked(message.headers())) {
-            if (contentLength >= 0L && HTTP_1_1.equals(message.version())) {
-                // Remove the received content-length header(s), keep only "transfer-encoding: chunked"
-                // See https://tools.ietf.org/html/rfc7230#section-3.3.3, item 3.
+        }
+        if (message.headers().contains(TRANSFER_ENCODING)) {
+            // RFC 9112 section 6.1: Transfer-Encoding is HTTP/1.1-only.
+            if (!HTTP_1_1.equals(message.version())) {
+                throw new StacklessDecoderException("Transfer-Encoding is only allowed in HTTP/1.1");
+            }
+
+            // RFC 9112 section 6.1: chunked must be the final coding to apply chunked framing, and a sender
+            // "MUST NOT apply the chunked transfer coding more than once to a message body". Deliberate
+            // deviation from RFC 9112 section 6.3, which would otherwise let some non-chunked-final shapes
+            // fall back to Content-Length (e.g. plain "gzip") or to framing a response by connection close
+            // (e.g. "chunked, gzip"): any Transfer-Encoding whose final coding isn't chunked, or that names
+            // chunked more than once, is rejected outright here, for both requests and responses, since it's
+            // an ambiguous/smuggling-adjacent signal regardless of the shape it takes.
+            validateTransferEncodingChunked(message.headers().valuesIterator(TRANSFER_ENCODING));
+            // RFC 9112 section 6.3: Transfer-Encoding overrides Content-Length. Drop any received
+            // Content-Length now so it can never be used to frame the body.
+            if (contentLength >= 0L) {
+                // RFC 9112 section 6.1: this is the forbidden Content-Length + Transfer-Encoding
+                // combination. Process per Transfer-Encoding alone and force Connection: close -
+                // the shouldClose(message) check below signals the close handler so the connection
+                // is torn down after this exchange to avoid request smuggling attacks.
                 message.headers().remove(CONTENT_LENGTH);
                 this.contentLength = Long.MIN_VALUE;
+                // Preserve any Connection values the peer already sent (e.g. upgrade, keep-alive) and
+                // only add close if it isn't there yet, rather than overriding with set(...).
+                if (!isConnectionClose(message.headers())) {
+                    message.headers().add(CONNECTION, CLOSE);
+                }
             }
             return State.READ_CHUNK_SIZE;
-        } else if (contentLength >= 0L) {
+        }
+        if (contentLength >= 0L) {
             return State.READ_FIXED_LENGTH_CONTENT;
         } else {
             return State.READ_VARIABLE_LENGTH_CONTENT;
@@ -1054,6 +1085,58 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         return value >= '!' && value <= '~';
     }
 
+    /**
+     * Validates that {@code chunked} appears exactly once across all {@code Transfer-Encoding} header field-lines
+     * and that it is the final coding, per RFC 9112 section 6.1: chunked must be the final transfer coding to
+     * apply chunked framing, and a sender "MUST NOT apply the chunked transfer coding more than once to a message
+     * body (i.e., chunking an already chunked message is not allowed)". Stops scanning as soon as a second
+     * {@code chunked} token is found, without inspecting the remaining tokens or header lines.
+     *
+     * @param encodingIt an iterator over each {@code Transfer-Encoding} header field-line value, in wire order
+     * @throws StacklessDecoderException if chunked is not the final coding, or appears more than once
+     */
+    private static void validateTransferEncodingChunked(final Iterator<? extends CharSequence> encodingIt) {
+        final int chunkedLength = CHUNKED.length();
+        boolean chunkedSeen = false;
+        boolean lastTokenIsChunked = false;
+        while (encodingIt.hasNext()) {
+            final CharSequence value = encodingIt.next();
+            final int valueLength = value.length();
+            int tokenStart = 0;
+            // List elements are comma-separated (RFC 9110 section 5.6.1); walk tokens left-to-right, trimming
+            // any OWS (SP/HTAB) at their edges, so a bare SP/HTAB with no comma (e.g. "gzip chunked") is not
+            // mistaken for two distinct tokens.
+            for (int i = 0; i <= valueLength; i++) {
+                if (i == valueLength || value.charAt(i) == ',') {
+                    int tokenEnd = i;
+                    while (tokenStart < tokenEnd && isOWSChar(value.charAt(tokenStart))) {
+                        tokenStart++;
+                    }
+                    while (tokenEnd > tokenStart && isOWSChar(value.charAt(tokenEnd - 1))) {
+                        tokenEnd--;
+                    }
+                    lastTokenIsChunked = tokenEnd - tokenStart == chunkedLength &&
+                            regionMatches(value, true, tokenStart, CHUNKED, 0, chunkedLength);
+                    if (lastTokenIsChunked) {
+                        if (chunkedSeen) {
+                            throw new StacklessDecoderException(
+                                    "chunked transfer coding must not be applied more than once");
+                        }
+                        chunkedSeen = true;
+                    }
+                    tokenStart = i + 1;
+                }
+            }
+        }
+        if (!lastTokenIsChunked) {
+            throw new StacklessDecoderException("chunked must be the final Transfer-Encoding coding");
+        }
+    }
+
+    private static boolean isOWSChar(final char value) {
+        return value == ' ' || value == '\t';
+    }
+
     private static boolean isObsText(final byte value) {
         return value < 0; // x80-xFF
     }
@@ -1074,6 +1157,10 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
     static final class StacklessDecoderException extends DecoderException {
         private static final long serialVersionUID = 7611225180490304156L;
+
+        StacklessDecoderException(final String message) {
+            super(message);
+        }
 
         StacklessDecoderException(final String message, final Throwable cause) {
             super(message, cause);
