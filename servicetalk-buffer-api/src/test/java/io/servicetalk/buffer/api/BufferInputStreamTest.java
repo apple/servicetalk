@@ -89,6 +89,8 @@ class BufferInputStreamTest {
         assertThrows(IndexOutOfBoundsException.class, () -> empty.read(bytes, -1, 0));
         assertThrows(IndexOutOfBoundsException.class, () -> empty.read(bytes, 0, -1));
         assertThrows(IndexOutOfBoundsException.class, () -> empty.read(bytes, 1, 1));
+        assertThrows(IndexOutOfBoundsException.class, () -> empty.read(bytes, 0, Integer.MAX_VALUE));
+        assertThrows(IndexOutOfBoundsException.class, () -> empty.read(bytes, Integer.MAX_VALUE, 1));
     }
 
     private void testSkip(long n, long skipped, String expected) throws Exception {
