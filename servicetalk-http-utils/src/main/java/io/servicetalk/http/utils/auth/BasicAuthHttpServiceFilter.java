@@ -69,6 +69,18 @@ import static java.util.Objects.requireNonNull;
 public final class BasicAuthHttpServiceFilter<UserInfo> implements StreamingHttpServiceFilterFactory {
 
     /**
+     * A {@link ContextMap.Key} whose presence with the value {@link Boolean#TRUE} indicates that the current request
+     * was successfully authenticated by a {@link BasicAuthHttpServiceFilter}.
+     * <p>
+     * Stored in {@link AsyncContext} on every successful authentication, regardless of whether a {@code userInfo} key
+     * was configured. Downstream components (for example the ServiceTalk Jersey
+     * {@code BasicAuthSecurityContextFilters}) use it to tell an authenticated request that published no user info
+     * apart from one that never went through Basic authentication.
+     */
+    public static final ContextMap.Key<Boolean> AUTHENTICATED =
+            ContextMap.Key.newKey("io.servicetalk.http.utils.auth.basicAuthAuthenticated", Boolean.class);
+
+    /**
      * Verifies {@code user-id} and {@code password}, parsed from the 'Basic' HTTP Authentication Scheme credentials.
      * <p>
      * This is an {@link AutoCloseable} {@link BiFunction}, which accepts {@code user-id} and {@code password} pair and
@@ -382,6 +394,9 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements StreamingHttp
                                                               final StreamingHttpRequest request,
                                                               final StreamingHttpResponseFactory factory,
                                                               final UserInfo userInfo) {
+            // Mark the request authenticated so downstream can tell an authenticated request with no user info from
+            // one that never went through Basic auth.
+            AsyncContext.put(AUTHENTICATED, Boolean.TRUE);
             if (config.userInfoAsyncContextKey != null) {
                 AsyncContext.put(config.userInfoAsyncContextKey, userInfo);
             }
