@@ -60,6 +60,10 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
     private boolean cancelled;
     // reads and writes protected by the helpers `SequentialExecutor`.
     private int failureMultiplier;
+    // Time of the most recent revival, protected by the `SequentialExecutor`. Used to enforce a one-interval grace
+    // period before the failure multiplier starts decaying, so decay timing does not depend on exactly when within
+    // an interval the host was revived. Only meaningful while `failureMultiplier > 0` (always set by then).
+    private long revivedAtNanos;
     // Any thread can read this value at any time but mutations are serialized by the `SequentialExecutor`.
     @Nullable
     private volatile Long evictedUntilNanos;
@@ -120,9 +124,9 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
         if (evictedUntilNanos == null) {
             return true;
         }
-        // Envoy technically will perform revival (un-ejection) on the same timer as the outlier detection. If we want
-        // to remove some overhead from the sad path we can go to that at the cost of leaving hosts unhealthy longer
-        // than the eviction time technically prescribes.
+        // Revive as soon as the ejection time has elapsed, rather than waiting for the next detector interval, to
+        // minimize downtime. The multiplier decay is gated separately (see updateOutlierStatus) so this eager
+        // revival does not make decay path-dependent on selection traffic.
         if (evictedUntilNanos <= currentTimeNanos()) {
             sequentialExecutor.execute(() -> {
                 final Long innerEvictedUntilNanos = this.evictedUntilNanos;
@@ -205,15 +209,16 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
 
         Long evictedUntilNanos = this.evictedUntilNanos;
         if (evictedUntilNanos != null) {
+            // Revive once the ejection has elapsed, but do not re-evaluate the outlier verdict this round. The
+            // counters still hold pre-revival stats (they are only reset once per interval, so a short ejection may
+            // leave the burst that ejected the host still present), not fresh post-revival behavior; re-ejecting on
+            // them would double-count that burst and grow the failure multiplier a second time. The host is
+            // re-evaluated next interval on fresh data, and consecutive-5xx can still re-eject it immediately via
+            // doOnError.
             if (evictedUntilNanos <= currentTimeNanos()) {
                 LOGGER.info("{}-{}: Health indicator revived.", lbDescription, address);
                 sequentialRevive();
             }
-            // If we are evicted or just transitioned out of eviction we shouldn't be marked as an outlier this round.
-            // Note that this differs from the envoy behavior. If we want to mimic it, then I think we need to just
-            // fall through and maybe attempt to eject again.
-            // Note: we deliberately don't decrement `failureMultiplier` on this revival path because that lets the
-            //       multiplier grow if the host continues to be unhealthy in consecutive intervals.
             return false;
         } else if (isOutlier) {
             final boolean result = sequentialTryEject(config, OUTLIER_DETECTOR_CAUSE);
@@ -226,8 +231,12 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
             }
             return result;
         } else {
-            // All we have to do is decrement our failure multiplier.
-            failureMultiplier = max(0, failureMultiplier - 1);
+            // Only decay the multiplier once the host has been healthy for a full interval. Combined with eager
+            // revival, this makes the first decrement land on the same interval it would under timer-only revival,
+            // regardless of when within the interval the host actually revived -- so decay stays deterministic.
+            if (currentTimeNanos() - revivedAtNanos >= config.failureDetectorInterval().toNanos()) {
+                failureMultiplier = max(0, failureMultiplier - 1);
+            }
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("{}-{}: markAsOutlier(isOutlier = false). " +
                         "Failure multiplier: {}", lbDescription, address, failureMultiplier);
@@ -314,7 +323,14 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("{}-{}: host revived", lbDescription, address);
         }
-        evictedUntilNanos = null;
+        final Long evictedUntilNanos = this.evictedUntilNanos;
+        assert evictedUntilNanos != null;
+        this.evictedUntilNanos = null;
+        // Anchor the decay grace period at the scheduled end of the ejection rather than the moment revival was
+        // processed, so the multiplier decays on the same schedule whether the host was revived eagerly (isHealthy)
+        // or lazily on a later interval tick. On the cancel path evictedUntilNanos may be in the future, but the
+        // stamp is irrelevant then since `cancelled` short-circuits updateOutlierStatus.
+        revivedAtNanos = evictedUntilNanos;
         // Envoy resets the `consecutive5xx` counter on revival. I'm not sure that's the best because chances
         // are reasonable that it's still a bad host, so we'll want to mark it as an outlier again immediately if
         // the next request also fails.
