@@ -48,22 +48,40 @@ public final class VarIntLengthStreamingSerializer<T> implements StreamingSerial
     static final int MAX_LENGTH_BYTES = 5;
     private final SerializerDeserializer<T> serializer;
     private final ToIntFunction<T> bytesEstimator;
+    private final int maxMessageSize;
 
     /**
-     * Create a new instance.
+     * Create a new instance with no limit on the deserialized message size.
      *
      * @param serializer The {@link SerializerDeserializer} used to serialize/deserialize individual objects.
      * @param bytesEstimator Estimates the length in bytes for each {@link T} being serialized.
      */
     public VarIntLengthStreamingSerializer(final SerializerDeserializer<T> serializer,
                                            final ToIntFunction<T> bytesEstimator) {
+        this(serializer, bytesEstimator, 0);
+    }
+
+    /**
+     * Create a new instance.
+     *
+     * @param serializer The {@link SerializerDeserializer} used to serialize/deserialize individual objects.
+     * @param bytesEstimator Estimates the length in bytes for each {@link T} being serialized.
+     * @param maxMessageSize The maximum length (in bytes) declared by a frame's length prefix that will be accepted
+     * during deserialization. A frame declaring a larger length is rejected with a {@link SerializationException}
+     * before any of its bytes are buffered. A value {@code <= 0} disables the limit.
+     */
+    public VarIntLengthStreamingSerializer(final SerializerDeserializer<T> serializer,
+                                           final ToIntFunction<T> bytesEstimator,
+                                           final int maxMessageSize) {
         this.serializer = requireNonNull(serializer);
         this.bytesEstimator = requireNonNull(bytesEstimator);
+        this.maxMessageSize = maxMessageSize;
     }
 
     @Override
     public Publisher<T> deserialize(final Publisher<Buffer> serializedData, final BufferAllocator allocator) {
-        return serializedData.liftSync(new FramedDeserializerOperator<>(serializer, LengthDeframer::new, allocator))
+        return serializedData.liftSync(new FramedDeserializerOperator<>(serializer,
+                        () -> new LengthDeframer(maxMessageSize), allocator))
                 .flatMapConcatIterable(identity());
     }
 
@@ -81,7 +99,12 @@ public final class VarIntLengthStreamingSerializer<T> implements StreamingSerial
     }
 
     private static final class LengthDeframer implements BiFunction<Buffer, BufferAllocator, Buffer> {
+        private final int maxMessageSize;
         private int expectedLength = -1;
+
+        LengthDeframer(final int maxMessageSize) {
+            this.maxMessageSize = maxMessageSize;
+        }
 
         @Nullable
         @Override
@@ -90,6 +113,10 @@ public final class VarIntLengthStreamingSerializer<T> implements StreamingSerial
                 expectedLength = getVarInt(buffer);
                 if (expectedLength < 0) {
                     return null;
+                }
+                if (maxMessageSize > 0 && expectedLength > maxMessageSize) {
+                    throw new SerializationException("Message-Length " + expectedLength +
+                            " exceeds maximum " + maxMessageSize);
                 }
             }
             if (buffer.readableBytes() < expectedLength) {
