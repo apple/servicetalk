@@ -115,7 +115,7 @@ final class NettyCompressionSerializer implements SerializerDeserializer<Buffer>
         // extractByteBufOrCreate may have to copy if it isn't able to unwrap NettyBuffer and in this case we have to
         // manually advance the Buffer indexes to reflect what was consumed.
         if (byteBuf.readableBytes() != toSerialize.readableBytes()) {
-            toSerialize.skipBytes(byteBuf.readableBytes() - beforeReadableBytes);
+            toSerialize.skipBytes(beforeReadableBytes - byteBuf.readableBytes());
         }
     }
 

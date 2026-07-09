@@ -195,6 +195,15 @@ class ReadOnlyByteBufferTest {
 
     @ParameterizedTest
     @MethodSource("allocators")
+    void skipNegativeLength(BufferAllocator allocator) {
+        Buffer buffer = allocator.fromAscii("test");
+        int readerIndex = buffer.readerIndex();
+        assertThrows(IllegalArgumentException.class, () -> buffer.skipBytes(-1));
+        assertEquals(readerIndex, buffer.readerIndex());
+    }
+
+    @ParameterizedTest
+    @MethodSource("allocators")
     void testIndexOf(BufferAllocator allocator) {
         Buffer buffer = allocator.fromAscii("test");
 
