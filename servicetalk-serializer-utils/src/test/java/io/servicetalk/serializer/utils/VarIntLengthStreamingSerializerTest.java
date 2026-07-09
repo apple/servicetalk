@@ -99,6 +99,15 @@ class VarIntLengthStreamingSerializerTest {
     }
 
     @Test
+    void emptyFrameDeserializes() throws Exception {
+        VarIntLengthStreamingSerializer<String> serializer = new VarIntLengthStreamingSerializer<>(
+                stringSerializer(UTF_8), String::length, 8);
+        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer().writeByte(0);
+
+        assertThat(serializer.deserialize(from(buffer), DEFAULT_ALLOCATOR).toFuture().get(), contains(""));
+    }
+
+    @Test
     void frameAboveLimitSingleBufferRejected() {
         VarIntLengthStreamingSerializer<String> serializer = new VarIntLengthStreamingSerializer<>(
                 stringSerializer(UTF_8), String::length, 8);

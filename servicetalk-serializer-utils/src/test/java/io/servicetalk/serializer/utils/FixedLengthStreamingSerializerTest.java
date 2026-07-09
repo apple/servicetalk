@@ -51,6 +51,15 @@ class FixedLengthStreamingSerializerTest {
     }
 
     @Test
+    void emptyFrameDeserializes() throws Exception {
+        FixedLengthStreamingSerializer<String> serializer = new FixedLengthStreamingSerializer<>(
+                stringSerializer(UTF_8), String::length, 8);
+        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer().writeInt(0);
+
+        assertThat(serializer.deserialize(from(buffer), DEFAULT_ALLOCATOR).toFuture().get(), contains(""));
+    }
+
+    @Test
     void frameAboveLimitSingleBufferRejected() {
         FixedLengthStreamingSerializer<String> serializer = new FixedLengthStreamingSerializer<>(
                 stringSerializer(UTF_8), String::length, 8);
