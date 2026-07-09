@@ -427,6 +427,8 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
         return sliceAndPreserveOrder(duplicate);
     }
 
+    // ByteBuffer.slice() drops the source's byte order (always returns BIG_ENDIAN). Restore it so LE-source buffers
+    // keep reading LE after a slice.
     private static ByteBuffer sliceAndPreserveOrder(ByteBuffer buffer) {
         return buffer.slice().order(buffer.order());
     }
