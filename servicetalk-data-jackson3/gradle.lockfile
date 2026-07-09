@@ -1,6 +1,7 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
+# To regenerate this file, run: ./gradlew :servicetalk-data-jackson3:dependencies --write-locks
 com.fasterxml.jackson.core:jackson-annotations:2.21=compileClasspath,runtimeClasspath
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
 org.jctools:jctools-core:4.0.5=runtimeClasspath

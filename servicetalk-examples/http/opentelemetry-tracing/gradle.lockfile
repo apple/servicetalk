@@ -1,6 +1,7 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
+# To regenerate this file, run: ./gradlew :servicetalk-examples:http:servicetalk-examples-http-opentelemetry-tracing:dependencies --write-locks
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
 com.squareup.okhttp3:okhttp-jvm:5.3.2=runtimeClasspath
 com.squareup.okhttp3:okhttp:5.3.2=runtimeClasspath

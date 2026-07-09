@@ -1,6 +1,7 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
+# To regenerate this file, run: ./gradlew :servicetalk-http-router-jersey4-jakarta11-internal:dependencies --write-locks
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
 jakarta.annotation:jakarta.annotation-api:3.0.0=compileClasspath,runtimeClasspath
 jakarta.inject:jakarta.inject-api:2.0.1=compileClasspath,runtimeClasspath
