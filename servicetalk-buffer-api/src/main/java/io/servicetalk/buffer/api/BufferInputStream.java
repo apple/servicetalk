@@ -42,7 +42,7 @@ final class BufferInputStream extends InputStream {
     public int read(byte[] b, int off, int len) {
         requireNonNull(b);
         if ((off | len) < 0 || len > b.length - off) {
-            throw new IndexOutOfBoundsException();
+            throw new IndexOutOfBoundsException("off=" + off + ", len=" + len + ", b.length=" + b.length);
         }
         if (len == 0) {
             return 0;
