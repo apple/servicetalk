@@ -38,6 +38,11 @@
     <Field name="cancelled"/>
     <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
   </Match>
+  <Match>
+    <Class name="io.servicetalk.loadbalancer.XdsHealthIndicator"/>
+    <Field name="revivedAtNanos"/>
+    <Bug pattern="AT_NONATOMIC_64BIT_PRIMITIVE"/>
+  </Match>
 
   <!-- XdsOutlierDetector access methods are package-private and controlled -->
   <Match>

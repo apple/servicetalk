@@ -43,6 +43,10 @@ class NameBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthSec
         };
     }
 
+    /**
+     * The name-binding filter runs only for {@code @BasicAuthenticated} resources, publishing the resolved principal
+     * when a userInfo key is wired and the anonymous principal otherwise; the unannotated resource gets no context.
+     */
     @ParameterizedTest(name = "{displayName} [{index}] withUserInfo={0}")
     @ValueSource(booleans = {true, false})
     void authenticated(final boolean withUserInfo) throws Exception {

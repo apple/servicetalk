@@ -148,6 +148,14 @@ public final class HeaderUtils {
      * The values of all {@link HttpHeaderNames#TRANSFER_ENCODING} headers are interpreted as comma-separated values,
      * with spaces between values trimmed. If any of these values is  {@link HttpHeaderValues#CHUNKED}, this method
      * return {@code true}, otherwise it returns {@code false}.
+     * <p>
+     * This checks for {@link HttpHeaderValues#CHUNKED} <b>anywhere</b> among the values, regardless of position.
+     * Per <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6.1">RFC 9112, Section 6.1</a>, {@code
+     * chunked} only governs the actual message framing when it is the <b>final</b> coding (e.g. {@code chunked} is
+     * final in {@code "gzip, chunked"} but not in {@code "chunked, gzip"}). This method does not distinguish the
+     * two: it returns {@code true} for both. Callers that need to know whether {@code chunked} framing actually
+     * applies to the message (as opposed to merely being named somewhere in the header) must perform that
+     * additional check themselves.
      *
      * @param headers The {@link HttpHeaders} to check.
      * @return {@code} true if {@code headers} indicates {@code transfer-encoding} {@code chunked}, {@code false}

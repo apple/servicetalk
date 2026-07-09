@@ -81,6 +81,8 @@ dependencies {
   implementation platform("org.glassfish.jersey:jersey-bom:$actualJerseyVersion")
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api")
+  implementation project(":servicetalk-http-utils")
+  implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   compileOnly "jakarta.annotation:jakarta.annotation-api:$actualJavaxAnnotationsApiVersion"
 
@@ -92,7 +94,6 @@ dependencies {
   testImplementation project(":servicetalk-http-api")
   testImplementation project(":servicetalk-http-netty")
   testImplementation project(":servicetalk-http-router-jersey3-jakarta10")
-  testImplementation project(":servicetalk-http-utils")
   testImplementation project(":servicetalk-transport-api")
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.junit.jupiter:junit-jupiter-params"

@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import io.netty.buffer.ByteBuf;
@@ -35,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.annotation.Nullable;
 
@@ -43,16 +45,21 @@ import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static io.netty.util.AsciiString.contentEquals;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
+import static io.servicetalk.http.api.HeaderUtils.isConnectionClose;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
+import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
+import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
 import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
 import static io.servicetalk.http.netty.H1ProtocolConfigBuilder.DEFAULT_MAX_HEADER_FIELD_LENGTH;
 import static io.servicetalk.http.netty.H1ProtocolConfigBuilder.DEFAULT_MAX_START_LINE_LENGTH;
 import static java.lang.Integer.toHexString;
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -69,6 +76,9 @@ import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 abstract class HttpObjectDecoderTest {
 
@@ -115,6 +125,9 @@ abstract class HttpObjectDecoderTest {
      * @return a new EmbeddedChannel configured with the specified limit
      */
     abstract EmbeddedChannel channelWithMaxTotalHeaderFieldsLength(int maxTotalHeaderFieldsLength);
+
+    /** Channel wired with the supplied {@link CloseHandler} for verifying close-pipeline interactions. */
+    abstract EmbeddedChannel channelWithCloseHandler(CloseHandler closeHandler);
 
     final HttpMetaData assertStartLineForContent() {
         return assertStartLineForContent(channel());
@@ -572,6 +585,10 @@ abstract class HttpObjectDecoderTest {
         validateWithContent(-chunkSize, false, channel);
     }
 
+    /**
+     * RFC 9112 section 6.1: TE+CL on HTTP/1.1 is processed per Transfer-Encoding alone
+     * (Content-Length stripped), with Connection: close forced to prevent smuggled follow-ups.
+     */
     @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
     @ValueSource(booleans = {true, false})
     void chunkedWithContentLength(boolean crlf) {
@@ -581,14 +598,99 @@ abstract class HttpObjectDecoderTest {
         int chunkedContentLength = 2 + 2 + chunkSize + 2 + 5;
         writeMsg(startLineForContent() + br +
                 "Host: servicetalk.io" + br +
-                "Connection: keep-alive" + br +
                 "Content-Length: " + chunkedContentLength + br +
                 "Transfer-Encoding: chunked" + br + br, channel);
         writeChunk(chunkSize, channel);
         writeLastChunk(channel);
-        HttpMetaData metaData = validateWithContent(-chunkSize, false, channel);
-        assertThat("Unexpected content-length header(s)",
-                metaData.headers().valuesIterator(CONTENT_LENGTH).hasNext(), is(false));
+
+        HttpMetaData metaData = assertStartLineForContent(channel);
+        assertSingleHeaderValue(metaData.headers(), HOST, "servicetalk.io");
+        assertSingleHeaderValue(metaData.headers(), TRANSFER_ENCODING, CHUNKED);
+        assertSingleHeaderValue(metaData.headers(), CONNECTION, CLOSE);
+        assertFalse(metaData.headers().contains(CONTENT_LENGTH), "Content-Length must be stripped");
+        assertPayloadSize(chunkSize, channel);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    /** TE+CL signals {@link CloseHandler#protocolClosingInbound} so the connection closes after the response. */
+    @Test
+    void chunkedWithContentLengthSignalsProtocolClosingInbound() {
+        CloseHandler closeHandler = mock(CloseHandler.class);
+        EmbeddedChannel channel = channelWithCloseHandler(closeHandler);
+        int chunkSize = 16;
+        writeMsg(startLineForContent() + "\r\n" +
+                "Host: servicetalk.io\r\n" +
+                "Content-Length: 999\r\n" +
+                "Transfer-Encoding: chunked\r\n\r\n", channel);
+        writeChunk(chunkSize, channel);
+        writeLastChunk(channel);
+
+        verify(closeHandler).protocolClosingInbound(any());
+        assertStartLineForContent(channel);
+        assertPayloadSize(chunkSize, channel);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    /**
+     * RFC 9112 section 6.1 close disposition must not clobber Connection values the peer already sent. When
+     * {@code close} is absent it is added while preserving existing values like {@code keep-alive} or
+     * {@code upgrade}; when it is already present (even within a comma-separated value) it is left untouched
+     * rather than duplicated.
+     */
+    @ParameterizedTest(name = "{displayName} [{index}] connection=\"{0}\"")
+    @MethodSource("chunkedWithContentLengthConnectionArgs")
+    void chunkedWithContentLengthPreservesConnectionHeader(@Nullable String connectionValue,
+                                                           List<String> expectedConnectionTokens) {
+        EmbeddedChannel channel = channel();
+        int chunkSize = 16;
+        StringBuilder sb = new StringBuilder(startLineForContent()).append("\r\n" +
+                "Host: servicetalk.io\r\n" +
+                "Content-Length: 999\r\n" +
+                "Transfer-Encoding: chunked\r\n");
+        if (connectionValue != null) {
+            sb.append("Connection: ").append(connectionValue).append("\r\n");
+        }
+        sb.append("\r\n");
+        writeMsg(sb.toString(), channel);
+        writeChunk(chunkSize, channel);
+        writeLastChunk(channel);
+
+        HttpMetaData metaData = assertStartLineForContent(channel);
+        assertFalse(metaData.headers().contains(CONTENT_LENGTH), "Content-Length must be stripped");
+        assertTrue(isConnectionClose(metaData.headers()), "Connection: close must be present");
+        assertThat("Unexpected Connection header tokens",
+                connectionTokens(metaData.headers()), containsInAnyOrder(expectedConnectionTokens.toArray()));
+        assertPayloadSize(chunkSize, channel);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    private static Collection<Arguments> chunkedWithContentLengthConnectionArgs() {
+        final List<Arguments> arguments = new ArrayList<>();
+        // No Connection header: close is added.
+        arguments.add(Arguments.of(null, singletonList("close")));
+        // keep-alive present: preserved, close added alongside (shouldClose still triggers on the close token).
+        arguments.add(Arguments.of("keep-alive", asList("keep-alive", "close")));
+        // upgrade present: preserved, close added alongside.
+        arguments.add(Arguments.of("Upgrade", asList("upgrade", "close")));
+        // close already present: left as-is, not duplicated.
+        arguments.add(Arguments.of("close", singletonList("close")));
+        // close nested in a comma-separated value: recognized, not duplicated, other tokens preserved.
+        arguments.add(Arguments.of("keep-alive, close", asList("keep-alive", "close")));
+        return arguments;
+    }
+
+    /** All {@code Connection} header values, comma-split and lower-cased, gathered across every header line. */
+    private static List<String> connectionTokens(HttpHeaders headers) {
+        final List<String> tokens = new ArrayList<>();
+        for (Iterator<? extends CharSequence> it = headers.valuesIterator(CONNECTION); it.hasNext();) {
+            for (String token : it.next().toString().split(",")) {
+                final String trimmed = token.trim();
+                if (!trimmed.isEmpty()) {
+                    tokens.add(trimmed.toLowerCase(Locale.ENGLISH));
+                }
+            }
+        }
+        return tokens;
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
@@ -784,6 +886,178 @@ abstract class HttpObjectDecoderTest {
         assertStandardHeaders(metaData.headers());
         assertEmptyTrailers(channel);
         assertFalse(channel.finishAndReleaseAll());
+    }
+
+    /**
+     * RFC 9112 section 6.1: {@code Transfer-Encoding} is HTTP/1.1-only. Today the
+     * decoder ignores the protocol version and accepts {@code Transfer-Encoding: chunked}
+     * on HTTP/1.0, which lets a peer desync framing with HTTP/1.0 intermediaries that
+     * reject TE. After the fix the decoder must reject TE on any non-1.1 message.
+     */
+    @ParameterizedTest(name = "{displayName} [{index}] httpVersion={0} expectRejected={1} crlf={2}")
+    @MethodSource("transferEncodingProtocolVersionArgs")
+    void transferEncodingRejectedOnNonHttp11(String httpVersion, boolean expectRejected, boolean crlf) {
+        EmbeddedChannel channel = channel(crlf);
+        String br = br(crlf);
+        String msg = startLineForContent().replace("HTTP/1.1", httpVersion) + br +
+                "Host: servicetalk.io" + br +
+                "Transfer-Encoding: chunked" + br + br;
+        if (expectRejected) {
+            DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(msg, channel));
+            assertThat(e.getMessage(), startsWith("Transfer-Encoding is only allowed in HTTP/1.1"));
+        } else {
+            // HTTP/1.1 path is unchanged: feed the message and the last-chunk to confirm the
+            // decoder progresses through chunked parsing without throwing.
+            writeMsg(msg, channel);
+            writeLastChunk(channel);
+            assertThat(channel.isOpen(), is(true));
+        }
+    }
+
+    private static Collection<Arguments> transferEncodingProtocolVersionArgs() {
+        final List<Arguments> arguments = new ArrayList<>();
+        for (boolean crlf : new boolean[] {true, false}) {
+            // HTTP/1.0 + Transfer-Encoding: chunked must be rejected.
+            arguments.add(Arguments.of("HTTP/1.0", true, crlf));
+            // HTTP/1.1 sanity: continues to be accepted.
+            arguments.add(Arguments.of("HTTP/1.1", false, crlf));
+        }
+        return arguments;
+    }
+
+    /**
+     * RFC 9112 section 6.1: {@code chunked} must be the final coding applied to the message body, and a sender
+     * "MUST NOT apply the chunked transfer coding more than once to a message body (i.e., chunking an already
+     * chunked message is not allowed)". When chunked is the final coding and appears exactly once, the message is
+     * chunked-framed (requests and responses alike). Otherwise - whether some other coding is last (e.g.
+     * {@code chunked, gzip}), chunked never appears at all (e.g. a lone {@code gzip}, or an empty value), or
+     * chunked appears more than once (e.g. {@code chunked, chunked}) - this decoder rejects the message
+     * unconditionally, for both requests and responses, since an ambiguous or non-conformant Transfer-Encoding is
+     * a smuggling-adjacent signal regardless of which shape it takes. RFC 9112 section 6.3 would otherwise tolerate
+     * some non-chunked-final shapes (falling back to Content-Length, or framing a response by connection close);
+     * this decoder deliberately deviates from that.
+     */
+    @ParameterizedTest(name = "{displayName} [{index}] transferEncoding=\"{0}\" rejectionMessage={1} crlf={2}")
+    @MethodSource("transferEncodingChunkedLastArgs")
+    void transferEncodingChunkedMustBeLastAndUnique(String transferEncoding, @Nullable String rejectionMessage,
+                                                    boolean crlf) {
+        EmbeddedChannel channel = channel(crlf);
+        String br = br(crlf);
+        String msg = startLineForContent() + br +
+                "Host: servicetalk.io" + br +
+                "Transfer-Encoding: " + transferEncoding + br + br;
+        if (rejectionMessage == null) {
+            // chunked is the final coding and appears exactly once: chunked framing for both requests and
+            // responses. We don't drain the body (the decoder transitions to READ_CHUNK_SIZE awaiting more data);
+            // tearDown handles cleanup.
+            writeMsg(msg, channel);
+            HttpMetaData metaData = assertStartLineForContent(channel);
+            assertTrue(isTransferEncodingChunked(metaData.headers()));
+        } else {
+            // Deliberate deviation from RFC 9112 6.3: rejected for both requests and responses, not just requests.
+            DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(msg, channel));
+            assertThat(e.getMessage(), startsWith(rejectionMessage));
+        }
+    }
+
+    private static Collection<Arguments> transferEncodingChunkedLastArgs() {
+        final String notFinal = "chunked must be the final Transfer-Encoding coding";
+        final String appliedMoreThanOnce = "chunked transfer coding must not be applied more than once";
+        final List<Arguments> arguments = new ArrayList<>();
+        for (boolean crlf : new boolean[] {true, false}) {
+            final String br = crlf ? "\r\n" : "\n";
+            // Single value: chunked alone - chunked-framed.
+            arguments.add(Arguments.of("chunked", null, crlf));
+            // Comma-separated, chunked last - chunked-framed.
+            arguments.add(Arguments.of("gzip, chunked", null, crlf));
+            // No space after comma - still chunked-framed (chunked still last).
+            arguments.add(Arguments.of("gzip,chunked", null, crlf));
+            // Comma-separated, case-insensitive match - chunked-framed.
+            arguments.add(Arguments.of("gzip, ChUnKeD", null, crlf));
+            // HTAB as the OWS separating the previous coding from chunked - chunked-framed.
+            arguments.add(Arguments.of("gzip,\tchunked", null, crlf));
+            // Case-insensitive match - chunked-framed.
+            arguments.add(Arguments.of("ChUnKeD", null, crlf));
+            // Trailing OWS: the header-value parser already strips leading/trailing OWS from the whole field
+            // value (see #testHeaderFiledValue), so this reaches endsWithChunkedToken as plain "chunked" -
+            // chunked-framed, same as the "chunked" case above; kept for documentation purposes.
+            arguments.add(Arguments.of("chunked  ", null, crlf));
+            // RFC 9112 section 6.1: a sender MUST NOT apply chunked more than once. Repeated chunked as the final
+            // coding is still rejected even though chunked is technically last.
+            arguments.add(Arguments.of("chunked, chunked", appliedMoreThanOnce, crlf));
+            // Repeated chunked with another coding first - still rejected as applied more than once.
+            arguments.add(Arguments.of("gzip, chunked, chunked", appliedMoreThanOnce, crlf));
+            // Repeated chunked with another coding in between - chunked is still final, but appears twice overall.
+            arguments.add(Arguments.of("chunked, gzip, chunked", appliedMoreThanOnce, crlf));
+            // Case-insensitive duplicate - still rejected as applied more than once.
+            arguments.add(Arguments.of("CHUNKED, chunked", appliedMoreThanOnce, crlf));
+            // No space between the duplicated tokens - still rejected as applied more than once.
+            arguments.add(Arguments.of("chunked,chunked", appliedMoreThanOnce, crlf));
+            // Comma-separated, chunked NOT last - rejected regardless of role.
+            arguments.add(Arguments.of("chunked, gzip", notFinal, crlf));
+            // Same with whitespace before comma - rejected regardless of role.
+            arguments.add(Arguments.of("chunked , gzip", notFinal, crlf));
+            // SP with no comma is not a valid list separator (RFC 9110 section 5.6.1 requires "#" elements to be
+            // comma-separated) - must not be mistaken for "chunked" being a distinct, final coding.
+            arguments.add(Arguments.of("gzip chunked", notFinal, crlf));
+            // Same with HTAB instead of SP - still not a valid separator without a comma.
+            arguments.add(Arguments.of("gzip\tchunked", notFinal, crlf));
+            // Multi-header: gzip first, chunked last - chunked-framed.
+            arguments.add(Arguments.of("gzip" + br + "Transfer-Encoding: chunked", null, crlf));
+            // Multi-header: chunked first, gzip last (length 4) - chunked not final.
+            arguments.add(Arguments.of("chunked" + br + "Transfer-Encoding: gzip", notFinal, crlf));
+            // Multi-header: chunked first, deflate last (length 7, same as "chunked") - chunked not final.
+            // This case demonstrates the gap closed vs Netty's permissive check.
+            arguments.add(Arguments.of("chunked" + br + "Transfer-Encoding: deflate", notFinal, crlf));
+            // Multi-header: chunked first, notchunked last - chunked not final. The "chunked" suffix of
+            // "notchunked" must NOT be treated as a token boundary match.
+            arguments.add(Arguments.of("chunked" + br + "Transfer-Encoding: notchunked", notFinal, crlf));
+            // Multi-header: chunked first, empty value last - chunked not final (empty cannot end in chunked).
+            arguments.add(Arguments.of("chunked" + br + "Transfer-Encoding: ", notFinal, crlf));
+            // Multi-header: chunked repeated across separate header lines - RFC 9110 section 5.2 requires combining
+            // multiple field lines of the same name into one comma-joined list, so this is equivalent to
+            // "chunked, chunked" and must be rejected as applied more than once.
+            arguments.add(Arguments.of("chunked" + br + "Transfer-Encoding: chunked", appliedMoreThanOnce, crlf));
+            // Multi-header: gzip then chunked, then chunked again on a third line - applied more than once.
+            arguments.add(Arguments.of("gzip" + br + "Transfer-Encoding: chunked" + br +
+                    "Transfer-Encoding: chunked", appliedMoreThanOnce, crlf));
+            // Transfer-Encoding present but chunked never appears at all - rejected the same as chunked-not-final.
+            arguments.add(Arguments.of("gzip", notFinal, crlf));
+            // Empty Transfer-Encoding value - chunked cannot be the final coding either.
+            arguments.add(Arguments.of("", notFinal, crlf));
+        }
+        return arguments;
+    }
+
+    /**
+     * RFC 9112 section 6.3 item 4: once {@code chunked} appears anywhere in {@code Transfer-Encoding}, it governs
+     * framing and overrides {@code Content-Length}, whether or not {@code chunked} is the final coding. The RFC
+     * would let a response where chunked is not final fall back to framing by connection close, but this decoder
+     * deliberately deviates from that and rejects the ambiguous encoding unconditionally - even when a
+     * {@code Content-Length} is also present, proving the rejection happens before {@code Content-Length} could
+     * ever be consulted as a fallback.
+     */
+    @Test
+    void transferEncodingChunkedNotFinalRejectedEvenWithContentLength() {
+        DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + "\r\n" +
+                "Host: servicetalk.io\r\n" +
+                "Transfer-Encoding: chunked, gzip\r\n" +
+                "Content-Length: 0\r\n\r\n"));
+        assertThat(e.getMessage(), startsWith("chunked must be the final Transfer-Encoding coding"));
+    }
+
+    /**
+     * Same defense-in-depth property as {@link #transferEncodingChunkedNotFinalRejectedEvenWithContentLength()},
+     * but for the RFC 9112 section 6.1 "chunked applied more than once" violation: rejection happens before
+     * {@code Content-Length} could ever be consulted as a fallback.
+     */
+    @Test
+    void transferEncodingChunkedAppliedMoreThanOnceRejectedEvenWithContentLength() {
+        DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + "\r\n" +
+                "Host: servicetalk.io\r\n" +
+                "Transfer-Encoding: chunked, chunked\r\n" +
+                "Content-Length: 0\r\n\r\n"));
+        assertThat(e.getMessage(), startsWith("chunked transfer coding must not be applied more than once"));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")

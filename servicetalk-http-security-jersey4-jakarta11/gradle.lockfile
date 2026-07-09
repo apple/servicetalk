@@ -9,5 +9,5 @@ org.glassfish.hk2:osgi-resource-locator:3.0.0=runtimeClasspath
 org.glassfish.jersey.core:jersey-common:4.0.2=runtimeClasspath
 org.glassfish.jersey:jersey-bom:4.0.2=compileClasspath,runtimeClasspath
 org.jctools:jctools-core:4.0.5=runtimeClasspath
-org.slf4j:slf4j-api:1.7.36=runtimeClasspath
+org.slf4j:slf4j-api:1.7.36=compileClasspath,runtimeClasspath
 empty=annotationProcessor

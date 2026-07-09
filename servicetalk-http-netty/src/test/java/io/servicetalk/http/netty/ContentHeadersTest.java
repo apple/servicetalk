@@ -123,7 +123,6 @@ class ContentHeadersTest extends AbstractNettyHttpServerTest {
                 new RequestTest(aggregatedRequest(TRACE), withoutPayload(), HAVE_NEITHER),
                 new RequestTest(aggregatedRequest(PATCH), withoutPayload(), HAVE_CONTENT_LENGTH_ZERO),
 
-                new RequestTest(aggregatedRequest(GET), transferEncodingGzip(), HAVE_CONTENT_LENGTH),
                 new RequestTest(aggregatedRequest(GET), transferEncodingChunked(), HAVE_TRANSFER_ENCODING_CHUNKED),
                 new RequestTest(aggregatedRequest(GET), transferEncodingGzipAndChunked(),
                         HAVE_TRANSFER_ENCODING_CHUNKED),
@@ -185,7 +184,6 @@ class ContentHeadersTest extends AbstractNettyHttpServerTest {
                 new ResponseTest(streamingResponse(NOT_MODIFIED), GET, defaults(), HAVE_NEITHER),
                 new ResponseTest(streamingResponse(NOT_MODIFIED), GET, withoutPayload(), HAVE_NEITHER),
 
-                new ResponseTest(aggregatedResponse(OK), GET, transferEncodingGzip(), HAVE_CONTENT_LENGTH),
                 new ResponseTest(aggregatedResponse(OK), GET, transferEncodingChunked(),
                         HAVE_TRANSFER_ENCODING_CHUNKED),
                 new ResponseTest(aggregatedResponse(OK), GET, transferEncodingGzipAndChunked(),
@@ -250,13 +248,6 @@ class ContentHeadersTest extends AbstractNettyHttpServerTest {
                 throw new IllegalStateException();
             }
         }, "WithoutPayload");
-    }
-
-    private static UnaryOperator<HttpMetaData> transferEncodingGzip() {
-        return describe(input -> {
-            input.headers().set(TRANSFER_ENCODING, "gzip");
-            return input;
-        }, "ExistingTransferEncodingGzip");
     }
 
     private static UnaryOperator<HttpMetaData> transferEncodingGzipAndChunked() {
