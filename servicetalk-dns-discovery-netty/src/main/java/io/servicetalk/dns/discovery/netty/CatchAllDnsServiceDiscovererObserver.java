@@ -15,16 +15,14 @@
  */
 package io.servicetalk.dns.discovery.netty;
 
-import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.DnsDiscoveryObserver;
-import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.DnsResolutionObserver;
-import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.ResolutionResult;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
+import static io.servicetalk.dns.discovery.netty.NoopDnsServiceDiscovererObserver.NoopDnsDiscoveryObserver;
+import static io.servicetalk.dns.discovery.netty.NoopDnsServiceDiscovererObserver.NoopDnsResolutionObserver;
 import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 
@@ -99,49 +97,6 @@ final class CatchAllDnsServiceDiscovererObserver implements DnsServiceDiscoverer
         @Override
         public void resolutionCompleted(final ResolutionResult result) {
             safeReport(() -> observer.resolutionCompleted(result), observer, "resolution completed");
-        }
-    }
-
-    private static final class NoopDnsDiscoveryObserver implements DnsDiscoveryObserver {
-
-        static final DnsDiscoveryObserver INSTANCE = new NoopDnsDiscoveryObserver();
-
-        private NoopDnsDiscoveryObserver() {
-            // Singleton
-        }
-
-        @Override
-        public DnsResolutionObserver onNewResolution(final String name) {
-            return NoopDnsResolutionObserver.INSTANCE;
-        }
-
-        @Override
-        public void discoveryCancelled() {
-            // noop
-        }
-
-        @Override
-        public void discoveryFailed(final Throwable cause) {
-            // noop
-        }
-    }
-
-    private static final class NoopDnsResolutionObserver implements DnsResolutionObserver {
-
-        static final DnsResolutionObserver INSTANCE = new NoopDnsResolutionObserver();
-
-        private NoopDnsResolutionObserver() {
-            // Singleton
-        }
-
-        @Override
-        public void resolutionFailed(final Throwable cause) {
-            // noop
-        }
-
-        @Override
-        public void resolutionCompleted(final ResolutionResult result) {
-            // noop
         }
     }
 
