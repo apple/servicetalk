@@ -27,6 +27,7 @@ import java.util.function.BiFunction;
 import java.util.function.ToIntFunction;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.lang.Integer.BYTES;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
@@ -60,15 +61,16 @@ public final class FixedLengthStreamingSerializer<T> implements StreamingSeriali
      * @param serializer The {@link SerializerDeserializer} used to serialize/deserialize individual objects.
      * @param bytesEstimator Provides the length in bytes for each {@link T} being serialized.
      * @param maxMessageSize The maximum length (in bytes) declared by a frame's length prefix that will be accepted
-     * during deserialization. A frame declaring a larger length is rejected with a {@link MaxMessageSizeExceededException}
-     * before any of its bytes are buffered. A value {@code <= 0} disables the limit.
+     * during deserialization. A frame declaring a larger length is rejected with a
+     * {@link MaxMessageSizeExceededException} before any of its bytes are buffered. A value of {@code 0} disables the
+     * limit; a negative value is rejected.
      */
     public FixedLengthStreamingSerializer(final SerializerDeserializer<T> serializer,
                                           final ToIntFunction<T> bytesEstimator,
                                           final int maxMessageSize) {
         this.serializer = requireNonNull(serializer);
         this.bytesEstimator = requireNonNull(bytesEstimator);
-        this.maxMessageSize = maxMessageSize;
+        this.maxMessageSize = ensureNonNegative(maxMessageSize, "maxMessageSize");
     }
 
     @Override

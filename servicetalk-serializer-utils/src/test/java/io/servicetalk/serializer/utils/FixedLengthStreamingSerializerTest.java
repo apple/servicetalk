@@ -54,6 +54,12 @@ class FixedLengthStreamingSerializerTest {
     }
 
     @Test
+    void negativeMaxMessageSizeRejected() {
+        assertThrows(IllegalArgumentException.class, () -> new FixedLengthStreamingSerializer<>(
+                stringSerializer(UTF_8), String::length, -1));
+    }
+
+    @Test
     void frameAtLimitDeserializes() throws Exception {
         FixedLengthStreamingSerializer<String> serializer = new FixedLengthStreamingSerializer<>(
                 stringSerializer(UTF_8), String::length, 3);

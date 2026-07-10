@@ -104,6 +104,12 @@ class VarIntLengthStreamingSerializerTest {
     }
 
     @Test
+    void negativeMaxMessageSizeRejected() {
+        assertThrows(IllegalArgumentException.class, () -> new VarIntLengthStreamingSerializer<>(
+                stringSerializer(UTF_8), String::length, -1));
+    }
+
+    @Test
     void frameAtLimitDeserializes() throws Exception {
         VarIntLengthStreamingSerializer<String> serializer = new VarIntLengthStreamingSerializer<>(
                 stringSerializer(UTF_8), String::length, 3);
