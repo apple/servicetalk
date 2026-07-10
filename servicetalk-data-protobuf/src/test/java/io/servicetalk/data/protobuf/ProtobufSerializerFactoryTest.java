@@ -105,14 +105,16 @@ class ProtobufSerializerFactoryTest {
     @MethodSource("pojos")
     void streamingWriteDelimitedToDeserialized(Collection<DummyMessage> msgs) throws Exception {
         // The boundary POJOs include a message larger than the default max message size to exercise VarInt prefix
-        // encoding across sizes, so disable the limit rather than exercising it here.
-        streamingWriteDelimitedToDeserialized(PROTOBUF.streamingSerializerDeserializer(DummyMessage.parser(), 0), msgs);
+        // encoding across sizes, so use a factory with the limit disabled rather than exercising it here.
+        streamingWriteDelimitedToDeserialized(
+                new ProtobufSerializerFactory(0).streamingSerializerDeserializer(DummyMessage.parser()), msgs);
     }
 
     @ParameterizedTest(name = "pojos={0}")
     @MethodSource("pojos")
     void streamingWriteDelimitedToDeserializedClass(Collection<DummyMessage> msgs) throws Exception {
-        streamingWriteDelimitedToDeserialized(PROTOBUF.streamingSerializerDeserializer(DummyMessage.class, 0), msgs);
+        streamingWriteDelimitedToDeserialized(
+                new ProtobufSerializerFactory(0).streamingSerializerDeserializer(DummyMessage.class), msgs);
     }
 
     private static void streamingWriteDelimitedToDeserialized(StreamingSerializerDeserializer<DummyMessage> serializer,
@@ -154,7 +156,7 @@ class ProtobufSerializerFactoryTest {
     @Test
     void streamingSerializerRejectsFrameAboveConfiguredLimit() throws Exception {
         StreamingSerializerDeserializer<DummyMessage> serializer =
-                PROTOBUF.streamingSerializerDeserializer(DummyMessage.parser(), 8);
+                new ProtobufSerializerFactory(8).streamingSerializerDeserializer(DummyMessage.parser());
         Buffer buffer = DEFAULT_ALLOCATOR.newBuffer();
         newMsg("aaaaaaaaaa").writeDelimitedTo(asOutputStream(buffer));
 
