@@ -32,7 +32,7 @@ import java.util.stream.Stream;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.serializer.utils.StreamingSerializerDefaults.DEFAULT_MAX_MESSAGE_SIZE;
+import static io.servicetalk.serializer.utils.MessageSizeLimiter.DEFAULT_MAX_MESSAGE_SIZE;
 import static io.servicetalk.serializer.utils.StringSerializer.stringSerializer;
 import static io.servicetalk.serializer.utils.VarIntLengthStreamingSerializer.FOUR_BYTE_VAL;
 import static io.servicetalk.serializer.utils.VarIntLengthStreamingSerializer.MAX_LENGTH_BYTES;
@@ -104,9 +104,9 @@ class VarIntLengthStreamingSerializerTest {
     }
 
     @Test
-    void negativeMaxMessageSizeRejected() {
+    void invalidMaxMessageSizeRejected() {
         assertThrows(IllegalArgumentException.class, () -> new VarIntLengthStreamingSerializer<>(
-                stringSerializer(UTF_8), String::length, -1));
+                stringSerializer(UTF_8), String::length, -2));
     }
 
     @Test

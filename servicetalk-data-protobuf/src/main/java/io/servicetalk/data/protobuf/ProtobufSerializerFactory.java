@@ -98,8 +98,9 @@ public final class ProtobufSerializerFactory {
      * in <a href="https://developers.google.com/protocol-buffers/docs/techniques">Protobuf Streaming</a>.
      * @param parser The {@link Parser} used to serialize and deserialize.
      * @param maxMessageSize The maximum length (in bytes) declared by a frame's length prefix that will be accepted
-     * during deserialization. A frame declaring a larger length is rejected before any of its bytes are buffered. A
-     * value of {@code 0} disables the limit; a negative value is rejected.
+     * during deserialization. A frame declaring a larger length is rejected before any of its bytes are buffered.
+     * {@code 0} disables the limit; {@code -1} warns at the default threshold without rejecting; other negative
+     * values are rejected.
      * @param <T> The type to serialize and deserialize.
      * @return a {@link StreamingSerializerDeserializer} which supports &lt;VarInt length, value&gt; encoding as
      * described in <a href="https://developers.google.com/protocol-buffers/docs/techniques">Protobuf Streaming</a>.
@@ -136,8 +137,9 @@ public final class ProtobufSerializerFactory {
      * in <a href="https://developers.google.com/protocol-buffers/docs/techniques">Protobuf Streaming</a>.
      * @param clazz Used to obtain a {@link Parser} which is used to serialize and deserialize.
      * @param maxMessageSize The maximum length (in bytes) declared by a frame's length prefix that will be accepted
-     * during deserialization. A frame declaring a larger length is rejected before any of its bytes are buffered. A
-     * value of {@code 0} disables the limit; a negative value is rejected.
+     * during deserialization. A frame declaring a larger length is rejected before any of its bytes are buffered.
+     * {@code 0} disables the limit; {@code -1} warns at the default threshold without rejecting; other negative
+     * values are rejected.
      * @param <T> The type to serialize and deserialize.
      * @return a {@link StreamingSerializerDeserializer} which supports &lt;VarInt length, value&gt; encoding as
      * described in <a href="https://developers.google.com/protocol-buffers/docs/techniques">Protobuf Streaming</a>.

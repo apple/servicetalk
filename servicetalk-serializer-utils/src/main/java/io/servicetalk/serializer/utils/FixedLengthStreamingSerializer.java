@@ -18,7 +18,6 @@ package io.servicetalk.serializer.utils;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.serializer.api.MaxMessageSizeExceededException;
 import io.servicetalk.serializer.api.SerializationException;
 import io.servicetalk.serializer.api.SerializerDeserializer;
 import io.servicetalk.serializer.api.StreamingSerializerDeserializer;
@@ -27,7 +26,6 @@ import java.util.function.BiFunction;
 import java.util.function.ToIntFunction;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.lang.Integer.BYTES;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
@@ -40,20 +38,20 @@ import static java.util.function.Function.identity;
 public final class FixedLengthStreamingSerializer<T> implements StreamingSerializerDeserializer<T> {
     private final SerializerDeserializer<T> serializer;
     private final ToIntFunction<T> bytesEstimator;
-    private final int maxMessageSize;
+    private final MessageSizeLimiter sizeLimiter;
 
     /**
      * Create a new instance that limits deserialized messages to the default maximum size
-     * ({@value StreamingSerializerDefaults#DEFAULT_MAX_MESSAGE_SIZE_VALUE} bytes, overridable via the
-     * {@value StreamingSerializerDefaults#DEFAULT_MAX_MESSAGE_SIZE_PROPERTY} system property). Use
+     * ({@value MessageSizeLimiter#DEFAULT_MAX_MESSAGE_SIZE_VALUE} bytes, overridable via the
+     * {@value MessageSizeLimiter#DEFAULT_MAX_MESSAGE_SIZE_PROPERTY} system property). Use
      * {@link #FixedLengthStreamingSerializer(SerializerDeserializer, ToIntFunction, int)} to configure a different
-     * limit, or {@code 0} to disable it.
+     * limit, disable it, or warn instead of rejecting.
      * @param serializer The {@link SerializerDeserializer} used to serialize/deserialize individual objects.
      * @param bytesEstimator Provides the length in bytes for each {@link T} being serialized.
      */
     public FixedLengthStreamingSerializer(final SerializerDeserializer<T> serializer,
                                           final ToIntFunction<T> bytesEstimator) {
-        this(serializer, bytesEstimator, StreamingSerializerDefaults.DEFAULT_MAX_MESSAGE_SIZE);
+        this(serializer, bytesEstimator, MessageSizeLimiter.DEFAULT_MAX_MESSAGE_SIZE);
     }
 
     /**
@@ -62,21 +60,22 @@ public final class FixedLengthStreamingSerializer<T> implements StreamingSeriali
      * @param bytesEstimator Provides the length in bytes for each {@link T} being serialized.
      * @param maxMessageSize The maximum length (in bytes) declared by a frame's length prefix that will be accepted
      * during deserialization. A frame declaring a larger length is rejected with a
-     * {@link MaxMessageSizeExceededException} before any of its bytes are buffered. A value of {@code 0} disables the
-     * limit; a negative value is rejected.
+     * {@link io.servicetalk.serializer.api.MaxMessageSizeExceededException} before any of its bytes are buffered.
+     * {@code 0} disables the limit; {@code -1} logs a rate-limited warning at the default threshold but lets the
+     * message through (a rollout aid, not steady-state protection); other negative values are rejected.
      */
     public FixedLengthStreamingSerializer(final SerializerDeserializer<T> serializer,
                                           final ToIntFunction<T> bytesEstimator,
                                           final int maxMessageSize) {
         this.serializer = requireNonNull(serializer);
         this.bytesEstimator = requireNonNull(bytesEstimator);
-        this.maxMessageSize = ensureNonNegative(maxMessageSize, "maxMessageSize");
+        this.sizeLimiter = MessageSizeLimiter.forMaxMessageSize(maxMessageSize);
     }
 
     @Override
     public Publisher<T> deserialize(final Publisher<Buffer> serializedData, final BufferAllocator allocator) {
         return serializedData.liftSync(new FramedDeserializerOperator<>(serializer,
-                        () -> new LengthDeframer(maxMessageSize), allocator))
+                        () -> new LengthDeframer(sizeLimiter), allocator))
                 .flatMapConcatIterable(identity());
     }
 
@@ -93,11 +92,11 @@ public final class FixedLengthStreamingSerializer<T> implements StreamingSeriali
     }
 
     private static final class LengthDeframer implements BiFunction<Buffer, BufferAllocator, Buffer> {
-        private final int maxMessageSize;
+        private final MessageSizeLimiter sizeLimiter;
         private int expectedLength = -1;
 
-        LengthDeframer(final int maxMessageSize) {
-            this.maxMessageSize = maxMessageSize;
+        LengthDeframer(final MessageSizeLimiter sizeLimiter) {
+            this.sizeLimiter = sizeLimiter;
         }
 
         @Nullable
@@ -111,10 +110,7 @@ public final class FixedLengthStreamingSerializer<T> implements StreamingSeriali
                 if (expectedLength < 0) {
                     throw new SerializationException("Invalid length: " + expectedLength);
                 }
-                if (maxMessageSize > 0 && expectedLength > maxMessageSize) {
-                    throw new MaxMessageSizeExceededException("Message-Length " + expectedLength +
-                            " exceeds maximum " + maxMessageSize);
-                }
+                sizeLimiter.checkMessageSize(expectedLength);
             }
             if (buffer.readableBytes() < expectedLength) {
                 return null;

@@ -24,7 +24,7 @@ import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.serializer.utils.StreamingSerializerDefaults.DEFAULT_MAX_MESSAGE_SIZE;
+import static io.servicetalk.serializer.utils.MessageSizeLimiter.DEFAULT_MAX_MESSAGE_SIZE;
 import static io.servicetalk.serializer.utils.StringSerializer.stringSerializer;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -54,9 +54,9 @@ class FixedLengthStreamingSerializerTest {
     }
 
     @Test
-    void negativeMaxMessageSizeRejected() {
+    void invalidMaxMessageSizeRejected() {
         assertThrows(IllegalArgumentException.class, () -> new FixedLengthStreamingSerializer<>(
-                stringSerializer(UTF_8), String::length, -1));
+                stringSerializer(UTF_8), String::length, -2));
     }
 
     @Test
