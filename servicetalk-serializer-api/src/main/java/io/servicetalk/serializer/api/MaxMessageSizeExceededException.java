@@ -21,7 +21,7 @@ package io.servicetalk.serializer.api;
  * transport-specific "too large" status (e.g. HTTP {@code 413 Payload Too Large}) rather than a generic
  * (de)serialization failure.
  */
-public class MaxMessageSizeExceededException extends SerializationException {
+public final class MaxMessageSizeExceededException extends SerializationException {
     private static final long serialVersionUID = 5346649275L;
 
     /**

@@ -72,7 +72,7 @@ public final class VarIntLengthStreamingSerializer<T> implements StreamingSerial
      * @param serializer The {@link SerializerDeserializer} used to serialize/deserialize individual objects.
      * @param bytesEstimator Estimates the length in bytes for each {@link T} being serialized.
      * @param maxMessageSize The maximum length (in bytes) declared by a frame's length prefix that will be accepted
-     * during deserialization. A frame declaring a larger length is rejected with a {@link SerializationException}
+     * during deserialization. A frame declaring a larger length is rejected with a {@link MaxMessageSizeExceededException}
      * before any of its bytes are buffered. A value {@code <= 0} disables the limit.
      */
     public VarIntLengthStreamingSerializer(final SerializerDeserializer<T> serializer,
