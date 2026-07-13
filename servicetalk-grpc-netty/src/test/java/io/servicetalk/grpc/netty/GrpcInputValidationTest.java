@@ -49,6 +49,27 @@ class GrpcInputValidationTest {
                 .listenAndAwait(new Greeter.ServiceFactory.Builder().sayHello(null, null).build()));
     }
 
+    @Test
+    void clientBuilderRejectsMaxInboundMessageSizeBelowWarnOnly() {
+        assertThrows(IllegalArgumentException.class,
+                () -> GrpcClients.forAddress("localhost", 0).maxInboundMessageSize(-2));
+    }
+
+    @Test
+    void serverBuilderRejectsMaxInboundMessageSizeBelowWarnOnly() {
+        assertThrows(IllegalArgumentException.class,
+                () -> GrpcServers.forAddress(localAddress(0)).maxInboundMessageSize(-2));
+    }
+
+    @Test
+    void buildersAcceptValidMaxInboundMessageSize() {
+        // 0 (disabled), -1 (warn-only) and a positive value are all valid and must not throw.
+        GrpcClients.forAddress("localhost", 0)
+                .maxInboundMessageSize(0).maxInboundMessageSize(-1).maxInboundMessageSize(4 * 1024 * 1024);
+        GrpcServers.forAddress(localAddress(0))
+                .maxInboundMessageSize(0).maxInboundMessageSize(-1).maxInboundMessageSize(4 * 1024 * 1024);
+    }
+
     private static void assertEarlyRequireNonNull(final Executable executable) {
         NullPointerException ex = assertThrows(NullPointerException.class, executable);
         assertEquals("requireNonNull", ex.getStackTrace()[0].getMethodName());

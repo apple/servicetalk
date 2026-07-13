@@ -37,16 +37,22 @@ final class GrpcStreamingDeserializer<T> implements StreamingDeserializer<T> {
     private final Deserializer<T> serializer;
     @Nullable
     private final BufferDecoder compressor;
+    // Invoked with the declared length of each message before it is buffered; rejects/warns on oversized messages.
+    private final GrpcMessageSizeLimiter sizeLimiter;
 
-    GrpcStreamingDeserializer(final Deserializer<T> serializer) {
+    GrpcStreamingDeserializer(final Deserializer<T> serializer, final GrpcMessageSizeLimiter sizeLimiter) {
         this.serializer = requireNonNull(serializer);
         this.compressor = null;
+        this.sizeLimiter = requireNonNull(sizeLimiter);
     }
 
     GrpcStreamingDeserializer(final Deserializer<T> serializer,
-                              final BufferDecoder compressor) {
+                              final BufferDecoder compressor,
+                              final GrpcMessageSizeLimiter sizeLimiter) {
         this.serializer = requireNonNull(serializer);
-        this.compressor = requireNonNull(compressor);
+        this.sizeLimiter = requireNonNull(sizeLimiter);
+        // When enforcing, bound the decompressor at the limit so an oversized compressed frame aborts mid-inflate.
+        this.compressor = sizeLimiter.capDecoder(requireNonNull(compressor));
     }
 
     @Nullable
@@ -79,6 +85,9 @@ final class GrpcStreamingDeserializer<T> implements StreamingDeserializer<T> {
                 if (expectedLength < 0) {
                     throw new SerializationException("Message-Length invalid: " + expectedLength);
                 }
+                // Enforce the inbound message-size limit against the declared length, before buffering any bytes
+                // toward it, so an oversized (or maliciously large) frame is rejected without accumulating memory.
+                sizeLimiter.accept(expectedLength);
             }
             if (buffer.readableBytes() < expectedLength) {
                 return null;
@@ -87,7 +96,12 @@ final class GrpcStreamingDeserializer<T> implements StreamingDeserializer<T> {
             expectedLength = -1;
             if (compressed) {
                 assert compressor != null;
-                return compressor.decoder().deserialize(result, allocator);
+                final Buffer decompressed = compressor.decoder().deserialize(result, allocator);
+                // The wire-length check above only bounds the compressed frame, so a small frame can inflate past the
+                // limit. A compressor should have already aborted mid-inflate before reaching here but if it was a
+                // custom compressor that doesn't support a limit we check just in case.
+                sizeLimiter.accept(decompressed.readableBytes());
+                return decompressed;
             }
             return result;
         }

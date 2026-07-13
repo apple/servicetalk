@@ -80,6 +80,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS;
 import static io.servicetalk.grpc.api.GrpcHeaderValues.APPLICATION_GRPC;
+import static io.servicetalk.grpc.api.GrpcMessageSizeLimiter.NONE;
 import static io.servicetalk.grpc.api.GrpcStatus.fromCodeValue;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
@@ -287,6 +288,7 @@ final class GrpcRouter {
         private final Map<String, RouteProvider> blockingRoutes;
         private final Map<String, RouteProvider> blockingStreamingRoutes;
         private final Map<String, GrpcExecutionStrategy> executionStrategies;
+        private GrpcMessageSizeLimiter sizeLimiter = NONE;
 
         Builder() {
             routes = new HashMap<>();
@@ -310,6 +312,18 @@ final class GrpcRouter {
 
         GrpcExecutionStrategy executionStrategyFor(final String path, final GrpcExecutionStrategy defaultValue) {
             return executionStrategies.getOrDefault(path, defaultValue);
+        }
+
+        /**
+         * Configure the maximum inbound (request) message size enforced by all request deserializers built by this
+         * {@link Builder}. Must be called before routes are added so the limiter is baked into their deserializers.
+         *
+         * @param maxInboundMessageSize the maximum inbound message size in bytes: {@code 0} disables the limit,
+         * {@code > 0} rejects larger messages with {@code RESOURCE_EXHAUSTED}, and {@code -1} warns (without
+         * rejecting) at the default limit.
+         */
+        void maxInboundMessageSize(final int maxInboundMessageSize) {
+            this.sizeLimiter = GrpcMessageSizeLimiter.forMaxInboundMessageSize(maxInboundMessageSize);
         }
 
         static GrpcRouter.Builder merge(final GrpcRouter.Builder... builders) {
@@ -344,8 +358,9 @@ final class GrpcRouter {
                                   @Nullable GrpcExecutionStrategy executionStrategy, Route<Req, Resp> route) {
             GrpcSerializer<Resp> serializerIdentity = serializer(methodDescriptor);
             List<GrpcSerializer<Resp>> serializers = serializers(methodDescriptor, compressors);
-            GrpcDeserializer<Req> deserializerIdentity = deserializer(methodDescriptor);
-            List<GrpcDeserializer<Req>> deserializers = deserializers(methodDescriptor, decompressors.decoders());
+            GrpcDeserializer<Req> deserializerIdentity = deserializer(methodDescriptor, sizeLimiter);
+            List<GrpcDeserializer<Req>> deserializers = deserializers(methodDescriptor, decompressors.decoders(),
+                    sizeLimiter);
             CharSequence acceptedEncoding = decompressors.advertisedMessageEncoding();
             CharSequence requestContentType = grpcContentType(methodDescriptor.requestDescriptor()
                     .serializerDescriptor().contentType());
@@ -419,9 +434,9 @@ final class GrpcRouter {
                 @Nullable GrpcExecutionStrategy executionStrategy, StreamingRoute<Req, Resp> route) {
             GrpcStreamingSerializer<Resp> serializerIdentity = streamingSerializer(methodDescriptor);
             List<GrpcStreamingSerializer<Resp>> serializers = streamingSerializers(methodDescriptor, compressors);
-            GrpcStreamingDeserializer<Req> deserializerIdentity = streamingDeserializer(methodDescriptor);
+            GrpcStreamingDeserializer<Req> deserializerIdentity = streamingDeserializer(methodDescriptor, sizeLimiter);
             List<GrpcStreamingDeserializer<Req>> deserializers =
-                    streamingDeserializers(methodDescriptor, decompressors.decoders());
+                    streamingDeserializers(methodDescriptor, decompressors.decoders(), sizeLimiter);
             CharSequence acceptedEncoding = decompressors.advertisedMessageEncoding();
             CharSequence requestContentType = grpcContentType(methodDescriptor.requestDescriptor()
                     .serializerDescriptor().contentType());
@@ -518,9 +533,9 @@ final class GrpcRouter {
                 @Nullable GrpcExecutionStrategy executionStrategy, ResponseStreamingRoute<Req, Resp> route) {
             GrpcStreamingSerializer<Resp> serializerIdentity = streamingSerializer(methodDescriptor);
             List<GrpcStreamingSerializer<Resp>> serializers = streamingSerializers(methodDescriptor, compressors);
-            GrpcStreamingDeserializer<Req> deserializerIdentity = streamingDeserializer(methodDescriptor);
+            GrpcStreamingDeserializer<Req> deserializerIdentity = streamingDeserializer(methodDescriptor, sizeLimiter);
             List<GrpcStreamingDeserializer<Req>> deserializers =
-                    streamingDeserializers(methodDescriptor, decompressors.decoders());
+                    streamingDeserializers(methodDescriptor, decompressors.decoders(), sizeLimiter);
             CharSequence acceptedEncoding = decompressors.advertisedMessageEncoding();
             CharSequence requestContentType = grpcContentType(methodDescriptor.requestDescriptor()
                     .serializerDescriptor().contentType());
@@ -612,8 +627,9 @@ final class GrpcRouter {
                 @Nullable GrpcExecutionStrategy executionStrategy, BlockingRoute<Req, Resp> route) {
             GrpcSerializer<Resp> serializerIdentity = serializer(methodDescriptor);
             List<GrpcSerializer<Resp>> serializers = serializers(methodDescriptor, compressors);
-            GrpcDeserializer<Req> deserializerIdentity = deserializer(methodDescriptor);
-            List<GrpcDeserializer<Req>> deserializers = deserializers(methodDescriptor, decompressors.decoders());
+            GrpcDeserializer<Req> deserializerIdentity = deserializer(methodDescriptor, sizeLimiter);
+            List<GrpcDeserializer<Req>> deserializers = deserializers(methodDescriptor, decompressors.decoders(),
+                    sizeLimiter);
             CharSequence acceptedEncoding = decompressors.advertisedMessageEncoding();
             CharSequence requestContentType = grpcContentType(methodDescriptor.requestDescriptor()
                     .serializerDescriptor().contentType());
@@ -678,9 +694,9 @@ final class GrpcRouter {
                 @Nullable GrpcExecutionStrategy executionStrategy, BlockingStreamingRoute<Req, Resp> route) {
             GrpcStreamingSerializer<Resp> serializerIdentity = streamingSerializer(methodDescriptor);
             List<GrpcStreamingSerializer<Resp>> serializers = streamingSerializers(methodDescriptor, compressors);
-            GrpcStreamingDeserializer<Req> deserializerIdentity = streamingDeserializer(methodDescriptor);
+            GrpcStreamingDeserializer<Req> deserializerIdentity = streamingDeserializer(methodDescriptor, sizeLimiter);
             List<GrpcStreamingDeserializer<Req>> deserializers =
-                    streamingDeserializers(methodDescriptor, decompressors.decoders());
+                    streamingDeserializers(methodDescriptor, decompressors.decoders(), sizeLimiter);
             CharSequence acceptedEncoding = decompressors.advertisedMessageEncoding();
             CharSequence requestContentType = grpcContentType(methodDescriptor.requestDescriptor()
                     .serializerDescriptor().contentType());
@@ -850,9 +866,10 @@ final class GrpcRouter {
     }
 
     private static <Req> List<GrpcStreamingDeserializer<Req>> streamingDeserializers(
-            MethodDescriptor<Req, ?> methodDescriptor, List<BufferDecoder> decompressors) {
+            MethodDescriptor<Req, ?> methodDescriptor, List<BufferDecoder> decompressors,
+            GrpcMessageSizeLimiter sizeLimiter) {
         return GrpcUtils.streamingDeserializers(
-                methodDescriptor.requestDescriptor().serializerDescriptor().serializer(), decompressors);
+                methodDescriptor.requestDescriptor().serializerDescriptor().serializer(), decompressors, sizeLimiter);
     }
 
     private static <Resp> List<GrpcStreamingSerializer<Resp>> streamingSerializers(
@@ -869,15 +886,16 @@ final class GrpcRouter {
     }
 
     private static <Req> GrpcStreamingDeserializer<Req> streamingDeserializer(
-            MethodDescriptor<Req, ?> methodDescriptor) {
+            MethodDescriptor<Req, ?> methodDescriptor, GrpcMessageSizeLimiter sizeLimiter) {
         return new GrpcStreamingDeserializer<>(
-                methodDescriptor.requestDescriptor().serializerDescriptor().serializer());
+                methodDescriptor.requestDescriptor().serializerDescriptor().serializer(), sizeLimiter);
     }
 
     private static <Req> List<GrpcDeserializer<Req>> deserializers(
-            MethodDescriptor<Req, ?> methodDescriptor, List<BufferDecoder> decompressors) {
+            MethodDescriptor<Req, ?> methodDescriptor, List<BufferDecoder> decompressors,
+            GrpcMessageSizeLimiter sizeLimiter) {
         return GrpcUtils.deserializers(methodDescriptor.requestDescriptor().serializerDescriptor().serializer(),
-                decompressors);
+                decompressors, sizeLimiter);
     }
 
     private static <Resp> List<GrpcSerializer<Resp>> serializers(
@@ -891,8 +909,10 @@ final class GrpcRouter {
                 methodDescriptor.responseDescriptor().serializerDescriptor().serializer());
     }
 
-    private static <Req> GrpcDeserializer<Req> deserializer(MethodDescriptor<Req, ?> methodDescriptor) {
-        return new GrpcDeserializer<>(methodDescriptor.requestDescriptor().serializerDescriptor().serializer());
+    private static <Req> GrpcDeserializer<Req> deserializer(MethodDescriptor<Req, ?> methodDescriptor,
+                                                            GrpcMessageSizeLimiter sizeLimiter) {
+        return new GrpcDeserializer<>(
+                methodDescriptor.requestDescriptor().serializerDescriptor().serializer(), sizeLimiter);
     }
 
     private static void logException(String where, MethodDescriptor<?, ?> methodDescriptor,

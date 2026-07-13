@@ -59,6 +59,25 @@ GrpcServers.forPort(8080)
         .awaitShutdown();
 ----
 
+[#maxInboundMessageSize]
+== Inbound message size limit
+
+To bound memory use, ServiceTalk caps a single decoded inbound gRPC message at *4 MiB* by default (matching
+link:https://github.com/grpc/grpc-java[grpc-java]). A message whose declared length exceeds the limit is rejected with
+`RESOURCE_EXHAUSTED` *before* its payload is buffered. The limit applies on the receiving side of every paradigm: a
+server bounds request messages, a client bounds response messages. For compressed messages the limit also bounds the
+*decompressed* size, aborting decompression mid-inflate for the built-in codecs (`NettyCompression`).
+
+Configure it with `GrpcServerBuilder#maxInboundMessageSize(int)` / `GrpcClientBuilder#maxInboundMessageSize(int)`:
+`0` disables the limit, a positive value enforces it, and `-1` selects *warn-only* mode (the message is delivered but a
+warning is logged, rate-limited to once every five minutes per client/server) as a rollout aid. The default can be
+changed globally with the temporary `io.servicetalk.grpc.netty.temporaryDefaultMaxInboundMessageSize` system property
+(to be removed in a future release); an explicit builder call takes precedence.
+
+NOTE: A custom `BufferDecoder` that does not implement `BufferDecoder#withMaxDecompressedBytes(int)`, as well as
+warn-only and disabled modes, bound decompression by the codec's own `ZipCompressionBuilder#maxDecompressedBytes(long)`
+cap (*64 MiB* by default) rather than by `maxInboundMessageSize`.
+
 == Extensibility and Filters
 The design of this protocol involves configuring builders for core protocol concerns, and then appending `Filters` for
 extensibility. `Filters` are described in more detail below but in general they facilitate user code to

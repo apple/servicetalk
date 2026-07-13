@@ -67,9 +67,29 @@ public abstract class GrpcServiceFactory<Service extends GrpcService> {
      * @param executionContext {@link ExecutionContext} to use for the service.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
+     * @deprecated Use {@link #bind(ServerBinder, ExecutionContext, GrpcMessageConfig)}; this overload applies no
+     * inbound message-size limit.
      */
-    public final Single<GrpcServerContext> bind(final ServerBinder binder, final ExecutionContext<?> executionContext) {
-        return routes.bind(binder, DefaultGrpcExecutionContext.from(executionContext));
+    @Deprecated // FIXME: 0.43 - remove deprecated method
+    public final Single<GrpcServerContext> bind(final ServerBinder binder,
+                                                final ExecutionContext<?> executionContext) {
+        return bind(binder, executionContext, new GrpcMessageConfig.Builder().maxInboundMessageSize(0).build());
+    }
+
+    /**
+     * Use the passed {@link ServerBinder} to bind an appropriate
+     * <a href="https://www.grpc.io">gRPC</a> service for the server.
+     *
+     * @param binder {@link ServerBinder} to bind <a href="https://www.grpc.io">gRPC</a> service to the server.
+     * @param executionContext {@link ExecutionContext} to use for the service.
+     * @param messageConfig {@link GrpcMessageConfig} controlling message handling for the bound service, including the
+     * maximum inbound (request) message size enforced during deserialization.
+     * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
+     * the server could not be started.
+     */
+    public final Single<GrpcServerContext> bind(final ServerBinder binder, final ExecutionContext<?> executionContext,
+                                                final GrpcMessageConfig messageConfig) {
+        return routes.bind(binder, DefaultGrpcExecutionContext.from(executionContext), messageConfig);
     }
 
     /**

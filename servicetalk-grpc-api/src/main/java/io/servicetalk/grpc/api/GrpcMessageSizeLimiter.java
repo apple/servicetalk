@@ -1,0 +1,151 @@
+/*
+ * Copyright © 2026 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.servicetalk.grpc.api;
+
+import io.servicetalk.encoding.api.BufferDecoder;
+import io.servicetalk.serializer.api.MaxMessageSizeExceededException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.atomic.AtomicLong;
+import javax.annotation.Nullable;
+
+import static java.lang.Integer.getInteger;
+import static java.lang.System.nanoTime;
+import static java.util.concurrent.TimeUnit.MINUTES;
+
+/**
+ * Bounds the size of a single inbound gRPC message before it is buffered/deserialized. Created once per client/server
+ * and shared across all of its deframers, so the warn-only throttle state below is naturally scoped per client/server.
+ * <p>
+ * The deframer invokes {@link #accept(long)} with the declared message length (read from the gRPC frame's length
+ * prefix) before any bytes are buffered toward that length. Enforcing mode rejects oversized messages with a
+ * {@link MaxMessageSizeExceededException}, which the gRPC error mapping surfaces as
+ * {@link GrpcStatusCode#RESOURCE_EXHAUSTED} (matching grpc-java). For compressed messages the wire length only bounds
+ * the compressed frame, so enforcing mode additionally re-caps the decompressor via {@link #capDecoder(BufferDecoder)}
+ * so an oversized payload is rejected mid-inflate rather than fully buffered.
+ */
+final class GrpcMessageSizeLimiter {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrpcMessageSizeLimiter.class);
+    private static final long WARN_INTERVAL_NANOS = MINUTES.toNanos(5);
+
+    /**
+     * A no-op limiter that never rejects or warns and never caps a decoder, regardless of message size.
+     */
+    static final GrpcMessageSizeLimiter NONE = new GrpcMessageSizeLimiter(Mode.DISABLED, 0);
+
+    // maxInboundMessageSize value selecting warn-only mode (see forMaxInboundMessageSize).
+    private static final int WARN_ONLY = -1;
+    // Built-in default enforcing limit, 4 MiB, matching grpc-java's io.grpc.internal.GrpcUtil.DEFAULT_MAX_MESSAGE_SIZE.
+    // Package-visible so GrpcMessageConfig can use it as its default without duplicating the literal.
+    static final int DEFAULT_MAX_MESSAGE_SIZE = 4 * 1024 * 1024;
+    // Threshold used in warn-only mode: the limit that would otherwise be enforced. Read from the same temporary
+    // system property the client/server builders use for the default, falling back to 4 MiB when unset or
+    // non-enforcing, so raising the default also raises the warn threshold.
+    private static final int WARN_ONLY_THRESHOLD = warnOnlyThreshold();
+
+    private enum Mode { DISABLED, ENFORCING, WARN_ONLY }
+
+    private final Mode mode;
+    private final int maxMessageSize;
+    // Non-null iff this is a warn-only limiter. Holds nanoTime() of the last emitted warning so we can rate-limit to
+    // one entry per WARN_INTERVAL_NANOS. Shared across all deframers of the owning client/server.
+    @Nullable
+    private final AtomicLong lastWarnNanos;
+
+    private GrpcMessageSizeLimiter(final Mode mode, final int maxMessageSize) {
+        this.mode = mode;
+        this.maxMessageSize = maxMessageSize;
+        // Seed in the past so the first time the limit is exceeded a warning is emitted immediately.
+        this.lastWarnNanos = mode == Mode.WARN_ONLY ? new AtomicLong(nanoTime() - WARN_INTERVAL_NANOS) : null;
+    }
+
+    /**
+     * Build a limiter from the {@code maxInboundMessageSize} value configured on the client/server:
+     * {@code 0} disables the limit, {@code > 0} enforces (rejects) at that many bytes, and {@code -1} warns (without
+     * rejecting) at the built-in default limit.
+     *
+     * @param maxInboundMessageSize the configured maximum inbound message size
+     * @return a limiter, or {@link #NONE} when {@code maxInboundMessageSize == 0}
+     * @throws IllegalArgumentException if {@code maxInboundMessageSize < -1}
+     */
+    static GrpcMessageSizeLimiter forMaxInboundMessageSize(final int maxInboundMessageSize) {
+        if (maxInboundMessageSize == 0) {
+            return NONE;
+        }
+        if (maxInboundMessageSize > 0) {
+            return new GrpcMessageSizeLimiter(Mode.ENFORCING, maxInboundMessageSize);
+        }
+        // Validate before use: this is reached from public entry points (GrpcClientCallFactory.from /
+        // GrpcServiceFactory.bind), so reject anything other than the warn-only selector.
+        if (maxInboundMessageSize != WARN_ONLY) {
+            throw new IllegalArgumentException("maxInboundMessageSize: " + maxInboundMessageSize +
+                    " (expected >= " + WARN_ONLY + ')');
+        }
+        return new GrpcMessageSizeLimiter(Mode.WARN_ONLY, WARN_ONLY_THRESHOLD);
+    }
+
+    /**
+     * Invoked with the declared length (in bytes) of an inbound gRPC message before it is buffered. In enforcing mode
+     * throws when the declared length exceeds the limit; in warn-only mode emits a rate-limited warning and returns
+     * normally so deserialization can continue.
+     *
+     * @param messageSize the declared length of the message about to be buffered
+     */
+    void accept(final long messageSize) {
+        if (mode == Mode.DISABLED || messageSize <= maxMessageSize) {
+            return;
+        }
+        if (mode == Mode.ENFORCING) {
+            throw new MaxMessageSizeExceededException("gRPC message size=" + messageSize +
+                    " exceeds maximum inbound message size=" + maxMessageSize);
+        }
+        maybeWarn(messageSize);
+    }
+
+    /**
+     * When enforcing, return a decoder whose decompression is bounded at the inbound message-size limit so an oversized
+     * compressed payload is rejected mid-inflate (matching grpc-java) rather than fully buffered before the post-decode
+     * check. In warn-only/disabled modes the decoder is returned unchanged: the codec keeps its own decompression cap
+     * and the post-decode {@link #accept(long)} in the deframer emits the warn-only diagnostic.
+     *
+     * @param decoder the decoder negotiated for an inbound message
+     * @return a decoder bounded at the limit when enforcing, otherwise {@code decoder} unchanged
+     */
+    BufferDecoder capDecoder(final BufferDecoder decoder) {
+        return mode == Mode.ENFORCING ? decoder.withMaxDecompressedBytes(maxMessageSize) : decoder;
+    }
+
+    private static int warnOnlyThreshold() {
+        final int configured = getInteger(
+                "io.servicetalk.grpc.netty.temporaryDefaultMaxInboundMessageSize", DEFAULT_MAX_MESSAGE_SIZE);
+        return configured > 0 ? configured : DEFAULT_MAX_MESSAGE_SIZE;
+    }
+
+    private void maybeWarn(final long messageSize) {
+        assert lastWarnNanos != null;
+        final long now = nanoTime();
+        final long last = lastWarnNanos.get();
+        if (now - last >= WARN_INTERVAL_NANOS && lastWarnNanos.compareAndSet(last, now)) {
+            LOGGER.warn("gRPC message size={} exceeded the configured maximum inbound message size of {} bytes, but " +
+                    "the limit is configured in warn-only mode so the message is allowed through. Configure an " +
+                    "enforcing maxInboundMessageSize(int) to reject oversized messages with RESOURCE_EXHAUSTED. This " +
+                    "warning is rate-limited to once per 5 minutes per client/server.", messageSize, maxMessageSize);
+        }
+    }
+}

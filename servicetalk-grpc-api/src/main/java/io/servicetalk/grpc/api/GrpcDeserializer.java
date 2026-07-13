@@ -31,16 +31,20 @@ final class GrpcDeserializer<T> implements Deserializer<T> {
     private final Deserializer<T> deserializer;
     @Nullable
     private final BufferDecoder decompressor;
+    // Invoked with the declared length of the message before it is read; rejects/warns on oversized messages.
+    private final GrpcMessageSizeLimiter sizeLimiter;
 
-    GrpcDeserializer(final Deserializer<T> deserializer) {
-        this.deserializer = requireNonNull(deserializer);
-        this.decompressor = null;
+    GrpcDeserializer(final Deserializer<T> deserializer, final GrpcMessageSizeLimiter sizeLimiter) {
+        this(deserializer, null, sizeLimiter);
     }
 
     GrpcDeserializer(final Deserializer<T> deserializer,
-                     @Nullable final BufferDecoder decompressor) {
+                     @Nullable final BufferDecoder decompressor,
+                     final GrpcMessageSizeLimiter sizeLimiter) {
         this.deserializer = requireNonNull(deserializer);
-        this.decompressor = decompressor;
+        this.sizeLimiter = requireNonNull(sizeLimiter);
+        // When enforcing, bound the decompressor at the limit so an oversized compressed message aborts mid-inflate.
+        this.decompressor = decompressor == null ? null : sizeLimiter.capDecoder(decompressor);
     }
 
     @Nullable
@@ -61,10 +65,16 @@ final class GrpcDeserializer<T> implements Deserializer<T> {
         if (expectedLength < 0) {
             throw new SerializationException("Message-Length invalid: " + expectedLength);
         }
+        // Enforce the inbound message-size limit against the declared length before reading the message bytes.
+        sizeLimiter.accept(expectedLength);
 
         Buffer result = buffer.readBytes(expectedLength);
         if (compressed) {
             result = decompressor.decoder().deserialize(result, allocator);
+            // The check above only bounds the compressed wire size, so a small frame can inflate past the limit. A
+            // compressor should have already aborted mid-inflate before reaching here, but if it's a custom compressor
+            // that doesn't support a limit we check just in case.
+            sizeLimiter.accept(result.readableBytes());
         }
         return deserializer.deserialize(result, allocator);
     }

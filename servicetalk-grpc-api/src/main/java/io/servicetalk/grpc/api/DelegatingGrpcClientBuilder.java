@@ -68,6 +68,12 @@ public class DelegatingGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R
     }
 
     @Override
+    public GrpcClientBuilder<U, R> maxInboundMessageSize(final int maxInboundMessageSize) {
+        delegate = delegate.maxInboundMessageSize(maxInboundMessageSize);
+        return this;
+    }
+
+    @Override
     public <Client extends GrpcClient<?>> Client build(final GrpcClientFactory<Client, ?> clientFactory) {
         return delegate.build(clientFactory);
     }

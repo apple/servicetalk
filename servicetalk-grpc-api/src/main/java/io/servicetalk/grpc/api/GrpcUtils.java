@@ -541,13 +541,14 @@ final class GrpcUtils {
     }
 
     static <T> List<GrpcStreamingDeserializer<T>> streamingDeserializers(Deserializer<T> desrializer,
-                                                                         List<BufferDecoder> decompressors) {
+                                                                         List<BufferDecoder> decompressors,
+                                                                         GrpcMessageSizeLimiter sizeLimiter) {
         if (decompressors.isEmpty()) {
             return emptyList();
         }
         List<GrpcStreamingDeserializer<T>> deserializers = new ArrayList<>(decompressors.size());
         for (BufferDecoder decompressor : decompressors) {
-            deserializers.add(new GrpcStreamingDeserializer<>(desrializer, decompressor));
+            deserializers.add(new GrpcStreamingDeserializer<>(desrializer, decompressor, sizeLimiter));
         }
 
         return deserializers;
@@ -567,13 +568,14 @@ final class GrpcUtils {
     }
 
     static <T> List<GrpcDeserializer<T>> deserializers(Deserializer<T> deserializer,
-                                                       List<BufferDecoder> decompressors) {
+                                                       List<BufferDecoder> decompressors,
+                                                       GrpcMessageSizeLimiter sizeLimiter) {
         if (decompressors.isEmpty()) {
             return emptyList();
         }
         List<GrpcDeserializer<T>> deserializers = new ArrayList<>(decompressors.size());
         for (BufferDecoder decompressor : decompressors) {
-            deserializers.add(new GrpcDeserializer<>(deserializer, decompressor));
+            deserializers.add(new GrpcDeserializer<>(deserializer, decompressor, sizeLimiter));
         }
 
         return deserializers;

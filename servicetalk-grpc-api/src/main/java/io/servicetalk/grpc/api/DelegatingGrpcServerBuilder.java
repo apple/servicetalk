@@ -67,6 +67,12 @@ public class DelegatingGrpcServerBuilder implements GrpcServerBuilder {
     }
 
     @Override
+    public GrpcServerBuilder maxInboundMessageSize(final int maxInboundMessageSize) {
+        delegate = delegate.maxInboundMessageSize(maxInboundMessageSize);
+        return this;
+    }
+
+    @Override
     public GrpcServerBuilder lifecycleObserver(final GrpcLifecycleObserver lifecycleObserver) {
         delegate = delegate.lifecycleObserver(lifecycleObserver);
         return this;
