@@ -48,22 +48,46 @@ public final class VarIntLengthStreamingSerializer<T> implements StreamingSerial
     static final int MAX_LENGTH_BYTES = 5;
     private final SerializerDeserializer<T> serializer;
     private final ToIntFunction<T> bytesEstimator;
+    private final MessageSizeLimiter sizeLimiter;
 
     /**
-     * Create a new instance.
+     * Create a new instance that limits deserialized messages to the default maximum size
+     * ({@value MessageSizeLimiter#DEFAULT_MAX_MESSAGE_SIZE_VALUE} bytes, overridable via the
+     * {@value MessageSizeLimiter#DEFAULT_MAX_MESSAGE_SIZE_PROPERTY} system property). Use
+     * {@link #VarIntLengthStreamingSerializer(SerializerDeserializer, ToIntFunction, int)} to configure a different
+     * limit, disable it, or warn instead of rejecting.
      *
      * @param serializer The {@link SerializerDeserializer} used to serialize/deserialize individual objects.
      * @param bytesEstimator Estimates the length in bytes for each {@link T} being serialized.
      */
     public VarIntLengthStreamingSerializer(final SerializerDeserializer<T> serializer,
                                            final ToIntFunction<T> bytesEstimator) {
+        this(serializer, bytesEstimator, MessageSizeLimiter.DEFAULT_MAX_MESSAGE_SIZE);
+    }
+
+    /**
+     * Create a new instance.
+     *
+     * @param serializer The {@link SerializerDeserializer} used to serialize/deserialize individual objects.
+     * @param bytesEstimator Estimates the length in bytes for each {@link T} being serialized.
+     * @param maxMessageSize The maximum length (in bytes) declared by a frame's length prefix that will be accepted
+     * during deserialization. A frame declaring a larger length is rejected with a
+     * {@link io.servicetalk.serializer.api.MaxMessageSizeExceededException} before any of its bytes are buffered.
+     * {@code 0} disables the limit; {@code -1} logs a rate-limited warning at the default threshold but lets the
+     * message through (a rollout aid, not steady-state protection); other negative values are rejected.
+     */
+    public VarIntLengthStreamingSerializer(final SerializerDeserializer<T> serializer,
+                                           final ToIntFunction<T> bytesEstimator,
+                                           final int maxMessageSize) {
         this.serializer = requireNonNull(serializer);
         this.bytesEstimator = requireNonNull(bytesEstimator);
+        this.sizeLimiter = MessageSizeLimiter.forMaxMessageSize(maxMessageSize);
     }
 
     @Override
     public Publisher<T> deserialize(final Publisher<Buffer> serializedData, final BufferAllocator allocator) {
-        return serializedData.liftSync(new FramedDeserializerOperator<>(serializer, LengthDeframer::new, allocator))
+        return serializedData.liftSync(new FramedDeserializerOperator<>(serializer,
+                        () -> new LengthDeframer(sizeLimiter), allocator))
                 .flatMapConcatIterable(identity());
     }
 
@@ -81,7 +105,12 @@ public final class VarIntLengthStreamingSerializer<T> implements StreamingSerial
     }
 
     private static final class LengthDeframer implements BiFunction<Buffer, BufferAllocator, Buffer> {
+        private final MessageSizeLimiter sizeLimiter;
         private int expectedLength = -1;
+
+        LengthDeframer(final MessageSizeLimiter sizeLimiter) {
+            this.sizeLimiter = sizeLimiter;
+        }
 
         @Nullable
         @Override
@@ -91,6 +120,7 @@ public final class VarIntLengthStreamingSerializer<T> implements StreamingSerial
                 if (expectedLength < 0) {
                     return null;
                 }
+                sizeLimiter.checkMessageSize(expectedLength);
             }
             if (buffer.readableBytes() < expectedLength) {
                 return null;

@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.serializer.api.MaxMessageSizeExceededException;
 import io.servicetalk.serializer.api.SerializationException;
 
 import org.slf4j.Logger;
@@ -77,6 +78,11 @@ public final class HttpExceptionMapperServiceFilter implements StreamingHttpServ
         if (cause instanceof RejectedExecutionException) {
             status = SERVICE_UNAVAILABLE;
             LOGGER.error("Task rejected by service processing for connection='{}', request='{} {} {}'. Returning: {}",
+                    ctx, request.method(), request.requestTarget(), request.version(), status, cause);
+        } else if (cause instanceof MaxMessageSizeExceededException) {
+            // More specific than SerializationException (its supertype), so it must be checked first.
+            status = PAYLOAD_TOO_LARGE;
+            LOGGER.info("Message exceeded the maximum size for connection='{}', request='{} {} {}'. Returning: {}",
                     ctx, request.method(), request.requestTarget(), request.version(), status, cause);
         } else if (cause instanceof SerializationException) {
             // It is assumed that a failure occurred when attempting to deserialize the request.

@@ -16,6 +16,7 @@
 package io.servicetalk.serializer.utils;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.serializer.api.MaxMessageSizeExceededException;
 import io.servicetalk.serializer.api.SerializationException;
 
 import com.google.protobuf.CodedInputStream;
@@ -26,10 +27,12 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.serializer.utils.MessageSizeLimiter.DEFAULT_MAX_MESSAGE_SIZE;
 import static io.servicetalk.serializer.utils.StringSerializer.stringSerializer;
 import static io.servicetalk.serializer.utils.VarIntLengthStreamingSerializer.FOUR_BYTE_VAL;
 import static io.servicetalk.serializer.utils.VarIntLengthStreamingSerializer.MAX_LENGTH_BYTES;
@@ -41,6 +44,7 @@ import static io.servicetalk.serializer.utils.VarIntLengthStreamingSerializer.se
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -85,6 +89,77 @@ class VarIntLengthStreamingSerializerTest {
 
         assertThat(serializer.deserialize(serializer.serialize(from("foo", "bar"), DEFAULT_ALLOCATOR),
                 DEFAULT_ALLOCATOR).toFuture().get(), contains("foo", "bar"));
+    }
+
+    @Test
+    void defaultConstructorRejectsFrameAboveDefaultLimit() {
+        VarIntLengthStreamingSerializer<String> serializer = new VarIntLengthStreamingSerializer<>(
+                stringSerializer(UTF_8), String::length);
+        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer(MAX_LENGTH_BYTES).writerIndex(MAX_LENGTH_BYTES);
+        setVarInt(DEFAULT_MAX_MESSAGE_SIZE + 1, buffer, buffer.readerIndex());
+
+        ExecutionException e = assertThrows(ExecutionException.class,
+                () -> serializer.deserialize(from(buffer), DEFAULT_ALLOCATOR).toFuture().get());
+        assertThat(e.getCause(), instanceOf(MaxMessageSizeExceededException.class));
+    }
+
+    @Test
+    void invalidMaxMessageSizeRejected() {
+        assertThrows(IllegalArgumentException.class, () -> new VarIntLengthStreamingSerializer<>(
+                stringSerializer(UTF_8), String::length, -2));
+    }
+
+    @Test
+    void frameAtLimitDeserializes() throws Exception {
+        VarIntLengthStreamingSerializer<String> serializer = new VarIntLengthStreamingSerializer<>(
+                stringSerializer(UTF_8), String::length, 3);
+
+        assertThat(serializer.deserialize(serializer.serialize(from("foo", "bar"), DEFAULT_ALLOCATOR),
+                DEFAULT_ALLOCATOR).toFuture().get(), contains("foo", "bar"));
+    }
+
+    @Test
+    void emptyFrameDeserializes() throws Exception {
+        VarIntLengthStreamingSerializer<String> serializer = new VarIntLengthStreamingSerializer<>(
+                stringSerializer(UTF_8), String::length, 8);
+        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer().writeByte(0);
+
+        assertThat(serializer.deserialize(from(buffer), DEFAULT_ALLOCATOR).toFuture().get(), contains(""));
+    }
+
+    @Test
+    void frameAboveLimitSingleBufferRejected() {
+        VarIntLengthStreamingSerializer<String> serializer = new VarIntLengthStreamingSerializer<>(
+                stringSerializer(UTF_8), String::length, 8);
+        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer(MAX_LENGTH_BYTES).writerIndex(MAX_LENGTH_BYTES);
+        setVarInt(9, buffer, buffer.readerIndex());
+
+        ExecutionException e = assertThrows(ExecutionException.class,
+                () -> serializer.deserialize(from(buffer), DEFAULT_ALLOCATOR).toFuture().get());
+        assertThat(e.getCause(), instanceOf(MaxMessageSizeExceededException.class));
+    }
+
+    @Test
+    void frameAboveLimitSplitAcrossBuffersRejected() {
+        VarIntLengthStreamingSerializer<String> serializer = new VarIntLengthStreamingSerializer<>(
+                stringSerializer(UTF_8), String::length, 100);
+        Buffer encoded = DEFAULT_ALLOCATOR.newBuffer(MAX_LENGTH_BYTES).writerIndex(MAX_LENGTH_BYTES);
+        setVarInt(200, encoded, encoded.readerIndex());
+        Buffer first = DEFAULT_ALLOCATOR.newBuffer(1).writeByte(encoded.readByte());
+        Buffer second = DEFAULT_ALLOCATOR.newBuffer(1).writeByte(encoded.readByte());
+
+        ExecutionException e = assertThrows(ExecutionException.class,
+                () -> serializer.deserialize(from(first, second), DEFAULT_ALLOCATOR).toFuture().get());
+        assertThat(e.getCause(), instanceOf(MaxMessageSizeExceededException.class));
+    }
+
+    @Test
+    void zeroLimitDisablesCheck() throws Exception {
+        VarIntLengthStreamingSerializer<String> serializer = new VarIntLengthStreamingSerializer<>(
+                stringSerializer(UTF_8), String::length, 0);
+        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer().writeByte(6).writeBytes("foobar".getBytes(UTF_8));
+
+        assertThat(serializer.deserialize(from(buffer), DEFAULT_ALLOCATOR).toFuture().get(), contains("foobar"));
     }
 
     @ParameterizedTest(name = "val={0}")

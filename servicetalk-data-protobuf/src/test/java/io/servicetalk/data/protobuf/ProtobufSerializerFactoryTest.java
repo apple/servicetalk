@@ -19,9 +19,11 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.data.protobuf.test.TestProtos.DummyMessage;
 import io.servicetalk.data.protobuf.test.TestProtos.MapMessage;
+import io.servicetalk.serializer.api.MaxMessageSizeExceededException;
 import io.servicetalk.serializer.api.SerializerDeserializer;
 import io.servicetalk.serializer.api.StreamingSerializerDeserializer;
 
+import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import org.junit.jupiter.api.Test;
@@ -34,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import static io.servicetalk.buffer.api.Buffer.asInputStream;
@@ -48,6 +51,8 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ProtobufSerializerFactoryTest {
     private static final List<Arguments> POJOS = Arrays.asList(
@@ -99,13 +104,17 @@ class ProtobufSerializerFactoryTest {
     @ParameterizedTest(name = "pojos={0}")
     @MethodSource("pojos")
     void streamingWriteDelimitedToDeserialized(Collection<DummyMessage> msgs) throws Exception {
-        streamingWriteDelimitedToDeserialized(PROTOBUF.streamingSerializerDeserializer(DummyMessage.parser()), msgs);
+        // The boundary POJOs include a message larger than the default max message size to exercise VarInt prefix
+        // encoding across sizes, so use a factory with the limit disabled rather than exercising it here.
+        streamingWriteDelimitedToDeserialized(
+                new ProtobufSerializerFactory(0).streamingSerializerDeserializer(DummyMessage.parser()), msgs);
     }
 
     @ParameterizedTest(name = "pojos={0}")
     @MethodSource("pojos")
     void streamingWriteDelimitedToDeserializedClass(Collection<DummyMessage> msgs) throws Exception {
-        streamingWriteDelimitedToDeserialized(PROTOBUF.streamingSerializerDeserializer(DummyMessage.class), msgs);
+        streamingWriteDelimitedToDeserialized(
+                new ProtobufSerializerFactory(0).streamingSerializerDeserializer(DummyMessage.class), msgs);
     }
 
     private static void streamingWriteDelimitedToDeserialized(StreamingSerializerDeserializer<DummyMessage> serializer,
@@ -142,6 +151,34 @@ class ProtobufSerializerFactoryTest {
             deserialized.add(parser.parseDelimitedFrom(asInputStream(buf)));
         }
         assertThat(deserialized, contains(msgs.toArray()));
+    }
+
+    @Test
+    void streamingSerializerRejectsFrameAboveConfiguredLimit() throws Exception {
+        StreamingSerializerDeserializer<DummyMessage> serializer =
+                new ProtobufSerializerFactory(8).streamingSerializerDeserializer(DummyMessage.parser());
+        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer();
+        newMsg("aaaaaaaaaa").writeDelimitedTo(asOutputStream(buffer));
+
+        ExecutionException e = assertThrows(ExecutionException.class,
+                () -> serializer.deserialize(from(buffer), DEFAULT_ALLOCATOR).toFuture().get());
+        assertThat(e.getCause(), instanceOf(MaxMessageSizeExceededException.class));
+    }
+
+    @Test
+    void streamingSerializerAppliesDefaultLimit() throws Exception {
+        StreamingSerializerDeserializer<DummyMessage> serializer =
+                PROTOBUF.streamingSerializerDeserializer(DummyMessage.class);
+        // Only the length prefix is written, declaring a length far above the default limit, so the guard fires
+        // before any payload is buffered.
+        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer();
+        CodedOutputStream cos = CodedOutputStream.newInstance(asOutputStream(buffer));
+        cos.writeUInt32NoTag(100 * 1024 * 1024);
+        cos.flush();
+
+        ExecutionException e = assertThrows(ExecutionException.class,
+                () -> serializer.deserialize(from(buffer), DEFAULT_ALLOCATOR).toFuture().get());
+        assertThat(e.getCause(), instanceOf(MaxMessageSizeExceededException.class));
     }
 
     @SuppressWarnings("unused")

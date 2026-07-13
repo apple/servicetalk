@@ -16,6 +16,8 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.serializer.api.MaxMessageSizeExceededException;
+import io.servicetalk.serializer.api.SerializationException;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,6 +29,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpResponseStatus.PAYLOAD_TOO_LARGE;
+import static io.servicetalk.http.api.HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -56,5 +59,27 @@ class HttpExceptionMapperServiceFilterTest {
         StreamingHttpResponse response = filter.handle(ctx, reqRespFactory.newRequest(GET, "/"),
                 reqRespFactory).toFuture().get();
         assertThat(response.status(), is(PAYLOAD_TOO_LARGE));
+    }
+
+    @Test
+    void maxMessageSizeExceededMapsTo413() throws Exception {
+        StreamingHttpService service = (c, request, factory) ->
+                Single.failed(new MaxMessageSizeExceededException("too large"));
+        StreamingHttpServiceFilter filter = HttpExceptionMapperServiceFilter.INSTANCE.create(service);
+
+        StreamingHttpResponse response = filter.handle(ctx, reqRespFactory.newRequest(GET, "/"),
+                reqRespFactory).toFuture().get();
+        assertThat(response.status(), is(PAYLOAD_TOO_LARGE));
+    }
+
+    @Test
+    void serializationExceptionMapsTo415() throws Exception {
+        StreamingHttpService service = (c, request, factory) ->
+                Single.failed(new SerializationException("bad"));
+        StreamingHttpServiceFilter filter = HttpExceptionMapperServiceFilter.INSTANCE.create(service);
+
+        StreamingHttpResponse response = filter.handle(ctx, reqRespFactory.newRequest(GET, "/"),
+                reqRespFactory).toFuture().get();
+        assertThat(response.status(), is(UNSUPPORTED_MEDIA_TYPE));
     }
 }
