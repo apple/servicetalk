@@ -15,9 +15,12 @@
  */
 package io.servicetalk.grpc.netty;
 
+import io.servicetalk.encoding.api.BufferDecoderGroupBuilder;
+import io.servicetalk.grpc.api.DefaultGrpcClientMetadata;
 import io.servicetalk.grpc.api.GrpcServerContext;
 import io.servicetalk.grpc.api.GrpcServiceContext;
 
+import io.grpc.examples.helloworld.Greeter;
 import io.grpc.examples.helloworld.Greeter.BlockingGreeterClient;
 import io.grpc.examples.helloworld.Greeter.BlockingGreeterService;
 import io.grpc.examples.helloworld.Greeter.ClientFactory;
@@ -27,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
+import static io.servicetalk.encoding.netty.NettyBufferEncoders.gzipDefault;
 import static io.servicetalk.grpc.netty.GrpcClients.forAddress;
 import static io.servicetalk.grpc.netty.GrpcServers.forAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -57,6 +61,42 @@ class GrpcLargeMessageTest {
                      .buildBlocking(new ClientFactory())) {
             HelloReply reply = client.sayHello(HelloRequest.newBuilder().setName(large).build());
             assertThat(reply.getMessage().length(), equalTo(PAYLOAD_SIZE));
+        }
+    }
+
+    // Regression test for a JVM-wide serializer-cache collision in DefaultGrpcClientCallFactory. The static
+    // serializerMap (and streamingSerializerMap) was keyed only by the request BufferEncoder, but the cached
+    // GrpcSerializer embeds a message-type-specific request serializer. So the first client to send a compressed
+    // request with a given codec won the cache entry for that codec across the whole JVM, and any other client
+    // reusing the same codec for a different message type then got a wrong-typed serializer and threw
+    // ClassCastException. Two unrelated services (Greeter/HelloRequest and Tester/TestRequest) share the gzip
+    // request compressor here; both compressed round-trips must succeed.
+    @Test
+    void twoClientsSharingRequestCompressorForDifferentMessageTypes() throws Exception {
+        try (GrpcServerContext greeterServer = forAddress(localAddress(0)).listenAndAwait(
+                     new Greeter.ServiceFactory.Builder()
+                             .bufferDecoderGroup(new BufferDecoderGroupBuilder().add(gzipDefault()).build())
+                             .sayHelloBlocking((ctx, request) ->
+                                     HelloReply.newBuilder().setMessage(request.getName()).build())
+                             .build());
+             BlockingGreeterClient greeterClient = forAddress(serverHostAndPort(greeterServer))
+                     .buildBlocking(new ClientFactory());
+             GrpcServerContext testerServer = forAddress(localAddress(0)).listenAndAwait(
+                     new TesterProto.Tester.ServiceFactory.Builder()
+                             .bufferDecoderGroup(new BufferDecoderGroupBuilder().add(gzipDefault()).build())
+                             .testBlocking((ctx, request) ->
+                                     TesterProto.TestResponse.newBuilder().setMessage(request.getName()).build())
+                             .build());
+             TesterProto.Tester.BlockingTesterClient testerClient = forAddress(serverHostAndPort(testerServer))
+                     .buildBlocking(new TesterProto.Tester.ClientFactory())) {
+
+            HelloReply reply = greeterClient.sayHello(new DefaultGrpcClientMetadata(gzipDefault()),
+                    HelloRequest.newBuilder().setName("hello").build());
+            assertThat(reply.getMessage(), equalTo("hello"));
+
+            TesterProto.TestResponse response = testerClient.test(new DefaultGrpcClientMetadata(gzipDefault()),
+                    TesterProto.TestRequest.newBuilder().setName("world").build());
+            assertThat(response.getMessage(), equalTo("world"));
         }
     }
 }
