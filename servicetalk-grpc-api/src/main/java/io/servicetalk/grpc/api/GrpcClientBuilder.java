@@ -102,11 +102,8 @@ public interface GrpcClientBuilder<U, R> {
      * {@code io.servicetalk.grpc.netty.temporaryDefaultMaxInboundMessageSize} system property (a temporary property
      * that will be removed in a future release).
      * <p>
-     * For a compressed message the limit also bounds the decompressed size, aborting decompression mid-inflate when it
-     * would exceed the limit. This mid-inflate bound applies to ServiceTalk's built-in codecs; a custom
-     * {@link io.servicetalk.encoding.api.BufferDecoder} that does not implement
-     * {@link io.servicetalk.encoding.api.BufferDecoder#withMaxDecompressedBytes(int)} is instead bounded by its own
-     * decompression cap and rejected only after decoding.
+     * For a compressed message this bounds the on-wire length and the decoded length. The memory used while
+     * decompressing is bounded separately by the codec's own decompressed-bytes cap, not by this limit.
      *
      * @param maxInboundMessageSize the maximum inbound message size in bytes. {@code 0} disables the limit;
      * {@code -1} enables warn-only mode (a rate-limited warning is logged instead of rejecting); any other positive

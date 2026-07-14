@@ -15,20 +15,13 @@
  */
 package io.servicetalk.grpc.api;
 
-import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.encoding.api.BufferDecoder;
-import io.servicetalk.serializer.api.Deserializer;
 import io.servicetalk.serializer.api.MaxMessageSizeExceededException;
-import io.servicetalk.serializer.api.StreamingDeserializer;
 
 import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.grpc.api.GrpcMessageSizeLimiter.NONE;
 import static io.servicetalk.grpc.api.GrpcMessageSizeLimiter.forMaxInboundMessageSize;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -64,58 +57,5 @@ class GrpcMessageSizeLimiterTest {
     void belowWarnOnlyIsRejected() {
         assertThrows(IllegalArgumentException.class, () -> forMaxInboundMessageSize(-2));
         assertThrows(IllegalArgumentException.class, () -> forMaxInboundMessageSize(Integer.MIN_VALUE));
-    }
-
-    @Test
-    void enforcingCapsDecoderAtLimit() {
-        final AtomicInteger requested = new AtomicInteger(-1);
-        final BufferDecoder recapped = new RecordingDecoder(requested);
-        final BufferDecoder decoder = new RecordingDecoder(requested) {
-            @Override
-            public BufferDecoder withMaxDecompressedBytes(final int maxDecompressedBytes) {
-                requested.set(maxDecompressedBytes);
-                return recapped;
-            }
-        };
-        assertThat(forMaxInboundMessageSize(10).capDecoder(decoder), sameInstance(recapped));
-        assertThat(requested.get(), equalTo(10));
-    }
-
-    @Test
-    void disabledAndWarnOnlyDoNotCapDecoder() {
-        final AtomicInteger requested = new AtomicInteger(-1);
-        final BufferDecoder decoder = new RecordingDecoder(requested);
-        assertThat(NONE.capDecoder(decoder), sameInstance(decoder));
-        assertThat(forMaxInboundMessageSize(-1).capDecoder(decoder), sameInstance(decoder));
-        assertThat(requested.get(), equalTo(-1));
-    }
-
-    private static class RecordingDecoder implements BufferDecoder {
-        private final AtomicInteger requested;
-
-        RecordingDecoder(final AtomicInteger requested) {
-            this.requested = requested;
-        }
-
-        @Override
-        public Deserializer<Buffer> decoder() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public StreamingDeserializer<Buffer> streamingDecoder() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public CharSequence encodingName() {
-            return "recording";
-        }
-
-        @Override
-        public BufferDecoder withMaxDecompressedBytes(final int maxDecompressedBytes) {
-            requested.set(maxDecompressedBytes);
-            return this;
-        }
     }
 }

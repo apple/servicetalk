@@ -15,7 +15,6 @@
  */
 package io.servicetalk.grpc.api;
 
-import io.servicetalk.encoding.api.BufferDecoder;
 import io.servicetalk.serializer.api.MaxMessageSizeExceededException;
 
 import org.slf4j.Logger;
@@ -33,11 +32,10 @@ import static java.util.concurrent.TimeUnit.MINUTES;
  * and shared across all of its deframers, so the warn-only throttle state below is naturally scoped per client/server.
  * <p>
  * The deframer invokes {@link #accept(long)} with the declared message length (read from the gRPC frame's length
- * prefix) before any bytes are buffered toward that length. Enforcing mode rejects oversized messages with a
- * {@link MaxMessageSizeExceededException}, which the gRPC error mapping surfaces as
- * {@link GrpcStatusCode#RESOURCE_EXHAUSTED} (matching grpc-java). For compressed messages the wire length only bounds
- * the compressed frame, so enforcing mode additionally re-caps the decompressor via {@link #capDecoder(BufferDecoder)}
- * so an oversized payload is rejected mid-inflate rather than fully buffered.
+ * prefix) before any bytes are buffered toward that length, and again with the decoded length of a compressed message.
+ * Enforcing mode rejects oversized messages with a {@link MaxMessageSizeExceededException}, which the gRPC error
+ * mapping surfaces as {@link GrpcStatusCode#RESOURCE_EXHAUSTED} (matching grpc-java). Decompression memory itself is
+ * bounded separately by the codec's own decompressed-bytes cap, independent of this limit.
  */
 final class GrpcMessageSizeLimiter {
 
@@ -45,7 +43,7 @@ final class GrpcMessageSizeLimiter {
     private static final long WARN_INTERVAL_NANOS = MINUTES.toNanos(5);
 
     /**
-     * A no-op limiter that never rejects or warns and never caps a decoder, regardless of message size.
+     * A no-op limiter that never rejects or warns, regardless of message size.
      */
     static final GrpcMessageSizeLimiter NONE = new GrpcMessageSizeLimiter(Mode.DISABLED, 0);
 
@@ -116,19 +114,6 @@ final class GrpcMessageSizeLimiter {
                     " exceeds maximum inbound message size=" + maxMessageSize);
         }
         maybeWarn(messageSize);
-    }
-
-    /**
-     * When enforcing, return a decoder whose decompression is bounded at the inbound message-size limit so an oversized
-     * compressed payload is rejected mid-inflate (matching grpc-java) rather than fully buffered before the post-decode
-     * check. In warn-only/disabled modes the decoder is returned unchanged: the codec keeps its own decompression cap
-     * and the post-decode {@link #accept(long)} in the deframer emits the warn-only diagnostic.
-     *
-     * @param decoder the decoder negotiated for an inbound message
-     * @return a decoder bounded at the limit when enforcing, otherwise {@code decoder} unchanged
-     */
-    BufferDecoder capDecoder(final BufferDecoder decoder) {
-        return mode == Mode.ENFORCING ? decoder.withMaxDecompressedBytes(maxMessageSize) : decoder;
     }
 
     private static int warnOnlyThreshold() {

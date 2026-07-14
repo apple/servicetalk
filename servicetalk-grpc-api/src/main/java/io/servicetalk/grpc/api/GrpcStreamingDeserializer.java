@@ -50,9 +50,8 @@ final class GrpcStreamingDeserializer<T> implements StreamingDeserializer<T> {
                               final BufferDecoder compressor,
                               final GrpcMessageSizeLimiter sizeLimiter) {
         this.serializer = requireNonNull(serializer);
+        this.compressor = requireNonNull(compressor);
         this.sizeLimiter = requireNonNull(sizeLimiter);
-        // When enforcing, bound the decompressor at the limit so an oversized compressed frame aborts mid-inflate.
-        this.compressor = sizeLimiter.capDecoder(requireNonNull(compressor));
     }
 
     @Nullable
@@ -97,9 +96,8 @@ final class GrpcStreamingDeserializer<T> implements StreamingDeserializer<T> {
             if (compressed) {
                 assert compressor != null;
                 final Buffer decompressed = compressor.decoder().deserialize(result, allocator);
-                // The wire-length check above only bounds the compressed frame, so a small frame can inflate past the
-                // limit. A compressor should have already aborted mid-inflate before reaching here but if it was a
-                // custom compressor that doesn't support a limit we check just in case.
+                // The wire-length check above only bounds the compressed frame; reject a decoded message that exceeds
+                // the limit. Decompression memory is bounded separately by the codec's own decompressed-bytes cap.
                 sizeLimiter.accept(decompressed.readableBytes());
                 return decompressed;
             }

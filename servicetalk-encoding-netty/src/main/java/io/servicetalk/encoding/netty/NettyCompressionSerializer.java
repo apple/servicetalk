@@ -18,7 +18,6 @@ package io.servicetalk.encoding.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.encoding.api.BufferEncodingException;
-import io.servicetalk.serializer.api.MaxMessageSizeExceededException;
 import io.servicetalk.serializer.api.SerializerDeserializer;
 
 import io.netty.buffer.ByteBuf;
@@ -79,24 +78,6 @@ final class NettyCompressionSerializer implements SerializerDeserializer<Buffer>
         return buffer;
     }
 
-    /**
-     * Returns a serializer equivalent to this one but whose decompression is bounded by the more restrictive of the
-     * requested and existing caps. A cap of {@code 0} means "unbounded", so it is treated as the least restrictive.
-     * Returns {@code this} when the effective cap is unchanged.
-     */
-    NettyCompressionSerializer withMaxDecompressedBytes(final long maxDecompressedBytes) {
-        final long effective;
-        if (this.maxDecompressedBytes == 0) {
-            effective = maxDecompressedBytes;
-        } else if (maxDecompressedBytes <= 0) {
-            effective = this.maxDecompressedBytes;
-        } else {
-            effective = Math.min(this.maxDecompressedBytes, maxDecompressedBytes);
-        }
-        return effective == this.maxDecompressedBytes ? this :
-                new NettyCompressionSerializer(encoderSupplier, decoderSupplier, effective);
-    }
-
     @Override
     public Buffer deserialize(final Buffer serializedData, final BufferAllocator allocator) {
         final Buffer buffer = allocator.newBuffer(serializedData.readableBytes());
@@ -116,11 +97,6 @@ final class NettyCompressionSerializer implements SerializerDeserializer<Buffer>
             // stream; releaseOnError tolerates that state (unlike safeCleanup, which would surface
             // an AssertionError under -ea and mask the real cause).
             releaseOnError(channel);
-            // A decompressed-size cap overflow is a MaxMessageSizeExceededException (a SerializationException, not a
-            // BufferEncodingException); propagate it as-is so transports can map it to a "too large" status.
-            if (e instanceof MaxMessageSizeExceededException) {
-                throw (MaxMessageSizeExceededException) e;
-            }
             if (e instanceof BufferEncodingException) {
                 throw (BufferEncodingException) e;
             }
@@ -174,7 +150,7 @@ final class NettyCompressionSerializer implements SerializerDeserializer<Buffer>
         return new DecompressedByteLimitHandler(maxDecompressedBytes) {
             @Override
             protected RuntimeException newException(final long maxBytes) {
-                return new MaxMessageSizeExceededException(
+                return new BufferEncodingException(
                         "Decompressed payload exceeded maxDecompressedBytes=" + maxBytes);
             }
         };

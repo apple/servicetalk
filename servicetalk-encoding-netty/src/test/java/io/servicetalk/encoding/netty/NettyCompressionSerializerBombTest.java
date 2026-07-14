@@ -18,7 +18,6 @@ package io.servicetalk.encoding.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.encoding.api.BufferEncodingException;
-import io.servicetalk.serializer.api.MaxMessageSizeExceededException;
 import io.servicetalk.serializer.api.SerializerDeserializer;
 import io.servicetalk.serializer.api.StreamingSerializerDeserializer;
 
@@ -112,7 +111,7 @@ class NettyCompressionSerializerBombTest {
                 .build();
         final Buffer src = DEFAULT_ALLOCATOR.wrap(compressed);
 
-        final MaxMessageSizeExceededException ex = assertThrows(MaxMessageSizeExceededException.class,
+        final BufferEncodingException ex = assertThrows(BufferEncodingException.class,
                 () -> serializer.deserialize(src, DEFAULT_ALLOCATOR));
         assertThat(rootMessage(ex), containsString("exceeded"));
     }
@@ -173,7 +172,7 @@ class NettyCompressionSerializerBombTest {
                 .build();
         final Buffer src = DEFAULT_ALLOCATOR.wrap(compressed);
 
-        final MaxMessageSizeExceededException ex = assertThrows(MaxMessageSizeExceededException.class,
+        final BufferEncodingException ex = assertThrows(BufferEncodingException.class,
                 () -> serializer.deserialize(src, DEFAULT_ALLOCATOR));
         assertThat(rootMessage(ex), containsString("exceeded"));
     }
@@ -200,7 +199,7 @@ class NettyCompressionSerializerBombTest {
                 capBytes);
         final Buffer src = DEFAULT_ALLOCATOR.wrap(compressed);
 
-        final MaxMessageSizeExceededException ex = assertThrows(MaxMessageSizeExceededException.class,
+        final BufferEncodingException ex = assertThrows(BufferEncodingException.class,
                 () -> serializer.deserialize(src, DEFAULT_ALLOCATOR));
         assertThat(rootMessage(ex), containsString("exceeded"));
     }
@@ -323,7 +322,7 @@ class NettyCompressionSerializerBombTest {
                 .maxChunkSize(TEST_MAX_CHUNK_SIZE)
                 .build();
 
-        final MaxMessageSizeExceededException ex = assertThrows(MaxMessageSizeExceededException.class,
+        final BufferEncodingException ex = assertThrows(BufferEncodingException.class,
                 () -> serializer.deserialize(DEFAULT_ALLOCATOR.wrap(compressed), DEFAULT_ALLOCATOR));
         assertThat(rootMessage(ex), containsString("exceeded"));
     }
