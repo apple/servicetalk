@@ -18,6 +18,7 @@ package io.servicetalk.dns.discovery.netty;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
@@ -87,11 +88,13 @@ import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.RepeatStrategies.repeatWithConstantBackoffDeltaJitter;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionNormalReturn;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrace;
 import static io.servicetalk.dns.discovery.netty.DnsClients.mapEventList;
@@ -280,7 +283,7 @@ final class DefaultDnsClient implements DnsClient {
         requireNonNull(address);
         return defer(() -> {
             final DnsDiscoveryObserver discoveryObserver = newDiscoveryObserver(address);
-            ARecordPublisher pub = new ARecordPublisher(address, discoveryObserver);
+            ARecordPublisher pub = new ARecordPublisher(address, discoveryObserver, false);
             Publisher<? extends Collection<ServiceDiscovererEvent<InetAddress>>> events =
                     recoverWithInactiveEvents(pub, false, nxInvalidation);
             return observeDiscovery(discoveryObserver, events);
@@ -305,39 +308,34 @@ final class DefaultDnsClient implements DnsClient {
                 .flatMapMerge(srvEvent -> {
                 assertInEventloop();
                 if (AVAILABLE.equals(srvEvent.status())) {
-                    return defer(() -> {
-                        final ARecordPublisher aPublisher =
-                                new ARecordPublisher(srvEvent.address().hostName(), discoveryObserver);
-                        final ARecordPublisher prevAPublisher = aRecordMap.putIfAbsent(srvEvent.address().hostName(),
-                                aPublisher);
-                        if (prevAPublisher != null) {
-                            return newDuplicateSrv(serviceName, srvEvent.address().hostName());
-                        }
-
-                        // NXDOMAIN = invalidation for A queries part of SRV lookups for backwards compatibility.
-                        // This is a behavior difference between plain A lookups and SRV rooted A lookups.
-                        Publisher<? extends Collection<ServiceDiscovererEvent<InetAddress>>> returnPub =
-                                recoverWithInactiveEvents(aPublisher, false, true);
-                        return srvFilterDuplicateEvents ?
-                                srvFilterDups(returnPub, availableAddresses, srvEvent.address().port()) :
-                                returnPub.map(ev -> mapEventList(ev, inetAddress ->
-                                        new InetSocketAddress(inetAddress, srvEvent.address().port())));
-                    }).retryWhen(false, (i, cause) -> {
-                        assertInEventloop();
-                        // If this error is because the SRV entry was detected as inactive, then propagate the error and
-                        // don't retry. Otherwise this is a resolution exception (e.g. UnknownHostException), and retry.
-                        return cause.getClass().equals(SrvAddressRemovedException.class) ||
-                                aRecordMap.remove(srvEvent.address().hostName()) == null ?
-                                Completable.failed(cause) : srvHostNameRepeater.apply(i);
-                    }).onErrorComplete(); // retryWhen will propagate onError, but we don't want this.
+                    final String srvHostName = srvEvent.address().hostName();
+                    // Registered up front and serving this target for its whole lifetime, so a concurrent SRV
+                    // removal always finds it (even mid-backoff) and the target cannot be resurrected.
+                    final ARecordPublisher aPublisher = new ARecordPublisher(srvHostName, discoveryObserver, true);
+                    if (aRecordMap.putIfAbsent(srvHostName, aPublisher) != null) {
+                        return newDuplicateSrv(serviceName, srvHostName);
+                    }
+                    // NXDOMAIN = invalidation for A queries part of SRV lookups for backwards compatibility.
+                    // This is a behavior difference between plain A lookups and SRV rooted A lookups.
+                    final Publisher<? extends Collection<ServiceDiscovererEvent<InetAddress>>> returnPub =
+                            recoverWithInactiveEvents(aPublisher, false, true);
+                    // Drop our own entry (key+value) on termination so a re-added host's publisher isn't clobbered.
+                    return (srvFilterDuplicateEvents ?
+                            srvFilterDups(returnPub, availableAddresses, srvEvent.address().port()) :
+                            returnPub.map(ev -> mapEventList(ev, inetAddress ->
+                                    new InetSocketAddress(inetAddress, srvEvent.address().port()))))
+                            .beforeFinally(() -> aRecordMap.remove(srvHostName, aPublisher))
+                            .onErrorComplete(); // an SRV removal cancels the A publisher; don't fail the SRV stream.
                 } else if (srvEvent instanceof SrvInactiveEvent) {
                     // Unwrap the list so we can use it in SrvInactiveCombinerOperator below.
                     return from(((SrvInactiveEvent<HostAndPort, InetSocketAddress>) srvEvent).aggregatedEvents);
                 } else {
                     final String srvHostName = srvEvent.address().hostName();
-                    final ARecordPublisher aPublisher = aRecordMap.remove(srvHostName);
                     ttlCache.clearMinTtl(srvHostName);
+                    final ARecordPublisher aPublisher = aRecordMap.remove(srvHostName);
                     if (aPublisher != null) {
+                        // Cancel the A publisher (resolving, mid-backoff, or not yet subscribed) so
+                        // recoverWithInactiveEvents retracts its last-known addresses and it terminates.
                         aPublisher.cancelAndFail0(
                                 SrvAddressRemovedException.newInstance(DefaultDnsClient.class, "dnsSrvQuery"));
                     }
@@ -387,7 +385,7 @@ final class DefaultDnsClient implements DnsClient {
 
     private final class SrvRecordPublisher extends AbstractDnsPublisher<HostAndPort> {
         private SrvRecordPublisher(final String serviceName, final DnsDiscoveryObserver discoveryObserver) {
-            super(serviceName, discoveryObserver);
+            super(serviceName, discoveryObserver, false);
         }
 
         @Override
@@ -473,8 +471,9 @@ final class DefaultDnsClient implements DnsClient {
     }
 
     private class ARecordPublisher extends AbstractDnsPublisher<InetAddress> {
-        ARecordPublisher(final String inetHost, final DnsDiscoveryObserver discoveryObserver) {
-            super(inetHost, discoveryObserver);
+        ARecordPublisher(final String inetHost, final DnsDiscoveryObserver discoveryObserver,
+                         final boolean retryResolveFailures) {
+            super(inetHost, discoveryObserver, retryResolveFailures);
         }
 
         @Override
@@ -596,12 +595,19 @@ final class DefaultDnsClient implements DnsClient {
          * A {@link DnsDiscoveryObserver} for this publisher that provides visibility into individual DNS resolutions.
          */
         protected final DnsDiscoveryObserver discoveryObserver;
+        /**
+         * When {@code true} (SRV-rooted A lookups), a resolution failure is retried with backoff on the same
+         * subscription, preserving the last-known addresses across attempts, rather than terminating.
+         */
+        private final boolean retryResolveFailures;
         @Nullable
         AbstractDnsSubscription subscription;
 
-        AbstractDnsPublisher(final String name, final DnsDiscoveryObserver discoveryObserver) {
+        AbstractDnsPublisher(final String name, final DnsDiscoveryObserver discoveryObserver,
+                             final boolean retryResolveFailures) {
             this.name = name;
             this.discoveryObserver = discoveryObserver;
+            this.retryResolveFailures = retryResolveFailures;
             LOGGER.debug("{} initializing a new publisher for {}.", DefaultDnsClient.this, this);
         }
 
@@ -659,6 +665,7 @@ final class DefaultDnsClient implements DnsClient {
             @Nullable
             private Cancellable cancellableForQuery;
             private long ttlNanos;
+            private int resolveFailures;
 
             AbstractDnsSubscription(final Subscriber<? super List<ServiceDiscovererEvent<T>>> subscriber) {
                 this.subscriber = subscriber;
@@ -800,6 +807,28 @@ final class DefaultDnsClient implements DnsClient {
                 cancellableForQuery = nettyIoExecutor.schedule(this::executeScheduledQuery0, delay, NANOSECONDS);
             }
 
+            private void scheduleResolveRetry0() {
+                assertInEventloop();
+                // Track the backoff timer as cancellableForQuery so a cancel/removal during backoff aborts the retry.
+                toSource(srvHostNameRepeater.apply(++resolveFailures)).subscribe(new CompletableSource.Subscriber() {
+                    @Override
+                    public void onSubscribe(final Cancellable cancellable) {
+                        assertInEventloop();
+                        cancellableForQuery = cancellable;
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        executeScheduledQuery0();
+                    }
+
+                    @Override
+                    public void onError(final Throwable t) {
+                        cancelAndTerminate0(t);
+                    }
+                });
+            }
+
             private void handleResolveDone0(final Future<DnsAnswer<T>> addressFuture,
                                             final DnsResolutionObserver resolutionObserver) {
                 assertInEventloop();
@@ -810,8 +839,33 @@ final class DefaultDnsClient implements DnsClient {
                 final Throwable cause = addressFuture.cause();
                 if (cause != null) {
                     resolutionObserver.resolutionFailed(cause);
-                    cancelAndTerminate0(cause);
+                    if (!retryResolveFailures || closed) {
+                        cancelAndTerminate0(cause);
+                        return;
+                    }
+                    // Retry with backoff on this subscription (not terminate) so the last-known addresses survive
+                    // across attempts: no flapping on transient failures, still retractable on removal. NXDOMAIN
+                    // invalidates them first (SRV-rooted A lookups always treat NXDOMAIN as invalidation); other
+                    // failures keep them.
+                    final List<ServiceDiscovererEvent<T>> inactive =
+                            shouldRevokeState(cause, true) ? generateInactiveEvent() : emptyList();
+                    if (!inactive.isEmpty()) {
+                        try {
+                            subscriber.onNext(inactive);
+                        } catch (final Throwable error) {
+                            // Rule 2.13: a throwing subscriber is a revoking terminal (see shouldRevokeState).
+                            handleTerminalError0(newExceptionNormalReturn(error));
+                            return;
+                        }
+                        if (--pendingRequests == 0) {
+                            // No demand for a retry now; request0 resumes it when demand arrives.
+                            cancellableForQuery = null;
+                            return;
+                        }
+                    }
+                    scheduleResolveRetry0();
                 } else {
+                    resolveFailures = 0;
                     // DNS lookup can return duplicate InetAddress
                     final DnsAnswer<T> dnsAnswer = addressFuture.getNow();
                     final List<T> addresses = dnsAnswer.answer();
@@ -851,7 +905,9 @@ final class DefaultDnsClient implements DnsClient {
 
                             subscriber.onNext(events);
                         } catch (final Throwable error) {
-                            handleTerminalError0(error);
+                            // Rule 2.13: on the SRV-rooted A path a throwing subscriber is a revoking terminal (see
+                            // shouldRevokeState) so its addresses are retracted.
+                            handleTerminalError0(retryResolveFailures ? newExceptionNormalReturn(error) : error);
                         }
                     } else {
                         LOGGER.trace("{} resolution is complete but no changes detected for {} based on result " +
