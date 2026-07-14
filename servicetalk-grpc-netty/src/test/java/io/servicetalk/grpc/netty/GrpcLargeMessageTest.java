@@ -64,13 +64,8 @@ class GrpcLargeMessageTest {
         }
     }
 
-    // Regression test for a JVM-wide serializer-cache collision in DefaultGrpcClientCallFactory. The static
-    // serializerMap (and streamingSerializerMap) was keyed only by the request BufferEncoder, but the cached
-    // GrpcSerializer embeds a message-type-specific request serializer. So the first client to send a compressed
-    // request with a given codec won the cache entry for that codec across the whole JVM, and any other client
-    // reusing the same codec for a different message type then got a wrong-typed serializer and threw
-    // ClassCastException. Two unrelated services (Greeter/HelloRequest and Tester/TestRequest) share the gzip
-    // request compressor here; both compressed round-trips must succeed.
+    // The compressed request serializer is message-type-specific, so two clients sharing the same request compressor
+    // for different message types must each get their own serializer rather than a shared one keyed only by codec.
     @Test
     void twoClientsSharingRequestCompressorForDifferentMessageTypes() throws Exception {
         try (GrpcServerContext greeterServer = forAddress(localAddress(0)).listenAndAwait(
