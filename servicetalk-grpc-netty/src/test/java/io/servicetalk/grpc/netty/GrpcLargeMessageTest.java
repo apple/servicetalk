@@ -291,6 +291,37 @@ class GrpcLargeMessageTest {
         }
     }
 
+    // The compressed request serializer is message-type-specific, so two clients sharing the same request compressor
+    // for different message types must each get their own serializer rather than a shared one keyed only by codec.
+    @Test
+    void twoClientsSharingRequestCompressorForDifferentMessageTypes() throws Exception {
+        try (GrpcServerContext greeterServer = forAddress(localAddress(0)).listenAndAwait(
+                     new Greeter.ServiceFactory.Builder()
+                             .bufferDecoderGroup(new BufferDecoderGroupBuilder().add(gzipDefault()).build())
+                             .sayHelloBlocking((ctx, request) ->
+                                     HelloReply.newBuilder().setMessage(request.getName()).build())
+                             .build());
+             BlockingGreeterClient greeterClient = forAddress(serverHostAndPort(greeterServer))
+                     .buildBlocking(new ClientFactory());
+             GrpcServerContext testerServer = forAddress(localAddress(0)).listenAndAwait(
+                     new TesterProto.Tester.ServiceFactory.Builder()
+                             .bufferDecoderGroup(new BufferDecoderGroupBuilder().add(gzipDefault()).build())
+                             .testBlocking((ctx, request) ->
+                                     TesterProto.TestResponse.newBuilder().setMessage(request.getName()).build())
+                             .build());
+             TesterProto.Tester.BlockingTesterClient testerClient = forAddress(serverHostAndPort(testerServer))
+                     .buildBlocking(new TesterProto.Tester.ClientFactory())) {
+
+            HelloReply reply = greeterClient.sayHello(new DefaultGrpcClientMetadata(gzipDefault()),
+                    HelloRequest.newBuilder().setName("hello").build());
+            assertThat(reply.getMessage(), equalTo("hello"));
+
+            TesterProto.TestResponse response = testerClient.test(new DefaultGrpcClientMetadata(gzipDefault()),
+                    TesterProto.TestRequest.newBuilder().setName("world").build());
+            assertThat(response.getMessage(), equalTo("world"));
+        }
+    }
+
     @Test
     @SuppressWarnings("deprecation")
     void deprecatedSerializationProviderPathEnforcesMaxInboundMessageSize() throws Exception {

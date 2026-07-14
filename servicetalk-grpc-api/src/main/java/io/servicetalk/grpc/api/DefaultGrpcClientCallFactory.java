@@ -37,8 +37,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
@@ -58,9 +56,6 @@ import static java.util.Objects.requireNonNull;
 
 final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
     private static final String UNKNOWN_PATH = "";
-    private static final Map<BufferEncoder, GrpcSerializer<?>> serializerMap = new ConcurrentHashMap<>(2);
-    private static final Map<BufferEncoder, GrpcStreamingSerializer<?>> streamingSerializerMap =
-            new ConcurrentHashMap<>(2);
     private final StreamingHttpClient streamingHttpClient;
     private final GrpcExecutionContext executionContext;
     @Nullable
@@ -453,25 +448,21 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                 methodDescriptor.requestDescriptor().serializerDescriptor().serializer());
     }
 
-    @SuppressWarnings("unchecked")
     private static <Req> GrpcSerializer<Req> serializer(
             MethodDescriptor<Req, ?> methodDescriptor, GrpcSerializer<Req> serializerIdentity,
             @Nullable BufferEncoder compressor) {
-        return compressor == null || compressor == identityEncoder() ? serializerIdentity :
-                (GrpcSerializer<Req>) serializerMap.computeIfAbsent(compressor, key -> new GrpcSerializer<>(
-                        methodDescriptor.requestDescriptor().serializerDescriptor().bytesEstimator(),
-                        methodDescriptor.requestDescriptor().serializerDescriptor().serializer(), key));
+        return compressor == null || compressor == identityEncoder() ? serializerIdentity : new GrpcSerializer<>(
+                methodDescriptor.requestDescriptor().serializerDescriptor().bytesEstimator(),
+                methodDescriptor.requestDescriptor().serializerDescriptor().serializer(), compressor);
     }
 
-    @SuppressWarnings("unchecked")
     private static <Req> GrpcStreamingSerializer<Req> streamingSerializer(
             MethodDescriptor<Req, ?> methodDescriptor, GrpcStreamingSerializer<Req> serializerIdentity,
             @Nullable BufferEncoder compressor) {
         return compressor == null || compressor == identityEncoder() ? serializerIdentity :
-                (GrpcStreamingSerializer<Req>) streamingSerializerMap.computeIfAbsent(compressor, key ->
-                        new GrpcStreamingSerializer<>(
-                                methodDescriptor.requestDescriptor().serializerDescriptor().bytesEstimator(),
-                                methodDescriptor.requestDescriptor().serializerDescriptor().serializer(), key));
+                new GrpcStreamingSerializer<>(
+                        methodDescriptor.requestDescriptor().serializerDescriptor().bytesEstimator(),
+                        methodDescriptor.requestDescriptor().serializerDescriptor().serializer(), compressor);
     }
 
     private <Resp> GrpcDeserializer<Resp> deserializer(MethodDescriptor<?, Resp> methodDescriptor) {
