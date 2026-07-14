@@ -30,7 +30,6 @@ import io.grpc.examples.helloworld.Greeter.BlockingGreeterService;
 import io.grpc.examples.helloworld.Greeter.ClientFactory;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -249,10 +248,6 @@ class GrpcLargeMessageTest {
         }
     }
 
-    // Disabled: client-side request compression trips a pre-existing JVM-wide serializer-cache collision in
-    // DefaultGrpcClientCallFactory (its static serializerMap is keyed only by the BufferEncoder, so compressing a
-    // HelloRequest with gzip poisons the shared cache for other message types). Re-enable once fixed in a follow-up PR.
-    @Disabled("Pre-existing serializer-cache collision in DefaultGrpcClientCallFactory; to be fixed in a follow-up PR")
     @Test
     void serverRejectsCompressedRequestDecompressingAboveLimit() throws Exception {
         // Small on the wire (highly compressible) but large once the server decompresses it: exercises the
@@ -275,10 +270,6 @@ class GrpcLargeMessageTest {
         }
     }
 
-    // Disabled: client-side request compression trips a pre-existing JVM-wide serializer-cache collision in
-    // DefaultGrpcClientCallFactory (its static serializerMap is keyed only by the BufferEncoder, so compressing a
-    // HelloRequest with gzip poisons the shared cache for other message types). Re-enable once fixed in a follow-up PR.
-    @Disabled("Pre-existing serializer-cache collision in DefaultGrpcClientCallFactory; to be fixed in a follow-up PR")
     @Test
     void compressedRequestWithinMaxInboundMessageSizeRoundTrips() throws Exception {
         // A compressed request that decompresses to under the limit must round-trip, so the limit does not falsely
