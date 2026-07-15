@@ -256,8 +256,6 @@ final class DefaultDnsClient implements DnsClient {
 
     private static <T> Publisher<T> observeDiscovery(final DnsDiscoveryObserver discoveryObserver,
                                                      final Publisher<T> events) {
-        // If the observer is noop there is nothing to report, so avoid wrapping with a beforeFinally that would only
-        // deliver events to nowhere.
         return discoveryObserver == NoopDnsDiscoveryObserver.INSTANCE ? events :
                 events.beforeFinally(new TerminalSignalConsumer() {
                     @Override

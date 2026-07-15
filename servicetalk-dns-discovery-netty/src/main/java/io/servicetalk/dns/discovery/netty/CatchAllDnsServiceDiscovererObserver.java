@@ -120,7 +120,7 @@ final class CatchAllDnsServiceDiscovererObserver implements DnsServiceDiscoverer
 
         @Override
         public void resolutionCompleted(final ResolutionResult result) {
-            safeReport(() -> observer.resolutionCompleted(result), observer, "resolution completed",
+            safeReportResult(() -> observer.resolutionCompleted(result), observer, "resolution completed",
                     serviceDiscovererId, resolutionName, result);
         }
     }
@@ -131,8 +131,8 @@ final class CatchAllDnsServiceDiscovererObserver implements DnsServiceDiscoverer
         try {
             return catchAllWrapper.apply(requireNonNull(supplier.get()));
         } catch (Throwable unexpected) {
-            LOGGER.warn("Unexpected exception from {} while reporting a {} event{}",
-                    observer, eventName, idName(serviceDiscovererId, targetName), unexpected);
+            LOGGER.warn("{}: Unexpected exception from {} while reporting a {} event",
+                    idName(serviceDiscovererId, targetName), observer, eventName, unexpected);
             return defaultValue;
         }
     }
@@ -142,8 +142,8 @@ final class CatchAllDnsServiceDiscovererObserver implements DnsServiceDiscoverer
         try {
             runnable.run();
         } catch (Throwable unexpected) {
-            LOGGER.warn("Unexpected exception from {} while reporting a {} event{}",
-                    observer, eventName, idName(serviceDiscovererId, targetName), unexpected);
+            LOGGER.warn("{}: Unexpected exception from {} while reporting a {} event",
+                    idName(serviceDiscovererId, targetName), observer, eventName, unexpected);
         }
     }
 
@@ -154,24 +154,24 @@ final class CatchAllDnsServiceDiscovererObserver implements DnsServiceDiscoverer
             runnable.run();
         } catch (Throwable unexpected) {
             addSuppressed(unexpected, original);
-            LOGGER.warn("Unexpected exception from {} while reporting a {} event{}",
-                    observer, eventName, idName(serviceDiscovererId, targetName), unexpected);
+            LOGGER.warn("{}: Unexpected exception from {} while reporting a {} event",
+                    idName(serviceDiscovererId, targetName), observer, eventName, unexpected);
         }
     }
 
-    private static void safeReport(final Runnable runnable, final Object observer, final String eventName,
-                                   @Nullable final String serviceDiscovererId, final String targetName,
-                                   final Object result) {
+    private static void safeReportResult(final Runnable runnable, final Object observer, final String eventName,
+                                         @Nullable final String serviceDiscovererId, final String targetName,
+                                         final Object result) {
         try {
             runnable.run();
         } catch (Throwable unexpected) {
-            LOGGER.warn("Unexpected exception from {} while reporting a {} event{}: {}",
-                    observer, eventName, idName(serviceDiscovererId, targetName), result, unexpected);
+            LOGGER.warn("{}: Unexpected exception from {} while reporting a {} event: {}",
+                    idName(serviceDiscovererId, targetName), observer, eventName, result, unexpected);
         }
     }
 
     private static String idName(@Nullable final String serviceDiscovererId, final String targetName) {
-        return serviceDiscovererId == null ? " (" + targetName + ')' :
-                " (" + serviceDiscovererId + ' ' + targetName + ')';
+        return serviceDiscovererId == null ? '(' + targetName + ')' :
+                '(' + serviceDiscovererId + ' ' + targetName + ')';
     }
 }
