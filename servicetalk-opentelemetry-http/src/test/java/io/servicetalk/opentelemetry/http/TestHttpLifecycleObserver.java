@@ -25,6 +25,8 @@ import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 
 import java.util.Queue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 final class TestHttpLifecycleObserver implements HttpLifecycleObserver {
@@ -49,6 +51,7 @@ final class TestHttpLifecycleObserver implements HttpLifecycleObserver {
     static final AttributeKey<String> ON_RESPONSE_BODY_CANCEL_KEY = AttributeKey.stringKey("onResponseBodyCancel");
 
     private final Queue<Error> errorQueue;
+    private final CountDownLatch exchangeFinallyLatch = new CountDownLatch(1);
 
     // Protected by synchronization
     @Nullable
@@ -138,8 +141,13 @@ final class TestHttpLifecycleObserver implements HttpLifecycleObserver {
             @Override
             public void onExchangeFinally() {
                 setKey(ON_EXCHANGE_FINALLY_KEY);
+                exchangeFinallyLatch.countDown();
             }
         };
+    }
+
+    boolean awaitExchangeFinally(long timeout, TimeUnit unit) throws InterruptedException {
+        return exchangeFinallyLatch.await(timeout, unit);
     }
 
     private void setKey(AttributeKey<String> key) {

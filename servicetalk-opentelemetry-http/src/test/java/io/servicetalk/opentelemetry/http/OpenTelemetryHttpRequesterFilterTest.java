@@ -84,6 +84,7 @@ import static io.servicetalk.opentelemetry.http.TestUtils.clientBuilder;
 import static io.servicetalk.opentelemetry.http.TestUtils.sleep;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Collections.singletonList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -326,6 +327,7 @@ class OpenTelemetryHttpRequesterFilterTest {
         final boolean transportFailure = resultType == ResultType.TRANSPORT_ERROR;
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         BlockingQueue<Error> errors = new LinkedBlockingQueue<>();
+        TestHttpLifecycleObserver lifecycleObserver = new TestHttpLifecycleObserver(errors);
         TransportObserver transportObserver = new TransportObserver() {
 
             final AtomicReference<Span> span = new AtomicReference<>();
@@ -418,7 +420,7 @@ class OpenTelemetryHttpRequesterFilterTest {
                         .build())
                 .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX))
                 .appendClientFilter(new HttpLifecycleObserverRequesterFilter(
-                        new TestHttpLifecycleObserver(errors)))
+                        lifecycleObserver))
                 .appendConnectionFactoryFilter(
                         new TransportObserverConnectionFactoryFilter<>(transportObserver)).build()) {
            // This is necessary to let the load balancer become ready
@@ -461,13 +463,13 @@ class OpenTelemetryHttpRequesterFilterTest {
                     Future<HttpResponse> result = client.request(client.get("/slow")).toFuture();
                     TestUtils.sleep(20);
                     result.cancel(true);
+                    assertTrue(lifecycleObserver.awaitExchangeFinally(10, SECONDS));
                     sleep();
                     otelTesting.assertTraces().hasTracesSatisfyingExactly(ta ->
                             ta.hasSpansSatisfyingExactly(span -> {
                                 span.hasAttribute(TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY, "set");
                                 span.hasAttribute(TestHttpLifecycleObserver.ON_REQUEST_KEY, "set");
                                 span.hasAttribute(TestHttpLifecycleObserver.ON_RESPONSE_CANCEL_KEY, "set");
-                                span.hasAttribute(TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY, "set");
                             }));
                     break;
                 case TRANSPORT_ERROR:
