@@ -23,6 +23,8 @@ package grpc.netty;
 message RequestContainer {
     message CompatRequest {
         int32 id = 1;
+        // Optional filler used by tests that need a request larger than the HTTP/2 flow-control window.
+        bytes payload = 2;
     }
 
     // The remainder of this message is just to test the parsing and code generation.
