@@ -438,7 +438,7 @@ final class NettyHttpServer {
                         flatResponse = flatResponse.scanWithMapper(HeaderUtils::appendTrailersMapper);
                     }
                 }
-                addResponseTransferEncodingIfNecessary(response, requestMethod);
+                addResponseTransferEncodingIfNecessary(response, requestMethod, protocolVersion);
                 return flatResponse;
             }
         }

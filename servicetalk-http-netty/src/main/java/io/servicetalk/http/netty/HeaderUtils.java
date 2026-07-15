@@ -373,23 +373,40 @@ final class HeaderUtils {
     }
 
     static void addResponseTransferEncodingIfNecessary(final StreamingHttpResponse response,
-                                                       final HttpRequestMethod requestMethod) {
+                                                       final HttpRequestMethod requestMethod,
+                                                       final HttpProtocolVersion protocolVersion) {
         // We can only add TE: chunked if we can actually send a payload.
         if (serverMaySendPayloadBodyFor(response.status().code(), requestMethod) &&
-                canAddTransferEncodingChunked(response)) {
+                canAddTransferEncodingChunked(response, encodedVersion(response.version(), protocolVersion))) {
             response.headers().add(TRANSFER_ENCODING, CHUNKED);
         }
     }
 
-    static void addRequestTransferEncodingIfNecessary(final StreamingHttpRequest request) {
-        if (clientMaySendPayloadBodyFor(request.method()) && canAddTransferEncodingChunked(request)) {
+    static void addRequestTransferEncodingIfNecessary(final StreamingHttpRequest request,
+                                                      final HttpProtocolVersion protocolVersion) {
+        if (clientMaySendPayloadBodyFor(request.method()) &&
+                canAddTransferEncodingChunked(request, encodedVersion(request.version(), protocolVersion))) {
             request.headers().add(TRANSFER_ENCODING, CHUNKED);
         }
     }
 
-    private static boolean canAddTransferEncodingChunked(final HttpMetaData metaData) {
+    /**
+     * The protocol version a message is actually encoded at, which is not necessarily {@code metaData.version()}: a
+     * message can carry the client's preferred version (e.g. h2) yet be written on a connection ALPN negotiated down
+     * to h1. An h2 transport always encodes as h2; otherwise the message is encoded at the lower of its own version
+     * and the transport, matching {@link HttpRequestEncoder}'s request-line coercion so the transfer-encoding decision
+     * agrees with the wire (chunked for an h2 message sent over h1, none for a message pinned to HTTP/1.0).
+     */
+    private static HttpProtocolVersion encodedVersion(final HttpProtocolVersion messageVersion,
+                                                      final HttpProtocolVersion protocolVersion) {
+        return protocolVersion.major() >= 2 || messageVersion.compareTo(protocolVersion) >= 0 ?
+                protocolVersion : messageVersion;
+    }
+
+    private static boolean canAddTransferEncodingChunked(final HttpMetaData metaData,
+                                                         final HttpProtocolVersion protocolVersion) {
         final HttpHeaders headers = metaData.headers();
-        return chunkedSupported(metaData.version()) &&
+        return chunkedSupported(protocolVersion) &&
                 (mayHaveTrailers(metaData) || !headers.contains(CONTENT_LENGTH)) &&
                 !isTransferEncodingChunked(headers);
     }
