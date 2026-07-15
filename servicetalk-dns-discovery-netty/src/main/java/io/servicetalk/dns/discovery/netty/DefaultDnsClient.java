@@ -100,6 +100,8 @@ import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV6_PR
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.preferredAddressType;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.toRecordTypeNames;
 import static io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObservers.asSafeObserver;
+import static io.servicetalk.dns.discovery.netty.NoopDnsServiceDiscovererObserver.NoopDnsDiscoveryObserver;
+import static io.servicetalk.dns.discovery.netty.NoopDnsServiceDiscovererObserver.NoopDnsResolutionObserver;
 import static io.servicetalk.dns.discovery.netty.ServiceDiscovererUtils.calculateDifference;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChannel;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
@@ -252,15 +254,12 @@ final class DefaultDnsClient implements DnsClient {
         return observer.onNewDiscovery(id, address);
     }
 
-    @Override
-    public Publisher<Collection<ServiceDiscovererEvent<InetAddress>>> dnsQuery(final String address) {
-        requireNonNull(address);
-        return defer(() -> {
-            final DnsDiscoveryObserver discoveryObserver = newDiscoveryObserver(address);
-            ARecordPublisher pub = new ARecordPublisher(address, discoveryObserver);
-            Publisher<? extends Collection<ServiceDiscovererEvent<InetAddress>>> events =
-                    recoverWithInactiveEvents(pub, false, nxInvalidation);
-            return events.beforeFinally(new TerminalSignalConsumer() {
+    private static <T> Publisher<T> observeDiscovery(final DnsDiscoveryObserver discoveryObserver,
+                                                     final Publisher<T> events) {
+        // If the observer is noop there is nothing to report, so avoid wrapping with a beforeFinally that would only
+        // deliver events to nowhere.
+        return discoveryObserver == NoopDnsDiscoveryObserver.INSTANCE ? events :
+                events.beforeFinally(new TerminalSignalConsumer() {
                     @Override
                     public void onComplete() {
                         // this event will never be triggered
@@ -276,6 +275,17 @@ final class DefaultDnsClient implements DnsClient {
                         discoveryObserver.discoveryCancelled();
                     }
                 });
+    }
+
+    @Override
+    public Publisher<Collection<ServiceDiscovererEvent<InetAddress>>> dnsQuery(final String address) {
+        requireNonNull(address);
+        return defer(() -> {
+            final DnsDiscoveryObserver discoveryObserver = newDiscoveryObserver(address);
+            ARecordPublisher pub = new ARecordPublisher(address, discoveryObserver);
+            Publisher<? extends Collection<ServiceDiscovererEvent<InetAddress>>> events =
+                    recoverWithInactiveEvents(pub, false, nxInvalidation);
+            return observeDiscovery(discoveryObserver, events);
         });
     }
 
@@ -338,22 +348,7 @@ final class DefaultDnsClient implements DnsClient {
             }, srvConcurrency)
             .liftSync(SrvInactiveCombinerOperator.EMIT);
 
-            return events.beforeFinally(new TerminalSignalConsumer() {
-                @Override
-                public void onComplete() {
-                    // this event will never be triggered
-                }
-
-                @Override
-                public void onError(final Throwable cause) {
-                    discoveryObserver.discoveryFailed(cause);
-                }
-
-                @Override
-                public void cancel() {
-                    discoveryObserver.discoveryCancelled();
-                }
-            });
+            return observeDiscovery(discoveryObserver, events);
         });
     }
 
@@ -831,12 +826,13 @@ final class DefaultDnsClient implements DnsClient {
                         }
                         ttlNanos = maxTTLNanos;
                     }
+                    final ServiceDiscovererUtils.TwoIntsConsumer reporter =
+                            resolutionObserver == NoopDnsResolutionObserver.INSTANCE ? null :
+                            (nAvailable, nMissing) -> resolutionObserver.resolutionCompleted(
+                                    new DefaultResolutionResult(addresses.size(),
+                                            (int) NANOSECONDS.toSeconds(ttlNanos), nAvailable, nMissing));
                     final List<ServiceDiscovererEvent<T>> events = calculateDifference(activeAddresses, addresses,
-                            comparator(), (nAvailable, nMissing) ->
-                                    resolutionObserver.resolutionCompleted(new DefaultResolutionResult(
-                                            addresses.size(), (int) NANOSECONDS.toSeconds(ttlNanos),
-                                            nAvailable, nMissing)),
-                            missingRecordStatus);
+                            comparator(), reporter, missingRecordStatus);
 
                     if (events != null) {
                         activeAddresses = addresses;

@@ -24,6 +24,7 @@ final class NoopDnsServiceDiscovererObserver implements DnsServiceDiscovererObse
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public DnsDiscoveryObserver onNewDiscovery(final String name) {
         return NoopDnsDiscoveryObserver.INSTANCE;
     }
