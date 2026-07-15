@@ -31,7 +31,6 @@ import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
 import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.DnsDiscoveryObserver;
 import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.DnsResolutionObserver;
-import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.ResolutionResult;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
@@ -100,11 +99,13 @@ import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV4_PR
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV6_PREFERRED;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.preferredAddressType;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.toRecordTypeNames;
+import static io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObservers.asSafeObserver;
+import static io.servicetalk.dns.discovery.netty.NoopDnsServiceDiscovererObserver.NoopDnsDiscoveryObserver;
+import static io.servicetalk.dns.discovery.netty.NoopDnsServiceDiscovererObserver.NoopDnsResolutionObserver;
 import static io.servicetalk.dns.discovery.netty.ServiceDiscovererUtils.calculateDifference;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChannel;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
-import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.lang.Integer.toHexString;
 import static java.lang.System.identityHashCode;
 import static java.nio.ByteBuffer.wrap;
@@ -132,7 +133,6 @@ final class DefaultDnsClient implements DnsClient {
     private final long ttlJitterNanos;
     private final long resolutionTimeoutMillis;
     private final ListenableAsyncCloseable asyncCloseable;
-    @Nullable
     private final DnsServiceDiscovererObserver observer;
     private final ServiceDiscovererEvent.Status missingRecordStatus;
     private final boolean nxInvalidation;
@@ -174,7 +174,7 @@ final class DefaultDnsClient implements DnsClient {
         this.maxTTLNanos = SECONDS.toNanos(maxTTL);
         this.ttlJitterNanos = ttlJitterNanos;
         this.addressTypes = dnsResolverAddressTypes;
-        this.observer = observer;
+        this.observer = safeObserver(observer);
         this.missingRecordStatus = missingRecordStatus;
         this.nxInvalidation = nxInvalidation;
         this.id = id + '@' + toHexString(identityHashCode(this));
@@ -246,18 +246,33 @@ final class DefaultDnsClient implements DnsClient {
         return ttlCache;
     }
 
-    @Nullable
+    private static DnsServiceDiscovererObserver safeObserver(@Nullable final DnsServiceDiscovererObserver observer) {
+        return observer == null ? NoopDnsServiceDiscovererObserver.INSTANCE : asSafeObserver(observer);
+    }
+
     private DnsDiscoveryObserver newDiscoveryObserver(final String address) {
-        if (observer == null) {
-            return null;
-        }
-        try {
-            return observer.onNewDiscovery(id, address);
-        } catch (Throwable unexpected) {
-            LOGGER.warn("{} unexpected exception from {} while reporting new DNS discovery for {}",
-                    this, observer, address, unexpected);
-            return null;
-        }
+        return observer.onNewDiscovery(id, address);
+    }
+
+    private static <T> Publisher<T> observeDiscovery(final DnsDiscoveryObserver discoveryObserver,
+                                                     final Publisher<T> events) {
+        return discoveryObserver == NoopDnsDiscoveryObserver.INSTANCE ? events :
+                events.beforeFinally(new TerminalSignalConsumer() {
+                    @Override
+                    public void onComplete() {
+                        // this event will never be triggered
+                    }
+
+                    @Override
+                    public void onError(final Throwable cause) {
+                        discoveryObserver.discoveryFailed(cause);
+                    }
+
+                    @Override
+                    public void cancel() {
+                        discoveryObserver.discoveryCancelled();
+                    }
+                });
     }
 
     @Override
@@ -268,33 +283,7 @@ final class DefaultDnsClient implements DnsClient {
             ARecordPublisher pub = new ARecordPublisher(address, discoveryObserver);
             Publisher<? extends Collection<ServiceDiscovererEvent<InetAddress>>> events =
                     recoverWithInactiveEvents(pub, false, nxInvalidation);
-            return discoveryObserver == null ? events : events.beforeFinally(new TerminalSignalConsumer() {
-                    @Override
-                    public void onComplete() {
-                        // this event will never be triggered
-                    }
-
-                    @Override
-                    public void onError(final Throwable cause) {
-                        try {
-                            discoveryObserver.discoveryFailed(cause);
-                        } catch (Throwable unexpected) {
-                            addSuppressed(unexpected, cause);
-                            LOGGER.warn("{} Unexpected exception from observer while reporting discovery failure",
-                                    DefaultDnsClient.this, unexpected);
-                        }
-                    }
-
-                    @Override
-                    public void cancel() {
-                        try {
-                            discoveryObserver.discoveryCancelled();
-                        } catch (Throwable unexpected) {
-                            LOGGER.warn("{} Unexpected exception from observer while reporting discovery cancellation",
-                                    DefaultDnsClient.this, unexpected);
-                        }
-                    }
-                });
+            return observeDiscovery(discoveryObserver, events);
         });
     }
 
@@ -357,33 +346,7 @@ final class DefaultDnsClient implements DnsClient {
             }, srvConcurrency)
             .liftSync(SrvInactiveCombinerOperator.EMIT);
 
-            return discoveryObserver == null ? events : events.beforeFinally(new TerminalSignalConsumer() {
-                @Override
-                public void onComplete() {
-                    // this event will never be triggered
-                }
-
-                @Override
-                public void onError(final Throwable cause) {
-                    try {
-                        discoveryObserver.discoveryFailed(cause);
-                    } catch (Throwable unexpected) {
-                        addSuppressed(unexpected, cause);
-                        LOGGER.warn("{} Unexpected exception from observer while reporting discovery failure",
-                                DefaultDnsClient.this, unexpected);
-                    }
-                }
-
-                @Override
-                public void cancel() {
-                    try {
-                        discoveryObserver.discoveryCancelled();
-                    } catch (Throwable unexpected) {
-                        LOGGER.warn("{} Unexpected exception from observer while reporting discovery cancellation",
-                                DefaultDnsClient.this, unexpected);
-                    }
-                }
-            });
+            return observeDiscovery(discoveryObserver, events);
         });
     }
 
@@ -423,7 +386,7 @@ final class DefaultDnsClient implements DnsClient {
     }
 
     private final class SrvRecordPublisher extends AbstractDnsPublisher<HostAndPort> {
-        private SrvRecordPublisher(final String serviceName, @Nullable final DnsDiscoveryObserver discoveryObserver) {
+        private SrvRecordPublisher(final String serviceName, final DnsDiscoveryObserver discoveryObserver) {
             super(serviceName, discoveryObserver);
         }
 
@@ -510,7 +473,7 @@ final class DefaultDnsClient implements DnsClient {
     }
 
     private class ARecordPublisher extends AbstractDnsPublisher<InetAddress> {
-        ARecordPublisher(final String inetHost, @Nullable final DnsDiscoveryObserver discoveryObserver) {
+        ARecordPublisher(final String inetHost, final DnsDiscoveryObserver discoveryObserver) {
             super(inetHost, discoveryObserver);
         }
 
@@ -632,12 +595,11 @@ final class DefaultDnsClient implements DnsClient {
         /**
          * A {@link DnsDiscoveryObserver} for this publisher that provides visibility into individual DNS resolutions.
          */
-        @Nullable
         protected final DnsDiscoveryObserver discoveryObserver;
         @Nullable
         AbstractDnsSubscription subscription;
 
-        AbstractDnsPublisher(final String name, @Nullable final DnsDiscoveryObserver discoveryObserver) {
+        AbstractDnsPublisher(final String name, final DnsDiscoveryObserver discoveryObserver) {
             this.name = name;
             this.discoveryObserver = discoveryObserver;
             LOGGER.debug("{} initializing a new publisher for {}.", DefaultDnsClient.this, this);
@@ -795,19 +757,8 @@ final class DefaultDnsClient implements DnsClient {
                 }
             }
 
-            @Nullable
             private DnsResolutionObserver newResolutionObserver() {
-                final DnsDiscoveryObserver discoveryObserver = AbstractDnsPublisher.this.discoveryObserver;
-                if (discoveryObserver == null) {
-                    return null;
-                }
-                try {
-                    return discoveryObserver.onNewResolution(name);
-                } catch (Throwable unexpected) {
-                    LOGGER.warn("{} unexpected exception from {} while reporting new DNS resolution for: {}",
-                            DefaultDnsClient.this, observer, name, unexpected);
-                    return null;
-                }
+                return discoveryObserver.onNewResolution(name);
             }
 
             private void cancel0() {
@@ -850,7 +801,7 @@ final class DefaultDnsClient implements DnsClient {
             }
 
             private void handleResolveDone0(final Future<DnsAnswer<T>> addressFuture,
-                                            @Nullable final DnsResolutionObserver resolutionObserver) {
+                                            final DnsResolutionObserver resolutionObserver) {
                 assertInEventloop();
                 assert pendingRequests > 0;
                 if (cancellableForQuery == TERMINATED) {
@@ -858,7 +809,7 @@ final class DefaultDnsClient implements DnsClient {
                 }
                 final Throwable cause = addressFuture.cause();
                 if (cause != null) {
-                    reportResolutionFailed(resolutionObserver, cause);
+                    resolutionObserver.resolutionFailed(cause);
                     cancelAndTerminate0(cause);
                 } else {
                     // DNS lookup can return duplicate InetAddress
@@ -873,12 +824,13 @@ final class DefaultDnsClient implements DnsClient {
                         }
                         ttlNanos = maxTTLNanos;
                     }
+                    final ServiceDiscovererUtils.TwoIntsConsumer reporter =
+                            resolutionObserver == NoopDnsResolutionObserver.INSTANCE ? null :
+                            (nAvailable, nMissing) -> resolutionObserver.resolutionCompleted(
+                                    new DefaultResolutionResult(addresses.size(),
+                                            (int) NANOSECONDS.toSeconds(ttlNanos), nAvailable, nMissing));
                     final List<ServiceDiscovererEvent<T>> events = calculateDifference(activeAddresses, addresses,
-                            comparator(), resolutionObserver == null ? null : (nAvailable, nMissing) ->
-                                    reportResolutionResult(resolutionObserver, new DefaultResolutionResult(
-                                            addresses.size(), (int) NANOSECONDS.toSeconds(ttlNanos),
-                                            nAvailable, nMissing)),
-                            missingRecordStatus);
+                            comparator(), reporter, missingRecordStatus);
 
                     if (events != null) {
                         activeAddresses = addresses;
@@ -909,30 +861,6 @@ final class DefaultDnsClient implements DnsClient {
 
                         scheduleQuery0(ttlNanos);
                     }
-                }
-            }
-
-            private void reportResolutionFailed(@Nullable final DnsResolutionObserver resolutionObserver,
-                                                final Throwable cause) {
-                if (resolutionObserver == null) {
-                    return;
-                }
-                try {
-                    resolutionObserver.resolutionFailed(cause);
-                } catch (Throwable unexpected) {
-                    addSuppressed(unexpected, cause);
-                    LOGGER.warn("{} unexpected exception from {} while reporting DNS resolution failure",
-                            DefaultDnsClient.this, resolutionObserver, unexpected);
-                }
-            }
-
-            private void reportResolutionResult(final DnsResolutionObserver resolutionObserver,
-                                                final ResolutionResult result) {
-                try {
-                    resolutionObserver.resolutionCompleted(result);
-                } catch (Throwable unexpected) {
-                    LOGGER.warn("{} unexpected exception from {} while reporting DNS resolution result {}",
-                            DefaultDnsClient.this, resolutionObserver, result, unexpected);
                 }
             }
 

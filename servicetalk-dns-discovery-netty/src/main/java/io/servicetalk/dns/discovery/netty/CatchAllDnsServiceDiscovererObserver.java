@@ -15,15 +15,15 @@
  */
 package io.servicetalk.dns.discovery.netty;
 
-import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.DnsDiscoveryObserver;
-import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.DnsResolutionObserver;
-import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.ResolutionResult;
+import io.servicetalk.dns.discovery.netty.NoopDnsServiceDiscovererObserver.NoopDnsDiscoveryObserver;
+import io.servicetalk.dns.discovery.netty.NoopDnsServiceDiscovererObserver.NoopDnsResolutionObserver;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
@@ -47,129 +47,131 @@ final class CatchAllDnsServiceDiscovererObserver implements DnsServiceDiscoverer
 
     @Override
     @SuppressWarnings("deprecation")
-    public DnsDiscoveryObserver onNewDiscovery(final String name) {
-        return safeReport(() -> observer.onNewDiscovery(name), observer, "new discovery",
-                CatchAllDnsDiscoveryObserver::new, NoopDnsDiscoveryObserver.INSTANCE);
+    public DnsDiscoveryObserver onNewDiscovery(final String discoveryName) {
+        // Deprecated overload: no client id is available, so pass null and idName degrades the logged detail to just
+        // the discovery target rather than dropping attribution entirely.
+        return safeReport(() -> observer.onNewDiscovery(discoveryName), observer, "new discovery", null, discoveryName,
+                o -> new CatchAllDnsDiscoveryObserver(o, null, discoveryName), NoopDnsDiscoveryObserver.INSTANCE);
     }
 
     @Override
-    public DnsDiscoveryObserver onNewDiscovery(final String serviceDiscovererId, final String name) {
-        return safeReport(() -> observer.onNewDiscovery(serviceDiscovererId, name), observer, "new discovery",
-                CatchAllDnsDiscoveryObserver::new, NoopDnsDiscoveryObserver.INSTANCE);
+    public DnsDiscoveryObserver onNewDiscovery(final String serviceDiscovererId, final String discoveryName) {
+        return safeReport(() -> observer.onNewDiscovery(serviceDiscovererId, discoveryName), observer, "new discovery",
+                serviceDiscovererId, discoveryName,
+                o -> new CatchAllDnsDiscoveryObserver(o, serviceDiscovererId, discoveryName),
+                NoopDnsDiscoveryObserver.INSTANCE);
     }
 
     private static final class CatchAllDnsDiscoveryObserver implements DnsDiscoveryObserver {
 
         private final DnsDiscoveryObserver observer;
+        @Nullable
+        private final String serviceDiscovererId;
+        private final String discoveryName;
 
-        private CatchAllDnsDiscoveryObserver(final DnsDiscoveryObserver observer) {
+        private CatchAllDnsDiscoveryObserver(final DnsDiscoveryObserver observer,
+                                             @Nullable final String serviceDiscovererId, final String discoveryName) {
             this.observer = observer;
+            this.serviceDiscovererId = serviceDiscovererId;
+            this.discoveryName = discoveryName;
         }
 
         @Override
-        public DnsResolutionObserver onNewResolution(final String name) {
-            return safeReport(() -> observer.onNewResolution(name), observer, "new resolution",
-                    CatchAllDnsResolutionObserver::new, NoopDnsResolutionObserver.INSTANCE);
+        public DnsResolutionObserver onNewResolution(final String resolutionName) {
+            return safeReport(() -> observer.onNewResolution(resolutionName), observer, "new resolution",
+                    serviceDiscovererId, resolutionName,
+                    o -> new CatchAllDnsResolutionObserver(o, serviceDiscovererId, resolutionName),
+                    NoopDnsResolutionObserver.INSTANCE);
         }
 
         @Override
         public void discoveryCancelled() {
-            safeReport(observer::discoveryCancelled, observer, "discovery cancelled");
+            safeReport(observer::discoveryCancelled, observer, "discovery cancelled",
+                    serviceDiscovererId, discoveryName);
         }
 
         @Override
         public void discoveryFailed(final Throwable cause) {
-            safeReport(() -> observer.discoveryFailed(cause), observer, "discovery failed", cause);
+            safeReport(() -> observer.discoveryFailed(cause), observer, "discovery failed",
+                    serviceDiscovererId, discoveryName, cause);
         }
     }
 
     private static final class CatchAllDnsResolutionObserver implements DnsResolutionObserver {
 
         private final DnsResolutionObserver observer;
+        @Nullable
+        private final String serviceDiscovererId;
+        private final String resolutionName;
 
-        private CatchAllDnsResolutionObserver(final DnsResolutionObserver observer) {
+        private CatchAllDnsResolutionObserver(final DnsResolutionObserver observer,
+                                              @Nullable final String serviceDiscovererId,
+                                              final String resolutionName) {
             this.observer = observer;
+            this.serviceDiscovererId = serviceDiscovererId;
+            this.resolutionName = resolutionName;
         }
 
         @Override
         public void resolutionFailed(final Throwable cause) {
-            safeReport(() -> observer.resolutionFailed(cause), observer, "resolution failed", cause);
+            safeReport(() -> observer.resolutionFailed(cause), observer, "resolution failed",
+                    serviceDiscovererId, resolutionName, cause);
         }
 
         @Override
         public void resolutionCompleted(final ResolutionResult result) {
-            safeReport(() -> observer.resolutionCompleted(result), observer, "resolution completed");
-        }
-    }
-
-    private static final class NoopDnsDiscoveryObserver implements DnsDiscoveryObserver {
-
-        static final DnsDiscoveryObserver INSTANCE = new NoopDnsDiscoveryObserver();
-
-        private NoopDnsDiscoveryObserver() {
-            // Singleton
-        }
-
-        @Override
-        public DnsResolutionObserver onNewResolution(final String name) {
-            return NoopDnsResolutionObserver.INSTANCE;
-        }
-
-        @Override
-        public void discoveryCancelled() {
-            // noop
-        }
-
-        @Override
-        public void discoveryFailed(final Throwable cause) {
-            // noop
-        }
-    }
-
-    private static final class NoopDnsResolutionObserver implements DnsResolutionObserver {
-
-        static final DnsResolutionObserver INSTANCE = new NoopDnsResolutionObserver();
-
-        private NoopDnsResolutionObserver() {
-            // Singleton
-        }
-
-        @Override
-        public void resolutionFailed(final Throwable cause) {
-            // noop
-        }
-
-        @Override
-        public void resolutionCompleted(final ResolutionResult result) {
-            // noop
+            safeReportResult(() -> observer.resolutionCompleted(result), observer, "resolution completed",
+                    serviceDiscovererId, resolutionName, result);
         }
     }
 
     private static <T> T safeReport(final Supplier<T> supplier, final Object observer, final String eventName,
+                                    @Nullable final String serviceDiscovererId, final String targetName,
                                     final UnaryOperator<T> catchAllWrapper, final T defaultValue) {
         try {
             return catchAllWrapper.apply(requireNonNull(supplier.get()));
         } catch (Throwable unexpected) {
-            LOGGER.warn("Unexpected exception from {} while reporting a {} event", observer, eventName, unexpected);
+            LOGGER.warn("{}: Unexpected exception from {} while reporting a {} event",
+                    idName(serviceDiscovererId, targetName), observer, eventName, unexpected);
             return defaultValue;
         }
     }
 
-    private static void safeReport(final Runnable runnable, final Object observer, final String eventName) {
+    private static void safeReport(final Runnable runnable, final Object observer, final String eventName,
+                                   @Nullable final String serviceDiscovererId, final String targetName) {
         try {
             runnable.run();
         } catch (Throwable unexpected) {
-            LOGGER.warn("Unexpected exception from {} while reporting a {} event", observer, eventName, unexpected);
+            LOGGER.warn("{}: Unexpected exception from {} while reporting a {} event",
+                    idName(serviceDiscovererId, targetName), observer, eventName, unexpected);
         }
     }
 
     private static void safeReport(final Runnable runnable, final Object observer, final String eventName,
+                                   @Nullable final String serviceDiscovererId, final String targetName,
                                    final Throwable original) {
         try {
             runnable.run();
         } catch (Throwable unexpected) {
             addSuppressed(unexpected, original);
-            LOGGER.warn("Unexpected exception from {} while reporting a {} event", observer, eventName, unexpected);
+            LOGGER.warn("{}: Unexpected exception from {} while reporting a {} event",
+                    idName(serviceDiscovererId, targetName), observer, eventName, unexpected);
         }
+    }
+
+    private static void safeReportResult(final Runnable runnable, final Object observer, final String eventName,
+                                         @Nullable final String serviceDiscovererId, final String targetName,
+                                         final Object result) {
+        try {
+            runnable.run();
+        } catch (Throwable unexpected) {
+            LOGGER.warn("{}: Unexpected exception from {} while reporting a {} event: {}",
+                    idName(serviceDiscovererId, targetName), observer, eventName, result, unexpected);
+        }
+    }
+
+    private static String idName(@Nullable final String serviceDiscovererId, final String targetName) {
+        return serviceDiscovererId == null ? '(' + targetName + ')' :
+                '(' + serviceDiscovererId + ' ' + targetName + ')';
     }
 }
