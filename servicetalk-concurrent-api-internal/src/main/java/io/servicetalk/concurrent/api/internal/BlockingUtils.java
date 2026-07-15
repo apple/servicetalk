@@ -68,6 +68,9 @@ public final class BlockingUtils {
         // we don't apply any explicit timeout here and just wait forever.
         try {
             return source.toFuture().get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw e;
         } catch (final ExecutionException e) {
             return throwException(executionExceptionCause(e));
         }
@@ -85,6 +88,9 @@ public final class BlockingUtils {
         // we don't apply any explicit timeout here and just wait forever.
         try {
             source.toFuture().get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw e;
         } catch (final ExecutionException e) {
             throwException(executionExceptionCause(e));
         }
