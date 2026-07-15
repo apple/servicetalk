@@ -33,6 +33,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
@@ -52,6 +53,8 @@ import static java.util.Objects.requireNonNull;
 
 final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
     private static final String UNKNOWN_PATH = "";
+    private static final String NO_RESPONSE_MESSAGE = "No value received for unary call";
+    private static final String TOO_MANY_RESPONSES_MESSAGE = "More than one value received for unary call";
     private final StreamingHttpClient streamingHttpClient;
     private final GrpcExecutionContext executionContext;
     @Nullable
@@ -86,7 +89,18 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         final StreamingClientCall<Req, Resp> streamingCall = newStreamingCall(methodDescriptor, decompressors);
         return (metadata, request) -> streamingCall.request(metadata, Publisher.from(request))
                 .firstOrError()
-                .onErrorMap(GrpcStatusException::fromThrowable);
+                .onErrorMap(DefaultGrpcClientCallFactory::toUnaryResponseGrpcStatusException);
+    }
+
+    // Upstream errors are already GrpcStatusException (mapped by newStreamingCall); the only other errors reaching
+    // here come from firstOrError's cardinality check. Match grpc-java by reporting INTERNAL when a unary call does
+    // not receive exactly one response message.
+    private static Throwable toUnaryResponseGrpcStatusException(final Throwable cause) {
+        if (cause instanceof GrpcStatusException) {
+            return cause;
+        }
+        return new GrpcStatusException(new GrpcStatus(GrpcStatusCode.INTERNAL,
+                cause instanceof NoSuchElementException ? NO_RESPONSE_MESSAGE : TOO_MANY_RESPONSES_MESSAGE));
     }
 
     @Deprecated
@@ -209,14 +223,19 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         return (metadata, request) -> {
             try (BlockingIterator<Resp> iterator =
                          streamingCall.request(metadata, singletonBlockingIterable(request)).iterator()) {
+                // hasNext() reads through to the terminal, so a Trailers-Only error / grpc-status trailer surfaces
+                // here. Match grpc-java by reporting INTERNAL when a unary call does not receive exactly one message.
+                if (!iterator.hasNext()) {
+                    throw new GrpcStatusException(new GrpcStatus(GrpcStatusCode.INTERNAL, NO_RESPONSE_MESSAGE));
+                }
                 final Resp firstItem = iterator.next();
-                // hasNext() reads through to the terminal, so grpc-status trailer validation runs (and any error
-                // surfaces) before we return. Reject >1 message to match the async newCall (firstOrError) contract.
                 if (iterator.hasNext()) {
-                    iterator.next(); // Consume the next item in case it's a TerminalNotification carrying an error.
-                    throw new IllegalArgumentException("More than one response message received");
+                    iterator.next(); // Throws if this is an error terminal; otherwise it is an unexpected 2nd message.
+                    throw new GrpcStatusException(new GrpcStatus(GrpcStatusCode.INTERNAL, TOO_MANY_RESPONSES_MESSAGE));
                 }
                 return firstItem;
+            } catch (GrpcStatusException e) {
+                throw e;
             } catch (Throwable cause) {
                 throw GrpcStatusException.fromThrowable(cause);
             }

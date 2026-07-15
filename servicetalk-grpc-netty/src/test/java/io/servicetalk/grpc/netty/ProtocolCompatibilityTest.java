@@ -1826,7 +1826,7 @@ class ProtocolCompatibilityTest {
     // request larger than the window blocks before the whole message is delivered (and is never drained).
     private static TestServerContext grpcJavaEarlyRejectingServer() throws Exception {
         return grpcJavaServer(false, null, new TestCompatGrpcImpl(ErrorMode.NONE, null),
-                builder -> builder.flowControlWindow(65535).maxInboundMessageSize(1024));
+                builder -> builder.flowControlWindow(65_535).maxInboundMessageSize(1024));
     }
 
     private static final class TestCompatGrpcImpl extends CompatGrpc.CompatImplBase {
