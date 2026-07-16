@@ -80,6 +80,7 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 
 import com.google.protobuf.Any;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Code;
 import io.grpc.Codec;
@@ -99,6 +100,7 @@ import io.grpc.stub.StreamObserver;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.ThrowingSupplier;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -127,6 +129,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import javax.annotation.Nullable;
@@ -145,6 +148,7 @@ import static io.servicetalk.grpc.api.GrpcHeaderValues.APPLICATION_GRPC;
 import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
+import static io.servicetalk.grpc.api.GrpcStatusCode.RESOURCE_EXHAUSTED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_TIMEOUT_HEADER_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
@@ -214,6 +218,13 @@ class ProtocolCompatibilityTest {
     private static final Duration DEFAULT_DEADLINE = ofMillis(100);
     private static final boolean[] TRUE_FALSE = {true, false};
     private static final String[] COMPRESSION = {"gzip", "identity", null};
+
+    // A request that exceeds the HTTP/2 flow-control window applied below, so its write blocks before the whole
+    // message is delivered when the server does not open the window.
+    private static final CompatRequest LARGE_REQUEST = CompatRequest.newBuilder()
+            .setId(1)
+            .setPayload(ByteString.copyFrom(new byte[128 * 1024]))
+            .build();
 
     private final ResponseLeakValidator responseLeakValidator = new ResponseLeakValidator();
 
@@ -721,6 +732,40 @@ class ProtocolCompatibilityTest {
                     client.bidirectionalStreamingCall(Publisher.from(CompatRequest.newBuilder().setId(1).build()));
             validateGrpcErrorInResponse(bidirectionalStreamingResponse.toFuture(), false, UNIMPLEMENTED,
                     "Method grpc.netty.Compat/bidirectionalStreamingCall is unimplemented");
+        }
+    }
+
+    // A client sending a request larger than the HTTP/2 flow-control window (~64 KiB) that grpc-java rejects on
+    // the first message frame must surface the error instead of blocking forever on the flow-control-limited
+    // request write. grpc-java (unlike a ServiceTalk server) does not drain the rejected request body, so the
+    // request write cannot complete; the client must fail fast from the Trailers-Only response.
+    @Test
+    void serviceTalkToGrpcJavaEarlyResetScalar() throws Exception {
+        try (TestServerContext server = grpcJavaEarlyRejectingServer();
+             CompatClient client = serviceTalkClient(server.listenAddress(), false, null, null)) {
+            validateGrpcErrorInResponse(client.scalarCall(LARGE_REQUEST).toFuture(), false, RESOURCE_EXHAUSTED, null);
+        }
+    }
+
+    @Test
+    void serviceTalkToGrpcJavaEarlyResetScalarBlocking() throws Exception {
+        try (TestServerContext server = grpcJavaEarlyRejectingServer();
+             CompatClient client = serviceTalkClient(server.listenAddress(), false, null, null)) {
+            try {
+                client.asBlockingClient().scalarCall(LARGE_REQUEST);
+                fail("No error received");
+            } catch (final GrpcStatusException e) {
+                assertGrpcStatusException(e, false, RESOURCE_EXHAUSTED, null);
+            }
+        }
+    }
+
+    @Test
+    void serviceTalkToGrpcJavaEarlyResetServerStreaming() throws Exception {
+        try (TestServerContext server = grpcJavaEarlyRejectingServer();
+             CompatClient client = serviceTalkClient(server.listenAddress(), false, null, null)) {
+            validateGrpcErrorInResponse(client.serverStreamingCall(LARGE_REQUEST).toFuture(), false,
+                    RESOURCE_EXHAUSTED, null);
         }
     }
 
@@ -1730,7 +1775,15 @@ class ProtocolCompatibilityTest {
     private static TestServerContext grpcJavaServer(final boolean ssl,
                                                     @Nullable final String compression,
                                                     final CompatGrpc.CompatImplBase serviceImpl) throws Exception {
+        return grpcJavaServer(ssl, compression, serviceImpl, builder -> { });
+    }
+
+    private static TestServerContext grpcJavaServer(final boolean ssl,
+                                                    @Nullable final String compression,
+                                                    final CompatGrpc.CompatImplBase serviceImpl,
+                                                    final Consumer<NettyServerBuilder> customizer) throws Exception {
         final NettyServerBuilder builder = NettyServerBuilder.forAddress(localAddress(0));
+        customizer.accept(builder);
         if (ssl) {
             builder.useTransportSecurity(loadServerPem(), loadServerKey());
         }
@@ -1767,6 +1820,13 @@ class ProtocolCompatibilityTest {
                                                     @Nullable final String compression,
                                                     @Nullable final String statusMessage) throws Exception {
         return grpcJavaServer(ssl, compression, new TestCompatGrpcImpl(errorMode, statusMessage));
+    }
+
+    // Rejects a request exceeding maxInboundMessageSize on the first frame, with a small flow-control window so a
+    // request larger than the window blocks before the whole message is delivered (and is never drained).
+    private static TestServerContext grpcJavaEarlyRejectingServer() throws Exception {
+        return grpcJavaServer(false, null, new TestCompatGrpcImpl(ErrorMode.NONE, null),
+                builder -> builder.flowControlWindow(65_535).maxInboundMessageSize(1024));
     }
 
     private static final class TestCompatGrpcImpl extends CompatGrpc.CompatImplBase {

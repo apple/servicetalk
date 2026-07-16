@@ -26,6 +26,7 @@ import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.SslProvider;
 
+import io.netty.channel.socket.ChannelOutputShutdownException;
 import io.netty.handler.ssl.NotSslRecordException;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -41,6 +42,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static java.net.InetAddress.getLoopbackAddress;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -141,7 +143,11 @@ class GrpcSslAndNonSslConnectionsTest {
         try (ServerContext serverContext = secureGrpcServer(provider);
              BlockingTesterClient client = nonSecureGrpcClient(serverContext)) {
             GrpcStatusException e = assertThrows(GrpcStatusException.class, () -> client.test(REQUEST));
-            assertThat(e.getCause(), instanceOf(ClosedChannelException.class));
+            // The server closes the connection because the client is not using TLS. Depending on whether the
+            // request write or the response read observes the close first, the cause is either a
+            // ChannelOutputShutdownException (write side) or a ClosedChannelException (read side).
+            assertThat(e.getCause(), anyOf(instanceOf(ClosedChannelException.class),
+                    instanceOf(ChannelOutputShutdownException.class)));
         }
     }
 

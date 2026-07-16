@@ -361,33 +361,6 @@ final class GrpcUtils {
         return deserializer.deserialize(response.payloadBody(), allocator);
     }
 
-    static <Resp> Resp validateResponseAndGetPayload(final HttpResponse response,
-                                                     final CharSequence expectedContentType,
-                                                     final BufferAllocator allocator,
-                                                     final GrpcDeserializer<Resp> deserializer) {
-        // In case of an empty response, gRPC-server may return only one HEADER frame with endStream=true. Our
-        // HTTP1-based implementation translates them into response headers so we need to look for a grpc-status in both
-        // headers and trailers.
-        final HttpHeaders headers = response.headers();
-        final HttpHeaders trailers = response.trailers();
-        validateContentType(response, expectedContentType);
-
-        // We will try the trailers first as this is the most likely place to find the gRPC-related headers.
-        final GrpcStatusCode grpcStatusCode = extractGrpcStatusCodeFromHeaders(trailers);
-        if (grpcStatusCode != null) {
-            final GrpcStatusException grpcStatusException = convertToGrpcStatusException(grpcStatusCode, trailers);
-            if (grpcStatusException != null) {
-                throw grpcStatusException;
-            }
-        } else {
-            // There was no grpc-status in the trailers, so it must be in headers.
-            ensureGrpcStatusReceived(response.status(), headers);
-        }
-
-        validateStatusCode(response.status()); // gRPC protocol requires 200, don't return payload if this check fails.
-        return deserializer.deserialize(response.payloadBody(), allocator);
-    }
-
     static void validateContentType(HttpResponseMetaData metaData, CharSequence expectedContentType) {
         validateContentType(metaData.status(), metaData.headers(), expectedContentType);
     }

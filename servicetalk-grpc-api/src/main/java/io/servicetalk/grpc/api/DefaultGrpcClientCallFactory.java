@@ -24,19 +24,16 @@ import io.servicetalk.encoding.api.BufferDecoder;
 import io.servicetalk.encoding.api.BufferDecoderGroup;
 import io.servicetalk.encoding.api.BufferEncoder;
 import io.servicetalk.grpc.api.GrpcUtils.DefaultMethodDescriptor;
-import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpRequest;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
-import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
@@ -56,6 +53,8 @@ import static java.util.Objects.requireNonNull;
 
 final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
     private static final String UNKNOWN_PATH = "";
+    private static final String NO_RESPONSE_MESSAGE = "No value received for unary call";
+    private static final String TOO_MANY_RESPONSES_MESSAGE = "More than one value received for unary call";
     private final StreamingHttpClient streamingHttpClient;
     private final GrpcExecutionContext executionContext;
     @Nullable
@@ -83,34 +82,25 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
     @Override
     public <Req, Resp> ClientCall<Req, Resp> newCall(final MethodDescriptor<Req, Resp> methodDescriptor,
                                                      final BufferDecoderGroup decompressors) {
-        final HttpClient client = streamingHttpClient.asClient();
-        GrpcSerializer<Req> serializerIdentity = serializer(methodDescriptor);
-        GrpcDeserializer<Resp> deserializerIdentity = deserializer(methodDescriptor);
-        List<GrpcDeserializer<Resp>> deserializers = deserializers(methodDescriptor, decompressors.decoders());
-        CharSequence acceptedEncoding = decompressors.advertisedMessageEncoding();
-        CharSequence requestContentType = grpcContentType(methodDescriptor.requestDescriptor()
-                .serializerDescriptor().contentType());
-        CharSequence responseContentType = grpcContentType(methodDescriptor.responseDescriptor()
-                .serializerDescriptor().contentType());
-        return (metadata, request) -> {
-            Duration timeout = timeoutForRequest(metadata.timeout());
-            GrpcSerializer<Req> serializer = serializer(methodDescriptor, serializerIdentity,
-                    metadata.requestCompressor());
-            String mdPath = methodDescriptor.httpPath();
-            HttpRequest httpRequest = client.post(UNKNOWN_PATH.equals(mdPath) ? metadata.path() : mdPath);
-            initRequest(httpRequest, metadata, requestContentType, serializer.messageEncoding(), acceptedEncoding,
-                    timeout);
-            httpRequest.payloadBody(serializer.serialize(request, client.executionContext().bufferAllocator()));
-            return client.request(httpRequest)
-                    .map(response -> {
-                        extractResponseContext(response, metadata);
-                        return validateResponseAndGetPayload(response, responseContentType,
-                                client.executionContext().bufferAllocator(),
-                                readGrpcMessageEncodingRaw(response.headers(), deserializerIdentity, deserializers,
-                                        GrpcDeserializer::messageEncoding));
-                    })
-                    .onErrorMap(GrpcStatusException::fromThrowable);
-        };
+        // Delegate to the streaming call so a unary request benefits from the streaming response handling that
+        // reads grpc-status from the response headers and fails fast (cancelling the request) for a Trailers-Only
+        // error response. The aggregated HttpClient would instead wait for the whole response to aggregate, which
+        // never completes if the server rejects the request before consuming a flow-control-blocked request body.
+        final StreamingClientCall<Req, Resp> streamingCall = newStreamingCall(methodDescriptor, decompressors);
+        return (metadata, request) -> streamingCall.request(metadata, Publisher.from(request))
+                .firstOrError()
+                .onErrorMap(DefaultGrpcClientCallFactory::toUnaryResponseGrpcStatusException);
+    }
+
+    // Upstream errors are already GrpcStatusException (mapped by newStreamingCall); the only other errors reaching
+    // here come from firstOrError's cardinality check. Match grpc-java by reporting INTERNAL when a unary call does
+    // not receive exactly one response message.
+    private static Throwable toUnaryResponseGrpcStatusException(final Throwable cause) {
+        if (cause instanceof GrpcStatusException) {
+            return cause;
+        }
+        return new GrpcStatusException(new GrpcStatus(GrpcStatusCode.INTERNAL,
+                cause instanceof NoSuchElementException ? NO_RESPONSE_MESSAGE : TOO_MANY_RESPONSES_MESSAGE));
     }
 
     @Deprecated
@@ -225,30 +215,27 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
     @Override
     public <Req, Resp> BlockingClientCall<Req, Resp> newBlockingCall(
             final MethodDescriptor<Req, Resp> methodDescriptor, final BufferDecoderGroup decompressors) {
-        final BlockingHttpClient client = streamingHttpClient.asBlockingClient();
-        GrpcSerializer<Req> serializerIdentity = serializer(methodDescriptor);
-        GrpcDeserializer<Resp> deserializerIdentity = deserializer(methodDescriptor);
-        List<GrpcDeserializer<Resp>> deserializers = deserializers(methodDescriptor, decompressors.decoders());
-        CharSequence acceptedEncoding = decompressors.advertisedMessageEncoding();
-        CharSequence requestContentType = grpcContentType(methodDescriptor.requestDescriptor()
-                .serializerDescriptor().contentType());
-        CharSequence responseContentType = grpcContentType(methodDescriptor.responseDescriptor()
-                .serializerDescriptor().contentType());
+        // Delegate to the blocking streaming call so a unary request benefits from the streaming response handling
+        // that fails fast for a Trailers-Only error response instead of blocking on the aggregated response (which
+        // never completes if the server rejects the request before consuming a flow-control-blocked request body).
+        final BlockingStreamingClientCall<Req, Resp> streamingCall =
+                newBlockingStreamingCall(methodDescriptor, decompressors);
         return (metadata, request) -> {
-            Duration timeout = timeoutForRequest(metadata.timeout());
-            GrpcSerializer<Req> serializer = serializer(methodDescriptor, serializerIdentity,
-                    metadata.requestCompressor());
-            String mdPath = methodDescriptor.httpPath();
-            HttpRequest httpRequest = client.post(UNKNOWN_PATH.equals(mdPath) ? metadata.path() : mdPath);
-            initRequest(httpRequest, metadata, requestContentType, serializer.messageEncoding(), acceptedEncoding,
-                    timeout);
-            httpRequest.payloadBody(serializer.serialize(request, client.executionContext().bufferAllocator()));
-            try {
-                final HttpResponse response = client.request(httpRequest);
-                extractResponseContext(response, metadata);
-                return validateResponseAndGetPayload(response, responseContentType,
-                        client.executionContext().bufferAllocator(), readGrpcMessageEncodingRaw(response.headers(),
-                                deserializerIdentity, deserializers, GrpcDeserializer::messageEncoding));
+            try (BlockingIterator<Resp> iterator =
+                         streamingCall.request(metadata, singletonBlockingIterable(request)).iterator()) {
+                // hasNext() reads through to the terminal, so a Trailers-Only error / grpc-status trailer surfaces
+                // here. Match grpc-java by reporting INTERNAL when a unary call does not receive exactly one message.
+                if (!iterator.hasNext()) {
+                    throw new GrpcStatusException(new GrpcStatus(GrpcStatusCode.INTERNAL, NO_RESPONSE_MESSAGE));
+                }
+                final Resp firstItem = iterator.next();
+                if (iterator.hasNext()) {
+                    iterator.next(); // Throws if this is an error terminal; otherwise it is an unexpected 2nd message.
+                    throw new GrpcStatusException(new GrpcStatus(GrpcStatusCode.INTERNAL, TOO_MANY_RESPONSES_MESSAGE));
+                }
+                return firstItem;
+            } catch (GrpcStatusException e) {
+                throw e;
             } catch (Throwable cause) {
                 throw GrpcStatusException.fromThrowable(cause);
             }
@@ -432,25 +419,6 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                 methodDescriptor.responseDescriptor().serializerDescriptor().serializer());
     }
 
-    private static <Resp> List<GrpcDeserializer<Resp>> deserializers(
-            MethodDescriptor<?, Resp> methodDescriptor, List<BufferDecoder> decompressors) {
-        return GrpcUtils.deserializers(
-                methodDescriptor.responseDescriptor().serializerDescriptor().serializer(), decompressors);
-    }
-
-    private static <Req> GrpcSerializer<Req> serializer(MethodDescriptor<Req, ?> methodDescriptor) {
-        return new GrpcSerializer<>(methodDescriptor.requestDescriptor().serializerDescriptor().bytesEstimator(),
-                methodDescriptor.requestDescriptor().serializerDescriptor().serializer());
-    }
-
-    private static <Req> GrpcSerializer<Req> serializer(
-            MethodDescriptor<Req, ?> methodDescriptor, GrpcSerializer<Req> serializerIdentity,
-            @Nullable BufferEncoder compressor) {
-        return compressor == null || compressor == identityEncoder() ? serializerIdentity : new GrpcSerializer<>(
-                methodDescriptor.requestDescriptor().serializerDescriptor().bytesEstimator(),
-                methodDescriptor.requestDescriptor().serializerDescriptor().serializer(), compressor);
-    }
-
     private static <Req> GrpcStreamingSerializer<Req> streamingSerializer(
             MethodDescriptor<Req, ?> methodDescriptor, GrpcStreamingSerializer<Req> serializerIdentity,
             @Nullable BufferEncoder compressor) {
@@ -458,10 +426,6 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                 new GrpcStreamingSerializer<>(
                         methodDescriptor.requestDescriptor().serializerDescriptor().bytesEstimator(),
                         methodDescriptor.requestDescriptor().serializerDescriptor().serializer(), compressor);
-    }
-
-    private static <Resp> GrpcDeserializer<Resp> deserializer(MethodDescriptor<?, Resp> methodDescriptor) {
-        return new GrpcDeserializer<>(methodDescriptor.responseDescriptor().serializerDescriptor().serializer());
     }
 
     private static void extractResponseContext(HttpResponseMetaData responseMetaData, GrpcClientMetadata grpcMetadata) {
