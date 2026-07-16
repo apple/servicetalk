@@ -72,7 +72,7 @@ final class GrpcDeserializer<T> implements Deserializer<T> {
             result = decompressor.decoder().deserialize(result, allocator);
             // The check above only bounds the compressed wire size; reject a decoded message that exceeds the limit.
             // Decompression memory is bounded separately by the codec's own decompressed-bytes cap.
-            sizeLimiter.accept(result.readableBytes());
+            sizeLimiter.accept(result.readableBytes(), true);
         }
         return deserializer.deserialize(result, allocator);
     }

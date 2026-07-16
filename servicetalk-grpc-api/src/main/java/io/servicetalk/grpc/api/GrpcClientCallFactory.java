@@ -249,13 +249,12 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @param defaultTimeout {@link Duration} of default timeout or null for no timeout
      * @return A new {@link GrpcClientCallFactory}.
      * @deprecated Use {@link #from(StreamingHttpClient, GrpcClientCallConfig)} to configure the client call factory;
-     * this overload applies no inbound message-size limit. Configuration is normally provided via the
+     * this overload applies the default inbound message-size limit. Configuration is normally provided via the
      * {@link GrpcClientBuilder}.
      */
     @Deprecated // FIXME: 0.43 - remove deprecated method
     static GrpcClientCallFactory from(StreamingHttpClient httpClient, @Nullable Duration defaultTimeout) {
         return from(httpClient, new GrpcClientCallConfig.Builder()
-                .messageConfig(new GrpcMessageConfig.Builder().maxInboundMessageSize(0).build())
                 .defaultTimeout(defaultTimeout)
                 .build());
     }

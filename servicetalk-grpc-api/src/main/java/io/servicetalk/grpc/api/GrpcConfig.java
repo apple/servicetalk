@@ -16,16 +16,14 @@
 package io.servicetalk.grpc.api;
 
 /**
- * Configuration of <a href="https://www.grpc.io">gRPC</a> message handling, shared by the client
- * ({@link GrpcClientCallFactory}) and server ({@link GrpcServiceFactory}) binding entry points.
- *
- * @see Builder
+ * Base <a href="https://www.grpc.io">gRPC</a> configuration shared by the client
+ * ({@link GrpcClientCallConfig}) and server ({@link GrpcServiceConfig}) binding entry points.
  */
-public final class GrpcMessageConfig {
+public abstract class GrpcConfig {
 
     private final int maxInboundMessageSize;
 
-    private GrpcMessageConfig(final int maxInboundMessageSize) {
+    GrpcConfig(final int maxInboundMessageSize) {
         this.maxInboundMessageSize = maxInboundMessageSize;
     }
 
@@ -35,28 +33,26 @@ public final class GrpcMessageConfig {
      *
      * @return the maximum inbound message size in bytes.
      */
-    public int maxInboundMessageSize() {
+    public final int maxInboundMessageSize() {
         return maxInboundMessageSize;
     }
 
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{maxInboundMessageSize=" + maxInboundMessageSize + '}';
-    }
-
     /**
-     * Builder for {@link GrpcMessageConfig}.
+     * Base builder for {@link GrpcConfig} subtypes.
+     *
+     * @param <B> the concrete builder type returned by fluent setters.
      */
-    public static final class Builder {
+    public abstract static class Builder<B extends Builder<B>> {
 
         private int maxInboundMessageSize = GrpcMessageSizeLimiter.DEFAULT_MAX_MESSAGE_SIZE;
 
         /**
          * Set the maximum size, in bytes, of a decoded inbound gRPC message. A message whose declared length exceeds
-         * the limit is rejected with {@link GrpcStatusCode#RESOURCE_EXHAUSTED} before its payload is buffered. For
-         * compressed messages the limit is also applied to the decompressed size, aborting decompression mid-inflate
-         * for built-in codecs. Defaults to 4 MiB (matching grpc-java); the client/server builders may override this
-         * default via a system property, but that override does not apply to a config built directly.
+         * the limit is rejected with {@link GrpcStatusCode#RESOURCE_EXHAUSTED} before its payload is buffered; for a
+         * compressed message the limit is also applied to the decoded size. Memory used while decompressing is bounded
+         * separately by the codec's own decompressed-bytes cap, not by this limit. Defaults to 4 MiB (matching
+         * grpc-java); the client/server builders may override this default via a system property, but that override
+         * does not apply to a config built directly.
          *
          * @param maxInboundMessageSize the maximum inbound message size in bytes: {@code 0} disables the limit,
          * {@code > 0} enforces it, and {@code -1} enables warn-only mode (a rate-limited warning is logged instead of
@@ -64,22 +60,29 @@ public final class GrpcMessageConfig {
          * @return {@code this}.
          * @throws IllegalArgumentException if {@code maxInboundMessageSize < -1}
          */
-        public Builder maxInboundMessageSize(final int maxInboundMessageSize) {
+        public final B maxInboundMessageSize(final int maxInboundMessageSize) {
             if (maxInboundMessageSize < -1) {
                 throw new IllegalArgumentException(
                         "maxInboundMessageSize: " + maxInboundMessageSize + " (expected >= -1)");
             }
             this.maxInboundMessageSize = maxInboundMessageSize;
-            return this;
+            return thisBuilder();
         }
 
         /**
-         * Builds a new {@link GrpcMessageConfig}.
+         * The configured maximum inbound message size, for use by a subclass {@code build()}.
          *
-         * @return a new {@link GrpcMessageConfig}.
+         * @return the configured maximum inbound message size in bytes.
          */
-        public GrpcMessageConfig build() {
-            return new GrpcMessageConfig(maxInboundMessageSize);
+        protected final int maxInboundMessageSize() {
+            return maxInboundMessageSize;
         }
+
+        /**
+         * Returns {@code this} typed as the concrete builder, so shared fluent setters return the right type.
+         *
+         * @return {@code this} as the concrete builder type.
+         */
+        protected abstract B thisBuilder();
     }
 }

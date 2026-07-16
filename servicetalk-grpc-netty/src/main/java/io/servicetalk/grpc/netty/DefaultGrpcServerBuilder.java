@@ -22,9 +22,9 @@ import io.servicetalk.grpc.api.GrpcBindableService;
 import io.servicetalk.grpc.api.GrpcExceptionMapperServiceFilter;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.grpc.api.GrpcLifecycleObserver;
-import io.servicetalk.grpc.api.GrpcMessageConfig;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
 import io.servicetalk.grpc.api.GrpcServerContext;
+import io.servicetalk.grpc.api.GrpcServiceConfig;
 import io.servicetalk.grpc.api.GrpcServiceFactory;
 import io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder;
 import io.servicetalk.http.api.BlockingHttpService;
@@ -152,8 +152,10 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
      */
     private Single<GrpcServerContext> doListen(final GrpcServiceFactory<?> serviceFactory) {
         interceptorBuilder = preBuild();
-        return serviceFactory.bind(this, interceptorBuilder.contextBuilder.build(),
-                new GrpcMessageConfig.Builder().maxInboundMessageSize(maxInboundMessageSize).build());
+        return serviceFactory.bind(this, new GrpcServiceConfig.Builder()
+                .executionContext(interceptorBuilder.contextBuilder.build())
+                .maxInboundMessageSize(maxInboundMessageSize)
+                .build());
     }
 
     private ExecutionContextInterceptorHttpServerBuilder preBuild() {

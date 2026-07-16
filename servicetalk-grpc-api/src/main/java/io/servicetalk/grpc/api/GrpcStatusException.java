@@ -155,11 +155,11 @@ public final class GrpcStatusException extends RuntimeException {
             status = new GrpcStatus(UNIMPLEMENTED, cause, "Message encoding '" + msgEncException.encoding()
                     + "' not supported ");
         } else if (cause instanceof MaxMessageSizeExceededException || cause instanceof PayloadTooLargeException) {
-            // A size limit was exceeded: the gRPC message-size limiter (frame length or decompressed size), a
-            // length-prefixed serializer, or the coordinated HTTP aggregation bound for unary. Map all of these to
-            // RESOURCE_EXHAUSTED (matching grpc-java). MaxMessageSizeExceededException extends SerializationException,
-            // so this branch must precede the SerializationException branch below. The size figures in the cause are
-            // safe to convey, but keep the description generic and stable.
+            // A size limit was exceeded: a length-prefixed serializer, or the coordinated HTTP aggregation bound for
+            // unary. (The gRPC message-size limiter throws GrpcStatusException directly, short-circuited above.) Map
+            // these to RESOURCE_EXHAUSTED (matching grpc-java). MaxMessageSizeExceededException extends
+            // SerializationException, so this branch must precede the SerializationException branch below. Keep the
+            // description generic and stable rather than echoing the size figures.
             status = new GrpcStatus(RESOURCE_EXHAUSTED, cause, "Message exceeds maximum inbound message size");
         } else if (cause instanceof SerializationException) {
             // Avoid leaking serializer internals (the message may contain partial payload content or internal type

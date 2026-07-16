@@ -67,13 +67,13 @@ public abstract class GrpcServiceFactory<Service extends GrpcService> {
      * @param executionContext {@link ExecutionContext} to use for the service.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
-     * @deprecated Use {@link #bind(ServerBinder, ExecutionContext, GrpcMessageConfig)}; this overload applies no
-     * inbound message-size limit.
+     * @deprecated Use {@link #bind(ServerBinder, GrpcServiceConfig)}; this overload applies the default inbound
+     * message-size limit.
      */
     @Deprecated // FIXME: 0.43 - remove deprecated method
     public final Single<GrpcServerContext> bind(final ServerBinder binder,
                                                 final ExecutionContext<?> executionContext) {
-        return bind(binder, executionContext, new GrpcMessageConfig.Builder().maxInboundMessageSize(0).build());
+        return bind(binder, new GrpcServiceConfig.Builder().executionContext(executionContext).build());
     }
 
     /**
@@ -81,15 +81,15 @@ public abstract class GrpcServiceFactory<Service extends GrpcService> {
      * <a href="https://www.grpc.io">gRPC</a> service for the server.
      *
      * @param binder {@link ServerBinder} to bind <a href="https://www.grpc.io">gRPC</a> service to the server.
-     * @param executionContext {@link ExecutionContext} to use for the service.
-     * @param messageConfig {@link GrpcMessageConfig} controlling message handling for the bound service, including the
-     * maximum inbound (request) message size enforced during deserialization.
+     * @param serviceConfig {@link GrpcServiceConfig} controlling the bound service, including the
+     * {@link ExecutionContext} it runs on and the maximum inbound (request) message size enforced during
+     * deserialization.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    public final Single<GrpcServerContext> bind(final ServerBinder binder, final ExecutionContext<?> executionContext,
-                                                final GrpcMessageConfig messageConfig) {
-        return routes.bind(binder, DefaultGrpcExecutionContext.from(executionContext), messageConfig);
+    public final Single<GrpcServerContext> bind(final ServerBinder binder, final GrpcServiceConfig serviceConfig) {
+        return routes.bind(binder, DefaultGrpcExecutionContext.from(serviceConfig.executionContext()),
+                serviceConfig.maxInboundMessageSize());
     }
 
     /**

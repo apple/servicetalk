@@ -69,8 +69,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         this.streamingHttpClient = requireNonNull(streamingHttpClient);
         executionContext = new DefaultGrpcExecutionContext(streamingHttpClient.executionContext());
         this.defaultTimeout = callConfig.defaultTimeout();
-        this.sizeLimiter = GrpcMessageSizeLimiter.forMaxInboundMessageSize(
-                callConfig.messageConfig().maxInboundMessageSize());
+        this.sizeLimiter = GrpcMessageSizeLimiter.forMaxInboundMessageSize(callConfig.maxInboundMessageSize());
     }
 
     @Deprecated

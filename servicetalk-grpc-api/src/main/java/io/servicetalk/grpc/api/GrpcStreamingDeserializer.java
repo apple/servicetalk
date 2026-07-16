@@ -98,7 +98,7 @@ final class GrpcStreamingDeserializer<T> implements StreamingDeserializer<T> {
                 final Buffer decompressed = compressor.decoder().deserialize(result, allocator);
                 // The wire-length check above only bounds the compressed frame; reject a decoded message that exceeds
                 // the limit. Decompression memory is bounded separately by the codec's own decompressed-bytes cap.
-                sizeLimiter.accept(decompressed.readableBytes());
+                sizeLimiter.accept(decompressed.readableBytes(), true);
                 return decompressed;
             }
             return result;

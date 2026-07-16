@@ -16,35 +16,25 @@
 package io.servicetalk.grpc.api;
 
 import java.time.Duration;
+import java.util.Objects;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
-import static java.util.Objects.requireNonNull;
 
 /**
- * Configuration for a client {@link GrpcClientCallFactory}: the shared {@link GrpcMessageConfig} message settings plus
+ * Configuration for a client {@link GrpcClientCallFactory}: the shared message settings from {@link GrpcConfig} plus
  * client-only settings such as the default call timeout.
  *
  * @see Builder
  */
-public final class GrpcClientCallConfig {
+public final class GrpcClientCallConfig extends GrpcConfig {
 
-    private final GrpcMessageConfig messageConfig;
     @Nullable
     private final Duration defaultTimeout;
 
-    private GrpcClientCallConfig(final GrpcMessageConfig messageConfig, @Nullable final Duration defaultTimeout) {
-        this.messageConfig = messageConfig;
+    private GrpcClientCallConfig(final int maxInboundMessageSize, @Nullable final Duration defaultTimeout) {
+        super(maxInboundMessageSize);
         this.defaultTimeout = defaultTimeout;
-    }
-
-    /**
-     * Returns the {@link GrpcMessageConfig} message settings.
-     *
-     * @return the {@link GrpcMessageConfig} message settings.
-     */
-    public GrpcMessageConfig messageConfig() {
-        return messageConfig;
     }
 
     /**
@@ -58,30 +48,36 @@ public final class GrpcClientCallConfig {
     }
 
     @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final GrpcClientCallConfig that = (GrpcClientCallConfig) o;
+        return maxInboundMessageSize() == that.maxInboundMessageSize() &&
+                Objects.equals(defaultTimeout, that.defaultTimeout);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(maxInboundMessageSize(), defaultTimeout);
+    }
+
+    @Override
     public String toString() {
-        return getClass().getSimpleName() + "{messageConfig=" + messageConfig +
+        return getClass().getSimpleName() + "{maxInboundMessageSize=" + maxInboundMessageSize() +
                 ", defaultTimeout=" + defaultTimeout + '}';
     }
 
     /**
      * Builder for {@link GrpcClientCallConfig}.
      */
-    public static final class Builder {
+    public static final class Builder extends GrpcConfig.Builder<Builder> {
 
-        private GrpcMessageConfig messageConfig = new GrpcMessageConfig.Builder().build();
         @Nullable
         private Duration defaultTimeout;
-
-        /**
-         * Set the {@link GrpcMessageConfig} message settings, such as the maximum inbound (response) message size.
-         *
-         * @param messageConfig the message settings to use.
-         * @return {@code this}.
-         */
-        public Builder messageConfig(final GrpcMessageConfig messageConfig) {
-            this.messageConfig = requireNonNull(messageConfig);
-            return this;
-        }
 
         /**
          * Set the default timeout applied to calls that carry no deadline of their own; a timeout specified on a
@@ -101,7 +97,12 @@ public final class GrpcClientCallConfig {
          * @return a new {@link GrpcClientCallConfig}.
          */
         public GrpcClientCallConfig build() {
-            return new GrpcClientCallConfig(messageConfig, defaultTimeout);
+            return new GrpcClientCallConfig(maxInboundMessageSize(), defaultTimeout);
+        }
+
+        @Override
+        protected Builder thisBuilder() {
+            return this;
         }
     }
 }

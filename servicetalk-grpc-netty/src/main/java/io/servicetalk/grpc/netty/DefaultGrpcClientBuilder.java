@@ -22,7 +22,6 @@ import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.api.GrpcClientCallConfig;
 import io.servicetalk.grpc.api.GrpcClientCallFactory;
 import io.servicetalk.grpc.api.GrpcClientFactory;
-import io.servicetalk.grpc.api.GrpcMessageConfig;
 import io.servicetalk.grpc.api.GrpcStatusException;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
@@ -139,7 +138,7 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
         httpInitializer.initialize(builder);
         Duration timeout = isInfinite(defaultTimeout, GRPC_MAX_TIMEOUT) ? null : defaultTimeout;
         return GrpcClientCallFactory.from(builder.buildStreaming(), new GrpcClientCallConfig.Builder()
-                .messageConfig(new GrpcMessageConfig.Builder().maxInboundMessageSize(maxInboundMessageSize).build())
+                .maxInboundMessageSize(maxInboundMessageSize)
                 .defaultTimeout(timeout)
                 .build());
     }
