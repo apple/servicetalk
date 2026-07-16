@@ -68,7 +68,8 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
     @Nullable
     private Duration defaultTimeout;
     private boolean appendTimeoutFilter = true;
-    private int maxInboundMessageSize = GrpcMessageSizeUtils.DEFAULT_MAX_INBOUND_MESSAGE_SIZE;
+    @Nullable
+    private Integer maxInboundMessageSize;
 
     // Do not use this ctor directly, GrpcServers is the entry point for creating a new builder.
     DefaultGrpcServerBuilder(final Supplier<HttpServerBuilder> httpServerBuilderSupplier) {
@@ -79,7 +80,8 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
                     // Bound HTTP request aggregation to the gRPC inbound message-size limit so oversized unary
                     // (aggregated) requests are rejected before the whole body is buffered; streaming requests are
                     // deframed incrementally and unaffected. Applied before initializeHttp so users can override it.
-                    .maxAggregatedPayloadSize(GrpcMessageSizeUtils.httpAggregationLimitFor(maxInboundMessageSize));
+                    .maxAggregatedPayloadSize(
+                            GrpcMessageSizeUtils.httpAggregationLimitFor(effectiveMaxInboundMessageSize()));
     }
 
     @Override
@@ -152,10 +154,20 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
      */
     private Single<GrpcServerContext> doListen(final GrpcServiceFactory<?> serviceFactory) {
         interceptorBuilder = preBuild();
-        return serviceFactory.bind(this, new GrpcServiceConfig.Builder()
-                .executionContext(interceptorBuilder.contextBuilder.build())
-                .maxInboundMessageSize(maxInboundMessageSize)
-                .build());
+        // Only override the config's default when the user set an explicit value, so an unset limit defers to the
+        // GrpcConfig default (which resolves the temporary system property, including its warn-only -1 selector).
+        final GrpcServiceConfig.Builder serviceConfigBuilder = new GrpcServiceConfig.Builder()
+                .executionContext(interceptorBuilder.contextBuilder.build());
+        if (maxInboundMessageSize != null) {
+            serviceConfigBuilder.maxInboundMessageSize(maxInboundMessageSize);
+        }
+        return serviceFactory.bind(this, serviceConfigBuilder.build());
+    }
+
+    // The effective inbound limit: the user's explicit value, else the GrpcConfig default (property-derived).
+    private int effectiveMaxInboundMessageSize() {
+        return maxInboundMessageSize != null ? maxInboundMessageSize
+                : GrpcMessageSizeUtils.DEFAULT_MAX_INBOUND_MESSAGE_SIZE;
     }
 
     private ExecutionContextInterceptorHttpServerBuilder preBuild() {

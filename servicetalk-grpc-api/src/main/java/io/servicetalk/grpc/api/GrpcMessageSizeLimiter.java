@@ -48,13 +48,12 @@ final class GrpcMessageSizeLimiter {
 
     // maxInboundMessageSize value selecting warn-only mode (see forMaxInboundMessageSize).
     private static final int WARN_ONLY = -1;
-    // Built-in default enforcing limit, 4 MiB, matching grpc-java's io.grpc.internal.GrpcUtil.DEFAULT_MAX_MESSAGE_SIZE.
-    // Package-visible so GrpcConfig.Builder can use it as its default without duplicating the literal.
-    static final int DEFAULT_MAX_MESSAGE_SIZE = 4 * 1024 * 1024;
-    // Threshold used in warn-only mode: the limit that would otherwise be enforced. Read from the same temporary
-    // system property the client/server builders use for the default, falling back to 4 MiB when unset or
-    // non-enforcing, so raising the default also raises the warn threshold.
-    private static final int WARN_ONLY_THRESHOLD = warnOnlyThreshold();
+    // Built-in default limit, 4 MiB, matching grpc-java's io.grpc.internal.GrpcUtil.DEFAULT_MAX_MESSAGE_SIZE.
+    private static final int DEFAULT_MAX_MESSAGE_SIZE = 4 * 1024 * 1024;
+    // FIXME: 0.43 - remove this temporary property
+    private static final String DEFAULT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY =
+            "io.servicetalk.grpc.netty.temporaryDefaultMaxInboundMessageSize";
+    static final int DEFAULT_MAX_INBOUND_MESSAGE_SIZE = resolveDefault();
 
     private enum Mode { DISABLED, ENFORCING, WARN_ONLY }
 
@@ -94,7 +93,7 @@ final class GrpcMessageSizeLimiter {
             throw new IllegalArgumentException("maxInboundMessageSize: " + maxInboundMessageSize +
                     " (expected >= " + WARN_ONLY + ')');
         }
-        return new GrpcMessageSizeLimiter(Mode.WARN_ONLY, WARN_ONLY_THRESHOLD);
+        return new GrpcMessageSizeLimiter(Mode.WARN_ONLY, DEFAULT_MAX_MESSAGE_SIZE);
     }
 
     /**
@@ -129,10 +128,22 @@ final class GrpcMessageSizeLimiter {
         maybeWarn(messageSize);
     }
 
-    private static int warnOnlyThreshold() {
-        final int configured = getInteger(
-                "io.servicetalk.grpc.netty.temporaryDefaultMaxInboundMessageSize", DEFAULT_MAX_MESSAGE_SIZE);
-        return configured > 0 ? configured : DEFAULT_MAX_MESSAGE_SIZE;
+    private static int resolveDefault() {
+        final int value = getInteger(DEFAULT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY, DEFAULT_MAX_MESSAGE_SIZE);
+        // The property additionally supports the warn-only selector (-1), which the builder/config API does not
+        // expose; only values below it are invalid. Fall back to the built-in default rather than failing at
+        // class-load.
+        if (value < WARN_ONLY) {
+            LOGGER.warn("-D{}: {} is invalid (expected >= {}). Falling back to the default of {} bytes.",
+                    DEFAULT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY, value, WARN_ONLY, DEFAULT_MAX_MESSAGE_SIZE);
+            return DEFAULT_MAX_MESSAGE_SIZE;
+        }
+        if (value != DEFAULT_MAX_MESSAGE_SIZE) {
+            LOGGER.warn("-D{}: {}. This property will be removed in a future release. Configure this value per " +
+                            "client/server builder via maxInboundMessageSize(int) instead.",
+                    DEFAULT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY, value);
+        }
+        return value;
     }
 
     private void maybeWarn(final long messageSize) {

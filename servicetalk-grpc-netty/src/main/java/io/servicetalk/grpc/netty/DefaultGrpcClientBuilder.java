@@ -52,7 +52,8 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
     @Nullable
     private Duration defaultTimeout;
     private boolean appendTimeoutFilter = true;
-    private int maxInboundMessageSize = GrpcMessageSizeUtils.DEFAULT_MAX_INBOUND_MESSAGE_SIZE;
+    @Nullable
+    private Integer maxInboundMessageSize;
     private HttpInitializer<U, R> httpInitializer = builder -> {
         // no-op
     };
@@ -126,7 +127,7 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
             // responses are rejected before the whole body is buffered. gRPC frames its own messages, so a unary body
             // is a single frame that maps cleanly to this bound; streaming responses are deframed incrementally and
             // unaffected. Set before initializeHttp so users can still override it.
-            .maxAggregatedPayloadSize(GrpcMessageSizeUtils.httpAggregationLimitFor(maxInboundMessageSize));
+            .maxAggregatedPayloadSize(GrpcMessageSizeUtils.httpAggregationLimitFor(effectiveMaxInboundMessageSize()));
         builder.appendClientFilter(CatchAllHttpClientFilter.INSTANCE);
         if (appendTimeoutFilter) {
             builder.appendClientFilter(newGrpcDeadlineClientFilterFactory());
@@ -137,10 +138,20 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
         builder.appendConnectionFactoryFilter(GrpcRequestTracker.filter());
         httpInitializer.initialize(builder);
         Duration timeout = isInfinite(defaultTimeout, GRPC_MAX_TIMEOUT) ? null : defaultTimeout;
-        return GrpcClientCallFactory.from(builder.buildStreaming(), new GrpcClientCallConfig.Builder()
-                .maxInboundMessageSize(maxInboundMessageSize)
-                .defaultTimeout(timeout)
-                .build());
+        // Only override the config's default when the user set an explicit value, so an unset limit defers to the
+        // GrpcConfig default (which resolves the temporary system property, including its warn-only -1 selector).
+        final GrpcClientCallConfig.Builder callConfigBuilder = new GrpcClientCallConfig.Builder()
+                .defaultTimeout(timeout);
+        if (maxInboundMessageSize != null) {
+            callConfigBuilder.maxInboundMessageSize(maxInboundMessageSize);
+        }
+        return GrpcClientCallFactory.from(builder.buildStreaming(), callConfigBuilder.build());
+    }
+
+    // The effective inbound limit: the user's explicit value, else the GrpcConfig default (property-derived).
+    private int effectiveMaxInboundMessageSize() {
+        return maxInboundMessageSize != null ? maxInboundMessageSize
+                : GrpcMessageSizeUtils.DEFAULT_MAX_INBOUND_MESSAGE_SIZE;
     }
 
     static final class CatchAllHttpClientFilter implements StreamingHttpClientFilterFactory {

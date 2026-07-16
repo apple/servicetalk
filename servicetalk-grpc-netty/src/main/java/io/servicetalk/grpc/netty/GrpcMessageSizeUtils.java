@@ -15,53 +15,26 @@
  */
 package io.servicetalk.grpc.netty;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.servicetalk.grpc.api.GrpcClientCallConfig;
 
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
-import static java.lang.Integer.getInteger;
 
 /**
- * Resolves and validates the {@code maxInboundMessageSize} configured on the gRPC client/server builders. The builder
- * API accepts {@code 0} (disables) or a positive value (enforces) and passes it as-is to {@code servicetalk-grpc-api};
- * the builders own these knobs (mirroring {@code HttpConfig}). The temporary default system property additionally
- * accepts {@code -1} to select warn-only mode globally, which the builder API does not expose.
+ * Validates the {@code maxInboundMessageSize} configured on the gRPC client/server builders and coordinates it with the
+ * underlying HTTP transport. The builder API accepts {@code 0} (disables) or a positive value (enforces); the default
+ * (including the temporary-system-property override and its warn-only {@code -1} selector) is resolved by
+ * {@code servicetalk-grpc-api} and read back through {@link #DEFAULT_MAX_INBOUND_MESSAGE_SIZE}, so the property is
+ * parsed in exactly one place.
  */
 final class GrpcMessageSizeUtils {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(GrpcMessageSizeUtils.class);
-
-    // 4 MiB, matching grpc-java's io.grpc.internal.GrpcUtil.DEFAULT_MAX_MESSAGE_SIZE.
-    static final int DEFAULT_MAX_INBOUND_MESSAGE_SIZE_VALUE = 4 * 1024 * 1024;
-    // Magic value accepted by maxInboundMessageSize(int): warn (rate-limited) when the limit is exceeded but let the
-    // message through rather than rejecting it.
-    static final int WARN_ONLY_MAX_INBOUND_MESSAGE_SIZE = -1;
     // A unary gRPC message is a single frame: a 5-byte header (1 compression flag + 4-byte length) plus the message.
     static final int GRPC_FRAME_HEADER_BYTES = 5;
-    // FIXME: 0.43 - remove this temporary property
-    static final String DEFAULT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY =
-            "io.servicetalk.grpc.netty.temporaryDefaultMaxInboundMessageSize";
-    static final int DEFAULT_MAX_INBOUND_MESSAGE_SIZE;
-
-    static {
-        final int value = getInteger(DEFAULT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY, DEFAULT_MAX_INBOUND_MESSAGE_SIZE_VALUE);
-        // The property additionally supports the warn-only selector (-1), which the builder API does not expose; only
-        // values below it are invalid. Don't throw from this static initializer; fall back to the default instead.
-        if (value < WARN_ONLY_MAX_INBOUND_MESSAGE_SIZE) {
-            LOGGER.warn("-D{}: {} is invalid (expected >= {}). Falling back to the default of {} bytes.",
-                    DEFAULT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY, value, WARN_ONLY_MAX_INBOUND_MESSAGE_SIZE,
-                    DEFAULT_MAX_INBOUND_MESSAGE_SIZE_VALUE);
-            DEFAULT_MAX_INBOUND_MESSAGE_SIZE = DEFAULT_MAX_INBOUND_MESSAGE_SIZE_VALUE;
-        } else {
-            DEFAULT_MAX_INBOUND_MESSAGE_SIZE = value;
-            if (value != DEFAULT_MAX_INBOUND_MESSAGE_SIZE_VALUE) {
-                LOGGER.warn("-D{}: {}. This property will be removed in the future releases. Configure this value " +
-                                "per client/server builder via maxInboundMessageSize(int) instead.",
-                        DEFAULT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY, value);
-            }
-        }
-    }
+    // The default maxInboundMessageSize a builder applies when the user sets none. Read from a default-built config so
+    // the temporary system property is resolved solely in servicetalk-grpc-api (GrpcConfig). May be -1 (warn-only).
+    static final int DEFAULT_MAX_INBOUND_MESSAGE_SIZE =
+            new GrpcClientCallConfig.Builder().build().maxInboundMessageSize();
 
     private GrpcMessageSizeUtils() {
         // No instances.
