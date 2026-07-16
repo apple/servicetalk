@@ -26,6 +26,7 @@ import java.util.function.LongConsumer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.lang.Integer.getInteger;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -37,8 +38,10 @@ final class HttpConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpConfig.class);
 
     static final int DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE = 4 * 1024 * 1024;
-    // Magic value accepted by maxAggregatedPayloadSize(int): warn (rate-limited) when the default limit is exceeded
-    // but let the payload through rather than rejecting it.
+    // Magic value accepted by the temporaryDefaultMaxAggregatedPayloadSize system property (but not by the
+    // maxAggregatedPayloadSize(int) builder API): warn (rate-limited) when the default limit is exceeded but let the
+    // payload through rather than rejecting it. It exists to ease rollout of a global default; a value set
+    // programmatically is always definitive.
     static final int WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE = -1;
     // FIXME: 0.43 - remove this temporary property
     static final String DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY =
@@ -48,8 +51,8 @@ final class HttpConfig {
     static {
         final int value = getInteger(DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY,
                 DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE);
-        // Mirror the validation applied to maxAggregatedPayloadSize(int): values below the warn-only magic value are
-        // invalid. Don't throw from this static initializer; fall back to the hardcoded default instead.
+        // The property additionally accepts the warn-only magic value; only values below it are invalid. Don't throw
+        // from this static initializer; fall back to the hardcoded default instead.
         if (value < WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE) {
             LOGGER.warn("-D{}: {} is invalid (expected >= {}). Falling back to the default of {} bytes.",
                     DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY, value, WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE,
@@ -113,11 +116,7 @@ final class HttpConfig {
     }
 
     void maxAggregatedPayloadSize(int maxAggregatedPayloadSize) {
-        if (maxAggregatedPayloadSize < WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE) {
-            throw new IllegalArgumentException("maxAggregatedPayloadSize: " + maxAggregatedPayloadSize +
-                    " (expected >= " + WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE + ")");
-        }
-        this.maxAggregatedPayloadSize = maxAggregatedPayloadSize;
+        this.maxAggregatedPayloadSize = ensureNonNegative(maxAggregatedPayloadSize, "maxAggregatedPayloadSize");
     }
 
     /**

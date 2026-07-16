@@ -215,34 +215,21 @@ public interface HttpServerBuilder {
     /**
      * Sets the maximum size, in bytes, of an aggregated request payload body that this server will buffer in memory.
      * <p>
-     * This limit applies only when a request is <strong>aggregated</strong> &mdash; for example when the service uses
-     * an {@link HttpRequest aggregated programming paradigm}, or when a filter calls
-     * {@link StreamingHttpRequest#toRequest()}. Requests that are consumed purely as a
-     * {@link StreamingHttpRequest#payloadBody() stream} are not affected. When the aggregated payload would exceed this
-     * limit a {@link PayloadTooLargeException} is raised, which the default exception mapping translates into a
-     * {@link HttpResponseStatus#PAYLOAD_TOO_LARGE 413 Payload Too Large} response.
+     * The limit applies only when a request is <strong>aggregated</strong> (an {@link HttpRequest aggregated
+     * programming paradigm} or a filter calling {@link StreamingHttpRequest#toRequest()}); requests consumed as a
+     * {@link StreamingHttpRequest#payloadBody() stream} are not affected. Exceeding it raises a
+     * {@link PayloadTooLargeException}, which the default exception mapping turns into a
+     * {@link HttpResponseStatus#PAYLOAD_TOO_LARGE 413 Payload Too Large} response. The limit is measured against the
+     * fully decoded payload at the point of aggregation &mdash; <em>after</em> any decompression or body transformation
+     * by earlier filters &mdash; not the bytes received from the network nor any declared {@code Content-Length}.
      * <p>
-     * The limit is measured against the fully decoded payload buffered in memory at the point of aggregation &mdash;
-     * that is, <em>after</em> any decompression or body transformation applied by filters earlier in the pipeline
-     * &mdash; not the number of bytes received from the network nor any declared {@code Content-Length}. A small
-     * compressed request that expands beyond this limit once decoded will therefore be rejected.
-     * <p>
-     * The default value is 4 MiB. Pass {@code 0} to disable the limit, or {@code -1} for <strong>warn-only</strong>
-     * mode: oversized aggregated requests are still served, but a warning (rate-limited to once every five minutes per
-     * server) is logged so the limit can be evaluated before it is enforced. A server configured to accept both TLS and
-     * cleartext connections (see {@link #sslConfig(ServerSslConfig, boolean)}) tracks the two negotiation outcomes
-     * separately and may therefore emit up to two such warnings per interval. Users who unexpectedly hit the default
-     * limit can temporarily set the {@code io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize} system
-     * property to change the default globally; it accepts the same values as this method (including {@code -1} to warn
-     * globally), and an explicit call to this method takes precedence over the property. This is a temporary property
-     * that will be removed in future releases.
-     * <p>
-     * For an independent, opt-in limit that can fail fast on {@code Content-Length} or bound bytes at a chosen position
-     * in the filter chain (e.g. before a decompressor), see {@code PayloadSizeLimitingHttpServiceFilter}; both apply.
+     * The default is 4 MiB and can be overridden globally, including a warn-only mode, via the temporary
+     * {@code io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize} system property; an explicit call to
+     * this method always takes precedence and is enforced (never warn-only). For an independent, opt-in limit that can
+     * fail fast on {@code Content-Length}, see {@code PayloadSizeLimitingHttpServiceFilter}; both apply.
      *
-     * @param maxAggregatedPayloadSize the maximum number of payload bytes to buffer when a request is aggregated,
-     * {@code 0} to disable the limit, or {@code -1} to warn (but not reject) when the default limit is exceeded. Other
-     * negative values are rejected.
+     * @param maxAggregatedPayloadSize the maximum number of payload bytes to buffer when a request is aggregated;
+     * {@code 0} disables the limit. Must be non-negative.
      * @return {@code this}
      */
     // FIXME: 0.43 - consider removing default impl
