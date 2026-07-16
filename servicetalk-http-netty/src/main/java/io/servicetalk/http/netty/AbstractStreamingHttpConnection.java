@@ -198,7 +198,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                         flatRequest = flatRequest.scanWithMapper(HeaderUtils::appendTrailersMapper);
                     }
                 }
-                addRequestTransferEncodingIfNecessary(request);
+                addRequestTransferEncodingIfNecessary(request, connectionContext().protocol());
             }
 
             final HttpExecutionStrategy strategy = requestExecutionStrategy(request,

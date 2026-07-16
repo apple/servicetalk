@@ -15,12 +15,16 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ServerContext;
@@ -43,6 +47,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.assertThrows;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
@@ -58,6 +63,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class AlpnClientAndServerTest {
 
@@ -78,6 +84,7 @@ class AlpnClientAndServerTest {
     private HttpProtocolVersion expectedProtocol;
     private BlockingQueue<HttpServiceContext> serviceContext;
     private BlockingQueue<HttpProtocolVersion> requestVersion;
+    private BlockingQueue<Integer> requestPayloadSize;
     private void setUp(List<String> serverSideProtocols,
                        List<String> clientSideProtocols,
                        @Nullable HttpProtocolVersion expectedProtocol,
@@ -91,6 +98,7 @@ class AlpnClientAndServerTest {
     void beforeEach() {
         serviceContext = new LinkedBlockingDeque<>();
         requestVersion = new LinkedBlockingDeque<>();
+        requestPayloadSize = new LinkedBlockingDeque<>();
     }
 
     @SuppressWarnings("unused")
@@ -147,6 +155,7 @@ class AlpnClientAndServerTest {
                 .listenBlocking((ctx, request, responseFactory) -> {
                     serviceContext.put(ctx);
                     requestVersion.put(request.version());
+                    requestPayloadSize.put(request.payloadBody().readableBytes());
                     return responseFactory.ok().payloadBody(PAYLOAD_BODY, textSerializerUtf8());
                 })
                 .toFuture().get();
@@ -228,6 +237,39 @@ class AlpnClientAndServerTest {
         } else {
             assertResponseAndServiceContext(client.request(client.get("/")));
         }
+    }
+
+    @ParameterizedTest(name = "serverSideProtocols={0}, clientSideProtocols={1}," +
+            " expectedProtocol={2}, expectedExceptionType={3}, optionalExceptionWrapperType={4}," +
+            " acceptInsecureConnections={5}")
+    @MethodSource("arguments")
+    void testAlpnClientStreamingRequestPayload(List<String> serverSideProtocols,
+                                               List<String> clientSideProtocols,
+                                               @Nullable HttpProtocolVersion expectedProtocol,
+                                               @Nullable Class<? extends Throwable> expectedExceptionType,
+                                               @Nullable Class<? extends Throwable> optionalExceptionWrapperType,
+                                               boolean acceptInsecureConnections) throws Exception {
+        setUp(serverSideProtocols, clientSideProtocols, expectedProtocol, acceptInsecureConnections);
+        // Protocol-incompatible combinations are exercised by the negotiation tests above.
+        assumeTrue(expectedExceptionType == null);
+
+        final StreamingHttpClient streamingClient = client.asStreamingClient();
+        final Buffer chunk1 = streamingClient.executionContext().bufferAllocator().fromAscii("Hello");
+        final Buffer chunk2 = streamingClient.executionContext().bufferAllocator().fromAscii(" World!");
+        final int expectedBytes = chunk1.readableBytes() + chunk2.readableBytes();
+
+        // An unknown-length body must be framed as Transfer-Encoding: chunked on an h1 connection; verify that still
+        // happens when the client prefers h2 but ALPN falls back to h1.
+        final StreamingHttpRequest request = streamingClient.post("/").payloadBody(from(chunk1, chunk2));
+        final StreamingHttpResponse response = streamingClient.request(request).toFuture().get();
+        assertThat(response.status(), is(OK));
+        assertThat(response.version(), is(expectedProtocol));
+        response.payloadBody().ignoreElements().toFuture().get();
+
+        // Assert the negotiated protocol so a fallback row can't silently degrade into an all-h2 exchange that
+        // never exercises h1 chunked framing.
+        assertThat(requestVersion.take(), is(expectedProtocol));
+        assertThat(requestPayloadSize.take(), is(expectedBytes));
     }
 
     private void assertResponseAndServiceContext(HttpResponse response) throws Exception {
