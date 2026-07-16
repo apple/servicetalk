@@ -88,8 +88,7 @@ public abstract class GrpcServiceFactory<Service extends GrpcService> {
      * the server could not be started.
      */
     public final Single<GrpcServerContext> bind(final ServerBinder binder, final GrpcServiceConfig serviceConfig) {
-        return routes.bind(binder, DefaultGrpcExecutionContext.from(serviceConfig.executionContext()),
-                serviceConfig.maxInboundMessageSize());
+        return routes.bind(binder, serviceConfig);
     }
 
     /**

@@ -24,25 +24,25 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Configuration for binding a {@link GrpcServiceFactory} to a server: the shared message settings from
- * {@link GrpcConfig} plus the {@link ExecutionContext} the bound service runs on.
+ * {@link GrpcConfig} plus the {@link GrpcExecutionContext} the bound service runs on.
  *
  * @see Builder
  */
 public final class GrpcServiceConfig extends GrpcConfig {
 
-    private final ExecutionContext<?> executionContext;
+    private final GrpcExecutionContext executionContext;
 
-    private GrpcServiceConfig(final int maxInboundMessageSize, final ExecutionContext<?> executionContext) {
+    private GrpcServiceConfig(final int maxInboundMessageSize, final GrpcExecutionContext executionContext) {
         super(maxInboundMessageSize);
         this.executionContext = executionContext;
     }
 
     /**
-     * Returns the {@link ExecutionContext} the bound service runs on.
+     * Returns the {@link GrpcExecutionContext} the bound service runs on.
      *
-     * @return the {@link ExecutionContext} the bound service runs on.
+     * @return the {@link GrpcExecutionContext} the bound service runs on.
      */
-    public ExecutionContext<?> executionContext() {
+    public GrpcExecutionContext executionContext() {
         return executionContext;
     }
 
@@ -79,7 +79,7 @@ public final class GrpcServiceConfig extends GrpcConfig {
         private ExecutionContext<?> executionContext;
 
         /**
-         * Set the {@link ExecutionContext} the bound service runs on.
+         * Set the {@link ExecutionContext} the bound service runs on; it is adapted to a {@link GrpcExecutionContext}.
          *
          * @param executionContext the {@link ExecutionContext} to use for the bound service.
          * @return {@code this}.
@@ -96,7 +96,7 @@ public final class GrpcServiceConfig extends GrpcConfig {
          */
         public GrpcServiceConfig build() {
             return new GrpcServiceConfig(maxInboundMessageSize(),
-                    requireNonNull(executionContext, "executionContext"));
+                    DefaultGrpcExecutionContext.from(requireNonNull(executionContext, "executionContext")));
         }
 
         @Override
