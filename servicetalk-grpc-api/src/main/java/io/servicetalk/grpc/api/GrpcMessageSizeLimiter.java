@@ -88,8 +88,8 @@ final class GrpcMessageSizeLimiter {
         if (maxInboundMessageSize > 0) {
             return new GrpcMessageSizeLimiter(Mode.ENFORCING, maxInboundMessageSize);
         }
-        // Validate before use: this is reached from public entry points (GrpcClientCallFactory.from /
-        // GrpcServiceFactory.bind), so reject anything other than the warn-only selector.
+        // A negative value reaches here only as the property-derived default; the builder/config API rejects
+        // negatives up front, so the sole legal negative is the warn-only selector.
         if (maxInboundMessageSize != WARN_ONLY) {
             throw new IllegalArgumentException("maxInboundMessageSize: " + maxInboundMessageSize +
                     " (expected >= " + WARN_ONLY + ')');

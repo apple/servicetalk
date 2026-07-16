@@ -19,12 +19,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.lang.Integer.getInteger;
 
 /**
- * Resolves and validates the {@code maxInboundMessageSize} configured on the gRPC client/server builders. The value
- * is user-facing throughout ({@code 0} disables, {@code -1} warn-only, {@code > 0} enforces) and passed as-is to
- * {@code servicetalk-grpc-api}; the builders own these knobs (mirroring {@code HttpConfig}).
+ * Resolves and validates the {@code maxInboundMessageSize} configured on the gRPC client/server builders. The builder
+ * API accepts {@code 0} (disables) or a positive value (enforces) and passes it as-is to {@code servicetalk-grpc-api};
+ * the builders own these knobs (mirroring {@code HttpConfig}). The temporary default system property additionally
+ * accepts {@code -1} to select warn-only mode globally, which the builder API does not expose.
  */
 final class GrpcMessageSizeUtils {
 
@@ -44,8 +46,8 @@ final class GrpcMessageSizeUtils {
 
     static {
         final int value = getInteger(DEFAULT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY, DEFAULT_MAX_INBOUND_MESSAGE_SIZE_VALUE);
-        // Mirror the validation applied to maxInboundMessageSize(int): values below the warn-only magic value are
-        // invalid. Don't throw from this static initializer; fall back to the hardcoded default instead.
+        // The property additionally supports the warn-only selector (-1), which the builder API does not expose; only
+        // values below it are invalid. Don't throw from this static initializer; fall back to the default instead.
         if (value < WARN_ONLY_MAX_INBOUND_MESSAGE_SIZE) {
             LOGGER.warn("-D{}: {} is invalid (expected >= {}). Falling back to the default of {} bytes.",
                     DEFAULT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY, value, WARN_ONLY_MAX_INBOUND_MESSAGE_SIZE,
@@ -66,17 +68,14 @@ final class GrpcMessageSizeUtils {
     }
 
     /**
-     * Validate a user-supplied {@code maxInboundMessageSize} for a builder.
+     * Validate a user-supplied {@code maxInboundMessageSize} for a builder. The builder API does not expose the
+     * warn-only selector ({@code -1}); that is reachable only via the default system property.
      *
      * @param maxInboundMessageSize the configured value
      * @return the validated value
      */
     static int validateMaxInboundMessageSize(final int maxInboundMessageSize) {
-        if (maxInboundMessageSize < WARN_ONLY_MAX_INBOUND_MESSAGE_SIZE) {
-            throw new IllegalArgumentException("maxInboundMessageSize: " + maxInboundMessageSize +
-                    " (expected >= " + WARN_ONLY_MAX_INBOUND_MESSAGE_SIZE + ")");
-        }
-        return maxInboundMessageSize;
+        return ensureNonNegative(maxInboundMessageSize, "maxInboundMessageSize");
     }
 
     /**

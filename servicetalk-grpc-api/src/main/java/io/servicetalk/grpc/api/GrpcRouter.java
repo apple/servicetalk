@@ -319,8 +319,8 @@ final class GrpcRouter {
          * {@link Builder}. Must be called before routes are added so the limiter is baked into their deserializers.
          *
          * @param maxInboundMessageSize the maximum inbound message size in bytes: {@code 0} disables the limit,
-         * {@code > 0} rejects larger messages with {@code RESOURCE_EXHAUSTED}, and {@code -1} warns (without
-         * rejecting) at the default limit.
+         * {@code > 0} rejects larger messages with {@code RESOURCE_EXHAUSTED}, and {@code -1} (reachable only via the
+         * default system property, not the builder API) warns without rejecting at the default limit.
          */
         void maxInboundMessageSize(final int maxInboundMessageSize) {
             this.sizeLimiter = GrpcMessageSizeLimiter.forMaxInboundMessageSize(maxInboundMessageSize);

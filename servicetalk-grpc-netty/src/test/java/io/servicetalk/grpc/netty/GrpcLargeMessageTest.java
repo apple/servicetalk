@@ -211,22 +211,6 @@ class GrpcLargeMessageTest {
     }
 
     @Test
-    void warnOnlyDeliversMessageExceedingLimit() throws Exception {
-        // Warn-only warns at the (4 MiB) default threshold but still delivers, so a message above it must round-trip.
-        final String large = repeat(PAYLOAD_SIZE);
-
-        try (GrpcServerContext server = forAddress(localAddress(0))
-                     .maxInboundMessageSize(-1)
-                     .listenAndAwait(echoService());
-             BlockingGreeterClient client = forAddress(serverHostAndPort(server))
-                     .maxInboundMessageSize(-1)
-                     .buildBlocking(new ClientFactory())) {
-            HelloReply reply = client.sayHello(HelloRequest.newBuilder().setName(large).build());
-            assertThat(reply.getMessage().length(), equalTo(PAYLOAD_SIZE));
-        }
-    }
-
-    @Test
     void clientRejectsCompressedResponseDecompressingAboveLimit() throws Exception {
         // Highly compressible: small on the wire (under the limit) but large once decompressed (over the limit).
         // Exercises the decompressed-size enforcement, distinct from the compressed frame-length check.

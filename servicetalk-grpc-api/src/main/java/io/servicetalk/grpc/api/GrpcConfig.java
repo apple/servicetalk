@@ -15,6 +15,8 @@
  */
 package io.servicetalk.grpc.api;
 
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
+
 /**
  * Base <a href="https://www.grpc.io">gRPC</a> configuration shared by the client
  * ({@link GrpcClientCallConfig}) and server ({@link GrpcServiceConfig}) binding entry points.
@@ -29,7 +31,7 @@ public abstract class GrpcConfig {
 
     /**
      * Returns the maximum inbound message size in bytes. See {@link Builder#maxInboundMessageSize(int)} for the
-     * semantics of the special values {@code 0} and {@code -1}.
+     * semantics of the special value {@code 0}.
      *
      * @return the maximum inbound message size in bytes.
      */
@@ -54,18 +56,13 @@ public abstract class GrpcConfig {
          * grpc-java); the client/server builders may override this default via a system property, but that override
          * does not apply to a config built directly.
          *
-         * @param maxInboundMessageSize the maximum inbound message size in bytes: {@code 0} disables the limit,
-         * {@code > 0} enforces it, and {@code -1} enables warn-only mode (a rate-limited warning is logged instead of
-         * rejecting).
+         * @param maxInboundMessageSize the maximum inbound message size in bytes: {@code 0} disables the limit and any
+         * positive value enforces it. Must be non-negative.
          * @return {@code this}.
-         * @throws IllegalArgumentException if {@code maxInboundMessageSize < -1}
+         * @throws IllegalArgumentException if {@code maxInboundMessageSize < 0}
          */
         public final B maxInboundMessageSize(final int maxInboundMessageSize) {
-            if (maxInboundMessageSize < -1) {
-                throw new IllegalArgumentException(
-                        "maxInboundMessageSize: " + maxInboundMessageSize + " (expected >= -1)");
-            }
-            this.maxInboundMessageSize = maxInboundMessageSize;
+            this.maxInboundMessageSize = ensureNonNegative(maxInboundMessageSize, "maxInboundMessageSize");
             return thisBuilder();
         }
 

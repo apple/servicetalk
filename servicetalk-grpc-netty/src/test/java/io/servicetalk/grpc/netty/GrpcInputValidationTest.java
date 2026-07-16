@@ -50,24 +50,29 @@ class GrpcInputValidationTest {
     }
 
     @Test
-    void clientBuilderRejectsMaxInboundMessageSizeBelowWarnOnly() {
+    void clientBuilderRejectsNegativeMaxInboundMessageSize() {
+        // Warn-only (-1) is property-only; the builder API rejects all negatives.
+        assertThrows(IllegalArgumentException.class,
+                () -> GrpcClients.forAddress("localhost", 0).maxInboundMessageSize(-1));
         assertThrows(IllegalArgumentException.class,
                 () -> GrpcClients.forAddress("localhost", 0).maxInboundMessageSize(-2));
     }
 
     @Test
-    void serverBuilderRejectsMaxInboundMessageSizeBelowWarnOnly() {
+    void serverBuilderRejectsNegativeMaxInboundMessageSize() {
+        assertThrows(IllegalArgumentException.class,
+                () -> GrpcServers.forAddress(localAddress(0)).maxInboundMessageSize(-1));
         assertThrows(IllegalArgumentException.class,
                 () -> GrpcServers.forAddress(localAddress(0)).maxInboundMessageSize(-2));
     }
 
     @Test
     void buildersAcceptValidMaxInboundMessageSize() {
-        // 0 (disabled), -1 (warn-only) and a positive value are all valid and must not throw.
+        // 0 (disabled) and a positive value are both valid and must not throw.
         GrpcClients.forAddress("localhost", 0)
-                .maxInboundMessageSize(0).maxInboundMessageSize(-1).maxInboundMessageSize(4 * 1024 * 1024);
+                .maxInboundMessageSize(0).maxInboundMessageSize(4 * 1024 * 1024);
         GrpcServers.forAddress(localAddress(0))
-                .maxInboundMessageSize(0).maxInboundMessageSize(-1).maxInboundMessageSize(4 * 1024 * 1024);
+                .maxInboundMessageSize(0).maxInboundMessageSize(4 * 1024 * 1024);
     }
 
     private static void assertEarlyRequireNonNull(final Executable executable) {

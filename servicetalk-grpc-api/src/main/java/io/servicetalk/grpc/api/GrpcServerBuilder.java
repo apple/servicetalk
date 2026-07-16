@@ -99,14 +99,13 @@ public interface GrpcServerBuilder {
      * {@link GrpcStatusCode#RESOURCE_EXHAUSTED} before their payload is buffered, bounding the memory a peer can
      * cause this server to allocate. The default is 4 MiB (matching grpc-java) and can be changed globally via the
      * {@code io.servicetalk.grpc.netty.temporaryDefaultMaxInboundMessageSize} system property (a temporary property
-     * that will be removed in a future release).
+     * that will be removed in a future release); see its documentation for the values it accepts.
      * <p>
      * For a compressed message this bounds the on-wire length and the decoded length. The memory used while
      * decompressing is bounded separately by the codec's own decompressed-bytes cap, not by this limit.
      *
-     * @param maxInboundMessageSize the maximum inbound message size in bytes. {@code 0} disables the limit;
-     * {@code -1} enables warn-only mode (a rate-limited warning is logged instead of rejecting); any other positive
-     * value enforces that limit.
+     * @param maxInboundMessageSize the maximum inbound message size in bytes: {@code 0} disables the limit and any
+     * positive value enforces it. Must be non-negative.
      * @return {@code this}.
      */
     default GrpcServerBuilder maxInboundMessageSize(int maxInboundMessageSize) {

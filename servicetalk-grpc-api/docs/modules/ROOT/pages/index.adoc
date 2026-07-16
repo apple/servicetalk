@@ -69,10 +69,11 @@ server bounds request messages, a client bounds response messages. For a compres
 (still-compressed) length before buffering, and the decoded length after decompression.
 
 Configure it with `GrpcServerBuilder#maxInboundMessageSize(int)` / `GrpcClientBuilder#maxInboundMessageSize(int)`:
-`0` disables the limit, a positive value enforces it, and `-1` selects *warn-only* mode (the message is delivered but a
-warning is logged, rate-limited to once every five minutes per client/server) as a rollout aid. The default can be
-changed globally with the temporary `io.servicetalk.grpc.netty.temporaryDefaultMaxInboundMessageSize` system property
-(to be removed in a future release); an explicit builder call takes precedence.
+`0` disables the limit and a positive value enforces it (negative values are rejected). The default can be changed
+globally with the temporary `io.servicetalk.grpc.netty.temporaryDefaultMaxInboundMessageSize` system property (to be
+removed in a future release); an explicit builder call takes precedence. Setting that property to `-1` enables a
+*warn-only* rollout mode globally: an oversized message is delivered but a warning is logged (rate-limited to once
+every five minutes per client/server) instead of being rejected.
 
 NOTE: `maxInboundMessageSize` does not bound the memory used *while* decompressing a compressed message. That is
 governed independently by the codec's own decompressed-bytes cap (`ZipCompressionBuilder#maxDecompressedBytes(long)`,
