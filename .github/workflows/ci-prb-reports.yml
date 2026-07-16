@@ -32,7 +32,7 @@ jobs:
           # File location set in ci-prb.yml and must be coordinated.
           name: test-results-${{ matrix.os_label }}-${{ matrix.java }}
       - name: Publish Test Report
-        uses: EnricoMi/publish-unit-test-result-action@c950f6fb443cb5af20a377fd0dfaa78838901040 # v2.23.0
+        uses: EnricoMi/publish-unit-test-result-action@d0a4676d0e0b938bc201470d88276b7c74c712b3 # v2.24.0
         with:
           files: '**/build/test-results/test/TEST-*.xml'
           commit: ${{ github.event.workflow_run.head_commit.id }}
