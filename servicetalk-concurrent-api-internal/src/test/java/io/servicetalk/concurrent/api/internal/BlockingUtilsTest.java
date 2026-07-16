@@ -21,10 +21,12 @@ import io.servicetalk.concurrent.api.Single;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.internal.BlockingUtils.blockingInvocation;
+import static io.servicetalk.concurrent.api.internal.BlockingUtils.futureGetCancelOnInterrupt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -42,6 +44,74 @@ class BlockingUtilsTest {
     void completableRestoresInterruptFlagOnInterrupt() throws InterruptedException {
         assertInterruptFlagRestored(subscribed ->
                 blockingInvocation(Completable.never().afterOnSubscribe(cancellable -> subscribed.countDown())));
+    }
+
+    @Test
+    void singleCancelsSourceOnInterrupt() throws InterruptedException {
+        final CountDownLatch cancelled = new CountDownLatch(1);
+        final Throwable thrown = runInterrupted(subscribed ->
+                blockingInvocation(Single.never()
+                        .afterCancel(cancelled::countDown)
+                        .afterOnSubscribe(cancellable -> subscribed.countDown())));
+
+        assertThat(thrown, is(instanceOf(InterruptedException.class)));
+        cancelled.await();
+    }
+
+    @Test
+    void completableCancelsSourceOnInterrupt() throws InterruptedException {
+        final CountDownLatch cancelled = new CountDownLatch(1);
+        final Throwable thrown = runInterrupted(subscribed ->
+                blockingInvocation(Completable.never()
+                        .afterCancel(cancelled::countDown)
+                        .afterOnSubscribe(cancellable -> subscribed.countDown())));
+
+        assertThat(thrown, is(instanceOf(InterruptedException.class)));
+        cancelled.await();
+    }
+
+    @Test
+    void futureGetCancelsSourceOnInterrupt() throws InterruptedException {
+        final CountDownLatch cancelled = new CountDownLatch(1);
+        // toFuture() subscribes eagerly, so the source is already subscribed before futureGetCancelOnInterrupt blocks.
+        final Future<?> future = Single.never().afterCancel(cancelled::countDown).toFuture();
+        final Throwable thrown = runInterrupted(subscribed -> {
+            subscribed.countDown();
+            futureGetCancelOnInterrupt(future);
+        });
+
+        assertThat(thrown, is(instanceOf(InterruptedException.class)));
+        cancelled.await();
+    }
+
+    /**
+     * Runs {@code blockingCall} on a dedicated thread, interrupts it once it has subscribed, and returns the throwable
+     * it propagated (if any). Cancellation of the source is observed separately by the caller via a latch, so this
+     * helper does not assume anything about whether cancel fires.
+     */
+    private static Throwable runInterrupted(final InterruptibleInvocation blockingCall) throws InterruptedException {
+        final CountDownLatch subscribed = new CountDownLatch(1);
+        final CountDownLatch done = new CountDownLatch(1);
+        final AtomicReference<Throwable> thrown = new AtomicReference<>();
+
+        final Thread t = new Thread(() -> {
+            try {
+                blockingCall.invoke(subscribed);
+            } catch (Throwable e) {
+                thrown.set(e);
+            } finally {
+                done.countDown();
+            }
+        });
+        t.start();
+
+        subscribed.await();
+        t.interrupt();
+        done.await();
+        t.join();
+
+        assertThat("blocking call did not propagate a throwable", thrown.get(), is(notNullValue()));
+        return thrown.get();
     }
 
     /**
