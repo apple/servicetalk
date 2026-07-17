@@ -223,10 +223,11 @@ public interface HttpServerBuilder {
      * fully decoded payload at the point of aggregation &mdash; <em>after</em> any decompression or body transformation
      * by earlier filters &mdash; not the bytes received from the network nor any declared {@code Content-Length}.
      * <p>
-     * The default is 4 MiB and can be overridden globally, including a warn-only mode, via the temporary
-     * {@code io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize} system property; an explicit call to
-     * this method always takes precedence and is enforced (never warn-only). For an independent, opt-in limit that can
-     * fail fast on {@code Content-Length}, see {@code PayloadSizeLimitingHttpServiceFilter}; both apply.
+     * The default is 4 MiB, overridable globally via the temporary
+     * {@code io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize} system property, which also accepts
+     * {@code -1} for warn-only mode (oversized requests are served but logged); an explicit call here always takes
+     * precedence and is enforced. For an opt-in limit that fails fast on {@code Content-Length}, see
+     * {@code PayloadSizeLimitingHttpServiceFilter}; both apply.
      *
      * @param maxAggregatedPayloadSize the maximum number of payload bytes to buffer when a request is aggregated;
      * {@code 0} disables the limit. Must be non-negative.
