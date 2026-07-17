@@ -58,7 +58,7 @@ public abstract class GrpcConfig {
          * compressed message the limit is also applied to the decoded size. Memory used while decompressing is bounded
          * separately by the codec's own decompressed-bytes cap, not by this limit. Defaults to 4 MiB (matching
          * grpc-java), or to the value of the {@code io.servicetalk.grpc.netty.temporaryDefaultMaxInboundMessageSize}
-         * system property when it is set.
+         * system property when it is set (which also accepts {@code -1} for warn-only mode).
          *
          * @param maxInboundMessageSize the maximum inbound message size in bytes: {@code 0} disables the limit and any
          * positive value enforces it. Must be non-negative.
