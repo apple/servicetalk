@@ -46,9 +46,9 @@ final class GrpcMessageSizeLimiter {
      */
     static final GrpcMessageSizeLimiter NONE = new GrpcMessageSizeLimiter(Mode.DISABLED, 0);
 
-    // maxInboundMessageSize value selecting warn-only mode (see forMaxInboundMessageSize).
+    // maxInboundMessageSize value selecting warn-only mode (see forMaxInboundMessageSize), and the built-in default.
     private static final int WARN_ONLY = -1;
-    // Built-in default limit, 4 MiB, matching grpc-java's io.grpc.internal.GrpcUtil.DEFAULT_MAX_MESSAGE_SIZE.
+    // The 4 MiB warn-only threshold, matching grpc-java's io.grpc.internal.GrpcUtil.DEFAULT_MAX_MESSAGE_SIZE.
     private static final int DEFAULT_MAX_MESSAGE_SIZE = 4 * 1024 * 1024;
     // FIXME: 0.43 - remove this temporary property
     private static final String DEFAULT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY =
@@ -129,16 +129,18 @@ final class GrpcMessageSizeLimiter {
     }
 
     private static int resolveDefault() {
-        final int value = getInteger(DEFAULT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY, DEFAULT_MAX_MESSAGE_SIZE);
-        // The property additionally supports the warn-only selector (-1), which the builder/config API does not
-        // expose; only values below it are invalid. Fall back to the built-in default rather than failing at
-        // class-load.
+        // Warn-only by default unless the temporary property overrides it. The property also supports the warn-only
+        // selector (-1), which the builder/config API does not expose; only values below it are invalid. Fall back to
+        // warn-only rather than failing at class-load.
+        final int value = getInteger(DEFAULT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY, WARN_ONLY);
         if (value < WARN_ONLY) {
-            LOGGER.warn("-D{}: {} is invalid (expected >= {}). Falling back to the default of {} bytes.",
+            LOGGER.warn("-D{}: {} is invalid (expected >= {}). Falling back to warn-only mode at {} bytes.",
                     DEFAULT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY, value, WARN_ONLY, DEFAULT_MAX_MESSAGE_SIZE);
-            return DEFAULT_MAX_MESSAGE_SIZE;
+            return WARN_ONLY;
         }
-        if (value != DEFAULT_MAX_MESSAGE_SIZE) {
+        // getInteger can't distinguish "unset" (the warn-only default) from an explicit value; only warn about the
+        // temporary property when it is actually set.
+        if (System.getProperty(DEFAULT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY) != null) {
             LOGGER.warn("-D{}: {}. This property will be removed in a future release. Configure this value per " +
                             "client/server builder via maxInboundMessageSize(int) instead.",
                     DEFAULT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY, value);

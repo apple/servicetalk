@@ -23,7 +23,6 @@ import io.servicetalk.serializer.api.MaxMessageSizeExceededException;
 import io.servicetalk.serializer.api.SerializerDeserializer;
 import io.servicetalk.serializer.api.StreamingSerializerDeserializer;
 
-import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import org.junit.jupiter.api.Test;
@@ -166,19 +165,15 @@ class ProtobufSerializerFactoryTest {
     }
 
     @Test
-    void streamingSerializerAppliesDefaultLimit() throws Exception {
+    void streamingSerializerDefaultLimitWarnsButDelivers() throws Exception {
+        // The default (PROTOBUF singleton) limit is warn-only, so an oversized message is delivered, not rejected.
         StreamingSerializerDeserializer<DummyMessage> serializer =
                 PROTOBUF.streamingSerializerDeserializer(DummyMessage.class);
-        // Only the length prefix is written, declaring a length far above the default limit, so the guard fires
-        // before any payload is buffered.
+        DummyMessage oversized = newMsg(4 * 1024 * 1024 + 1);
         Buffer buffer = DEFAULT_ALLOCATOR.newBuffer();
-        CodedOutputStream cos = CodedOutputStream.newInstance(asOutputStream(buffer));
-        cos.writeUInt32NoTag(100 * 1024 * 1024);
-        cos.flush();
+        oversized.writeDelimitedTo(asOutputStream(buffer));
 
-        ExecutionException e = assertThrows(ExecutionException.class,
-                () -> serializer.deserialize(from(buffer), DEFAULT_ALLOCATOR).toFuture().get());
-        assertThat(e.getCause(), instanceOf(MaxMessageSizeExceededException.class));
+        assertThat(serializer.deserialize(from(buffer), DEFAULT_ALLOCATOR).toFuture().get(), contains(oversized));
     }
 
     @SuppressWarnings("unused")

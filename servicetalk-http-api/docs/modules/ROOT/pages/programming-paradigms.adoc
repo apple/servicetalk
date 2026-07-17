@@ -16,23 +16,24 @@ programming paradigms.
 ====
 Whenever a payload body is *aggregated* into a single object (the aggregated paradigms below, or any filter that
 calls `toRequest()`/`toResponse()`), the whole body is buffered in memory. To guard against excessive memory
-consumption, ServiceTalk caps the size of an aggregated body at *4 MiB* by default. Requests that exceed the server's limit are
-rejected with a `413 Payload Too Large`; oversized responses surface a `PayloadTooLargeException` to the client.
+consumption, ServiceTalk watches the size of an aggregated body against a *4 MiB* threshold by default. This default
+is *warn-only*: an aggregated body that exceeds it is still served/delivered, but a warning is logged (rate-limited to
+once every five minutes per client/server) so you can evaluate the limit before enforcing it.
 
 The limit is measured against the fully decoded payload buffered at the point of aggregation -- that is, _after_ any
 decompression or body transformation applied by filters earlier in the pipeline -- not the bytes received from the
 network nor any declared `Content-Length`. A small compressed body that expands beyond the limit once decoded is
-therefore rejected.
+therefore counted at its decoded size.
 
-Adjust or disable this via `HttpServerBuilder#maxAggregatedPayloadSize(int)` /
-`SingleAddressHttpClientBuilder#maxAggregatedPayloadSize(int)` (pass `0` to disable). A programmatically configured
-limit is definitive: it is always enforced and never runs in warn-only mode. Users who unexpectedly hit the
-default limit can temporarily change it globally with the
-`io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize` system property, which -- unlike the builder
-methods -- also accepts `-1` for *warn-only* mode, where oversized aggregated messages are still served/delivered
-but a warning is logged (rate-limited to once every five minutes per client/server) so you can evaluate the limit
-before enforcing it. An explicit builder call takes precedence over the property. This is a temporary
-property that will be removed in future releases. Bodies consumed purely as a stream are not affected.
+Enable enforcement (or disable the limit) via `HttpServerBuilder#maxAggregatedPayloadSize(int)` /
+`SingleAddressHttpClientBuilder#maxAggregatedPayloadSize(int)`: any non-negative value is definitive and always
+enforced (pass `0` to disable), so a request exceeding a server's enforced limit is rejected with a
+`413 Payload Too Large` and an oversized response surfaces a `PayloadTooLargeException` to the client. To change the
+default globally without touching each builder, use the
+`io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize` system property (a positive value enforces at
+that size, `0` disables, and `-1` keeps warn-only). An explicit builder call takes precedence over the property. This
+is a temporary property that will be removed in future releases. Bodies consumed purely as a stream are not
+affected.
 ====
 
 [#service-programming-paradigms]

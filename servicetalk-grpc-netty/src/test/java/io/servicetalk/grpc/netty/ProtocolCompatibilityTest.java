@@ -1162,16 +1162,16 @@ class ProtocolCompatibilityTest {
 
     @ParameterizedTest(name = "{displayName} [{index}]: client={0}")
     @EnumSource(Stack.class)
-    void serverEnforcesDefaultMaxInboundMessageSize(final Stack clientStack) throws Exception {
-        // TODO: Exercises only the ServiceTalk server: an over-4-MiB request is rejected by its 4 MiB default. A
-        //  grpc-java server enforces the same default, but the ST client fails with a timeout. This is because the
-        //  grpc-java server doesn't close or drain the inbound stream, which ST server does.
+    void serviceTalkServerWarnsButDeliversOverDefaultMaxInboundMessageSize(final Stack clientStack) throws Exception {
+        // ServiceTalk's default inbound message-size limit is warn-only, so an over-4-MiB request is delivered rather
+        // than rejected (unlike a grpc-java server, which enforces the 4 MiB default). The service echoes an empty
+        // payload for id=0, so a successful empty response confirms the oversized request was accepted.
         final TestServerContext server = sizeTestServer(Stack.SERVICE_TALK);
         final CompatClient client = sizeTestClient(clientStack, server.listenAddress());
         try {
-            final Single<CompatResponse> response = client.scalarCall(new DefaultGrpcClientMetadata(),
-                    CompatRequest.newBuilder().setId(0).setPayload(repeat(OVER_DEFAULT)).build());
-            validateGrpcErrorInResponse(response.toFuture(), false, GrpcStatusCode.RESOURCE_EXHAUSTED, null);
+            final CompatResponse response = client.scalarCall(new DefaultGrpcClientMetadata(),
+                    CompatRequest.newBuilder().setId(0).setPayload(repeat(OVER_DEFAULT)).build()).toFuture().get();
+            assertThat(response.getPayload().length(), is(0));
         } finally {
             closeAll(client, server);
         }
@@ -1179,14 +1179,21 @@ class ProtocolCompatibilityTest {
 
     @ParameterizedTest(name = "{displayName} [{index}]: client={0} server={1}")
     @MethodSource("stackMatrixParams")
-    void clientEnforcesDefaultMaxInboundMessageSize(final Stack clientStack, final Stack serverStack) throws Exception {
-        // No explicit limit on either side: the server returns an over-4-MiB response, rejected by the client default.
+    void clientDefaultMaxInboundMessageSizeMatchesStack(final Stack clientStack, final Stack serverStack)
+            throws Exception {
+        // No explicit limit on either side: the server returns an over-4-MiB response. A grpc-java client enforces its
+        // 4 MiB default and rejects it with RESOURCE_EXHAUSTED; a ServiceTalk client's default is warn-only and
+        // delivers it.
         final TestServerContext server = sizeTestServer(serverStack);
         final CompatClient client = sizeTestClient(clientStack, server.listenAddress());
         try {
             final Single<CompatResponse> response = client.scalarCall(new DefaultGrpcClientMetadata(),
                     CompatRequest.newBuilder().setId(OVER_DEFAULT).build());
-            validateGrpcErrorInResponse(response.toFuture(), false, GrpcStatusCode.RESOURCE_EXHAUSTED, null);
+            if (clientStack == Stack.SERVICE_TALK) {
+                assertThat(response.toFuture().get().getPayload().length(), is(OVER_DEFAULT));
+            } else {
+                validateGrpcErrorInResponse(response.toFuture(), false, GrpcStatusCode.RESOURCE_EXHAUSTED, null);
+            }
         } finally {
             closeAll(client, server);
         }

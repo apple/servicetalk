@@ -53,12 +53,14 @@ public abstract class GrpcConfig {
         }
 
         /**
-         * Set the maximum size, in bytes, of a decoded inbound gRPC message. A message whose declared length exceeds
-         * the limit is rejected with {@link GrpcStatusCode#RESOURCE_EXHAUSTED} before its payload is buffered; for a
-         * compressed message the limit is also applied to the decoded size. Memory used while decompressing is bounded
-         * separately by the codec's own decompressed-bytes cap, not by this limit. Defaults to 4 MiB (matching
-         * grpc-java), or to the value of the {@code io.servicetalk.grpc.netty.temporaryDefaultMaxInboundMessageSize}
-         * system property when it is set (which also accepts {@code -1} for warn-only mode).
+         * Set the maximum size, in bytes, of a decoded inbound gRPC message. By default the limit is warn-only at
+         * 4 MiB (the threshold matching grpc-java): an oversized message is delivered but a rate-limited warning is
+         * logged. Set a positive value to enforce ({@code 0} disables the limit), or change the default globally via
+         * the {@code io.servicetalk.grpc.netty.temporaryDefaultMaxInboundMessageSize} system property (which also
+         * accepts {@code -1} to keep warn-only). When enforcing, a message whose declared length exceeds the limit is
+         * rejected with {@link GrpcStatusCode#RESOURCE_EXHAUSTED} before its payload is buffered; for a compressed
+         * message the limit is also applied to the decoded size. Memory used while decompressing is bounded separately
+         * by the codec's own decompressed-bytes cap, not by this limit.
          *
          * @param maxInboundMessageSize the maximum inbound message size in bytes: {@code 0} disables the limit and any
          * positive value enforces it. Must be non-negative.
