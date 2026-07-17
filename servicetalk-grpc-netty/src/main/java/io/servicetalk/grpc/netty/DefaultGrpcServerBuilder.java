@@ -24,6 +24,7 @@ import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.grpc.api.GrpcLifecycleObserver;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
 import io.servicetalk.grpc.api.GrpcServerContext;
+import io.servicetalk.grpc.api.GrpcServiceConfig;
 import io.servicetalk.grpc.api.GrpcServiceFactory;
 import io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder;
 import io.servicetalk.http.api.BlockingHttpService;
@@ -67,6 +68,8 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
     @Nullable
     private Duration defaultTimeout;
     private boolean appendTimeoutFilter = true;
+    @Nullable
+    private Integer maxInboundMessageSize;
 
     // Do not use this ctor directly, GrpcServers is the entry point for creating a new builder.
     DefaultGrpcServerBuilder(final Supplier<HttpServerBuilder> httpServerBuilderSupplier) {
@@ -74,10 +77,11 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
                 requireNonNull(httpServerBuilderSupplier.get(), "Supplier<HttpServerBuilder> result was null")
                     .protocols(h2Default())
                     .allowDropRequestTrailers(true)
-                    // gRPC frames its own messages, so the HTTP-level aggregated payload limit doesn't map cleanly to
-                    // gRPC message size. Disable it here and rely on gRPC-specific message-size limits (tracked
-                    // separately) instead of silently capping gRPC payloads at the HTTP default.
-                    .maxAggregatedPayloadSize(0);
+                    // Bound HTTP request aggregation to the gRPC inbound message-size limit so oversized unary
+                    // (aggregated) requests are rejected before the whole body is buffered; streaming requests are
+                    // deframed incrementally and unaffected. Applied before initializeHttp so users can override it.
+                    .maxAggregatedPayloadSize(
+                            GrpcMessageSizeUtils.httpAggregationLimitFor(effectiveMaxInboundMessageSize()));
     }
 
     @Override
@@ -97,6 +101,12 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
                                             final boolean appendTimeoutFilter) {
         this.defaultTimeout = defaultTimeout == null ? null : ensurePositive(defaultTimeout, "defaultTimeout");
         this.appendTimeoutFilter = appendTimeoutFilter;
+        return this;
+    }
+
+    @Override
+    public GrpcServerBuilder maxInboundMessageSize(final int maxInboundMessageSize) {
+        this.maxInboundMessageSize = GrpcMessageSizeUtils.validateMaxInboundMessageSize(maxInboundMessageSize);
         return this;
     }
 
@@ -144,7 +154,20 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
      */
     private Single<GrpcServerContext> doListen(final GrpcServiceFactory<?> serviceFactory) {
         interceptorBuilder = preBuild();
-        return serviceFactory.bind(this, interceptorBuilder.contextBuilder.build());
+        // Only override the config's default when the user set an explicit value, so an unset limit defers to the
+        // GrpcConfig default (which resolves the temporary system property, including its warn-only -1 selector).
+        final GrpcServiceConfig.Builder serviceConfigBuilder = new GrpcServiceConfig.Builder()
+                .executionContext(interceptorBuilder.contextBuilder.build());
+        if (maxInboundMessageSize != null) {
+            serviceConfigBuilder.maxInboundMessageSize(maxInboundMessageSize);
+        }
+        return serviceFactory.bind(this, serviceConfigBuilder.build());
+    }
+
+    // The effective inbound limit: the user's explicit value, else the GrpcConfig default (property-derived).
+    private int effectiveMaxInboundMessageSize() {
+        return maxInboundMessageSize != null ? maxInboundMessageSize
+                : GrpcMessageSizeUtils.DEFAULT_MAX_INBOUND_MESSAGE_SIZE;
     }
 
     private ExecutionContextInterceptorHttpServerBuilder preBuild() {

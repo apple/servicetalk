@@ -60,12 +60,16 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
     private final GrpcExecutionContext executionContext;
     @Nullable
     private final Duration defaultTimeout;
+    // Invoked with the declared length of each inbound (response) message before it is buffered; shared across all
+    // calls made by this factory so warn-only rate-limiting is scoped per client.
+    private final GrpcMessageSizeLimiter sizeLimiter;
 
     DefaultGrpcClientCallFactory(final StreamingHttpClient streamingHttpClient,
-                                 @Nullable final Duration defaultTimeout) {
+                                 final GrpcClientCallConfig callConfig) {
         this.streamingHttpClient = requireNonNull(streamingHttpClient);
         executionContext = new DefaultGrpcExecutionContext(streamingHttpClient.executionContext());
-        this.defaultTimeout = defaultTimeout;
+        this.defaultTimeout = callConfig.defaultTimeout();
+        this.sizeLimiter = GrpcMessageSizeLimiter.forMaxInboundMessageSize(callConfig.maxInboundMessageSize());
     }
 
     @Deprecated
@@ -413,10 +417,10 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         return null != timeout ? timeout : defaultTimeout;
     }
 
-    private static <Resp> List<GrpcStreamingDeserializer<Resp>> streamingDeserializers(
+    private <Resp> List<GrpcStreamingDeserializer<Resp>> streamingDeserializers(
             MethodDescriptor<?, Resp> methodDescriptor, List<BufferDecoder> decompressors) {
         return GrpcUtils.streamingDeserializers(
-                methodDescriptor.responseDescriptor().serializerDescriptor().serializer(), decompressors);
+                methodDescriptor.responseDescriptor().serializerDescriptor().serializer(), decompressors, sizeLimiter);
     }
 
     private static <Req> GrpcStreamingSerializer<Req> streamingSerializer(
@@ -426,16 +430,16 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                 methodDescriptor.requestDescriptor().serializerDescriptor().serializer());
     }
 
-    private static <Resp> GrpcStreamingDeserializer<Resp> streamingDeserializer(
+    private <Resp> GrpcStreamingDeserializer<Resp> streamingDeserializer(
             MethodDescriptor<?, Resp> methodDescriptor) {
         return new GrpcStreamingDeserializer<>(
-                methodDescriptor.responseDescriptor().serializerDescriptor().serializer());
+                methodDescriptor.responseDescriptor().serializerDescriptor().serializer(), sizeLimiter);
     }
 
-    private static <Resp> List<GrpcDeserializer<Resp>> deserializers(
+    private <Resp> List<GrpcDeserializer<Resp>> deserializers(
             MethodDescriptor<?, Resp> methodDescriptor, List<BufferDecoder> decompressors) {
         return GrpcUtils.deserializers(
-                methodDescriptor.responseDescriptor().serializerDescriptor().serializer(), decompressors);
+                methodDescriptor.responseDescriptor().serializerDescriptor().serializer(), decompressors, sizeLimiter);
     }
 
     private static <Req> GrpcSerializer<Req> serializer(MethodDescriptor<Req, ?> methodDescriptor) {
@@ -460,8 +464,9 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                         methodDescriptor.requestDescriptor().serializerDescriptor().serializer(), compressor);
     }
 
-    private static <Resp> GrpcDeserializer<Resp> deserializer(MethodDescriptor<?, Resp> methodDescriptor) {
-        return new GrpcDeserializer<>(methodDescriptor.responseDescriptor().serializerDescriptor().serializer());
+    private <Resp> GrpcDeserializer<Resp> deserializer(MethodDescriptor<?, Resp> methodDescriptor) {
+        return new GrpcDeserializer<>(
+                methodDescriptor.responseDescriptor().serializerDescriptor().serializer(), sizeLimiter);
     }
 
     private static void extractResponseContext(HttpResponseMetaData responseMetaData, GrpcClientMetadata grpcMetadata) {

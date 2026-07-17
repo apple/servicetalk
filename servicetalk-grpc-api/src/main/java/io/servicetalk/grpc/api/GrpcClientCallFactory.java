@@ -248,9 +248,28 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * lifecycle of this {@link StreamingHttpClient}.
      * @param defaultTimeout {@link Duration} of default timeout or null for no timeout
      * @return A new {@link GrpcClientCallFactory}.
+     * @deprecated Use {@link #from(StreamingHttpClient, GrpcClientCallConfig)} to configure the client call factory;
+     * this overload applies the default inbound message-size limit. Configuration is normally provided via the
+     * {@link GrpcClientBuilder}.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     static GrpcClientCallFactory from(StreamingHttpClient httpClient, @Nullable Duration defaultTimeout) {
-        return new DefaultGrpcClientCallFactory(httpClient, defaultTimeout);
+        return from(httpClient, new GrpcClientCallConfig.Builder()
+                .defaultTimeout(defaultTimeout)
+                .build());
+    }
+
+    /**
+     * Creates a new {@link GrpcClientCallFactory} using the passed {@link StreamingHttpClient}.
+     *
+     * @param httpClient {@link StreamingHttpClient} to use. The returned {@link GrpcClientCallFactory} will own the
+     * lifecycle of this {@link StreamingHttpClient}.
+     * @param callConfig {@link GrpcClientCallConfig} controlling client-call behavior, including the maximum inbound
+     * (response) message size and the default call timeout.
+     * @return A new {@link GrpcClientCallFactory}.
+     */
+    static GrpcClientCallFactory from(StreamingHttpClient httpClient, GrpcClientCallConfig callConfig) {
+        return new DefaultGrpcClientCallFactory(httpClient, callConfig);
     }
 
     /**

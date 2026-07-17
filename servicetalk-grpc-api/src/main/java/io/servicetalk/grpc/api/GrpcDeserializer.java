@@ -31,16 +31,19 @@ final class GrpcDeserializer<T> implements Deserializer<T> {
     private final Deserializer<T> deserializer;
     @Nullable
     private final BufferDecoder decompressor;
+    // Invoked with the declared length of the message before it is read; rejects/warns on oversized messages.
+    private final GrpcMessageSizeLimiter sizeLimiter;
 
-    GrpcDeserializer(final Deserializer<T> deserializer) {
-        this.deserializer = requireNonNull(deserializer);
-        this.decompressor = null;
+    GrpcDeserializer(final Deserializer<T> deserializer, final GrpcMessageSizeLimiter sizeLimiter) {
+        this(deserializer, null, sizeLimiter);
     }
 
     GrpcDeserializer(final Deserializer<T> deserializer,
-                     @Nullable final BufferDecoder decompressor) {
+                     @Nullable final BufferDecoder decompressor,
+                     final GrpcMessageSizeLimiter sizeLimiter) {
         this.deserializer = requireNonNull(deserializer);
         this.decompressor = decompressor;
+        this.sizeLimiter = requireNonNull(sizeLimiter);
     }
 
     @Nullable
@@ -61,10 +64,15 @@ final class GrpcDeserializer<T> implements Deserializer<T> {
         if (expectedLength < 0) {
             throw new SerializationException("Message-Length invalid: " + expectedLength);
         }
+        // Enforce the inbound message-size limit against the declared length before reading the message bytes.
+        sizeLimiter.accept(expectedLength);
 
         Buffer result = buffer.readBytes(expectedLength);
         if (compressed) {
             result = decompressor.decoder().deserialize(result, allocator);
+            // The check above only bounds the compressed wire size; reject a decoded message that exceeds the limit.
+            // Decompression memory is bounded separately by the codec's own decompressed-bytes cap.
+            sizeLimiter.accept(result.readableBytes(), true);
         }
         return deserializer.deserialize(result, allocator);
     }

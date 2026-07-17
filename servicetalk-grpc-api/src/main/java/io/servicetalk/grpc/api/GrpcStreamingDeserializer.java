@@ -37,16 +37,21 @@ final class GrpcStreamingDeserializer<T> implements StreamingDeserializer<T> {
     private final Deserializer<T> serializer;
     @Nullable
     private final BufferDecoder compressor;
+    // Invoked with the declared length of each message before it is buffered; rejects/warns on oversized messages.
+    private final GrpcMessageSizeLimiter sizeLimiter;
 
-    GrpcStreamingDeserializer(final Deserializer<T> serializer) {
+    GrpcStreamingDeserializer(final Deserializer<T> serializer, final GrpcMessageSizeLimiter sizeLimiter) {
         this.serializer = requireNonNull(serializer);
         this.compressor = null;
+        this.sizeLimiter = requireNonNull(sizeLimiter);
     }
 
     GrpcStreamingDeserializer(final Deserializer<T> serializer,
-                              final BufferDecoder compressor) {
+                              final BufferDecoder compressor,
+                              final GrpcMessageSizeLimiter sizeLimiter) {
         this.serializer = requireNonNull(serializer);
         this.compressor = requireNonNull(compressor);
+        this.sizeLimiter = requireNonNull(sizeLimiter);
     }
 
     @Nullable
@@ -79,6 +84,9 @@ final class GrpcStreamingDeserializer<T> implements StreamingDeserializer<T> {
                 if (expectedLength < 0) {
                     throw new SerializationException("Message-Length invalid: " + expectedLength);
                 }
+                // Enforce the inbound message-size limit against the declared length, before buffering any bytes
+                // toward it, so an oversized (or maliciously large) frame is rejected without accumulating memory.
+                sizeLimiter.accept(expectedLength);
             }
             if (buffer.readableBytes() < expectedLength) {
                 return null;
@@ -87,7 +95,11 @@ final class GrpcStreamingDeserializer<T> implements StreamingDeserializer<T> {
             expectedLength = -1;
             if (compressed) {
                 assert compressor != null;
-                return compressor.decoder().deserialize(result, allocator);
+                final Buffer decompressed = compressor.decoder().deserialize(result, allocator);
+                // The wire-length check above only bounds the compressed frame; reject a decoded message that exceeds
+                // the limit. Decompression memory is bounded separately by the codec's own decompressed-bytes cap.
+                sizeLimiter.accept(decompressed.readableBytes(), true);
+                return decompressed;
             }
             return result;
         }

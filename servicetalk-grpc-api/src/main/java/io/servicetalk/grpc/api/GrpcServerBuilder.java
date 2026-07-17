@@ -94,6 +94,26 @@ public interface GrpcServerBuilder {
     }
 
     /**
+     * Set the maximum size, in bytes, of a decoded inbound (request) gRPC message that this server will accept.
+     * Messages whose declared length exceeds this limit are rejected with
+     * {@link GrpcStatusCode#RESOURCE_EXHAUSTED} before their payload is buffered, bounding the memory a peer can
+     * cause this server to allocate. The default is 4 MiB (matching grpc-java) and can be changed globally via the
+     * {@code io.servicetalk.grpc.netty.temporaryDefaultMaxInboundMessageSize} system property (a temporary property
+     * that will be removed in a future release), which also accepts {@code -1} to enable warn-only mode globally (a
+     * rate-limited log instead of rejecting).
+     * <p>
+     * For a compressed message this bounds the on-wire length and the decoded length. The memory used while
+     * decompressing is bounded separately by the codec's own decompressed-bytes cap, not by this limit.
+     *
+     * @param maxInboundMessageSize the maximum inbound message size in bytes: {@code 0} disables the limit and any
+     * positive value enforces it. Must be non-negative.
+     * @return {@code this}.
+     */
+    default GrpcServerBuilder maxInboundMessageSize(int maxInboundMessageSize) {
+        throw new UnsupportedOperationException("method not supported by " + getClass());
+    }
+
+    /**
      * Sets a {@link GrpcLifecycleObserver} that provides visibility into gRPC lifecycle events.
      * <p>
      * Note, if {@link #initializeHttp(HttpInitializer)} is used to configure

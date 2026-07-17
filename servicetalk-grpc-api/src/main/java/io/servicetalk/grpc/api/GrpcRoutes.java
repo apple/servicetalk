@@ -29,7 +29,6 @@ import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.router.api.NoOffloadsRouteExecutionStrategy;
 import io.servicetalk.router.api.RouteExecutionStrategy;
 import io.servicetalk.router.api.RouteExecutionStrategyFactory;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
@@ -116,17 +115,21 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * <a href="https://www.grpc.io">gRPC</a> service for the server.
      *
      * @param binder {@link ServerBinder} to bind <a href="https://www.grpc.io">gRPC</a> service to the server.
-     * @param executionContext {@link ExecutionContext} to use for the service.
+     * @param serviceConfig {@link GrpcServiceConfig} controlling the bound service, including the
+     * {@link GrpcExecutionContext} it runs on and the maximum inbound (request) message size.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    final Single<GrpcServerContext> bind(final ServerBinder binder, final GrpcExecutionContext executionContext) {
+    final Single<GrpcServerContext> bind(final ServerBinder binder, final GrpcServiceConfig serviceConfig) {
+        // Configure the inbound message-size limit before applying deferred routes, so it is baked into the request
+        // deserializers they build.
+        routeBuilder.maxInboundMessageSize(serviceConfig.maxInboundMessageSize());
         deferredRoutes.values().forEach(deferredRoute -> deferredRoute.accept(routeBuilder));
 
         if (!errors.isEmpty()) {
             throw new IllegalStateException("Invalid execution strategy configuration found:\n" + errors);
         }
-        return routeBuilder.build().bind(binder, executionContext);
+        return routeBuilder.build().bind(binder, serviceConfig.executionContext());
     }
 
     /**

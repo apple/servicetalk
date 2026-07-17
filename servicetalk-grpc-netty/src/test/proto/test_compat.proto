@@ -23,6 +23,8 @@ package grpc.netty;
 message RequestContainer {
     message CompatRequest {
         int32 id = 1;
+        // Optional payload used only by size-limit tests to inflate the message; empty by default.
+        string payload = 2;
     }
 
     // The remainder of this message is just to test the parsing and code generation.
@@ -42,6 +44,8 @@ message ResponseContainer {
         int32 id = 1;
         int64 size = 2;
         string name = 3;
+        // Optional payload used only by size-limit tests to inflate the message; empty by default.
+        string payload = 4;
     }
 
     // The remainder of this message is just to test the parsing and code generation.

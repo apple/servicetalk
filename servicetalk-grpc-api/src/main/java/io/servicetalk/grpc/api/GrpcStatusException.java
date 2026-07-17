@@ -17,7 +17,9 @@ package io.servicetalk.grpc.api;
 
 import io.servicetalk.http.api.Http2Exception;
 import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.PayloadTooLargeException;
 import io.servicetalk.http.api.ProxyConnectResponseException;
+import io.servicetalk.serializer.api.MaxMessageSizeExceededException;
 import io.servicetalk.serializer.api.SerializationException;
 
 import java.util.UUID;
@@ -28,6 +30,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
+import static io.servicetalk.grpc.api.GrpcStatusCode.RESOURCE_EXHAUSTED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.grpc.api.GrpcStatusCode.fromHttp2ErrorCode;
@@ -151,6 +154,13 @@ public final class GrpcStatusException extends RuntimeException {
             MessageEncodingException msgEncException = (MessageEncodingException) cause;
             status = new GrpcStatus(UNIMPLEMENTED, cause, "Message encoding '" + msgEncException.encoding()
                     + "' not supported ");
+        } else if (cause instanceof MaxMessageSizeExceededException || cause instanceof PayloadTooLargeException) {
+            // A size limit was exceeded: a length-prefixed serializer, or the coordinated HTTP aggregation bound for
+            // unary. (The gRPC message-size limiter throws GrpcStatusException directly, short-circuited above.) Map
+            // these to RESOURCE_EXHAUSTED (matching grpc-java). MaxMessageSizeExceededException extends
+            // SerializationException, so this branch must precede the SerializationException branch below. Keep the
+            // description generic and stable rather than echoing the size figures.
+            status = new GrpcStatus(RESOURCE_EXHAUSTED, cause, "Message exceeds maximum inbound message size");
         } else if (cause instanceof SerializationException) {
             // Avoid leaking serializer internals (the message may contain partial payload content or internal type
             // names) to the remote peer. The category is still conveyed; the detailed message is logged server-side

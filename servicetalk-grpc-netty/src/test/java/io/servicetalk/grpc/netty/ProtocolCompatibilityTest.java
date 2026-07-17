@@ -103,6 +103,7 @@ import org.junit.jupiter.api.function.ThrowingSupplier;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -214,6 +215,10 @@ class ProtocolCompatibilityTest {
     private static final Duration DEFAULT_DEADLINE = ofMillis(100);
     private static final boolean[] TRUE_FALSE = {true, false};
     private static final String[] COMPRESSION = {"gzip", "identity", null};
+    private static final int SIZE_LIMIT = 1024;
+    private static final int OVER_LIMIT = 4096;
+    // Just over the 4 MiB default inbound message-size limit (matching grpc-java), to exercise the default.
+    private static final int OVER_DEFAULT = 4 * 1024 * 1024 + 1024;
 
     private final ResponseLeakValidator responseLeakValidator = new ResponseLeakValidator();
 
@@ -230,6 +235,21 @@ class ProtocolCompatibilityTest {
         STATUS,
         STATUS_IN_SERVER_FILTER,
         STATUS_IN_RESPONSE
+    }
+
+    private enum Stack {
+        SERVICE_TALK,
+        GRPC_JAVA
+    }
+
+    private static Collection<Arguments> stackMatrixParams() {
+        List<Arguments> args = new ArrayList<>();
+        for (Stack clientStack : Stack.values()) {
+            for (Stack serverStack : Stack.values()) {
+                args.add(Arguments.of(clientStack, serverStack));
+            }
+        }
+        return args;
     }
 
     private static Collection<Arguments> sslStreamingAndCompressionParams() {
@@ -1112,6 +1132,66 @@ class ProtocolCompatibilityTest {
         }
     }
 
+    @ParameterizedTest(name = "{displayName} [{index}]: client={0} server={1}")
+    @MethodSource("stackMatrixParams")
+    void serverEnforcesMaxInboundMessageSize(final Stack clientStack, final Stack serverStack) throws Exception {
+        final TestServerContext server = sizeLimitedServer(serverStack, SIZE_LIMIT);
+        final CompatClient client = sizeTestClient(clientStack, server.listenAddress());
+        try {
+            final Single<CompatResponse> response = client.scalarCall(new DefaultGrpcClientMetadata(),
+                    CompatRequest.newBuilder().setId(0).setPayload(repeat(OVER_LIMIT)).build());
+            validateGrpcErrorInResponse(response.toFuture(), false, GrpcStatusCode.RESOURCE_EXHAUSTED, null);
+        } finally {
+            closeAll(client, server);
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: client={0} server={1}")
+    @MethodSource("stackMatrixParams")
+    void clientEnforcesMaxInboundMessageSize(final Stack clientStack, final Stack serverStack) throws Exception {
+        final TestServerContext server = sizeTestServer(serverStack);
+        final CompatClient client = sizeLimitedClient(clientStack, server.listenAddress(), SIZE_LIMIT);
+        try {
+            final Single<CompatResponse> response = client.scalarCall(new DefaultGrpcClientMetadata(),
+                    CompatRequest.newBuilder().setId(OVER_LIMIT).build());
+            validateGrpcErrorInResponse(response.toFuture(), false, GrpcStatusCode.RESOURCE_EXHAUSTED, null);
+        } finally {
+            closeAll(client, server);
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: client={0}")
+    @EnumSource(Stack.class)
+    void serverEnforcesDefaultMaxInboundMessageSize(final Stack clientStack) throws Exception {
+        // TODO: Exercises only the ServiceTalk server: an over-4-MiB request is rejected by its 4 MiB default. A
+        //  grpc-java server enforces the same default, but the ST client fails with a timeout. This is because the
+        //  grpc-java server doesn't close or drain the inbound stream, which ST server does.
+        final TestServerContext server = sizeTestServer(Stack.SERVICE_TALK);
+        final CompatClient client = sizeTestClient(clientStack, server.listenAddress());
+        try {
+            final Single<CompatResponse> response = client.scalarCall(new DefaultGrpcClientMetadata(),
+                    CompatRequest.newBuilder().setId(0).setPayload(repeat(OVER_DEFAULT)).build());
+            validateGrpcErrorInResponse(response.toFuture(), false, GrpcStatusCode.RESOURCE_EXHAUSTED, null);
+        } finally {
+            closeAll(client, server);
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: client={0} server={1}")
+    @MethodSource("stackMatrixParams")
+    void clientEnforcesDefaultMaxInboundMessageSize(final Stack clientStack, final Stack serverStack) throws Exception {
+        // No explicit limit on either side: the server returns an over-4-MiB response, rejected by the client default.
+        final TestServerContext server = sizeTestServer(serverStack);
+        final CompatClient client = sizeTestClient(clientStack, server.listenAddress());
+        try {
+            final Single<CompatResponse> response = client.scalarCall(new DefaultGrpcClientMetadata(),
+                    CompatRequest.newBuilder().setId(OVER_DEFAULT).build());
+            validateGrpcErrorInResponse(response.toFuture(), false, GrpcStatusCode.RESOURCE_EXHAUSTED, null);
+        } finally {
+            closeAll(client, server);
+        }
+    }
+
     private static void validateGrpcErrorInResponse(final Future<?> future, final boolean withStatus,
                                                     final GrpcStatusCode expectCode,
                                                     @Nullable final String expectMessage)
@@ -1536,10 +1616,106 @@ class ProtocolCompatibilityTest {
         return TestServerContext.fromServiceTalkServerContext(serverContext);
     }
 
+    private static String repeat(final int count) {
+        final StringBuilder sb = new StringBuilder(count);
+        for (int i = 0; i < count; i++) {
+            sb.append('a');
+        }
+        return sb.toString();
+    }
+
+    // A service whose scalarCall echoes a response payload of request.getId() characters.
+    private static final class SizeTestCompatService implements Compat.CompatService {
+        @Override
+        public Publisher<CompatResponse> bidirectionalStreamingCall(final GrpcServiceContext ctx,
+                                                                    final Publisher<CompatRequest> request) {
+            return Publisher.empty();
+        }
+
+        @Override
+        public Single<CompatResponse> clientStreamingCall(final GrpcServiceContext ctx,
+                                                          final Publisher<CompatRequest> request) {
+            return Single.never();
+        }
+
+        @Override
+        public Single<CompatResponse> scalarCall(final GrpcServiceContext ctx, final CompatRequest request) {
+            return succeeded(CompatResponse.newBuilder().setPayload(repeat(request.getId())).build());
+        }
+
+        @Override
+        public Publisher<CompatResponse> serverStreamingCall(final GrpcServiceContext ctx,
+                                                             final CompatRequest request) {
+            return Publisher.empty();
+        }
+    }
+
+    private static final class SizeTestCompatGrpcImpl extends CompatGrpc.CompatImplBase {
+        @Override
+        public void scalarCall(final CompatRequest request, final StreamObserver<CompatResponse> responseObserver) {
+            responseObserver.onNext(CompatResponse.newBuilder().setPayload(repeat(request.getId())).build());
+            responseObserver.onCompleted();
+        }
+    }
+
+    // Server with a maxInboundMessageSize limit running the size-test service.
+    private static TestServerContext sizeLimitedServer(final Stack stack, final int maxInboundMessageSize)
+            throws Exception {
+        if (stack == Stack.SERVICE_TALK) {
+            final ServiceFactory serviceFactory = new ServiceFactory.Builder()
+                    .addService(new SizeTestCompatService())
+                    .build();
+            final ServerContext serverContext =
+                    serviceTalkServerBuilder(ErrorMode.NONE, false, null)
+                            .maxInboundMessageSize(maxInboundMessageSize)
+                            .listenAndAwait(serviceFactory);
+            return TestServerContext.fromServiceTalkServerContext(serverContext);
+        }
+        return grpcJavaServer(false, null, new SizeTestCompatGrpcImpl(), maxInboundMessageSize);
+    }
+
+    // Server with no message-size limit running the size-test service.
+    private static TestServerContext sizeTestServer(final Stack stack) throws Exception {
+        if (stack == Stack.SERVICE_TALK) {
+            final ServiceFactory serviceFactory = new ServiceFactory.Builder()
+                    .addService(new SizeTestCompatService())
+                    .build();
+            final ServerContext serverContext = serviceTalkServerBuilder(ErrorMode.NONE, false, null)
+                    .listenAndAwait(serviceFactory);
+            return TestServerContext.fromServiceTalkServerContext(serverContext);
+        }
+        return grpcJavaServer(false, null, new SizeTestCompatGrpcImpl());
+    }
+
+    private CompatClient sizeLimitedClient(final Stack stack, final SocketAddress address,
+                                           final int maxInboundMessageSize) throws Exception {
+        if (stack == Stack.SERVICE_TALK) {
+            final GrpcClientBuilder<InetSocketAddress, InetSocketAddress> builder =
+                    GrpcClients.forResolvedAddress((InetSocketAddress) address);
+            builder.initializeHttp(b -> b.appendClientFilter(responseLeakValidator));
+            builder.maxInboundMessageSize(maxInboundMessageSize);
+            return builder.build(new Compat.ClientFactory());
+        }
+        return grpcJavaClient(address, null, false, null, maxInboundMessageSize);
+    }
+
+    private CompatClient sizeTestClient(final Stack stack, final SocketAddress address) throws Exception {
+        if (stack == Stack.SERVICE_TALK) {
+            return serviceTalkClient(address, false, null, null);
+        }
+        return grpcJavaClient(address, null, false, null);
+    }
+
     // Wrap grpc client in our client interface to simplify test code
     private static CompatClient grpcJavaClient(final SocketAddress address, @Nullable final String compression,
                                                final boolean ssl,
                                                @Nullable Duration timeout) throws Exception {
+        return grpcJavaClient(address, compression, ssl, timeout, 0);
+    }
+
+    private static CompatClient grpcJavaClient(final SocketAddress address, @Nullable final String compression,
+                                               final boolean ssl, @Nullable Duration timeout,
+                                               final int maxInboundMessageSize) throws Exception {
         final NettyChannelBuilder builder = NettyChannelBuilder.forAddress(address);
 
         if (ssl) {
@@ -1549,6 +1725,9 @@ class ProtocolCompatibilityTest {
             builder.sslContext(context);
         } else {
             builder.usePlaintext();
+        }
+        if (maxInboundMessageSize > 0) {
+            builder.maxInboundMessageSize(maxInboundMessageSize);
         }
         final ManagedChannel channel = builder.build();
 
@@ -1730,9 +1909,19 @@ class ProtocolCompatibilityTest {
     private static TestServerContext grpcJavaServer(final boolean ssl,
                                                     @Nullable final String compression,
                                                     final CompatGrpc.CompatImplBase serviceImpl) throws Exception {
+        return grpcJavaServer(ssl, compression, serviceImpl, 0);
+    }
+
+    private static TestServerContext grpcJavaServer(final boolean ssl,
+                                                    @Nullable final String compression,
+                                                    final CompatGrpc.CompatImplBase serviceImpl,
+                                                    final int maxInboundMessageSize) throws Exception {
         final NettyServerBuilder builder = NettyServerBuilder.forAddress(localAddress(0));
         if (ssl) {
             builder.useTransportSecurity(loadServerPem(), loadServerKey());
+        }
+        if (maxInboundMessageSize > 0) {
+            builder.maxInboundMessageSize(maxInboundMessageSize);
         }
         if (compression != null) {
             DecompressorRegistry dRegistry = DecompressorRegistry.emptyInstance();
