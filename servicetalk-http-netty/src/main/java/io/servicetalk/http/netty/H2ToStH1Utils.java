@@ -232,7 +232,8 @@ final class H2ToStH1Utils {
         }
 
         // These will be used by the netty encoder so we need to make sure when we give it keys they're lower cased.
-        // We also don't need to worry about validation at this point.
+        // validateNames=false: on this outbound path the names were already validated at the HTTP API layer when
+        // they were added to h1Headers (HeaderUtils.validateToken), so ServiceTalkHttp2Headers must not re-validate.
         return new ServiceTalkHttp2Headers(h1Headers, true, false, false);
     }
 }

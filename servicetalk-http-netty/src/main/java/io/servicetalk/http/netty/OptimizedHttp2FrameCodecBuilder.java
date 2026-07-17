@@ -235,7 +235,9 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
                 .autoAckSettingsFrame(server)
                 // We ack PING frames in KeepAliveManager#pingReceived.
                 .autoAckPingFrame(false)
-                // Inherit headers validation setting from the HttpHeadersFactory.
+                // Inherit name validation from the HttpHeadersFactory. This ties the decoder's validation to the same
+                // flag as the underlying HttpHeaders, so both validation layers toggle together on inbound decode —
+                // see the layering notes on ServiceTalkHttp2Headers.HTTP2_NAME_VALIDATOR.
                 .validateHeaders(config.headersFactory().validateNames())
                 .headerSensitivityDetector(config.headersSensitivityDetector()::test);
     }

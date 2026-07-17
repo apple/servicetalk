@@ -1528,6 +1528,23 @@ class H2PriorKnowledgeFeatureParityTest {
             "upgrade,foo/2",
             "proxy-connection,close"})
     void h2FailsRequestsWithMalformedHeaders(String headerName, String headerValue) throws Exception {
+        assertH2ServerResetsStreamWithProtocolError(headerName, headerValue);
+    }
+
+    // A peer that skips validation (new DefaultHttp2Headers(false)) can put names on the wire that ServiceTalk's own
+    // client would never send. This verifies the inbound decode path rejects invalid HTTP/2 field-names with a
+    // PROTOCOL_ERROR stream reset. The rejection is split across two layers (see ServiceTalkHttp2Headers
+    // .HTTP2_NAME_VALIDATOR): upper-case is caught by ServiceTalkHttp2Headers (HTTP/2 lower-case rule) and other
+    // non-token characters are caught one layer down by the underlying HttpHeaders (HeaderUtils.validateToken); Netty's
+    // HpackDecoder header sink normalises both to a PROTOCOL_ERROR, so the observable outcome here is identical.
+    @ParameterizedTest(name = "{displayName} [{index}] headerName={0}")
+    @ValueSource(strings = {"Uppercase-Name", "invalid name", "invalid;name", "invalid/name", "invalid@name"})
+    void h2ServerResetsStreamForInvalidHeaderName(String headerName) throws Exception {
+        assertH2ServerResetsStreamWithProtocolError(headerName, "some-value");
+    }
+
+    private void assertH2ServerResetsStreamWithProtocolError(CharSequence headerName, CharSequence headerValue)
+            throws Exception {
         setUp(DEFAULT, true);
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .protocols(HttpProtocol.HTTP_2.config)

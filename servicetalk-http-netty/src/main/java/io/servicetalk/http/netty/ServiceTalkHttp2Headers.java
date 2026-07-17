@@ -61,9 +61,17 @@ final class ServiceTalkHttp2Headers implements Http2Headers {
 
     private static final ValueConverter<CharSequence> VALUE_CONVERTER = CharSequenceValueConverter.INSTANCE;
 
-    // TODO: use the validators from Netty once they're made public
+    // Enforces only the HTTP/2 lower-case rule; the rest of the RFC 7230 token grammar is enforced by the underlying
+    // HttpHeaders (see HTTP2_NAME_VALIDATOR), so don't add a token-grammar check here.
     private static final ByteProcessor HTTP2_NAME_VALIDATOR_PROCESSOR = (c) -> !isUpperCase(c);
 
+    // HTTP/2 field-name validation is split across two layers, both gated on the same validateNames flag (wired in
+    // OptimizedHttp2FrameCodecBuilder): this wrapper rejects upper-case (the HTTP/2 lower-case rule) and the underlying
+    // HttpHeaders rejects the rest of the RFC 7230 token grammar (non-ASCII, controls, SP/HTAB, DEL, separators) via
+    // HeaderUtils.validateToken. The outbound path skips both (validateNames=false, see h1HeadersToH2Headers) since
+    // names are already validated at the HTTP API layer. On inbound decode Netty's HpackDecoder sink turns the
+    // wrapper's Http2Exception and the underlying's IllegalArgumentException alike into a PROTOCOL_ERROR, so an invalid
+    // name is rejected whichever layer catches it.
     private static final DefaultHeaders.NameValidator<CharSequence> HTTP2_NAME_VALIDATOR = (CharSequence name) -> {
         if (name == null || name.length() == 0) {
             PlatformDependent.throwException(connectionError(PROTOCOL_ERROR,
