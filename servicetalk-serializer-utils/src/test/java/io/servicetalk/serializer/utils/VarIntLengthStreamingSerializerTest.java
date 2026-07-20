@@ -27,12 +27,13 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.serializer.utils.MessageSizeLimiter.DEFAULT_MAX_MESSAGE_SIZE;
+import static io.servicetalk.serializer.utils.MessageSizeLimiter.DEFAULT_MAX_MESSAGE_SIZE_VALUE;
 import static io.servicetalk.serializer.utils.StringSerializer.stringSerializer;
 import static io.servicetalk.serializer.utils.VarIntLengthStreamingSerializer.FOUR_BYTE_VAL;
 import static io.servicetalk.serializer.utils.VarIntLengthStreamingSerializer.MAX_LENGTH_BYTES;
@@ -92,15 +93,16 @@ class VarIntLengthStreamingSerializerTest {
     }
 
     @Test
-    void defaultConstructorRejectsFrameAboveDefaultLimit() {
+    void defaultConstructorWarnsButAcceptsFrameAboveDefaultLimit() throws Exception {
+        // The default (no explicit limit) is warn-only, so an oversized frame is delivered, not rejected.
         VarIntLengthStreamingSerializer<String> serializer = new VarIntLengthStreamingSerializer<>(
                 stringSerializer(UTF_8), String::length);
-        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer(MAX_LENGTH_BYTES).writerIndex(MAX_LENGTH_BYTES);
-        setVarInt(DEFAULT_MAX_MESSAGE_SIZE + 1, buffer, buffer.readerIndex());
+        char[] chars = new char[DEFAULT_MAX_MESSAGE_SIZE_VALUE + 1];
+        Arrays.fill(chars, 'x');
+        String oversized = new String(chars);
 
-        ExecutionException e = assertThrows(ExecutionException.class,
-                () -> serializer.deserialize(from(buffer), DEFAULT_ALLOCATOR).toFuture().get());
-        assertThat(e.getCause(), instanceOf(MaxMessageSizeExceededException.class));
+        assertThat(serializer.deserialize(serializer.serialize(from(oversized), DEFAULT_ALLOCATOR),
+                DEFAULT_ALLOCATOR).toFuture().get(), contains(oversized));
     }
 
     @Test

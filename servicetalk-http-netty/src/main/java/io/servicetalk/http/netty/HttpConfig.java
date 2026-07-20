@@ -39,9 +39,9 @@ final class HttpConfig {
 
     static final int DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE = 4 * 1024 * 1024;
     // Magic value accepted by the temporaryDefaultMaxAggregatedPayloadSize system property (but not by the
-    // maxAggregatedPayloadSize(int) builder API): warn (rate-limited) when the default limit is exceeded but let the
-    // payload through rather than rejecting it. It exists to ease rollout of a global default; a value set
-    // programmatically is always definitive.
+    // maxAggregatedPayloadSize(int) builder API), and the built-in default: warn (rate-limited) when the
+    // DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE threshold is exceeded rather than rejecting. Eases rollout of a
+    // global limit; a value set programmatically via the builder is always definitive.
     static final int WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE = -1;
     // FIXME: 0.43 - remove this temporary property
     static final String DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY =
@@ -49,18 +49,21 @@ final class HttpConfig {
     static final int DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE;
 
     static {
+        // Warn-only by default unless the temporary property overrides it. The property additionally accepts the
+        // warn-only magic value; only values below it are invalid. Don't throw from this static initializer; fall
+        // back to warn-only instead.
         final int value = getInteger(DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY,
-                DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE);
-        // The property additionally accepts the warn-only magic value; only values below it are invalid. Don't throw
-        // from this static initializer; fall back to the hardcoded default instead.
+                WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE);
         if (value < WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE) {
-            LOGGER.warn("-D{}: {} is invalid (expected >= {}). Falling back to the default of {} bytes.",
+            LOGGER.warn("-D{}: {} is invalid (expected >= {}). Falling back to warn-only mode at {} bytes.",
                     DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY, value, WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE,
                     DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE);
-            DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE = DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE;
+            DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE = WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE;
         } else {
             DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE = value;
-            if (value != DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE) {
+            // getInteger can't distinguish "unset" (the warn-only default) from an explicit value; only warn about
+            // the temporary property when it is actually set.
+            if (System.getProperty(DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY) != null) {
                 LOGGER.warn("-D{}: {}. This property will be removed in the future releases. Configure this value " +
                                 "per client/server builder via maxAggregatedPayloadSize(int) instead.",
                         DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY, value);

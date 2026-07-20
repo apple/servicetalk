@@ -35,9 +35,9 @@ import static java.util.concurrent.TimeUnit.MINUTES;
  */
 final class MessageSizeLimiter {
     /**
-     * Magic {@code maxMessageSize} value: warn (rate-limited) at the default threshold when a message exceeds it, but
-     * let it through rather than rejecting. Mirrors HTTP {@code maxAggregatedPayloadSize(-1)}. Intended as a rollout
-     * aid, not steady-state protection.
+     * Magic {@code maxMessageSize} value, and the built-in default: warn (rate-limited) at the default threshold when
+     * a message exceeds it, but let it through rather than rejecting. Mirrors HTTP {@code maxAggregatedPayloadSize}
+     * warn-only mode. Configure an enforcing (positive) {@code maxMessageSize} for steady-state protection.
      */
     static final int WARN_ONLY = -1;
 
@@ -54,24 +54,27 @@ final class MessageSizeLimiter {
      */
     static final MessageSizeLimiter NONE = new MessageSizeLimiter(0, false);
 
-    // The maximum length declared by a frame's length prefix that a 2-arg serializer accepts by default. A value of
-    // 0 disables the limit; -1 selects warn-only mode at the default threshold; other negatives are invalid and fall
-    // back to the hardcoded default.
+    // The value the 2-arg (default) serializer constructors resolve to. A value of 0 disables the limit; -1 selects
+    // warn-only mode at the default threshold (the built-in default); other negatives are invalid and fall back to
+    // warn-only.
     static final int DEFAULT_MAX_MESSAGE_SIZE;
 
     static {
-        final int value = getInteger(DEFAULT_MAX_MESSAGE_SIZE_PROPERTY, DEFAULT_MAX_MESSAGE_SIZE_VALUE);
-        // Mirror the validation applied by forMaxMessageSize: 0 disables, -1 is warn-only, other negatives are
-        // invalid. Don't throw from this static initializer - fall back to the default so a bad property can't break
-        // serializer construction (e.g. the static HttpSerializers instances).
+        // Warn-only by default unless the temporary property overrides it. Mirror the validation applied by
+        // forMaxMessageSize: 0 disables, -1 is warn-only, other negatives are invalid. Don't throw from this static
+        // initializer - fall back to warn-only so a bad property can't break serializer construction (e.g. the static
+        // HttpSerializers instances).
+        final int value = getInteger(DEFAULT_MAX_MESSAGE_SIZE_PROPERTY, WARN_ONLY);
         if (value < WARN_ONLY) {
             LOGGER.warn("-D{}: {} is invalid (expected >= -1, where 0 disables the limit and -1 warns). Falling back " +
-                            "to the default of {} bytes.", DEFAULT_MAX_MESSAGE_SIZE_PROPERTY, value,
+                            "to warn-only mode at {} bytes.", DEFAULT_MAX_MESSAGE_SIZE_PROPERTY, value,
                     DEFAULT_MAX_MESSAGE_SIZE_VALUE);
-            DEFAULT_MAX_MESSAGE_SIZE = DEFAULT_MAX_MESSAGE_SIZE_VALUE;
+            DEFAULT_MAX_MESSAGE_SIZE = WARN_ONLY;
         } else {
             DEFAULT_MAX_MESSAGE_SIZE = value;
-            if (value != DEFAULT_MAX_MESSAGE_SIZE_VALUE) {
+            // getInteger can't distinguish "unset" (the warn-only default) from an explicit value; only warn about
+            // the temporary property when it is actually set.
+            if (System.getProperty(DEFAULT_MAX_MESSAGE_SIZE_PROPERTY) != null) {
                 LOGGER.warn("-D{}: {}. This property is temporary and will be removed in a future release. Configure " +
                                 "the limit per serializer via the 3-arg FixedLengthStreamingSerializer / " +
                                 "VarIntLengthStreamingSerializer constructor instead.",
