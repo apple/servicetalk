@@ -172,12 +172,10 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * point of aggregation &mdash; <em>after</em> any decompression or body transformation by earlier filters &mdash;
      * not the bytes received from the network nor any declared {@code Content-Length}.
      * <p>
-     * By default the limit is warn-only at 4 MiB: an aggregated response exceeding it is delivered but a rate-limited
-     * warning is logged. Set a non-negative value here to enforce ({@code 0} disables the limit), or override the
-     * default globally via the temporary
-     * {@code io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize} system property (a positive value
-     * enforces at that size, {@code -1} keeps warn-only); an explicit call here always takes precedence and is
-     * enforced. For an opt-in limit that fails fast on {@code Content-Length}, see
+     * The default is 4 MiB, overridable globally via the temporary
+     * {@code io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize} system property, which also accepts
+     * {@code -1} for warn-only mode (oversized responses are delivered but logged); an explicit call here always takes
+     * precedence and is enforced. For an opt-in limit that fails fast on {@code Content-Length}, see
      * {@code PayloadSizeLimitingHttpRequesterFilter}; both apply.
      *
      * @param maxAggregatedPayloadSize the maximum number of payload bytes to buffer when a response is aggregated;

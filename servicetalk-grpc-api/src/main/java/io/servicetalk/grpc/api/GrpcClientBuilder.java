@@ -98,11 +98,10 @@ public interface GrpcClientBuilder<U, R> {
      * Set the maximum size, in bytes, of a decoded inbound (response) gRPC message that this client will accept.
      * Messages whose declared length exceeds this limit are rejected with
      * {@link GrpcStatusCode#RESOURCE_EXHAUSTED} before their payload is buffered, bounding the memory a peer can
-     * cause this client to allocate. By default the limit is warn-only at 4 MiB (the threshold matching grpc-java):
-     * an oversized message is delivered but a rate-limited warning is logged. Set a positive value here to enforce
-     * ({@code 0} disables the limit), or change the default globally via the
+     * cause this client to allocate. The default is 4 MiB (matching grpc-java) and can be changed globally via the
      * {@code io.servicetalk.grpc.netty.temporaryDefaultMaxInboundMessageSize} system property (a temporary property
-     * that will be removed in a future release; a positive value enforces at that size, {@code -1} keeps warn-only).
+     * that will be removed in a future release), which also accepts {@code -1} to enable warn-only mode globally (a
+     * rate-limited log instead of rejecting).
      * <p>
      * For a compressed message this bounds the on-wire length and the decoded length. The memory used while
      * decompressing is bounded separately by the codec's own decompressed-bytes cap, not by this limit.
