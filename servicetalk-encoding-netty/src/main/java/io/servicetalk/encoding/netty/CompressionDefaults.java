@@ -44,6 +44,10 @@ final class CompressionDefaults {
     private static final long RESOLVED_MAX_DECOMPRESSED_BYTES =
             parseMaxDecompressedBytes(System.getProperty(MAX_DECOMPRESSED_BYTES_PROPERTY));
 
+    static {
+        LOGGER.debug("-D{}={}", MAX_DECOMPRESSED_BYTES_PROPERTY, RESOLVED_MAX_DECOMPRESSED_BYTES);
+    }
+
     private CompressionDefaults() {
         // no instances
     }

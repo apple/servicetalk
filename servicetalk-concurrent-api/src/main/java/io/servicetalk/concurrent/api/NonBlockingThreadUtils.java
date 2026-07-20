@@ -33,12 +33,12 @@ final class NonBlockingThreadUtils {
 
     static {
         if (WARN_ON_NON_BLOCKING_THREAD) {
-            LOGGER.warn("-D{}: {}. Setting this property to 'true' may be used temporarily to unblock deployment but " +
-                            "exposes the service to the risk of deadlocks or increased I/O latencies which can be " +
-                            "very difficult to diagnose.",
+            LOGGER.warn("-D{}={} DANGEROUS_CONFIG_WARNING: Setting this property to 'true' may be used temporarily " +
+                            "to unblock deployment but exposes the service to the risk of deadlocks or increased I/O " +
+                            "latencies which can be very difficult to diagnose.",
                     WARN_ON_NON_BLOCKING_THREAD_PROPERTY, WARN_ON_NON_BLOCKING_THREAD);
         } else {
-            LOGGER.debug("-D{}: {}", WARN_ON_NON_BLOCKING_THREAD_PROPERTY, WARN_ON_NON_BLOCKING_THREAD);
+            LOGGER.debug("-D{}={}", WARN_ON_NON_BLOCKING_THREAD_PROPERTY, WARN_ON_NON_BLOCKING_THREAD);
         }
     }
 

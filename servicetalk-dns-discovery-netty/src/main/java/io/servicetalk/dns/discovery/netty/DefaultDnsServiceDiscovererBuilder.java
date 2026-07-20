@@ -103,7 +103,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
         DEFAULT_NEGATIVE_TTL_CACHE_SECONDS = negativeCacheTtlValue < 0 ? Integer.MAX_VALUE : negativeCacheTtlValue;
 
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("-D{}: {}", SKIP_BINDING_PROPERTY, getBoolean(SKIP_BINDING_PROPERTY));
+            LOGGER.debug("-D{}={}", SKIP_BINDING_PROPERTY, getBoolean(SKIP_BINDING_PROPERTY));
             LOGGER.debug("Default local address to bind to: {}", DEFAULT_LOCAL_ADDRESS);
             LOGGER.debug("Default DnsResolverAddressTypes: {}", DEFAULT_DNS_RESOLVER_ADDRESS_TYPES);
             LOGGER.debug("Default consolidate cache size: {}", DEFAULT_CONSOLIDATE_CACHE_SIZE);
@@ -112,12 +112,12 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
             LOGGER.debug("Default TTL poll jitter seconds: {}", DEFAULT_TTL_POLL_JITTER_SECONDS);
             LOGGER.debug("Default TTL cache boundaries in seconds: [{}, {}]",
                     DEFAULT_MIN_TTL_CACHE_SECONDS, DEFAULT_MAX_TTL_CACHE_SECONDS);
-            LOGGER.debug("-D{}: {}", NEGATIVE_TTL_CACHE_SECONDS_PROPERTY, negativeCacheTtlValue);
+            LOGGER.debug("-D{}={}", NEGATIVE_TTL_CACHE_SECONDS_PROPERTY, negativeCacheTtlValue);
             LOGGER.debug("Default negative TTL cache in seconds: {}", DEFAULT_NEGATIVE_TTL_CACHE_SECONDS);
             LOGGER.debug("Default missing records status: {}", DEFAULT_MISSING_RECOREDS_STATUS);
-            LOGGER.debug("-D{}: {}", NX_DOMAIN_INVALIDATES_PROPERTY, DEFAULT_NX_DOMAIN_INVALIDATES);
-            LOGGER.debug("-D{}: {}", TCP_FALLBACK_ON_TIMEOUT_PROPERTY, DEFAULT_TCP_FALLBACK_ON_TIMEOUT);
-            LOGGER.debug("-D{}: {}", DATAGRAM_CHANNEL_STRATEGY_PROPERTY, DEFAULT_DATAGRAM_CHANNEL_STRATEGY);
+            LOGGER.debug("-D{}={}", NX_DOMAIN_INVALIDATES_PROPERTY, DEFAULT_NX_DOMAIN_INVALIDATES);
+            LOGGER.debug("-D{}={}", TCP_FALLBACK_ON_TIMEOUT_PROPERTY, DEFAULT_TCP_FALLBACK_ON_TIMEOUT);
+            LOGGER.debug("-D{}={}", DATAGRAM_CHANNEL_STRATEGY_PROPERTY, DEFAULT_DATAGRAM_CHANNEL_STRATEGY);
         }
     }
 

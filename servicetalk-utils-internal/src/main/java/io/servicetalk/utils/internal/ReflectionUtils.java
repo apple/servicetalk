@@ -53,6 +53,7 @@ public final class ReflectionUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReflectionUtils.class);
 
     private static final int JAVA_VERSION = javaVersion0();
+    private static final String TRY_REFLECTION_SET_ACCESSIBLE_PROPERTY = "io.servicetalk.tryReflectionSetAccessible";
     private static final boolean IS_EXPLICIT_TRY_REFLECTION_SET_ACCESSIBLE = explicitTryReflectionSetAccessible0();
 
     private ReflectionUtils() {
@@ -116,7 +117,9 @@ public final class ReflectionUtils {
     }
 
     private static boolean explicitTryReflectionSetAccessible0() {
-        return getBoolean("io.servicetalk.tryReflectionSetAccessible", JAVA_VERSION < 9);
+        final boolean value = getBoolean(TRY_REFLECTION_SET_ACCESSIBLE_PROPERTY, JAVA_VERSION < 9);
+        LOGGER.debug("-D{}={}", TRY_REFLECTION_SET_ACCESSIBLE_PROPERTY, value);
+        return value;
     }
 
     static boolean getBoolean(final String name, final boolean def) {

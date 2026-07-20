@@ -57,7 +57,7 @@ final class H2ServerParentChannelInitializer implements ChannelInitializer {
 
     static {
         if (DEFAULT_MAX_CONCURRENT_STREAMS != DEFAULT_MAX_CONCURRENT_STREAMS_VALUE) {
-            LOGGER.warn("-D{}: {}. This property will be removed in future releases. " +
+            LOGGER.warn("-D{}={} This property will be removed in the future releases. " +
                             "Configure this value via H2ProtocolConfigBuilder#initialSettings(Http2Settings) with " +
                             "Http2SettingsBuilder#maxConcurrentStreams(long) instead.",
                     DEFAULT_MAX_CONCURRENT_STREAMS_PROPERTY, DEFAULT_MAX_CONCURRENT_STREAMS);

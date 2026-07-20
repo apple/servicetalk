@@ -228,7 +228,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         final String value = System.getProperty(DEFAULT_LB_POLICY_PROPERTY_NAME, fallbackPolicyName);
         final String normalized = value.trim().toLowerCase(Locale.ENGLISH);
         if (LB_POLICY_ROUND_ROBIN.equals(normalized) || LB_POLICY_P2C.equals(normalized)) {
-            LOGGER.debug("-D{}: {}", DEFAULT_LB_POLICY_PROPERTY_NAME, normalized);
+            LOGGER.debug("-D{}={}", DEFAULT_LB_POLICY_PROPERTY_NAME, normalized);
             return normalized;
         }
         LOGGER.warn("Unrecognized value '{}' for -D{}, expected one of [{}, {}]. Using default of {}.",

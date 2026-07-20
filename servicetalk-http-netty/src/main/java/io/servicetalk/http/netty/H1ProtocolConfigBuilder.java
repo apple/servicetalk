@@ -48,7 +48,7 @@ public final class H1ProtocolConfigBuilder {
 
     static {
         if (DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH != DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH_VALUE) {
-            LOGGER.warn("-D{}: {}. This property will be removed in the future releases. " +
+            LOGGER.warn("-D{}={} This property will be removed in the future releases. " +
                             "Configure this value via H1ProtocolConfigBuilder#maxTotalHeaderFieldsLength(int) instead.",
                     DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH_PROPERTY, DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH);
         }

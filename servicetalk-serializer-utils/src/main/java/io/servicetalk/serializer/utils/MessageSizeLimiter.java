@@ -66,19 +66,28 @@ final class MessageSizeLimiter {
         // HttpSerializers instances).
         final int value = getInteger(DEFAULT_MAX_MESSAGE_SIZE_PROPERTY, WARN_ONLY);
         if (value < WARN_ONLY) {
-            LOGGER.warn("-D{}: {} is invalid (expected >= -1, where 0 disables the limit and -1 warns). Falling back " +
-                            "to warn-only mode at {} bytes.", DEFAULT_MAX_MESSAGE_SIZE_PROPERTY, value,
-                    DEFAULT_MAX_MESSAGE_SIZE_VALUE);
+            LOGGER.warn("-D{}={} DANGEROUS_CONFIG_WARNING: The value is invalid (expected >= {}). Falling back to " +
+                            "warn-only mode at {} bytes.",
+                    DEFAULT_MAX_MESSAGE_SIZE_PROPERTY, value, WARN_ONLY, DEFAULT_MAX_MESSAGE_SIZE_VALUE);
             DEFAULT_MAX_MESSAGE_SIZE = WARN_ONLY;
         } else {
             DEFAULT_MAX_MESSAGE_SIZE = value;
             // getInteger can't distinguish "unset" (the warn-only default) from an explicit value; only warn about
             // the temporary property when it is actually set.
             if (System.getProperty(DEFAULT_MAX_MESSAGE_SIZE_PROPERTY) != null) {
-                LOGGER.warn("-D{}: {}. This property is temporary and will be removed in a future release. Configure " +
-                                "the limit per serializer via the 3-arg FixedLengthStreamingSerializer / " +
-                                "VarIntLengthStreamingSerializer constructor instead.",
-                        DEFAULT_MAX_MESSAGE_SIZE_PROPERTY, value);
+                if (value == WARN_ONLY) {
+                    LOGGER.warn("-D{}={} DANGEROUS_CONFIG_WARNING: Setting this property to -1 (warn-only mode) may " +
+                                    "be used temporarily to unblock deployment but exposes the service to the risk " +
+                                    "of aggregating unbounded amount of data on the heap. Configure appropriate " +
+                                    "value per serializer via the 3-arg FixedLengthStreamingSerializer / " +
+                                    "VarIntLengthStreamingSerializer constructor instead.",
+                            DEFAULT_MAX_MESSAGE_SIZE_PROPERTY, value);
+                } else {
+                    LOGGER.warn("-D{}={} This property will be removed in the future release. Configure this value " +
+                                    "per serializer via the 3-arg FixedLengthStreamingSerializer / " +
+                                    "VarIntLengthStreamingSerializer constructor instead.",
+                            DEFAULT_MAX_MESSAGE_SIZE_PROPERTY, value);
+                }
             }
         }
     }

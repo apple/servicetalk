@@ -61,7 +61,8 @@ final class PlatformDependent0 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PlatformDependent0.class);
 
-    private static final boolean IS_EXPLICIT_NO_UNSAFE = getBoolean("io.servicetalk.noUnsafe");
+    private static final String IS_EXPLICIT_NO_UNSAFE_PROPERTY = "io.servicetalk.noUnsafe";
+    private static final boolean IS_EXPLICIT_NO_UNSAFE = getBoolean(IS_EXPLICIT_NO_UNSAFE_PROPERTY);
 
     private static final String DEALLOCATOR_CLASS_NAME = "java.nio.DirectByteBuffer$Deallocator";
 
@@ -90,6 +91,7 @@ final class PlatformDependent0 {
     private static final Object DUMMY = new Object();
 
     static {
+        LOGGER.debug("-D{}={}", IS_EXPLICIT_NO_UNSAFE_PROPERTY, IS_EXPLICIT_NO_UNSAFE);
         Object unsafe;
 
         if (IS_EXPLICIT_NO_UNSAFE) {

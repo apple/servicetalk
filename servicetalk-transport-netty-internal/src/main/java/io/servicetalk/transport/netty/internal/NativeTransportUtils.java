@@ -60,9 +60,9 @@ final class NativeTransportUtils {
         IS_OSX_OR_BSD = PlatformDependent.isOsx() || os.contains("bsd");
         TRY_IO_URING = new AtomicBoolean(getBoolean(TRY_IO_URING_NAME));
 
-        LOGGER.debug("-D{}: {}", REQUIRE_NATIVE_LIBS_NAME, REQUIRE_NATIVE_LIBS);
-        LOGGER.debug("-D{}: {}", NETTY_NO_NATIVE_NAME, NETTY_NO_NATIVE);
-        LOGGER.debug("-D{}: {}", TRY_IO_URING_NAME, TRY_IO_URING.get());
+        LOGGER.debug("-D{}={}", REQUIRE_NATIVE_LIBS_NAME, REQUIRE_NATIVE_LIBS);
+        LOGGER.debug("-D{}={}", NETTY_NO_NATIVE_NAME, NETTY_NO_NATIVE);
+        LOGGER.debug("-D{}={}", TRY_IO_URING_NAME, TRY_IO_URING.get());
         LOGGER.debug("Operating system: {}", os);
 
         if (IS_LINUX && !Epoll.isAvailable()) {

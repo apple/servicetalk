@@ -55,7 +55,8 @@ final class HttpConfig {
         final int value = getInteger(DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY,
                 WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE);
         if (value < WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE) {
-            LOGGER.warn("-D{}: {} is invalid (expected >= {}). Falling back to warn-only mode at {} bytes.",
+            LOGGER.warn("-D{}={} DANGEROUS_CONFIG_WARNING: The value is invalid (expected >= {}). Falling back to " +
+                            "warn-only mode at {} bytes.",
                     DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY, value, WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE,
                     DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE);
             DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE = WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE;
@@ -64,9 +65,17 @@ final class HttpConfig {
             // getInteger can't distinguish "unset" (the warn-only default) from an explicit value; only warn about
             // the temporary property when it is actually set.
             if (System.getProperty(DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY) != null) {
-                LOGGER.warn("-D{}: {}. This property will be removed in the future releases. Configure this value " +
-                                "per client/server builder via maxAggregatedPayloadSize(int) instead.",
-                        DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY, value);
+                if (value == WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE) {
+                    LOGGER.warn("-D{}={} DANGEROUS_CONFIG_WARNING: Setting this property to -1 (warn-only mode) may " +
+                                    "be used temporarily to unblock deployment but exposes the service to the risk " +
+                                    "of aggregating unbounded amount of data on the heap. Configure appropriate " +
+                                    "value per client/server builder via maxAggregatedPayloadSize(int) instead.",
+                            DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY, value);
+                } else {
+                    LOGGER.warn("-D{}={} This property will be removed in the future releases. Configure this value " +
+                                    "per client/server builder via maxAggregatedPayloadSize(int) instead.",
+                            DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY, value);
+                }
             }
         }
     }

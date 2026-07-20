@@ -55,7 +55,7 @@ public abstract class CloseHandler {
                 LOGGER.info("Error while parsing {}", logLevelPropertyStr, cause);
             }
         }
-        LOGGER.debug("{}={}", logLevelPropertyStr, logLevel);
+        LOGGER.debug("-D{}={}", logLevelPropertyStr, logLevel);
         CLOSE_HANDLER_LOG_LEVEL = logLevel;
     }
 

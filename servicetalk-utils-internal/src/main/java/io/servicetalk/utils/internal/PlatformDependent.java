@@ -385,7 +385,7 @@ public final class PlatformDependent {
                 }
                 LOGGER.debug("jctools unpadded: {}available.", queue == null ? "un" : "");
             }
-            LOGGER.debug("{}: {}", useUnpaddedQueuesName, useUnpaddedQueues);
+            LOGGER.debug("-D{}={}", useUnpaddedQueuesName, useUnpaddedQueues);
             USE_UNPADDED_QUEUES = useUnpaddedQueues;
         }
 
