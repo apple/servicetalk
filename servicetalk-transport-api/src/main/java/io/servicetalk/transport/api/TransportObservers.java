@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,9 +51,16 @@ public final class TransportObservers {
 
     /**
      * Combines multiple {@link TransportObserver}s into a single {@link TransportObserver}.
+     * <p>
+     * When more than one observer is provided, the returned observer fans out every event to all combined observers
+     * and is exception-safe: each combined observer is wrapped with {@link #asSafeObserver(TransportObserver)}, so an
+     * exception thrown by one observer is caught and logged rather than rethrown, and never prevents the remaining
+     * observers from being notified. When a single observer is provided it is returned as-is, without this safety
+     * wrapping.
      *
      * @param other {@link TransportObserver}s to combine
      * @return a {@link TransportObserver} that delegates all invocations to the provided {@link TransportObserver}s
+     * @see #asSafeObserver(TransportObserver)
      */
     public static TransportObserver combine(final TransportObserver... other) {
         switch (other.length) {
