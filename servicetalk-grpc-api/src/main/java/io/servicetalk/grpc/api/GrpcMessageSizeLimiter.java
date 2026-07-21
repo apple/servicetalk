@@ -44,7 +44,7 @@ final class GrpcMessageSizeLimiter {
     /**
      * A no-op limiter that never rejects or warns, regardless of message size.
      */
-    static final GrpcMessageSizeLimiter NONE = new GrpcMessageSizeLimiter(Mode.DISABLED, 0);
+    static final GrpcMessageSizeLimiter NONE = new GrpcMessageSizeLimiter(Mode.DISABLED, 0, null);
 
     // maxInboundMessageSize value selecting warn-only mode (see forMaxInboundMessageSize), and the built-in default.
     private static final int WARN_ONLY = -1;
@@ -65,15 +65,20 @@ final class GrpcMessageSizeLimiter {
     // Non-null if this is a warn-only limiter.
     @Nullable
     private final AtomicLong maxObservedSize;
+    // Identifies the owning client/server in the warning (client-side: the StreamingHttpClient, whose toString carries
+    // the target address); null when not warn-only or when unavailable (server-side).
+    @Nullable
+    private final Object owner;
     @Nullable
     private final Throwable constructionSite;
 
-    private GrpcMessageSizeLimiter(final Mode mode, final int maxMessageSize) {
+    private GrpcMessageSizeLimiter(final Mode mode, final int maxMessageSize, @Nullable final Object owner) {
         this.mode = mode;
         this.maxMessageSize = maxMessageSize;
         // Seed in the past so the first time the limit is exceeded a warning is emitted immediately.
         this.lastWarnNanos = mode == Mode.WARN_ONLY ? new AtomicLong(nanoTime() - WARN_INTERVAL_NANOS) : null;
         this.maxObservedSize = mode == Mode.WARN_ONLY ? new AtomicLong() : null;
+        this.owner = mode == Mode.WARN_ONLY ? owner : null;
         this.constructionSite = mode == Mode.WARN_ONLY ? new Throwable(
                 "Client/server with a warn-only maxInboundMessageSize created here (not an error)") : null;
     }
@@ -88,11 +93,22 @@ final class GrpcMessageSizeLimiter {
      * @throws IllegalArgumentException if {@code maxInboundMessageSize < -1}
      */
     static GrpcMessageSizeLimiter forMaxInboundMessageSize(final int maxInboundMessageSize) {
+        return forMaxInboundMessageSize(maxInboundMessageSize, null);
+    }
+
+    /**
+     * Variant of {@link #forMaxInboundMessageSize(int)} that records {@code owner} to identify the client/server in
+     * the warn-only log. The client passes its {@link io.servicetalk.http.api.StreamingHttpClient} (whose
+     * {@code toString()} carries the target address); the server has no equivalent handle and passes {@code null},
+     * relying on the construction stack instead.
+     */
+    static GrpcMessageSizeLimiter forMaxInboundMessageSize(final int maxInboundMessageSize,
+                                                           @Nullable final Object owner) {
         if (maxInboundMessageSize == 0) {
             return NONE;
         }
         if (maxInboundMessageSize > 0) {
-            return new GrpcMessageSizeLimiter(Mode.ENFORCING, maxInboundMessageSize);
+            return new GrpcMessageSizeLimiter(Mode.ENFORCING, maxInboundMessageSize, null);
         }
         // A negative value reaches here only as the property-derived default; the builder/config API rejects
         // negatives up front, so the sole legal negative is the warn-only selector.
@@ -100,7 +116,7 @@ final class GrpcMessageSizeLimiter {
             throw new IllegalArgumentException("maxInboundMessageSize: " + maxInboundMessageSize +
                     " (expected >= " + WARN_ONLY + ')');
         }
-        return new GrpcMessageSizeLimiter(Mode.WARN_ONLY, DEFAULT_MAX_MESSAGE_SIZE);
+        return new GrpcMessageSizeLimiter(Mode.WARN_ONLY, DEFAULT_MAX_MESSAGE_SIZE, owner);
     }
 
     /**
@@ -172,11 +188,12 @@ final class GrpcMessageSizeLimiter {
         final long now = nanoTime();
         final long last = lastWarnNanos.get();
         if (now - last >= WARN_INTERVAL_NANOS && lastWarnNanos.compareAndSet(last, now)) {
-            LOGGER.warn("gRPC message size={} exceeded the configured maximum inbound message size of {} bytes, but " +
-                    "the limit is configured in warn-only mode so the message is allowed through. Largest message " +
-                    "observed so far is {} bytes. Configure an enforcing maxInboundMessageSize(int) to reject " +
-                    "oversized messages with RESOURCE_EXHAUSTED. This warning is rate-limited to once per 5 minutes " +
-                    "per client/server.", messageSize, maxMessageSize, maxObserved, constructionSite);
+            LOGGER.warn("gRPC message size={} exceeded the configured maximum inbound message size of {} bytes{}, " +
+                    "but the limit is configured in warn-only mode so the message is allowed through. Largest " +
+                    "message observed so far is {} bytes. Configure an enforcing maxInboundMessageSize(int) to " +
+                    "reject oversized messages with RESOURCE_EXHAUSTED. This warning is rate-limited to once per 5 " +
+                    "minutes per client/server.", messageSize, maxMessageSize, owner == null ? "" : " for " + owner,
+                    maxObserved, constructionSite);
         }
     }
 }

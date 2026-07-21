@@ -61,7 +61,8 @@ class AggregatedPayloadSizeLimiterTest {
 
     @Test
     void mapEnforcesPositiveSize() {
-        final LongConsumer limiter = toAggregatedPayloadSizeLimiter(10, DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE, "test-owner");
+        final LongConsumer limiter = toAggregatedPayloadSizeLimiter(10, DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE,
+                "test-owner");
         assertNotSame(NONE, limiter);
         assertDoesNotThrow(() -> limiter.accept(10));
         assertThrows(PayloadTooLargeException.class, () -> limiter.accept(11));
@@ -74,7 +75,8 @@ class AggregatedPayloadSizeLimiterTest {
 
     @Test
     void mapWarnOnlyWarnsAtDefault() {
-        final LongConsumer limiter = toAggregatedPayloadSizeLimiter(-1, DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE, "test-owner");
+        final LongConsumer limiter = toAggregatedPayloadSizeLimiter(-1, DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE,
+                "test-owner");
         assertNotSame(NONE, limiter);
         // Over the default it warns (rate-limited) but must not throw.
         assertDoesNotThrow(() -> limiter.accept((long) DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE + 1));
@@ -100,7 +102,8 @@ class AggregatedPayloadSizeLimiterTest {
         // The configured (builder) value drives the mode; the property-resolved default only supplies the warn
         // threshold. So an explicit builder call always wins over the property's mode.
         // builder enforce beats property warn-only:
-        assertThrows(PayloadTooLargeException.class, () -> toAggregatedPayloadSizeLimiter(10, -1, "test-owner").accept(11));
+        assertThrows(PayloadTooLargeException.class, () -> toAggregatedPayloadSizeLimiter(10, -1, "test-owner")
+                .accept(11));
         // builder disable beats property warn-only:
         assertSame(NONE, toAggregatedPayloadSizeLimiter(0, -1, "test-owner"));
         // builder warn-only beats property enforce:

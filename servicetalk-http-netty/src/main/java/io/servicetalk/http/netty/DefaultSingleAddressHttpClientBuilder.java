@@ -361,7 +361,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 LOGGER.debug("Client for {} created with the builder strategy {}, resulting computed strategy is {}.",
                         targetResource, builderStrategy, computedStrategy);
             }
-            return new FilterableClientToClient(wrappedClient, executionContext);
+            return new FilterableClientToClient(wrappedClient, executionContext, targetResource);
         } catch (final Throwable t) {
             closeOnException.closeAsync().subscribe();
             throw t;
