@@ -47,15 +47,18 @@ final class AggregatedPayloadSizeLimiter implements LongConsumer {
     static final LongConsumer NONE = size -> { };
 
     private final int maxAggregatedSize;
-    // Non-null iff this is a warn-only limiter. Holds nanoTime() of the last emitted warning so we can rate-limit to
-    // one entry per WARN_INTERVAL_NANOS. Shared across all aggregations of the owning client/server.
+    // Non-null if this is a warn-only limiter.
     @Nullable
     private final AtomicLong lastWarnNanos;
+    // Non-null if this is a warn-only limiter.
+    @Nullable
+    private final AtomicLong maxObservedSize;
 
     private AggregatedPayloadSizeLimiter(final int maxAggregatedSize, final boolean warnOnly) {
         this.maxAggregatedSize = maxAggregatedSize;
         // Seed in the past so the first time the limit is exceeded a warning is emitted immediately.
         this.lastWarnNanos = warnOnly ? new AtomicLong(nanoTime() - WARN_INTERVAL_NANOS) : null;
+        this.maxObservedSize = warnOnly ? new AtomicLong() : null;
     }
 
     /**
@@ -102,13 +105,16 @@ final class AggregatedPayloadSizeLimiter implements LongConsumer {
 
     private void maybeWarn(final long totalSize) {
         assert lastWarnNanos != null;
+        assert maxObservedSize != null;
+        final long maxObserved = maxObservedSize.accumulateAndGet(totalSize, Math::max);
         final long now = nanoTime();
         final long last = lastWarnNanos.get();
         if (now - last >= WARN_INTERVAL_NANOS && lastWarnNanos.compareAndSet(last, now)) {
             LOGGER.warn("Aggregated payload size={} exceeded the configured maximum of {} bytes, but the limit is " +
-                    "configured in warn-only mode so the payload is allowed through. Configure an enforcing " +
-                    "maxAggregatedPayloadSize(int) to reject oversized payloads. This warning is rate-limited to " +
-                    "once per 5 minutes per client/server.", totalSize, maxAggregatedSize);
+                    "configured in warn-only mode so the payload is allowed through. Largest payload observed so far " +
+                    "is {} bytes. Configure an enforcing maxAggregatedPayloadSize(int) to reject oversized payloads. " +
+                    "This warning is rate-limited to once per 5 minutes per client/server.", totalSize,
+                    maxAggregatedSize, maxObserved);
         }
     }
 }

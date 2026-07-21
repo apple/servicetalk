@@ -59,16 +59,19 @@ final class GrpcMessageSizeLimiter {
 
     private final Mode mode;
     private final int maxMessageSize;
-    // Non-null iff this is a warn-only limiter. Holds nanoTime() of the last emitted warning so we can rate-limit to
-    // one entry per WARN_INTERVAL_NANOS. Shared across all deframers of the owning client/server.
+    // Non-null if this is a warn-only limiter.
     @Nullable
     private final AtomicLong lastWarnNanos;
+    // Non-null if this is a warn-only limiter.
+    @Nullable
+    private final AtomicLong maxObservedSize;
 
     private GrpcMessageSizeLimiter(final Mode mode, final int maxMessageSize) {
         this.mode = mode;
         this.maxMessageSize = maxMessageSize;
         // Seed in the past so the first time the limit is exceeded a warning is emitted immediately.
         this.lastWarnNanos = mode == Mode.WARN_ONLY ? new AtomicLong(nanoTime() - WARN_INTERVAL_NANOS) : null;
+        this.maxObservedSize = mode == Mode.WARN_ONLY ? new AtomicLong() : null;
     }
 
     /**
@@ -159,13 +162,16 @@ final class GrpcMessageSizeLimiter {
 
     private void maybeWarn(final long messageSize) {
         assert lastWarnNanos != null;
+        assert maxObservedSize != null;
+        final long maxObserved = maxObservedSize.accumulateAndGet(messageSize, Math::max);
         final long now = nanoTime();
         final long last = lastWarnNanos.get();
         if (now - last >= WARN_INTERVAL_NANOS && lastWarnNanos.compareAndSet(last, now)) {
             LOGGER.warn("gRPC message size={} exceeded the configured maximum inbound message size of {} bytes, but " +
-                    "the limit is configured in warn-only mode so the message is allowed through. Configure an " +
-                    "enforcing maxInboundMessageSize(int) to reject oversized messages with RESOURCE_EXHAUSTED. This " +
-                    "warning is rate-limited to once per 5 minutes per client/server.", messageSize, maxMessageSize);
+                    "the limit is configured in warn-only mode so the message is allowed through. Largest message " +
+                    "observed so far is {} bytes. Configure an enforcing maxInboundMessageSize(int) to reject " +
+                    "oversized messages with RESOURCE_EXHAUSTED. This warning is rate-limited to once per 5 minutes " +
+                    "per client/server.", messageSize, maxMessageSize, maxObserved);
         }
     }
 }
