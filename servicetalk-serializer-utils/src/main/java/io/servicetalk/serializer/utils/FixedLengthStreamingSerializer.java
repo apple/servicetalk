@@ -26,6 +26,7 @@ import java.util.function.BiFunction;
 import java.util.function.ToIntFunction;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.lang.Integer.BYTES;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
@@ -42,16 +43,19 @@ public final class FixedLengthStreamingSerializer<T> implements StreamingSeriali
 
     /**
      * Create a new instance that limits deserialized messages to the default maximum size
-     * ({@value MessageSizeLimiter#DEFAULT_MAX_MESSAGE_SIZE_VALUE} bytes, overridable via the
-     * {@value MessageSizeLimiter#DEFAULT_MAX_MESSAGE_SIZE_PROPERTY} system property). Use
+     * ({@value MessageSizeLimiter#DEFAULT_MAX_MESSAGE_SIZE_VALUE} bytes). The default can be changed globally via the
+     * {@value MessageSizeLimiter#DEFAULT_MAX_MESSAGE_SIZE_PROPERTY} system property (a temporary property that will be
+     * removed in a future release), which also accepts {@code -1} to enable warn-only mode globally (a rate-limited
+     * log instead of rejecting). Use
      * {@link #FixedLengthStreamingSerializer(SerializerDeserializer, ToIntFunction, int)} to configure a different
-     * limit, disable it, or warn instead of rejecting.
+     * limit or disable it.
      * @param serializer The {@link SerializerDeserializer} used to serialize/deserialize individual objects.
      * @param bytesEstimator Provides the length in bytes for each {@link T} being serialized.
      */
     public FixedLengthStreamingSerializer(final SerializerDeserializer<T> serializer,
                                           final ToIntFunction<T> bytesEstimator) {
-        this(serializer, bytesEstimator, MessageSizeLimiter.DEFAULT_MAX_MESSAGE_SIZE);
+        this(serializer, bytesEstimator,
+                MessageSizeLimiter.forMaxMessageSize(MessageSizeLimiter.DEFAULT_MAX_MESSAGE_SIZE));
     }
 
     /**
@@ -61,15 +65,21 @@ public final class FixedLengthStreamingSerializer<T> implements StreamingSeriali
      * @param maxMessageSize The maximum length (in bytes) declared by a frame's length prefix that will be accepted
      * during deserialization. A frame declaring a larger length is rejected with a
      * {@link io.servicetalk.serializer.api.MaxMessageSizeExceededException} before any of its bytes are buffered.
-     * {@code 0} disables the limit; {@code -1} logs a rate-limited warning at the default threshold but lets the
-     * message through (a rollout aid, not steady-state protection); other negative values are rejected.
+     * {@code 0} disables the limit and any positive value enforces it. Must be non-negative.
      */
     public FixedLengthStreamingSerializer(final SerializerDeserializer<T> serializer,
                                           final ToIntFunction<T> bytesEstimator,
                                           final int maxMessageSize) {
+        this(serializer, bytesEstimator,
+                MessageSizeLimiter.forMaxMessageSize(ensureNonNegative(maxMessageSize, "maxMessageSize")));
+    }
+
+    private FixedLengthStreamingSerializer(final SerializerDeserializer<T> serializer,
+                                           final ToIntFunction<T> bytesEstimator,
+                                           final MessageSizeLimiter sizeLimiter) {
         this.serializer = requireNonNull(serializer);
         this.bytesEstimator = requireNonNull(bytesEstimator);
-        this.sizeLimiter = MessageSizeLimiter.forMaxMessageSize(maxMessageSize);
+        this.sizeLimiter = sizeLimiter;
     }
 
     @Override

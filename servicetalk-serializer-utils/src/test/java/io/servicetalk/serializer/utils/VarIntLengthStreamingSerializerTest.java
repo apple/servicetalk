@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -105,10 +106,11 @@ class VarIntLengthStreamingSerializerTest {
                 DEFAULT_ALLOCATOR).toFuture().get(), contains(oversized));
     }
 
-    @Test
-    void invalidMaxMessageSizeRejected() {
+    @ParameterizedTest
+    @ValueSource(ints = {-1, -2})
+    void negativeMaxMessageSizeRejected(int maxMessageSize) {
         assertThrows(IllegalArgumentException.class, () -> new VarIntLengthStreamingSerializer<>(
-                stringSerializer(UTF_8), String::length, -2));
+                stringSerializer(UTF_8), String::length, maxMessageSize));
     }
 
     @Test
