@@ -234,8 +234,10 @@ final class AimdCapacityLimiter implements CapacityLimiter {
 
         @Override
         public int failed(Throwable __) {
-            completed();
-            return UNSUPPORTED;
+            // Only react to explicit drop signals and the classification of failures can be configured via the
+            // resilience filters. Unclassified failures are ambiguous — they may indicate overload, application bugs,
+            // or transport faults — so we leave the limit untouched.
+            return ignored();
         }
 
         @Override

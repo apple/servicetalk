@@ -305,7 +305,10 @@ final class GradientCapacityLimiter implements CapacityLimiter {
 
         @Override
         public int failed(Throwable __) {
-            return provider.onDrop();
+            // Only react to explicit drop signals and the classification of failures can be configured via the
+            // resilience filters. Unclassified failures are ambiguous — they may indicate overload, application bugs,
+            // or transport faults — so we leave the limit untouched.
+            return provider.onIgnore();
         }
 
         @Override

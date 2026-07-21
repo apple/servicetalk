@@ -88,6 +88,28 @@ class AimdCapacityLimiterTest {
     }
 
     @Test
+    void failedDoesNotChangeLimit() {
+        CapacityLimiter capacityLimiter = CapacityLimiters.dynamicAIMD()
+                .limits(2, 2, 4)
+                .increment(1f)
+                .cooldown(Duration.ZERO)
+                .backoffRatio(.9f, .2f)
+                .build();
+
+        // Drive a handful of failed() releases — none should grow or shrink the limit.
+        for (int i = 0; i < 10; i++) {
+            CapacityLimiter.Ticket ticket = capacityLimiter.tryAcquire(DEFAULT, null);
+            assertThat(ticket, notNullValue());
+            ticket.failed(new Exception("boom"));
+        }
+
+        // Limit is still 2: acquire two, the third must be rejected.
+        assertThat(capacityLimiter.tryAcquire(DEFAULT, null), notNullValue());
+        assertThat(capacityLimiter.tryAcquire(DEFAULT, null), notNullValue());
+        assertThat(capacityLimiter.tryAcquire(DEFAULT, null), nullValue());
+    }
+
+    @Test
     void concurrentEvaluation() throws InterruptedException {
         final CapacityLimiter capacityLimiter = CapacityLimiters.dynamicAIMD()
                 .limits(70, 70, 120)
