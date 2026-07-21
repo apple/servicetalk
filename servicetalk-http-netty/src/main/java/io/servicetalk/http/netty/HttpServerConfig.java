@@ -73,9 +73,9 @@ final class HttpServerConfig {
         return this;
     }
 
-    ReadOnlyHttpServerConfig asReadOnly() {
+    ReadOnlyHttpServerConfig asReadOnly(@Nullable final Object owner) {
         applySslConfigOverrides();
-        final ReadOnlyHttpServerConfig roConfig = new ReadOnlyHttpServerConfig(this);
+        final ReadOnlyHttpServerConfig roConfig = new ReadOnlyHttpServerConfig(this, owner);
         if (roConfig.tcpConfig().sslContext() == null && roConfig.h1Config() != null && roConfig.h2Config() != null) {
             throw new IllegalStateException("Cleartext HTTP/1.1 -> HTTP/2 (h2c) upgrade is not supported");
         }

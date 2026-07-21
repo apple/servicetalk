@@ -228,7 +228,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     private static <U, R> StreamingHttpClient buildStreaming(final HttpClientBuildContext<U, R> ctx) {
         final String targetResource = targetResource(ctx);
-        final ReadOnlyHttpClientConfig roConfig = ctx.httpConfig().asReadOnly();
+        final ReadOnlyHttpClientConfig roConfig = ctx.httpConfig().asReadOnly(targetResource);
         final HttpExecutionStrategy computedStrategy =
                 ctx.builder.strategyComputation.buildForClient(
                         ctx.builder.executionContextBuilder.build().executionStrategy());

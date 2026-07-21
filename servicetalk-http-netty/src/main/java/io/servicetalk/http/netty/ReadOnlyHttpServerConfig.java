@@ -33,13 +33,13 @@ final class ReadOnlyHttpServerConfig {
     @Nullable
     private final HttpLifecycleObserver lifecycleObserver;
 
-    ReadOnlyHttpServerConfig(final HttpServerConfig from) {
+    ReadOnlyHttpServerConfig(final HttpServerConfig from, @Nullable final Object owner) {
         final HttpConfig configs = from.httpConfig();
         tcpConfig = from.tcpConfig().asReadOnly();
         h1Config = configs.h1Config();
         h2Config = configs.h2Config();
         allowDropTrailers = configs.allowDropTrailersReadFromTransport();
-        payloadSizeLimiter = configs.newAggregatedPayloadSizeLimiter();
+        payloadSizeLimiter = configs.newAggregatedPayloadSizeLimiter(owner);
         lifecycleObserver = from.lifecycleObserver();
     }
 

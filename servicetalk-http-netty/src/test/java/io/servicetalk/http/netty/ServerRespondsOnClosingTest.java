@@ -79,7 +79,7 @@ final class ServerRespondsOnClosingTest {
         final HttpServerConfig httpServerConfig = new HttpServerConfig();
         httpServerConfig.tcpConfig().enableWireLogging("servicetalk-tests-wire-logger", TRACE,
                 Boolean.TRUE::booleanValue);
-        ReadOnlyHttpServerConfig config = httpServerConfig.asReadOnly();
+        ReadOnlyHttpServerConfig config = httpServerConfig.asReadOnly(null);
         ConnectionObserver connectionObserver = NoopConnectionObserver.INSTANCE;
         HttpService service = (ctx, request, responseFactory) -> {
             Processor<HttpResponse, HttpResponse> responseProcessor = newSingleProcessor();

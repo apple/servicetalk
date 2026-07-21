@@ -53,12 +53,17 @@ final class AggregatedPayloadSizeLimiter implements LongConsumer {
     // Non-null if this is a warn-only limiter.
     @Nullable
     private final AtomicLong maxObservedSize;
+    // Identifies the owning client/server in the warning; null when not warn-only.
+    @Nullable
+    private final Object owner;
 
-    private AggregatedPayloadSizeLimiter(final int maxAggregatedSize, final boolean warnOnly) {
+    private AggregatedPayloadSizeLimiter(final int maxAggregatedSize, final boolean warnOnly,
+                                         @Nullable final Object owner) {
         this.maxAggregatedSize = maxAggregatedSize;
         // Seed in the past so the first time the limit is exceeded a warning is emitted immediately.
         this.lastWarnNanos = warnOnly ? new AtomicLong(nanoTime() - WARN_INTERVAL_NANOS) : null;
         this.maxObservedSize = warnOnly ? new AtomicLong() : null;
+        this.owner = warnOnly ? owner : null;
     }
 
     /**
@@ -69,7 +74,7 @@ final class AggregatedPayloadSizeLimiter implements LongConsumer {
      * @return a limiter, or {@link #NONE} when {@code maxAggregatedSize <= 0}
      */
     static LongConsumer enforcing(final int maxAggregatedSize) {
-        return maxAggregatedSize <= 0 ? NONE : new AggregatedPayloadSizeLimiter(maxAggregatedSize, false);
+        return maxAggregatedSize <= 0 ? NONE : new AggregatedPayloadSizeLimiter(maxAggregatedSize, false, null);
     }
 
     /**
@@ -78,10 +83,11 @@ final class AggregatedPayloadSizeLimiter implements LongConsumer {
      * per client/server).
      *
      * @param maxAggregatedSize the size in bytes above which a warning is emitted; {@code 0} or negative disables it
+     * @param owner identifies the owning client/server in the warning (e.g. its target/bind address)
      * @return a limiter, or {@link #NONE} when {@code maxAggregatedSize <= 0}
      */
-    static LongConsumer warning(final int maxAggregatedSize) {
-        return maxAggregatedSize <= 0 ? NONE : new AggregatedPayloadSizeLimiter(maxAggregatedSize, true);
+    static LongConsumer warning(final int maxAggregatedSize, @Nullable final Object owner) {
+        return maxAggregatedSize <= 0 ? NONE : new AggregatedPayloadSizeLimiter(maxAggregatedSize, true, owner);
     }
 
     /**
@@ -110,11 +116,11 @@ final class AggregatedPayloadSizeLimiter implements LongConsumer {
         final long now = nanoTime();
         final long last = lastWarnNanos.get();
         if (now - last >= WARN_INTERVAL_NANOS && lastWarnNanos.compareAndSet(last, now)) {
-            LOGGER.warn("Aggregated payload size={} exceeded the configured maximum of {} bytes, but the limit is " +
-                    "configured in warn-only mode so the payload is allowed through. Largest payload observed so far " +
-                    "is {} bytes. Configure an enforcing maxAggregatedPayloadSize(int) to reject oversized payloads. " +
-                    "This warning is rate-limited to once per 5 minutes per client/server.", totalSize,
-                    maxAggregatedSize, maxObserved);
+            LOGGER.warn("Aggregated payload size={} exceeded the configured maximum of {} bytes for {}, but the " +
+                    "limit is configured in warn-only mode so the payload is allowed through. Largest payload " +
+                    "observed so far is {} bytes. Configure an enforcing maxAggregatedPayloadSize(int) to reject " +
+                    "oversized payloads. This warning is rate-limited to once per 5 minutes per client/server.",
+                    totalSize, maxAggregatedSize, owner, maxObserved);
         }
     }
 }

@@ -424,7 +424,7 @@ class DefaultHttpServerBuilder implements HttpServerBuilder {
         final EarlyConnectionAcceptor earlyConnectionAcceptor = buildEarlyConnectionAcceptor(earlyConnectionAcceptors);
         final LateConnectionAcceptor lateConnectionAcceptor = buildLateConnectionAcceptor(lateConnectionAcceptors);
 
-        final ReadOnlyHttpServerConfig roConfig = config.asReadOnly();
+        final ReadOnlyHttpServerConfig roConfig = config.asReadOnly(address);
         final List<StreamingHttpServiceFilterFactory> noOffloadServiceFilters =
                 initNonOffloadsServiceFilters(config.lifecycleObserver());
 
@@ -478,7 +478,7 @@ class DefaultHttpServerBuilder implements HttpServerBuilder {
                 // For non-SSL, if both H1 and H2 are configured at the same time we force-fallback to H1
                 configWithoutSsl.httpConfig().protocols(roConfig.h1Config());
             }
-            ReadOnlyHttpServerConfig roConfigWithoutSsl = configWithoutSsl.asReadOnly();
+            ReadOnlyHttpServerConfig roConfigWithoutSsl = configWithoutSsl.asReadOnly(address);
             return OptionalSslNegotiator.bind(executionContext, roConfig, roConfigWithoutSsl, address,
                     connectionAcceptor, filteredService, earlyConnectionAcceptor,
                     lateConnectionAcceptor);
