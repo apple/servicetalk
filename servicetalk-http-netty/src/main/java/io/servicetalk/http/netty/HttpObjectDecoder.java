@@ -715,7 +715,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         try {
             headers.add(name, value);
         } catch (IllegalCharacterException cause) {
-            throw invalidHeaderName(name, parsingLine, cause);
+            throw invalidHeaderNameOrValue(name, parsingLine, cause);
         }
         // Consume the header line bytes from the buffer.
         consumeCRLF(buffer, lfIndex);
@@ -725,11 +725,11 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         return new DecoderException(message + (parsingLine - 1));
     }
 
-    private static DecoderException invalidHeaderName(final CharSequence name, final int parsingLine,
-                                                      final IllegalCharacterException cause) {
+    private static DecoderException invalidHeaderNameOrValue(final CharSequence name, final int parsingLine,
+                                                             final IllegalCharacterException cause) {
         final String msg = cause.getMessage();
-        throw new StacklessDecoderException(
-                "Invalid header name in line " + (parsingLine - 1) + ": " + (msg != null ? msg : name), cause);
+        throw new StacklessDecoderException("Invalid header name or value for '" + name + "' in line " +
+                (parsingLine - 1) + (msg != null ? ": " + msg : ""), cause);
     }
 
     private static DecoderException invalidHeaderValue(final CharSequence name, final int parsingLine,
