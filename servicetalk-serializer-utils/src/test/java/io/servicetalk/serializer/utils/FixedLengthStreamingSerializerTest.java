@@ -19,6 +19,8 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.serializer.api.MaxMessageSizeExceededException;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
@@ -56,10 +58,11 @@ class FixedLengthStreamingSerializerTest {
                 DEFAULT_ALLOCATOR).toFuture().get(), contains(oversized));
     }
 
-    @Test
-    void invalidMaxMessageSizeRejected() {
+    @ParameterizedTest
+    @ValueSource(ints = {-1, -2})
+    void negativeMaxMessageSizeRejected(int maxMessageSize) {
         assertThrows(IllegalArgumentException.class, () -> new FixedLengthStreamingSerializer<>(
-                stringSerializer(UTF_8), String::length, -2));
+                stringSerializer(UTF_8), String::length, maxMessageSize));
     }
 
     @Test
