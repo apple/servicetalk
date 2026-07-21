@@ -56,6 +56,8 @@ final class AggregatedPayloadSizeLimiter implements LongConsumer {
     // Identifies the owning client/server in the warning; null when not warn-only.
     @Nullable
     private final Object owner;
+    @Nullable
+    private final Throwable constructionSite;
 
     private AggregatedPayloadSizeLimiter(final int maxAggregatedSize, final boolean warnOnly,
                                          @Nullable final Object owner) {
@@ -64,6 +66,8 @@ final class AggregatedPayloadSizeLimiter implements LongConsumer {
         this.lastWarnNanos = warnOnly ? new AtomicLong(nanoTime() - WARN_INTERVAL_NANOS) : null;
         this.maxObservedSize = warnOnly ? new AtomicLong() : null;
         this.owner = warnOnly ? owner : null;
+        this.constructionSite = warnOnly ? new Throwable(
+                "Client/server with a warn-only maxAggregatedPayloadSize created here (not an error)") : null;
     }
 
     /**
@@ -112,6 +116,7 @@ final class AggregatedPayloadSizeLimiter implements LongConsumer {
     private void maybeWarn(final long totalSize) {
         assert lastWarnNanos != null;
         assert maxObservedSize != null;
+        assert constructionSite != null;
         final long maxObserved = maxObservedSize.accumulateAndGet(totalSize, Math::max);
         final long now = nanoTime();
         final long last = lastWarnNanos.get();
@@ -120,7 +125,7 @@ final class AggregatedPayloadSizeLimiter implements LongConsumer {
                     "limit is configured in warn-only mode so the payload is allowed through. Largest payload " +
                     "observed so far is {} bytes. Configure an enforcing maxAggregatedPayloadSize(int) to reject " +
                     "oversized payloads. This warning is rate-limited to once per 5 minutes per client/server.",
-                    totalSize, maxAggregatedSize, owner, maxObserved);
+                    totalSize, maxAggregatedSize, owner, maxObserved, constructionSite);
         }
     }
 }

@@ -65,6 +65,8 @@ final class GrpcMessageSizeLimiter {
     // Non-null if this is a warn-only limiter.
     @Nullable
     private final AtomicLong maxObservedSize;
+    @Nullable
+    private final Throwable constructionSite;
 
     private GrpcMessageSizeLimiter(final Mode mode, final int maxMessageSize) {
         this.mode = mode;
@@ -72,6 +74,8 @@ final class GrpcMessageSizeLimiter {
         // Seed in the past so the first time the limit is exceeded a warning is emitted immediately.
         this.lastWarnNanos = mode == Mode.WARN_ONLY ? new AtomicLong(nanoTime() - WARN_INTERVAL_NANOS) : null;
         this.maxObservedSize = mode == Mode.WARN_ONLY ? new AtomicLong() : null;
+        this.constructionSite = mode == Mode.WARN_ONLY ? new Throwable(
+                "Client/server with a warn-only maxInboundMessageSize created here (not an error)") : null;
     }
 
     /**
@@ -163,6 +167,7 @@ final class GrpcMessageSizeLimiter {
     private void maybeWarn(final long messageSize) {
         assert lastWarnNanos != null;
         assert maxObservedSize != null;
+        assert constructionSite != null;
         final long maxObserved = maxObservedSize.accumulateAndGet(messageSize, Math::max);
         final long now = nanoTime();
         final long last = lastWarnNanos.get();
@@ -171,7 +176,7 @@ final class GrpcMessageSizeLimiter {
                     "the limit is configured in warn-only mode so the message is allowed through. Largest message " +
                     "observed so far is {} bytes. Configure an enforcing maxInboundMessageSize(int) to reject " +
                     "oversized messages with RESOURCE_EXHAUSTED. This warning is rate-limited to once per 5 minutes " +
-                    "per client/server.", messageSize, maxMessageSize, maxObserved);
+                    "per client/server.", messageSize, maxMessageSize, maxObserved, constructionSite);
         }
     }
 }
