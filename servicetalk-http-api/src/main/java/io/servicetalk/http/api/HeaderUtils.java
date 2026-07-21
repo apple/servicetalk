@@ -21,6 +21,9 @@ import io.servicetalk.encoding.api.Identity;
 import io.servicetalk.serialization.api.SerializationException;
 import io.servicetalk.utils.internal.IllegalCharacterException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.List;
@@ -72,6 +75,7 @@ import static java.util.stream.Collectors.toMap;
  * Utilities to use for {@link HttpHeaders} implementations.
  */
 public final class HeaderUtils {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HeaderUtils.class);
     /**
      * Constant used to seed the hash code generation. Could be anything but this was borrowed from murmur3.
      */
@@ -96,8 +100,15 @@ public final class HeaderUtils {
      * <a href="https://www.rfc-editor.org/rfc/rfc2965">RFC2965</a>/
      * <a href="https://www.rfc-editor.org/rfc/rfc2109">RFC2109</a> ({@code false}, the default).
      */
+    private static final String COOKIE_STRICT_RFC_6265_PROPERTY =
+            "io.servicetalk.http.api.headers.cookieParsingStrictRfc6265";
     static final boolean COOKIE_STRICT_RFC_6265 = parseBoolean(getProperty(
-            "io.servicetalk.http.api.headers.cookieParsingStrictRfc6265", "false"));
+            COOKIE_STRICT_RFC_6265_PROPERTY, "false"));
+
+    static {
+        LOGGER.debug("-D{}={}", COOKIE_STRICT_RFC_6265_PROPERTY, COOKIE_STRICT_RFC_6265);
+    }
+
     // ASCII symbols:
     private static final byte HT = 9;
     private static final byte DEL = 127;

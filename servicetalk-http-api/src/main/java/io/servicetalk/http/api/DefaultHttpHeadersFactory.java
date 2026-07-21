@@ -37,7 +37,7 @@ public final class DefaultHttpHeadersFactory implements HttpHeadersFactory {
 
     static {
         if (!DEFAULT_VALIDATE_VALUES) {
-            LOGGER.warn("-D{}: {}. This property will be removed in the future releases. " +
+            LOGGER.warn("-D{}={} This property will be removed in the future releases. " +
                             "Configure this value via DefaultHttpHeadersFactory constructor instead.",
                     DEFAULT_VALIDATE_VALUES_PROPERTY, DEFAULT_VALIDATE_VALUES);
         }

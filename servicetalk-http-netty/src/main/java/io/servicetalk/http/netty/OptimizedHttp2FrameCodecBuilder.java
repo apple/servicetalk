@@ -336,7 +336,7 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
                 return defaultValue;
             }
         }
-        LOGGER.debug("-D{}: {}", name, intValue);
+        LOGGER.debug("-D{}={}", name, intValue);
         return intValue;
     }
 }

@@ -72,13 +72,22 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
     }
 
     private static final class SubscriberAndIterator<T> implements Subscriber<T>, BlockingIterator<T> {
+
+        private static final Logger LOGGER = LoggerFactory.getLogger(SubscriberAndIterator.class);
         /**
          * Allows to re-enable cancelling the subscription on {@link #hasNext(long, TimeUnit)} timeout. This flag
          * will be removed after a couple releases and no issues identified with the new behavior.
          */
-        private static final boolean CANCEL_SUBSCRIPTION_ON_HAS_NEXT_TIMEOUT = Boolean
-                .getBoolean("io.servicetalk.concurrent.api.cancelSubscriptionOnHasNextTimeout");
-        private static final Logger LOGGER = LoggerFactory.getLogger(SubscriberAndIterator.class);
+        private static final String CANCEL_SUBSCRIPTION_ON_HAS_NEXT_TIMEOUT_PROPERTY =
+                "io.servicetalk.concurrent.api.cancelSubscriptionOnHasNextTimeout";
+        private static final boolean CANCEL_SUBSCRIPTION_ON_HAS_NEXT_TIMEOUT =
+                Boolean.getBoolean(CANCEL_SUBSCRIPTION_ON_HAS_NEXT_TIMEOUT_PROPERTY);
+
+        static {
+            LOGGER.debug("-D{}={}", CANCEL_SUBSCRIPTION_ON_HAS_NEXT_TIMEOUT_PROPERTY,
+                    CANCEL_SUBSCRIPTION_ON_HAS_NEXT_TIMEOUT);
+        }
+
         private static final Object CANCELLED_SIGNAL = new Object();
         private static final TerminalNotification COMPLETE_NOTIFICATION = complete();
         private final BlockingQueue<Object> data;

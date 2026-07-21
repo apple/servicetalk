@@ -20,6 +20,8 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http2.DefaultHttp2Headers;
 import io.netty.handler.codec.http2.Http2Headers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -40,6 +42,8 @@ import static java.lang.System.getProperty;
 
 final class H2ToStH1Utils {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(H2ToStH1Utils.class);
+
     static final CharSequence PROXY_CONNECTION = newAsciiString("proxy-connection");
     /**
      * Keep consistent with {@link io.servicetalk.http.api.HeaderUtils}.
@@ -50,8 +54,14 @@ final class H2ToStH1Utils {
      * <a href="https://www.rfc-editor.org/rfc/rfc2965">RFC2965</a>/
      * <a href="https://www.rfc-editor.org/rfc/rfc2109">RFC2109</a> ({@code false}, the default).
      */
+    private static final String COOKIE_STRICT_RFC_6265_PROPERTY =
+            "io.servicetalk.http.api.headers.cookieParsingStrictRfc6265";
     static final boolean COOKIE_STRICT_RFC_6265 = parseBoolean(getProperty(
-            "io.servicetalk.http.api.headers.cookieParsingStrictRfc6265", "false"));
+            COOKIE_STRICT_RFC_6265_PROPERTY, "false"));
+
+    static {
+        LOGGER.debug("-D{}={}", COOKIE_STRICT_RFC_6265_PROPERTY, COOKIE_STRICT_RFC_6265);
+    }
 
     private H2ToStH1Utils() {
         // no instances.
