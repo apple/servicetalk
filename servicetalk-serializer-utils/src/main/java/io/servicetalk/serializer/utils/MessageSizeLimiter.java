@@ -93,15 +93,24 @@ final class MessageSizeLimiter {
     }
 
     private final int maxMessageSize;
-    // Non-null iff this is a warn-only limiter. Holds nanoTime() of the last emitted warning so warnings are
-    // rate-limited to one per WARN_INTERVAL_NANOS, shared across all deframers of the owning serializer.
+    // Non-null if this is a warn-only limiter.
     @Nullable
     private final AtomicLong lastWarnNanos;
+    // Non-null if this is a warn-only limiter.
+    @Nullable
+    private final AtomicLong maxObservedSize;
+    // For the shared default serializers this points at their static initialization rather than a client/server,
+    // which is the best provenance available since serializers carry no owner.
+    @Nullable
+    private final Throwable constructionSite;
 
     private MessageSizeLimiter(final int maxMessageSize, final boolean warnOnly) {
         this.maxMessageSize = maxMessageSize;
         // Seed in the past so the first exceeded message warns immediately.
         this.lastWarnNanos = warnOnly ? new AtomicLong(nanoTime() - WARN_INTERVAL_NANOS) : null;
+        this.maxObservedSize = warnOnly ? new AtomicLong() : null;
+        this.constructionSite = warnOnly ? new Throwable(
+                "Serializer with a warn-only maxMessageSize created here (not an error)") : null;
     }
 
     /**
@@ -144,13 +153,16 @@ final class MessageSizeLimiter {
 
     private void maybeWarn(final int length) {
         assert lastWarnNanos != null;
+        assert maxObservedSize != null;
+        assert constructionSite != null;
+        final long maxObserved = maxObservedSize.accumulateAndGet(length, Math::max);
         final long now = nanoTime();
         final long last = lastWarnNanos.get();
         if (now - last >= WARN_INTERVAL_NANOS && lastWarnNanos.compareAndSet(last, now)) {
             LOGGER.warn("Message-Length {} exceeded the configured maximum of {} bytes, but the limit is configured " +
-                    "in warn-only mode so the message is allowed through. Configure an enforcing maxMessageSize to " +
-                    "reject oversized messages. This warning is rate-limited to once per 5 minutes.", length,
-                    maxMessageSize);
+                    "in warn-only mode so the message is allowed through. Largest message observed so far is {} " +
+                    "bytes. Configure an enforcing maxMessageSize to reject oversized messages. This warning is " +
+                    "rate-limited to once per 5 minutes.", length, maxMessageSize, maxObserved, constructionSite);
         }
     }
 }

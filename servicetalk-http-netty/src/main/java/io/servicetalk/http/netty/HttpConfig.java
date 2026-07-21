@@ -137,8 +137,8 @@ final class HttpConfig {
      * rate-limiting state, so it must be created once per client/server (see {@link ReadOnlyHttpClientConfig} /
      * {@link ReadOnlyHttpServerConfig}) and shared across its connections.
      */
-    LongConsumer newAggregatedPayloadSizeLimiter() {
-        return toAggregatedPayloadSizeLimiter(maxAggregatedPayloadSize, DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE);
+    LongConsumer newAggregatedPayloadSizeLimiter(@Nullable final Object owner) {
+        return toAggregatedPayloadSizeLimiter(maxAggregatedPayloadSize, DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE, owner);
     }
 
     /**
@@ -149,10 +149,11 @@ final class HttpConfig {
      * {@link #DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE} when {@code resolvedDefault} is not positive, so warn-only
      * mode never silently collapses to "disabled".
      */
-    static LongConsumer toAggregatedPayloadSizeLimiter(final int configured, final int resolvedDefault) {
+    static LongConsumer toAggregatedPayloadSizeLimiter(final int configured, final int resolvedDefault,
+                                                       @Nullable final Object owner) {
         if (configured == WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE) {
             return AggregatedPayloadSizeLimiter.warning(
-                    resolvedDefault > 0 ? resolvedDefault : DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE);
+                    resolvedDefault > 0 ? resolvedDefault : DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE, owner);
         }
         return AggregatedPayloadSizeLimiter.enforcing(configured);
     }

@@ -462,7 +462,7 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
                                                 serverChannelLatch.countDown();
                                             }), defaultStrategy(), mock(Protocol.class), observer, false, __ -> false),
                             connection -> { }, null, null).toFuture().get());
-            ReadOnlyHttpClientConfig cConfig = new HttpClientConfig().asReadOnly();
+            ReadOnlyHttpClientConfig cConfig = new HttpClientConfig().asReadOnly(null);
             assertNotNull(cConfig.h1Config());
 
             NettyConnection<Object, Object> conn = resources.prepend(

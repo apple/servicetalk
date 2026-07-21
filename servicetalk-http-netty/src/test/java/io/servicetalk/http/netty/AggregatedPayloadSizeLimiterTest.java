@@ -45,7 +45,7 @@ class AggregatedPayloadSizeLimiterTest {
 
     @Test
     void warningNeverRejects() {
-        final LongConsumer limiter = warning(10);
+        final LongConsumer limiter = warning(10, "test-owner");
         assertDoesNotThrow(() -> limiter.accept(10));
         // Over the limit it warns (rate-limited) but must not throw.
         assertDoesNotThrow(() -> limiter.accept(Long.MAX_VALUE));
@@ -55,13 +55,14 @@ class AggregatedPayloadSizeLimiterTest {
     void nonPositiveSizeIsDisabled() {
         assertSame(NONE, enforcing(0));
         assertSame(NONE, enforcing(-1));
-        assertSame(NONE, warning(0));
+        assertSame(NONE, warning(0, "test-owner"));
         assertDoesNotThrow(() -> NONE.accept(Long.MAX_VALUE));
     }
 
     @Test
     void mapEnforcesPositiveSize() {
-        final LongConsumer limiter = toAggregatedPayloadSizeLimiter(10, DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE);
+        final LongConsumer limiter = toAggregatedPayloadSizeLimiter(10, DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE,
+                "test-owner");
         assertNotSame(NONE, limiter);
         assertDoesNotThrow(() -> limiter.accept(10));
         assertThrows(PayloadTooLargeException.class, () -> limiter.accept(11));
@@ -69,12 +70,13 @@ class AggregatedPayloadSizeLimiterTest {
 
     @Test
     void mapZeroIsDisabled() {
-        assertSame(NONE, toAggregatedPayloadSizeLimiter(0, DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE));
+        assertSame(NONE, toAggregatedPayloadSizeLimiter(0, DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE, "test-owner"));
     }
 
     @Test
     void mapWarnOnlyWarnsAtDefault() {
-        final LongConsumer limiter = toAggregatedPayloadSizeLimiter(-1, DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE);
+        final LongConsumer limiter = toAggregatedPayloadSizeLimiter(-1, DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE,
+                "test-owner");
         assertNotSame(NONE, limiter);
         // Over the default it warns (rate-limited) but must not throw.
         assertDoesNotThrow(() -> limiter.accept((long) DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE + 1));
@@ -83,16 +85,16 @@ class AggregatedPayloadSizeLimiterTest {
     @Test
     void mapWarnOnlyAtRaisedDefault() {
         final int raised = DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE * 2;
-        final LongConsumer limiter = toAggregatedPayloadSizeLimiter(-1, raised);
+        final LongConsumer limiter = toAggregatedPayloadSizeLimiter(-1, raised, "test-owner");
         assertNotSame(NONE, limiter);
         assertDoesNotThrow(() -> limiter.accept((long) raised + 1));
     }
 
     @Test
     void mapWarnOnlyNeverCollapsesToDisabledWhenDefaultNonPositive() {
-        assertNotSame(NONE, toAggregatedPayloadSizeLimiter(-1, -1));
-        assertNotSame(NONE, toAggregatedPayloadSizeLimiter(-1, 0));
-        assertDoesNotThrow(() -> toAggregatedPayloadSizeLimiter(-1, -1).accept(Long.MAX_VALUE));
+        assertNotSame(NONE, toAggregatedPayloadSizeLimiter(-1, -1, "test-owner"));
+        assertNotSame(NONE, toAggregatedPayloadSizeLimiter(-1, 0, "test-owner"));
+        assertDoesNotThrow(() -> toAggregatedPayloadSizeLimiter(-1, -1, "test-owner").accept(Long.MAX_VALUE));
     }
 
     @Test
@@ -100,11 +102,12 @@ class AggregatedPayloadSizeLimiterTest {
         // The configured (builder) value drives the mode; the property-resolved default only supplies the warn
         // threshold. So an explicit builder call always wins over the property's mode.
         // builder enforce beats property warn-only:
-        assertThrows(PayloadTooLargeException.class, () -> toAggregatedPayloadSizeLimiter(10, -1).accept(11));
+        assertThrows(PayloadTooLargeException.class, () -> toAggregatedPayloadSizeLimiter(10, -1, "test-owner")
+                .accept(11));
         // builder disable beats property warn-only:
-        assertSame(NONE, toAggregatedPayloadSizeLimiter(0, -1));
+        assertSame(NONE, toAggregatedPayloadSizeLimiter(0, -1, "test-owner"));
         // builder warn-only beats property enforce:
-        final LongConsumer warn = toAggregatedPayloadSizeLimiter(-1, 10);
+        final LongConsumer warn = toAggregatedPayloadSizeLimiter(-1, 10, "test-owner");
         assertNotSame(NONE, warn);
         assertDoesNotThrow(() -> warn.accept(Long.MAX_VALUE));
     }

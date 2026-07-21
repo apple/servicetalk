@@ -32,14 +32,14 @@ final class ReadOnlyHttpClientConfig {
     private final boolean allowDropTrailers;
     private final LongConsumer payloadSizeLimiter;
 
-    ReadOnlyHttpClientConfig(final HttpClientConfig from) {
+    ReadOnlyHttpClientConfig(final HttpClientConfig from, @Nullable final Object owner) {
         final HttpConfig configs = from.protocolConfigs();
         tcpConfig = from.tcpConfig().asReadOnly();
         h1Config = configs.h1Config();
         h2Config = configs.h2Config();
         proxyConfig = from.proxyConfig();
         allowDropTrailers = configs.allowDropTrailersReadFromTransport();
-        payloadSizeLimiter = configs.newAggregatedPayloadSizeLimiter();
+        payloadSizeLimiter = configs.newAggregatedPayloadSizeLimiter(owner);
     }
 
     ReadOnlyTcpClientConfig tcpConfig() {

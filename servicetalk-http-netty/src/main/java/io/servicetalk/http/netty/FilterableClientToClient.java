@@ -77,10 +77,15 @@ final class FilterableClientToClient implements StreamingHttpClient {
     private final Object lock = new Object();
     private final FilterableStreamingHttpClient client;
     private final HttpExecutionContext executionContext;
+    // Human-readable identifier of what this client connects to, surfaced via toString() so callers holding only a
+    // StreamingHttpClient (e.g. the gRPC layer) can log which client it is.
+    private final Object targetAddress;
 
-    FilterableClientToClient(FilterableStreamingHttpClient filteredClient, HttpExecutionContext executionContext) {
+    FilterableClientToClient(FilterableStreamingHttpClient filteredClient, HttpExecutionContext executionContext,
+                             Object targetAddress) {
         client = filteredClient;
         this.executionContext = executionContext;
+        this.targetAddress = targetAddress;
     }
 
     @Override
@@ -292,5 +297,10 @@ final class FilterableClientToClient implements StreamingHttpClient {
     private static void setExecutionStrategy(final HttpRequestMetaData request, final HttpExecutionStrategy strategy) {
         // We do not override HttpExecutionStrategy because users may prefer to use their own.
         request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + '{' + targetAddress + '}';
     }
 }

@@ -160,7 +160,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             urlClient = clientFilterFactory.create(urlClient);
 
             LOGGER.debug("Multi-address client created with base strategy {}", executionContext.executionStrategy());
-            return new FilterableClientToClient(urlClient, executionContext);
+            return new FilterableClientToClient(urlClient, executionContext, "multi-address URL client");
         } catch (final Throwable t) {
             closeables.closeAsync().subscribe();
             throw t;

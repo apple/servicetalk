@@ -128,9 +128,9 @@ final class HttpClientConfig {
         this.fallbackProxyPeerPort = fallbackProxyPeerPort;
     }
 
-    ReadOnlyHttpClientConfig asReadOnly() {
+    ReadOnlyHttpClientConfig asReadOnly(@Nullable final Object owner) {
         applySslConfigOverrides();
-        final ReadOnlyHttpClientConfig roConfig = new ReadOnlyHttpClientConfig(this);
+        final ReadOnlyHttpClientConfig roConfig = new ReadOnlyHttpClientConfig(this, owner);
         if (roConfig.tcpConfig().sslContext() == null && roConfig.h1Config() != null && roConfig.h2Config() != null) {
             throw new IllegalStateException("Cleartext HTTP/1.1 -> HTTP/2 (h2c) upgrade is not supported");
         }
