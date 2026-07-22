@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../../script.js"></script>
-<script type="text/javascript" src="../../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -128,8 +128,8 @@ implements <a href="NettyConnection.html" title="interface in io.servicetalk.tra
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
-<div class="summary-table three-column-summary">
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -934,7 +934,10 @@ Write&gt;</span>
 <h3>remoteAddress</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link">SocketAddress</a></span>&nbsp;<span class="element-name">remoteAddress</span>()</div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionInfo.html#remoteAddress()">ConnectionInfo</a></code></span></div>
-<div class="block">The <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link"><code>SocketAddress</code></a> to which the associated connection is connected.</div>
+<div class="block">The <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link"><code>SocketAddress</code></a> to which the associated connection is connected.
+ <p>
+ On the client side, when a proxy is configured, this describes the TCP peer (i.e. the proxy), not
+ the target server the application is communicating with.</div>
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="../../api/ConnectionInfo.html#remoteAddress()">remoteAddress</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a></code></dd>
@@ -949,7 +952,10 @@ Write&gt;</span>
 <div class="member-signature"><span class="annotations">@Nullable
 </span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a></span>&nbsp;<span class="element-name">sslConfig</span>()</div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionInfo.html#sslConfig()">ConnectionInfo</a></code></span></div>
-<div class="block">Get the <a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api"><code>SslConfig</code></a> for this connection.</div>
+<div class="block">Get the <a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api"><code>SslConfig</code></a> for this connection.
+ <p>
+ On the client side, when the connection runs through a TLS proxy, this describes the application SSL
+ configuration (the handshake performed with the target server), not the proxy SSL configuration.</div>
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="../../api/ConnectionInfo.html#sslConfig()">sslConfig</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a></code></dd>
@@ -963,7 +969,10 @@ Write&gt;</span>
 <h3>sslSession</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link">SSLSession</a></span>&nbsp;<span class="element-name">sslSession</span>()</div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionInfo.html#sslSession()">ConnectionInfo</a></code></span></div>
-<div class="block">Get the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link"><code>SSLSession</code></a> for this connection.</div>
+<div class="block">Get the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link"><code>SSLSession</code></a> for this connection.
+ <p>
+ On the client side, when the connection runs through a TLS proxy, this describes the application SSL
+ session (the handshake performed with the target server), not the proxy SSL session.</div>
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="../../api/ConnectionInfo.html#sslSession()">sslSession</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a></code></dd>

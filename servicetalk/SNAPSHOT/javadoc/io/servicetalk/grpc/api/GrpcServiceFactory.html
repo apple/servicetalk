@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -130,22 +130,31 @@ loadScripts(document, 'script');</script>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
-<div class="summary-table three-column-summary">
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="GrpcServerContext.html" title="interface in io.servicetalk.grpc.api">GrpcServerContext</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#bind(io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder,io.servicetalk.transport.api.ExecutionContext)" class="member-name-link">bind</a><wbr>(<a href="GrpcServiceFactory.ServerBinder.html" title="interface in io.servicetalk.grpc.api">GrpcServiceFactory.ServerBinder</a>&nbsp;binder,
- <a href="../../transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api">ExecutionContext</a>&lt;?&gt;&nbsp;executionContext)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#bind(io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder,io.servicetalk.grpc.api.GrpcServiceConfig)" class="member-name-link">bind</a><wbr>(<a href="GrpcServiceFactory.ServerBinder.html" title="interface in io.servicetalk.grpc.api">GrpcServiceFactory.ServerBinder</a>&nbsp;binder,
+ <a href="GrpcServiceConfig.html" title="class in io.servicetalk.grpc.api">GrpcServiceConfig</a>&nbsp;serviceConfig)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Use the passed <a href="GrpcServiceFactory.ServerBinder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcServiceFactory.ServerBinder</code></a> to bind an appropriate
  <a href="https://www.grpc.io">gRPC</a> service for the server.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="GrpcServiceFactory.html" title="class in io.servicetalk.grpc.api">GrpcServiceFactory</a>&lt;?&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#merge(io.servicetalk.grpc.api.GrpcServiceFactory...)" class="member-name-link">merge</a><wbr>(<a href="GrpcServiceFactory.html" title="class in io.servicetalk.grpc.api">GrpcServiceFactory</a>&lt;?&gt;...&nbsp;factories)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code>final <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="GrpcServerContext.html" title="interface in io.servicetalk.grpc.api">GrpcServerContext</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#bind(io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder,io.servicetalk.transport.api.ExecutionContext)" class="member-name-link">bind</a><wbr>(<a href="GrpcServiceFactory.ServerBinder.html" title="interface in io.servicetalk.grpc.api">GrpcServiceFactory.ServerBinder</a>&nbsp;binder,
+ <a href="../../transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api">ExecutionContext</a>&lt;?&gt;&nbsp;executionContext)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#bind(io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder,io.servicetalk.grpc.api.GrpcServiceConfig)"><code>bind(ServerBinder, GrpcServiceConfig)</code></a>; this overload applies the default inbound
+ message-size limit.</div>
+</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="GrpcServiceFactory.html" title="class in io.servicetalk.grpc.api">GrpcServiceFactory</a>&lt;?&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#merge(io.servicetalk.grpc.api.GrpcServiceFactory...)" class="member-name-link">merge</a><wbr>(<a href="GrpcServiceFactory.html" title="class in io.servicetalk.grpc.api">GrpcServiceFactory</a>&lt;?&gt;...&nbsp;factories)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Merges multiple <a href="GrpcServiceFactory.html" title="class in io.servicetalk.grpc.api"><code>factories</code></a> into a single instance.</div>
 </div>
 </div>
@@ -200,14 +209,38 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="bind(io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder,io.servicetalk.transport.api.ExecutionContext)">
 <h3>bind</h3>
-<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="GrpcServerContext.html" title="interface in io.servicetalk.grpc.api">GrpcServerContext</a>&gt;</span>&nbsp;<span class="element-name">bind</span><wbr><span class="parameters">(<a href="GrpcServiceFactory.ServerBinder.html" title="interface in io.servicetalk.grpc.api">GrpcServiceFactory.ServerBinder</a>&nbsp;binder,
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="GrpcServerContext.html" title="interface in io.servicetalk.grpc.api">GrpcServerContext</a>&gt;</span>&nbsp;<span class="element-name">bind</span><wbr><span class="parameters">(<a href="GrpcServiceFactory.ServerBinder.html" title="interface in io.servicetalk.grpc.api">GrpcServiceFactory.ServerBinder</a>&nbsp;binder,
  <a href="../../transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api">ExecutionContext</a>&lt;?&gt;&nbsp;executionContext)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#bind(io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder,io.servicetalk.grpc.api.GrpcServiceConfig)"><code>bind(ServerBinder, GrpcServiceConfig)</code></a>; this overload applies the default inbound
+ message-size limit.</div>
+</div>
 <div class="block">Use the passed <a href="GrpcServiceFactory.ServerBinder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcServiceFactory.ServerBinder</code></a> to bind an appropriate
  <a href="https://www.grpc.io">gRPC</a> service for the server.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>binder</code> - <a href="GrpcServiceFactory.ServerBinder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcServiceFactory.ServerBinder</code></a> to bind <a href="https://www.grpc.io">gRPC</a> service to the server.</dd>
 <dd><code>executionContext</code> - <a href="../../transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> to use for the service.</dd>
+<dt>Returns:</dt>
+<dd>A <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that completes when the server is successfully started or terminates with an error if
+ the server could not be started.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="bind(io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder,io.servicetalk.grpc.api.GrpcServiceConfig)">
+<h3>bind</h3>
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="GrpcServerContext.html" title="interface in io.servicetalk.grpc.api">GrpcServerContext</a>&gt;</span>&nbsp;<span class="element-name">bind</span><wbr><span class="parameters">(<a href="GrpcServiceFactory.ServerBinder.html" title="interface in io.servicetalk.grpc.api">GrpcServiceFactory.ServerBinder</a>&nbsp;binder,
+ <a href="GrpcServiceConfig.html" title="class in io.servicetalk.grpc.api">GrpcServiceConfig</a>&nbsp;serviceConfig)</span></div>
+<div class="block">Use the passed <a href="GrpcServiceFactory.ServerBinder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcServiceFactory.ServerBinder</code></a> to bind an appropriate
+ <a href="https://www.grpc.io">gRPC</a> service for the server.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>binder</code> - <a href="GrpcServiceFactory.ServerBinder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcServiceFactory.ServerBinder</code></a> to bind <a href="https://www.grpc.io">gRPC</a> service to the server.</dd>
+<dd><code>serviceConfig</code> - <a href="GrpcServiceConfig.html" title="class in io.servicetalk.grpc.api"><code>GrpcServiceConfig</code></a> controlling the bound service, including the
+ <a href="../../transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> it runs on and the maximum inbound (request) message size enforced during
+ deserialization.</dd>
 <dt>Returns:</dt>
 <dd>A <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that completes when the server is successfully started or terminates with an error if
  the server could not be started.</dd>

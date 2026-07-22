@@ -1193,6 +1193,40 @@ Here is a quick start example of the
 </div>
 </div>
 <div class="sect1">
+<h2 id="maxInboundMessageSize"><a class="anchor" href="#maxInboundMessageSize"></a><a class="link" href="#maxInboundMessageSize">Inbound message size limit</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To bound memory use, ServiceTalk caps a single decoded inbound gRPC message at <strong>4 MiB</strong> by default (matching
+<a href="https://github.com/grpc/grpc-java">grpc-java</a>). A message whose declared length exceeds the limit is rejected with
+<code>RESOURCE_EXHAUSTED</code> <strong>before</strong> its payload is buffered. The limit applies on the receiving side of every paradigm: a
+server bounds request messages, a client bounds response messages. For a compressed message it bounds the on-wire
+(still-compressed) length before buffering, and the decoded length after decompression.</p>
+</div>
+<div class="paragraph">
+<p>Configure it with <code>GrpcServerBuilder#maxInboundMessageSize(int)</code> / <code>GrpcClientBuilder#maxInboundMessageSize(int)</code>:
+<code>0</code> disables the limit and a positive value enforces it (negative values are rejected). The default can be changed
+globally with the temporary <code>io.servicetalk.grpc.netty.temporaryDefaultMaxInboundMessageSize</code> system property (to be
+removed in a future release); an explicit builder call takes precedence. Setting that property to <code>-1</code> enables a
+<strong>warn-only</strong> rollout mode globally: an oversized message is delivered but a warning is logged (rate-limited to once
+every five minutes per client/server) instead of being rejected.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<code>maxInboundMessageSize</code> does not bound the memory used <strong>while</strong> decompressing a compressed message. That is
+governed independently by the codec&#8217;s own decompressed-bytes cap (<code>ZipCompressionBuilder#maxDecompressedBytes(long)</code>,
+<strong>64 MiB</strong> by default), which fails fast before the decoded message is checked against <code>maxInboundMessageSize</code>.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="extensibility-and-filters"><a class="anchor" href="#extensibility-and-filters"></a><a class="link" href="#extensibility-and-filters">Extensibility and Filters</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
@@ -1334,6 +1368,68 @@ similar to the <a href="../../servicetalk-http-api/SNAPSHOT/index.html#client" c
 <div class="paragraph">
 <p>gRPC client uses <a href="../../servicetalk-client-api/SNAPSHOT/service-discovery.html" class="page">Service Discovery</a> to discover
 instances of the target service similar to the <a href="../../servicetalk-http-api/SNAPSHOT/index.html#client" class="page">HTTP Client</a>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="error-handling"><a class="anchor" href="#error-handling"></a><a class="link" href="#error-handling">Error Handling</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When a <code>Service</code> fails, ServiceTalk maps the <code>Throwable</code> to a
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcStatus.java">GrpcStatus</a> that is sent
+to the client as the <code>grpc-status</code> and (optionally) <code>grpc-message</code> trailers. Well-known exception types are mapped to
+specific status codes; any other exception is mapped to <code>UNKNOWN</code>.</p>
+</div>
+<div class="sect2">
+<h3 id="returningErrors"><a class="anchor" href="#returningErrors"></a><a class="link" href="#returningErrors">Returning an error from a service</a></h3>
+<div class="paragraph">
+<p>To return a meaningful, client-facing error, a <code>Service</code> should fail with a
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcStatusException.java">GrpcStatusException</a>
+that it constructs explicitly — either by throwing it (blocking APIs) or by completing the <code>Single</code>/<code>Publisher</code>
+with it (asynchronous APIs). The status code and description you put on it are sent <strong>verbatim</strong> on the wire.</p>
+</div>
+<div class="paragraph">
+<p>For most errors the ServiceTalk-native <code>GrpcStatus</code> (a status code and an optional human-readable description) is all
+you need:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">// Sent as the grpc-status / grpc-message trailers:
+throw new GrpcStatusException(new GrpcStatus(GrpcStatusCode.INVALID_ARGUMENT, "id must be positive"));</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When you need to attach structured, typed error detail (the gRPC
+<a href="https://grpc.io/docs/guides/error/#richer-error-model">richer error model</a>), use
+<code>GrpcStatusException.of(&#8230;&#8203;)</code> with a <code>com.google.rpc.Status</code> — the <code>details</code> (a repeated <code>Any</code>) are carried in the
+<code>grpc-status-details-bin</code> trailer. This is what the
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/errors/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleServer.java">Application Errors example</a>
+demonstrates, returning an <code>INVALID_ARGUMENT</code> with a <code>com.google.rpc.BadRequest</code> detail.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+The description and <code>details</code> you supply here are <strong>not</strong> redacted — they are intended for the client and
+are transmitted as-is. Treat them as untrusted output: include only information that is safe to expose to the remote
+peer. Anything that is <strong>not</strong> an explicit <code>GrpcStatusException</code> is redacted instead, as described next.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="exceptionRedaction"><a class="anchor" href="#exceptionRedaction"></a><a class="link" href="#exceptionRedaction">Exception detail redaction</a></h3>
+<div class="paragraph">
+<p>To avoid leaking internal information to remote peers, the server does <strong>not</strong> echo arbitrary exception detail in the
+<code>grpc-message</code> description. For an otherwise-unmapped exception the client receives an opaque reference of the form
+<code>internal error (ref: &lt;uuid&gt;)</code>, and for a serialization failure it receives <code>Serialization error (ref: &lt;uuid&gt;)</code>. The
+full exception (including the same reference) is always logged on the server, so operators can correlate a
+client-reported reference with the corresponding server log entry without exposing sensitive information.</p>
 </div>
 </div>
 </div>

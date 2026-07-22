@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../../script.js"></script>
-<script type="text/javascript" src="../../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -119,6 +119,14 @@ implements <a href="ChannelInitializer.html" title="interface in io.servicetalk.
  boolean&nbsp;client,
  <a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a>&nbsp;sslConfig)</code></div>
 <div class="col-last even-row-color">
+<div class="block">Creates a new instance for a connection without a proxy TLS hop.</div>
+</div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,java.util.function.Function,boolean,io.servicetalk.transport.api.SslConfig,io.servicetalk.transport.api.SslConfig)" class="member-name-link">ConnectionObserverInitializer</a><wbr>(<a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a>&nbsp;observer,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;io.netty.channel.Channel,<wbr><a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a>&gt;&nbsp;connectionInfoFactory,
+ boolean&nbsp;client,
+ <a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a>&nbsp;sslConfig,
+ <a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a>&nbsp;proxySslConfig)</code></div>
+<div class="col-last odd-row-color">
 <div class="block">Creates a new instance.</div>
 </div>
 </div>
@@ -130,8 +138,8 @@ implements <a href="ChannelInitializer.html" title="interface in io.servicetalk.
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
-<div class="summary-table three-column-summary">
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -211,7 +219,7 @@ implements <a href="ChannelInitializer.html" title="interface in io.servicetalk.
  boolean&nbsp;client,
  @Nullable
  <a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a>&nbsp;sslConfig)</span></div>
-<div class="block">Creates a new instance.</div>
+<div class="block">Creates a new instance for a connection without a proxy TLS hop.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>observer</code> - <a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver</code></a> to report network events</dd>
@@ -219,6 +227,29 @@ implements <a href="ChannelInitializer.html" title="interface in io.servicetalk.
  <code>Channel</code> to report <a href="../../api/ConnectionObserver.html#onTransportHandshakeComplete(io.servicetalk.transport.api.ConnectionInfo)"><code>ConnectionObserver.onTransportHandshakeComplete(ConnectionInfo)</code></a></dd>
 <dd><code>client</code> - <code>true</code> if this initializer is used on the client-side</dd>
 <dd><code>sslConfig</code> - the <a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api"><code>SslConfig</code></a> to supply to the observer on handshake.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="&lt;init&gt;(io.servicetalk.transport.api.ConnectionObserver,java.util.function.Function,boolean,io.servicetalk.transport.api.SslConfig,io.servicetalk.transport.api.SslConfig)">
+<h3>ConnectionObserverInitializer</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">ConnectionObserverInitializer</span><wbr><span class="parameters">(<a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a>&nbsp;observer,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;io.netty.channel.Channel,<wbr><a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a>&gt;&nbsp;connectionInfoFactory,
+ boolean&nbsp;client,
+ @Nullable
+ <a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a>&nbsp;sslConfig,
+ @Nullable
+ <a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a>&nbsp;proxySslConfig)</span></div>
+<div class="block">Creates a new instance.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>observer</code> - <a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver</code></a> to report network events</dd>
+<dd><code>connectionInfoFactory</code> - <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link"><code>Function</code></a> that creates <a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a> from the provided
+ <code>Channel</code> to report <a href="../../api/ConnectionObserver.html#onTransportHandshakeComplete(io.servicetalk.transport.api.ConnectionInfo)"><code>ConnectionObserver.onTransportHandshakeComplete(ConnectionInfo)</code></a></dd>
+<dd><code>client</code> - <code>true</code> if this initializer is used on the client-side</dd>
+<dd><code>sslConfig</code> - the <a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api"><code>SslConfig</code></a> to supply to the observer for the application handshake.</dd>
+<dd><code>proxySslConfig</code> - the <a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api"><code>SslConfig</code></a> to supply to the observer for the proxy handshake,
+ or <code>null</code> if there is no proxy TLS hop.</dd>
 </dl>
 </section>
 </li>

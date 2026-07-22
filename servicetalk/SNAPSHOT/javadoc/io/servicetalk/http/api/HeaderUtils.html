@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -127,8 +127,8 @@ loadScripts(document, 'script');</script>
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
-<div class="summary-table three-column-summary">
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -237,7 +237,15 @@ loadScripts(document, 'script');</script>
  <p>
  The values of all <a href="HttpHeaderNames.html#TRANSFER_ENCODING"><code>HttpHeaderNames.TRANSFER_ENCODING</code></a> headers are interpreted as comma-separated values,
  with spaces between values trimmed. If any of these values is  <a href="HttpHeaderValues.html#CHUNKED"><code>HttpHeaderValues.CHUNKED</code></a>, this method
- return <code>true</code>, otherwise it returns <code>false</code>.</div>
+ return <code>true</code>, otherwise it returns <code>false</code>.
+ <p>
+ This checks for <a href="HttpHeaderValues.html#CHUNKED"><code>HttpHeaderValues.CHUNKED</code></a> <b>anywhere</b> among the values, regardless of position.
+ Per <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6.1">RFC 9112, Section 6.1</a>, <code>
+ chunked</code> only governs the actual message framing when it is the <b>final</b> coding (e.g. <code>chunked</code> is
+ final in <code>"gzip, chunked"</code> but not in <code>"chunked, gzip"</code>). This method does not distinguish the
+ two: it returns <code>true</code> for both. Callers that need to know whether <code>chunked</code> framing actually
+ applies to the message (as opposed to merely being named somewhere in the header) must perform that
+ additional check themselves.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>headers</code> - The <a href="HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a> to check.</dd>

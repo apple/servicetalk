@@ -1134,6 +1134,40 @@
 programming paradigms for users to use. In this document we elaborate on how HTTP module provides support for these
 programming paradigms.</p>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Whenever a payload body is <strong>aggregated</strong> into a single object (the aggregated paradigms below, or any filter that
+calls <code>toRequest()</code>/<code>toResponse()</code>), the whole body is buffered in memory. To guard against excessive memory
+consumption, ServiceTalk caps the size of an aggregated body at <strong>4 MiB</strong> by default. Requests that exceed the server&#8217;s limit are
+rejected with a <code>413 Payload Too Large</code>; oversized responses surface a <code>PayloadTooLargeException</code> to the client.</p>
+</div>
+<div class="paragraph">
+<p>The limit is measured against the fully decoded payload buffered at the point of aggregation&#8201;&#8212;&#8201;that is, <em>after</em> any
+decompression or body transformation applied by filters earlier in the pipeline&#8201;&#8212;&#8201;not the bytes received from the
+network nor any declared <code>Content-Length</code>. A small compressed body that expands beyond the limit once decoded is
+therefore rejected.</p>
+</div>
+<div class="paragraph">
+<p>Adjust or disable this via <code>HttpServerBuilder#maxAggregatedPayloadSize(int)</code> /
+<code>SingleAddressHttpClientBuilder#maxAggregatedPayloadSize(int)</code> (pass <code>0</code> to disable). A programmatically configured
+limit is definitive: it is always enforced and never runs in warn-only mode. Users who unexpectedly hit the
+default limit can temporarily change it globally with the
+<code>io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize</code> system property, which&#8201;&#8212;&#8201;unlike the builder
+methods&#8201;&#8212;&#8201;also accepts <code>-1</code> for <strong>warn-only</strong> mode, where oversized aggregated messages are still served/delivered
+but a warning is logged (rate-limited to once every five minutes per client/server) so you can evaluate the limit
+before enforcing it. An explicit builder call takes precedence over the property. This is a temporary
+property that will be removed in future releases. Bodies consumed purely as a stream are not affected.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 <div class="sect1">

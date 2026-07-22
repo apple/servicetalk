@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -142,8 +142,8 @@ extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="inte
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
-<div class="summary-table three-column-summary">
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -153,145 +153,154 @@ extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="inte
 <div class="block">Get the <a href="GrpcExecutionContext.html" title="interface in io.servicetalk.grpc.api"><code>GrpcExecutionContext</code></a> used during construction of this object.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1"><code>static <a href="GrpcClientCallFactory.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1"><code><a href="#from(io.servicetalk.http.api.StreamingHttpClient,java.time.Duration)" class="member-name-link">from</a><wbr>(<a href="../../http/api/StreamingHttpClient.html" title="interface in io.servicetalk.http.api">StreamingHttpClient</a>&nbsp;httpClient,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;defaultTimeout)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1"><code><a href="#from(io.servicetalk.http.api.StreamingHttpClient,io.servicetalk.grpc.api.GrpcClientCallConfig)" class="member-name-link">from</a><wbr>(<a href="../../http/api/StreamingHttpClient.html" title="interface in io.servicetalk.http.api">StreamingHttpClient</a>&nbsp;httpClient,
+ <a href="GrpcClientCallConfig.html" title="class in io.servicetalk.grpc.api">GrpcClientCallConfig</a>&nbsp;callConfig)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1">
 <div class="block">Creates a new <a href="GrpcClientCallFactory.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientCallFactory</code></a> using the passed <a href="../../http/api/StreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClient</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>&lt;Req,<wbr>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab6"><code>static <a href="GrpcClientCallFactory.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab6"><code><a href="#from(io.servicetalk.http.api.StreamingHttpClient,java.time.Duration)" class="member-name-link">from</a><wbr>(<a href="../../http/api/StreamingHttpClient.html" title="interface in io.servicetalk.http.api">StreamingHttpClient</a>&nbsp;httpClient,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;defaultTimeout)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#from(io.servicetalk.http.api.StreamingHttpClient,io.servicetalk.grpc.api.GrpcClientCallConfig)"><code>from(StreamingHttpClient, GrpcClientCallConfig)</code></a> to configure the client call factory;
+ this overload applies the default inbound message-size limit.</div>
+</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>&lt;Req,<wbr>
 Resp&gt;&nbsp;<a href="GrpcClientCallFactory.BlockingClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.BlockingClientCall</a>&lt;Req,<wbr>Resp&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#newBlockingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)" class="member-name-link">newBlockingCall</a><wbr>(<a href="GrpcSerializationProvider.html" title="interface in io.servicetalk.grpc.api">GrpcSerializationProvider</a>&nbsp;serializationProvider,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#newBlockingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)" class="member-name-link">newBlockingCall</a><wbr>(<a href="GrpcSerializationProvider.html" title="interface in io.servicetalk.grpc.api">GrpcSerializationProvider</a>&nbsp;serializationProvider,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;Req&gt;&nbsp;requestClass,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;Resp&gt;&nbsp;responseClass)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">use <a href="#newBlockingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>newBlockingCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;Req,<wbr>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;Req,<wbr>
 Resp&gt;&nbsp;<a href="GrpcClientCallFactory.BlockingClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.BlockingClientCall</a>&lt;Req,<wbr>Resp&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#newBlockingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)" class="member-name-link">newBlockingCall</a><wbr>(<a href="MethodDescriptor.html" title="interface in io.servicetalk.grpc.api">MethodDescriptor</a>&lt;Req,<wbr>Resp&gt;&nbsp;methodDescriptor,
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#newBlockingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)" class="member-name-link">newBlockingCall</a><wbr>(<a href="MethodDescriptor.html" title="interface in io.servicetalk.grpc.api">MethodDescriptor</a>&lt;Req,<wbr>Resp&gt;&nbsp;methodDescriptor,
  <a href="../../encoding/api/BufferDecoderGroup.html" title="interface in io.servicetalk.encoding.api">BufferDecoderGroup</a>&nbsp;decompressors)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Create a new <a href="GrpcClientCallFactory.BlockingClientCall.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientCallFactory.BlockingClientCall</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>&lt;Req,<wbr>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>&lt;Req,<wbr>
 Resp&gt;&nbsp;<a href="GrpcClientCallFactory.BlockingRequestStreamingClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.BlockingRequestStreamingClientCall</a>&lt;Req,<wbr>Resp&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#newBlockingRequestStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)" class="member-name-link">newBlockingRequestStreamingCall</a><wbr>(<a href="GrpcSerializationProvider.html" title="interface in io.servicetalk.grpc.api">GrpcSerializationProvider</a>&nbsp;serializationProvider,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#newBlockingRequestStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)" class="member-name-link">newBlockingRequestStreamingCall</a><wbr>(<a href="GrpcSerializationProvider.html" title="interface in io.servicetalk.grpc.api">GrpcSerializationProvider</a>&nbsp;serializationProvider,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;Req&gt;&nbsp;requestClass,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;Resp&gt;&nbsp;responseClass)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#newBlockingRequestStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>newBlockingRequestStreamingCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;Req,<wbr>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;Req,<wbr>
 Resp&gt;&nbsp;<a href="GrpcClientCallFactory.BlockingRequestStreamingClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.BlockingRequestStreamingClientCall</a>&lt;Req,<wbr>Resp&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#newBlockingRequestStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)" class="member-name-link">newBlockingRequestStreamingCall</a><wbr>(<a href="MethodDescriptor.html" title="interface in io.servicetalk.grpc.api">MethodDescriptor</a>&lt;Req,<wbr>Resp&gt;&nbsp;methodDescriptor,
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#newBlockingRequestStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)" class="member-name-link">newBlockingRequestStreamingCall</a><wbr>(<a href="MethodDescriptor.html" title="interface in io.servicetalk.grpc.api">MethodDescriptor</a>&lt;Req,<wbr>Resp&gt;&nbsp;methodDescriptor,
  <a href="../../encoding/api/BufferDecoderGroup.html" title="interface in io.servicetalk.encoding.api">BufferDecoderGroup</a>&nbsp;decompressors)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Create a new <a href="GrpcClientCallFactory.BlockingRequestStreamingClientCall.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientCallFactory.BlockingRequestStreamingClientCall</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>&lt;Req,<wbr>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>&lt;Req,<wbr>
 Resp&gt;&nbsp;<a href="GrpcClientCallFactory.BlockingResponseStreamingClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.BlockingResponseStreamingClientCall</a>&lt;Req,<wbr>Resp&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#newBlockingResponseStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)" class="member-name-link">newBlockingResponseStreamingCall</a><wbr>(<a href="GrpcSerializationProvider.html" title="interface in io.servicetalk.grpc.api">GrpcSerializationProvider</a>&nbsp;serializationProvider,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#newBlockingResponseStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)" class="member-name-link">newBlockingResponseStreamingCall</a><wbr>(<a href="GrpcSerializationProvider.html" title="interface in io.servicetalk.grpc.api">GrpcSerializationProvider</a>&nbsp;serializationProvider,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;Req&gt;&nbsp;requestClass,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;Resp&gt;&nbsp;responseClass)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#newBlockingResponseStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>newBlockingResponseStreamingCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;Req,<wbr>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;Req,<wbr>
 Resp&gt;&nbsp;<a href="GrpcClientCallFactory.BlockingResponseStreamingClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.BlockingResponseStreamingClientCall</a>&lt;Req,<wbr>Resp&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#newBlockingResponseStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)" class="member-name-link">newBlockingResponseStreamingCall</a><wbr>(<a href="MethodDescriptor.html" title="interface in io.servicetalk.grpc.api">MethodDescriptor</a>&lt;Req,<wbr>Resp&gt;&nbsp;methodDescriptor,
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#newBlockingResponseStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)" class="member-name-link">newBlockingResponseStreamingCall</a><wbr>(<a href="MethodDescriptor.html" title="interface in io.servicetalk.grpc.api">MethodDescriptor</a>&lt;Req,<wbr>Resp&gt;&nbsp;methodDescriptor,
  <a href="../../encoding/api/BufferDecoderGroup.html" title="interface in io.servicetalk.encoding.api">BufferDecoderGroup</a>&nbsp;decompressors)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Create a new <a href="GrpcClientCallFactory.BlockingResponseStreamingClientCall.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientCallFactory.BlockingResponseStreamingClientCall</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>&lt;Req,<wbr>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>&lt;Req,<wbr>
 Resp&gt;&nbsp;<a href="GrpcClientCallFactory.BlockingStreamingClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.BlockingStreamingClientCall</a>&lt;Req,<wbr>Resp&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#newBlockingStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)" class="member-name-link">newBlockingStreamingCall</a><wbr>(<a href="GrpcSerializationProvider.html" title="interface in io.servicetalk.grpc.api">GrpcSerializationProvider</a>&nbsp;serializationProvider,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#newBlockingStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)" class="member-name-link">newBlockingStreamingCall</a><wbr>(<a href="GrpcSerializationProvider.html" title="interface in io.servicetalk.grpc.api">GrpcSerializationProvider</a>&nbsp;serializationProvider,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;Req&gt;&nbsp;requestClass,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;Resp&gt;&nbsp;responseClass)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#newBlockingStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>newBlockingStreamingCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;Req,<wbr>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;Req,<wbr>
 Resp&gt;&nbsp;<a href="GrpcClientCallFactory.BlockingStreamingClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.BlockingStreamingClientCall</a>&lt;Req,<wbr>Resp&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#newBlockingStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)" class="member-name-link">newBlockingStreamingCall</a><wbr>(<a href="MethodDescriptor.html" title="interface in io.servicetalk.grpc.api">MethodDescriptor</a>&lt;Req,<wbr>Resp&gt;&nbsp;methodDescriptor,
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#newBlockingStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)" class="member-name-link">newBlockingStreamingCall</a><wbr>(<a href="MethodDescriptor.html" title="interface in io.servicetalk.grpc.api">MethodDescriptor</a>&lt;Req,<wbr>Resp&gt;&nbsp;methodDescriptor,
  <a href="../../encoding/api/BufferDecoderGroup.html" title="interface in io.servicetalk.encoding.api">BufferDecoderGroup</a>&nbsp;decompressors)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Create a new <a href="GrpcClientCallFactory.BlockingStreamingClientCall.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientCallFactory.BlockingStreamingClientCall</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>&lt;Req,<wbr>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>&lt;Req,<wbr>
 Resp&gt;&nbsp;<a href="GrpcClientCallFactory.ClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.ClientCall</a>&lt;Req,<wbr>Resp&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#newCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)" class="member-name-link">newCall</a><wbr>(<a href="GrpcSerializationProvider.html" title="interface in io.servicetalk.grpc.api">GrpcSerializationProvider</a>&nbsp;serializationProvider,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#newCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)" class="member-name-link">newCall</a><wbr>(<a href="GrpcSerializationProvider.html" title="interface in io.servicetalk.grpc.api">GrpcSerializationProvider</a>&nbsp;serializationProvider,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;Req&gt;&nbsp;requestClass,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;Resp&gt;&nbsp;responseClass)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#newCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>newCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;Req,<wbr>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;Req,<wbr>
 Resp&gt;&nbsp;<a href="GrpcClientCallFactory.ClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.ClientCall</a>&lt;Req,<wbr>Resp&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#newCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)" class="member-name-link">newCall</a><wbr>(<a href="MethodDescriptor.html" title="interface in io.servicetalk.grpc.api">MethodDescriptor</a>&lt;Req,<wbr>Resp&gt;&nbsp;methodDescriptor,
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#newCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)" class="member-name-link">newCall</a><wbr>(<a href="MethodDescriptor.html" title="interface in io.servicetalk.grpc.api">MethodDescriptor</a>&lt;Req,<wbr>Resp&gt;&nbsp;methodDescriptor,
  <a href="../../encoding/api/BufferDecoderGroup.html" title="interface in io.servicetalk.encoding.api">BufferDecoderGroup</a>&nbsp;decompressors)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Create a new <a href="GrpcClientCallFactory.ClientCall.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientCallFactory.ClientCall</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>&lt;Req,<wbr>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>&lt;Req,<wbr>
 Resp&gt;&nbsp;<a href="GrpcClientCallFactory.RequestStreamingClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.RequestStreamingClientCall</a>&lt;Req,<wbr>Resp&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#newRequestStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)" class="member-name-link">newRequestStreamingCall</a><wbr>(<a href="GrpcSerializationProvider.html" title="interface in io.servicetalk.grpc.api">GrpcSerializationProvider</a>&nbsp;serializationProvider,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#newRequestStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)" class="member-name-link">newRequestStreamingCall</a><wbr>(<a href="GrpcSerializationProvider.html" title="interface in io.servicetalk.grpc.api">GrpcSerializationProvider</a>&nbsp;serializationProvider,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;Req&gt;&nbsp;requestClass,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;Resp&gt;&nbsp;responseClass)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#newRequestStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>newRequestStreamingCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;Req,<wbr>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;Req,<wbr>
 Resp&gt;&nbsp;<a href="GrpcClientCallFactory.RequestStreamingClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.RequestStreamingClientCall</a>&lt;Req,<wbr>Resp&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#newRequestStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)" class="member-name-link">newRequestStreamingCall</a><wbr>(<a href="MethodDescriptor.html" title="interface in io.servicetalk.grpc.api">MethodDescriptor</a>&lt;Req,<wbr>Resp&gt;&nbsp;methodDescriptor,
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#newRequestStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)" class="member-name-link">newRequestStreamingCall</a><wbr>(<a href="MethodDescriptor.html" title="interface in io.servicetalk.grpc.api">MethodDescriptor</a>&lt;Req,<wbr>Resp&gt;&nbsp;methodDescriptor,
  <a href="../../encoding/api/BufferDecoderGroup.html" title="interface in io.servicetalk.encoding.api">BufferDecoderGroup</a>&nbsp;decompressors)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Create a new <a href="GrpcClientCallFactory.RequestStreamingClientCall.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientCallFactory.RequestStreamingClientCall</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>&lt;Req,<wbr>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>&lt;Req,<wbr>
 Resp&gt;&nbsp;<a href="GrpcClientCallFactory.ResponseStreamingClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.ResponseStreamingClientCall</a>&lt;Req,<wbr>Resp&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#newResponseStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)" class="member-name-link">newResponseStreamingCall</a><wbr>(<a href="GrpcSerializationProvider.html" title="interface in io.servicetalk.grpc.api">GrpcSerializationProvider</a>&nbsp;serializationProvider,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#newResponseStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)" class="member-name-link">newResponseStreamingCall</a><wbr>(<a href="GrpcSerializationProvider.html" title="interface in io.servicetalk.grpc.api">GrpcSerializationProvider</a>&nbsp;serializationProvider,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;Req&gt;&nbsp;requestClass,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;Resp&gt;&nbsp;responseClass)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#newResponseStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>newResponseStreamingCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;Req,<wbr>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;Req,<wbr>
 Resp&gt;&nbsp;<a href="GrpcClientCallFactory.ResponseStreamingClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.ResponseStreamingClientCall</a>&lt;Req,<wbr>Resp&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#newResponseStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)" class="member-name-link">newResponseStreamingCall</a><wbr>(<a href="MethodDescriptor.html" title="interface in io.servicetalk.grpc.api">MethodDescriptor</a>&lt;Req,<wbr>Resp&gt;&nbsp;methodDescriptor,
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#newResponseStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)" class="member-name-link">newResponseStreamingCall</a><wbr>(<a href="MethodDescriptor.html" title="interface in io.servicetalk.grpc.api">MethodDescriptor</a>&lt;Req,<wbr>Resp&gt;&nbsp;methodDescriptor,
  <a href="../../encoding/api/BufferDecoderGroup.html" title="interface in io.servicetalk.encoding.api">BufferDecoderGroup</a>&nbsp;decompressors)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Create a new <a href="GrpcClientCallFactory.ResponseStreamingClientCall.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientCallFactory.ResponseStreamingClientCall</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>&lt;Req,<wbr>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>&lt;Req,<wbr>
 Resp&gt;&nbsp;<a href="GrpcClientCallFactory.StreamingClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.StreamingClientCall</a>&lt;Req,<wbr>Resp&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#newStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)" class="member-name-link">newStreamingCall</a><wbr>(<a href="GrpcSerializationProvider.html" title="interface in io.servicetalk.grpc.api">GrpcSerializationProvider</a>&nbsp;serializationProvider,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#newStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)" class="member-name-link">newStreamingCall</a><wbr>(<a href="GrpcSerializationProvider.html" title="interface in io.servicetalk.grpc.api">GrpcSerializationProvider</a>&nbsp;serializationProvider,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;Req&gt;&nbsp;requestClass,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;Resp&gt;&nbsp;responseClass)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#newStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>newStreamingCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;Req,<wbr>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;Req,<wbr>
 Resp&gt;&nbsp;<a href="GrpcClientCallFactory.StreamingClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.StreamingClientCall</a>&lt;Req,<wbr>Resp&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#newStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)" class="member-name-link">newStreamingCall</a><wbr>(<a href="MethodDescriptor.html" title="interface in io.servicetalk.grpc.api">MethodDescriptor</a>&lt;Req,<wbr>Resp&gt;&nbsp;methodDescriptor,
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#newStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)" class="member-name-link">newStreamingCall</a><wbr>(<a href="MethodDescriptor.html" title="interface in io.servicetalk.grpc.api">MethodDescriptor</a>&lt;Req,<wbr>Resp&gt;&nbsp;methodDescriptor,
  <a href="../../encoding/api/BufferDecoderGroup.html" title="interface in io.servicetalk.encoding.api">BufferDecoderGroup</a>&nbsp;decompressors)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Create a new <a href="GrpcClientCallFactory.StreamingClientCall.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientCallFactory.StreamingClientCall</code></a>.</div>
 </div>
 </div>
@@ -699,15 +708,38 @@ Resp&gt;</span>
 <li>
 <section class="detail" id="from(io.servicetalk.http.api.StreamingHttpClient,java.time.Duration)">
 <h3>from</h3>
-<div class="member-signature"><span class="modifiers">static</span>&nbsp;<span class="return-type"><a href="GrpcClientCallFactory.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory</a></span>&nbsp;<span class="element-name">from</span><wbr><span class="parameters">(<a href="../../http/api/StreamingHttpClient.html" title="interface in io.servicetalk.http.api">StreamingHttpClient</a>&nbsp;httpClient,
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">static</span>&nbsp;<span class="return-type"><a href="GrpcClientCallFactory.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory</a></span>&nbsp;<span class="element-name">from</span><wbr><span class="parameters">(<a href="../../http/api/StreamingHttpClient.html" title="interface in io.servicetalk.http.api">StreamingHttpClient</a>&nbsp;httpClient,
  @Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;defaultTimeout)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#from(io.servicetalk.http.api.StreamingHttpClient,io.servicetalk.grpc.api.GrpcClientCallConfig)"><code>from(StreamingHttpClient, GrpcClientCallConfig)</code></a> to configure the client call factory;
+ this overload applies the default inbound message-size limit. Configuration is normally provided via the
+ <a href="GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientBuilder</code></a>.</div>
+</div>
 <div class="block">Creates a new <a href="GrpcClientCallFactory.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientCallFactory</code></a> using the passed <a href="../../http/api/StreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClient</code></a>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>httpClient</code> - <a href="../../http/api/StreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClient</code></a> to use. The returned <a href="GrpcClientCallFactory.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientCallFactory</code></a> will own the
  lifecycle of this <a href="../../http/api/StreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClient</code></a>.</dd>
 <dd><code>defaultTimeout</code> - <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a> of default timeout or null for no timeout</dd>
+<dt>Returns:</dt>
+<dd>A new <a href="GrpcClientCallFactory.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientCallFactory</code></a>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="from(io.servicetalk.http.api.StreamingHttpClient,io.servicetalk.grpc.api.GrpcClientCallConfig)">
+<h3>from</h3>
+<div class="member-signature"><span class="modifiers">static</span>&nbsp;<span class="return-type"><a href="GrpcClientCallFactory.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory</a></span>&nbsp;<span class="element-name">from</span><wbr><span class="parameters">(<a href="../../http/api/StreamingHttpClient.html" title="interface in io.servicetalk.http.api">StreamingHttpClient</a>&nbsp;httpClient,
+ <a href="GrpcClientCallConfig.html" title="class in io.servicetalk.grpc.api">GrpcClientCallConfig</a>&nbsp;callConfig)</span></div>
+<div class="block">Creates a new <a href="GrpcClientCallFactory.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientCallFactory</code></a> using the passed <a href="../../http/api/StreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClient</code></a>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>httpClient</code> - <a href="../../http/api/StreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClient</code></a> to use. The returned <a href="GrpcClientCallFactory.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientCallFactory</code></a> will own the
+ lifecycle of this <a href="../../http/api/StreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClient</code></a>.</dd>
+<dd><code>callConfig</code> - <a href="GrpcClientCallConfig.html" title="class in io.servicetalk.grpc.api"><code>GrpcClientCallConfig</code></a> controlling client-call behavior, including the maximum inbound
+ (response) message size and the default call timeout.</dd>
 <dt>Returns:</dt>
 <dd>A new <a href="GrpcClientCallFactory.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientCallFactory</code></a>.</dd>
 </dl>

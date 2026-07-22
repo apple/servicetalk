@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../../script.js"></script>
-<script type="text/javascript" src="../../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -88,47 +88,59 @@ loadScripts(document, 'script');</script>
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
-<div class="summary-table three-column-summary">
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link">SSLSession</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#extractSslSession(io.netty.channel.ChannelPipeline,io.netty.handler.ssl.SslHandshakeCompletionEvent,java.util.function.Consumer)" class="member-name-link">extractSslSession</a><wbr>(io.netty.channel.ChannelPipeline&nbsp;pipeline,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static io.netty.handler.ssl.SslHandler</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#applicationSslHandler(io.netty.channel.ChannelPipeline)" class="member-name-link">applicationSslHandler</a><wbr>(io.netty.channel.ChannelPipeline&nbsp;pipeline)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Returns the application-tier <code>SslHandler</code>, or <code>null</code> if none is present.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link">SSLSession</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#extractSslSession(io.netty.channel.ChannelPipeline,io.netty.handler.ssl.SslHandshakeCompletionEvent,java.util.function.Consumer)" class="member-name-link">extractSslSession</a><wbr>(io.netty.channel.ChannelPipeline&nbsp;pipeline,
  io.netty.handler.ssl.SslHandshakeCompletionEvent&nbsp;sslEvent,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;failureConsumer)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Extracts the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link"><code>SSLSession</code></a> from the <code>ChannelPipeline</code> if the <code>SslHandshakeCompletionEvent</code>
  is successful or propagate the failure to <code>failureConsumer</code>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link">SSLSession</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#extractSslSession(io.servicetalk.transport.api.SslConfig,io.netty.channel.ChannelPipeline)" class="member-name-link">extractSslSession</a><wbr>(<a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a>&nbsp;sslConfig,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link">SSLSession</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#extractSslSession(io.servicetalk.transport.api.SslConfig,io.netty.channel.ChannelPipeline)" class="member-name-link">extractSslSession</a><wbr>(<a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a>&nbsp;sslConfig,
  io.netty.channel.ChannelPipeline&nbsp;pipeline)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Extracts the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link"><code>SSLSession</code></a> from the <code>ChannelPipeline</code> if the handshake is already done.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link">SSLSession</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#extractSslSessionAndReport(io.netty.channel.ChannelPipeline,io.netty.handler.ssl.SslHandshakeCompletionEvent,java.util.function.Consumer,boolean)" class="member-name-link">extractSslSessionAndReport</a><wbr>(io.netty.channel.ChannelPipeline&nbsp;pipeline,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link">SSLSession</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#extractSslSessionAndReport(io.netty.channel.ChannelPipeline,io.netty.handler.ssl.SslHandshakeCompletionEvent,java.util.function.Consumer,boolean)" class="member-name-link">extractSslSessionAndReport</a><wbr>(io.netty.channel.ChannelPipeline&nbsp;pipeline,
  io.netty.handler.ssl.SslHandshakeCompletionEvent&nbsp;sslEvent,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;failureConsumer,
  boolean&nbsp;shouldReport)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#extractSslSession(io.netty.channel.ChannelPipeline,io.netty.handler.ssl.SslHandshakeCompletionEvent,java.util.function.Consumer)"><code>extractSslSession(ChannelPipeline, SslHandshakeCompletionEvent, Consumer)</code></a> instead,
  reporting to <a href="../../api/ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.SecurityHandshakeObserver</code></a> is handled automatically for all <code>SslHandler</code>s initialized
  by <a href="SslClientChannelInitializer.html" title="class in io.servicetalk.transport.netty.internal"><code>SslClientChannelInitializer</code></a> or <a href="SslServerChannelInitializer.html" title="class in io.servicetalk.transport.netty.internal"><code>SslServerChannelInitializer</code></a>.</div>
 </div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link">SSLSession</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#extractSslSessionAndReport(io.servicetalk.transport.api.SslConfig,io.netty.channel.ChannelPipeline,io.servicetalk.transport.api.ConnectionObserver)" class="member-name-link">extractSslSessionAndReport</a><wbr>(<a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a>&nbsp;sslConfig,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link">SSLSession</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#extractSslSessionAndReport(io.servicetalk.transport.api.SslConfig,io.netty.channel.ChannelPipeline,io.servicetalk.transport.api.ConnectionObserver)" class="member-name-link">extractSslSessionAndReport</a><wbr>(<a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a>&nbsp;sslConfig,
  io.netty.channel.ChannelPipeline&nbsp;pipeline,
  <a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a>&nbsp;connectionObserver)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#extractSslSession(io.servicetalk.transport.api.SslConfig,io.netty.channel.ChannelPipeline)"><code>extractSslSession(SslConfig, ChannelPipeline)</code></a> instead,
  reporting to <a href="../../api/ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.SecurityHandshakeObserver</code></a> is handled automatically for all <code>SslHandler</code>s initialized
  by <a href="SslClientChannelInitializer.html" title="class in io.servicetalk.transport.netty.internal"><code>SslClientChannelInitializer</code></a> or <a href="SslServerChannelInitializer.html" title="class in io.servicetalk.transport.netty.internal"><code>SslServerChannelInitializer</code></a></div>
 </div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#installProxyTlsStage(io.netty.channel.Channel,io.netty.handler.ssl.SslContext,io.servicetalk.transport.api.ClientSslConfig)" class="member-name-link">installProxyTlsStage</a><wbr>(io.netty.channel.Channel&nbsp;channel,
+ io.netty.handler.ssl.SslContext&nbsp;sslContext,
+ <a href="../../api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api">ClientSslConfig</a>&nbsp;sslConfig)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Install the outer (proxy) TLS stage of a layered-TLS pipeline.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static boolean</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#isSslEnabled(io.netty.channel.ChannelPipeline)" class="member-name-link">isSslEnabled</a><wbr>(io.netty.channel.ChannelPipeline&nbsp;pipeline)</code></div>
@@ -137,6 +149,12 @@ loadScripts(document, 'script');</script>
 <div class="deprecation-comment">not required anymore, will be removed in the future releases, see
  <a href="#extractSslSessionAndReport(io.servicetalk.transport.api.SslConfig,io.netty.channel.ChannelPipeline,io.servicetalk.transport.api.ConnectionObserver)"><code>extractSslSessionAndReport(SslConfig, ChannelPipeline, ConnectionObserver)</code></a> for an alternative approach</div>
 </div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static io.netty.handler.ssl.SslHandler</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#proxySslHandler(io.netty.channel.ChannelPipeline)" class="member-name-link">proxySslHandler</a><wbr>(io.netty.channel.ChannelPipeline&nbsp;pipeline)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Returns the proxy <code>SslHandler</code> installed by <a href="#installProxyTlsStage(io.netty.channel.Channel,io.netty.handler.ssl.SslContext,io.servicetalk.transport.api.ClientSslConfig)"><code>installProxyTlsStage(io.netty.channel.Channel, io.netty.handler.ssl.SslContext, io.servicetalk.transport.api.ClientSslConfig)</code></a>, or <code>null</code> if none is
+ present (a plaintext proxy hop or a non-proxy connection).</div>
 </div>
 </div>
 </div>
@@ -265,6 +283,63 @@ loadScripts(document, 'script');</script>
 <dd><code>failureConsumer</code> - invoked if a failure is encountered.</dd>
 <dt>Returns:</dt>
 <dd>The <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link"><code>SSLSession</code></a> or <code>null</code> if none can be found.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="applicationSslHandler(io.netty.channel.ChannelPipeline)">
+<h3>applicationSslHandler</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public static</span>&nbsp;<span class="return-type">io.netty.handler.ssl.SslHandler</span>&nbsp;<span class="element-name">applicationSslHandler</span><wbr><span class="parameters">(io.netty.channel.ChannelPipeline&nbsp;pipeline)</span></div>
+<div class="block">Returns the application-tier <code>SslHandler</code>, or <code>null</code> if none is present.
+ <p>
+ With layered TLS (e.g. an outer proxy TLS stage plus an inner origin TLS stage on the same <code>Channel</code>)
+ the origin handler is the one whose <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link"><code>SSLSession</code></a> represents the application-visible session. Callers
+ that operate on the application-level session should use this helper instead of
+ <code>pipeline.get(SslHandler.class)</code>, which returns the head-most handler — the wrong one for layered TLS.
+ <p>
+ Iterates rather than looking up by <code>APPLICATION_SSL_HANDLER_NAME</code> because not every <code>SslHandler</code>
+ is installed under that name (e.g. handlers installed by third-party Netty code).</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>pipeline</code> - the pipeline to inspect for a <code>SslHandler</code>.</dd>
+<dt>Returns:</dt>
+<dd>the application-tier (last-in-pipeline-order) <code>SslHandler</code>, or <code>null</code> if none is present.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="proxySslHandler(io.netty.channel.ChannelPipeline)">
+<h3>proxySslHandler</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public static</span>&nbsp;<span class="return-type">io.netty.handler.ssl.SslHandler</span>&nbsp;<span class="element-name">proxySslHandler</span><wbr><span class="parameters">(io.netty.channel.ChannelPipeline&nbsp;pipeline)</span></div>
+<div class="block">Returns the proxy <code>SslHandler</code> installed by <a href="#installProxyTlsStage(io.netty.channel.Channel,io.netty.handler.ssl.SslContext,io.servicetalk.transport.api.ClientSslConfig)"><code>installProxyTlsStage(io.netty.channel.Channel, io.netty.handler.ssl.SslContext, io.servicetalk.transport.api.ClientSslConfig)</code></a>, or <code>null</code> if none is
+ present (a plaintext proxy hop or a non-proxy connection).</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>pipeline</code> - the pipeline to inspect for the proxy <code>SslHandler</code>.</dd>
+<dt>Returns:</dt>
+<dd>the proxy <code>SslHandler</code>, or <code>null</code> if none is present.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="installProxyTlsStage(io.netty.channel.Channel,io.netty.handler.ssl.SslContext,io.servicetalk.transport.api.ClientSslConfig)">
+<h3>installProxyTlsStage</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">installProxyTlsStage</span><wbr><span class="parameters">(io.netty.channel.Channel&nbsp;channel,
+ io.netty.handler.ssl.SslContext&nbsp;sslContext,
+ <a href="../../api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api">ClientSslConfig</a>&nbsp;sslConfig)</span></div>
+<div class="block">Install the outer (proxy) TLS stage of a layered-TLS pipeline. Adds an eager proxy <code>SslHandler</code>
+ named <code>PROXY_SSL_HANDLER_NAME</code> followed by an internal isolator that drops outer-stage
+ <code>SslHandshakeCompletionEvent</code> and <code>SslCloseCompletionEvent</code> from
+ reaching handlers downstream (which expect application-level TLS events). The proxy handshake is reported to
+ the <code>SecurityHandshakeObserver</code> returned by <a href="../../api/ConnectionObserver.html#onProxySecurityHandshake(io.servicetalk.transport.api.SslConfig)"><code>ConnectionObserver.onProxySecurityHandshake(SslConfig)</code></a>,
+ separate from the application-level <a href="../../api/ConnectionObserver.html#onSecurityHandshake(io.servicetalk.transport.api.SslConfig)"><code>ConnectionObserver.onSecurityHandshake(SslConfig)</code></a>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>channel</code> - the channel whose pipeline to install on</dd>
+<dd><code>sslContext</code> - the <code>SslContext</code> for the proxy TLS stage</dd>
+<dd><code>sslConfig</code> - the <a href="../../api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ClientSslConfig</code></a> for the proxy TLS stage</dd>
 </dl>
 </section>
 </li>

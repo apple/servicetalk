@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -87,9 +87,9 @@ loadScripts(document, 'script');</script>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
-<div class="summary-table three-column-summary">
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -102,16 +102,32 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Create a new instance using HTTP 1.1 with empty payload body.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#newTransportResponse(io.servicetalk.http.api.HttpResponseStatus,io.servicetalk.http.api.HttpProtocolVersion,io.servicetalk.http.api.HttpHeaders,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Publisher,boolean,io.servicetalk.http.api.HttpHeadersFactory)" class="member-name-link">newTransportResponse</a><wbr>(<a href="HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a>&nbsp;status,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static <a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#newTransportResponse(io.servicetalk.http.api.HttpResponseStatus,io.servicetalk.http.api.HttpProtocolVersion,io.servicetalk.http.api.HttpHeaders,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Publisher,boolean,io.servicetalk.http.api.HttpHeadersFactory)" class="member-name-link">newTransportResponse</a><wbr>(<a href="HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a>&nbsp;status,
  <a href="HttpProtocolVersion.html" title="class in io.servicetalk.http.api">HttpProtocolVersion</a>&nbsp;version,
  <a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;headers,
  <a href="../../buffer/api/BufferAllocator.html" title="interface in io.servicetalk.buffer.api">BufferAllocator</a>&nbsp;allocator,
  <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;messageBody,
  boolean&nbsp;requireTrailerHeader,
  <a href="HttpHeadersFactory.html" title="interface in io.servicetalk.http.api">HttpHeadersFactory</a>&nbsp;headersFactory)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
-<div class="block">Creates a new <a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpResponse</code></a> which is read from the transport.</div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#newTransportResponse(io.servicetalk.http.api.HttpResponseStatus,io.servicetalk.http.api.HttpProtocolVersion,io.servicetalk.http.api.HttpHeaders,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Publisher,boolean,io.servicetalk.http.api.HttpHeadersFactory,java.util.function.LongConsumer)"><code>newTransportResponse(HttpResponseStatus, HttpProtocolVersion, HttpHeaders, BufferAllocator, Publisher, boolean, HttpHeadersFactory, LongConsumer)</code></a> which allows bounding the
+ size of the payload buffered during aggregation.</div>
+</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#newTransportResponse(io.servicetalk.http.api.HttpResponseStatus,io.servicetalk.http.api.HttpProtocolVersion,io.servicetalk.http.api.HttpHeaders,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Publisher,boolean,io.servicetalk.http.api.HttpHeadersFactory,java.util.function.LongConsumer)" class="member-name-link">newTransportResponse</a><wbr>(<a href="HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a>&nbsp;status,
+ <a href="HttpProtocolVersion.html" title="class in io.servicetalk.http.api">HttpProtocolVersion</a>&nbsp;version,
+ <a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;headers,
+ <a href="../../buffer/api/BufferAllocator.html" title="interface in io.servicetalk.buffer.api">BufferAllocator</a>&nbsp;allocator,
+ <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;messageBody,
+ boolean&nbsp;requireTrailerHeader,
+ <a href="HttpHeadersFactory.html" title="interface in io.servicetalk.http.api">HttpHeadersFactory</a>&nbsp;headersFactory,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/LongConsumer.html" title="class or interface in java.util.function" class="external-link">LongConsumer</a>&nbsp;payloadSizeLimiter)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Creates a new <a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpResponse</code></a> which is read from the transport, applying a limit to the size of the
+ payload that may be buffered when the response is later aggregated.</div>
 </div>
 </div>
 </div>
@@ -154,13 +170,18 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="newTransportResponse(io.servicetalk.http.api.HttpResponseStatus,io.servicetalk.http.api.HttpProtocolVersion,io.servicetalk.http.api.HttpHeaders,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Publisher,boolean,io.servicetalk.http.api.HttpHeadersFactory)">
 <h3>newTransportResponse</h3>
-<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a></span>&nbsp;<span class="element-name">newTransportResponse</span><wbr><span class="parameters">(<a href="HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a>&nbsp;status,
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a></span>&nbsp;<span class="element-name">newTransportResponse</span><wbr><span class="parameters">(<a href="HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a>&nbsp;status,
  <a href="HttpProtocolVersion.html" title="class in io.servicetalk.http.api">HttpProtocolVersion</a>&nbsp;version,
  <a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;headers,
  <a href="../../buffer/api/BufferAllocator.html" title="interface in io.servicetalk.buffer.api">BufferAllocator</a>&nbsp;allocator,
  <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;messageBody,
  boolean&nbsp;requireTrailerHeader,
  <a href="HttpHeadersFactory.html" title="interface in io.servicetalk.http.api">HttpHeadersFactory</a>&nbsp;headersFactory)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#newTransportResponse(io.servicetalk.http.api.HttpResponseStatus,io.servicetalk.http.api.HttpProtocolVersion,io.servicetalk.http.api.HttpHeaders,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Publisher,boolean,io.servicetalk.http.api.HttpHeadersFactory,java.util.function.LongConsumer)"><code>newTransportResponse(HttpResponseStatus, HttpProtocolVersion, HttpHeaders, BufferAllocator, Publisher, boolean, HttpHeadersFactory, LongConsumer)</code></a> which allows bounding the
+ size of the payload buffered during aggregation. This overload leaves the aggregated payload unbounded.</div>
+</div>
 <div class="block">Creates a new <a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpResponse</code></a> which is read from the transport. If the response contains
  <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a> then the passed <code>payload</code>
  <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> should also emit <a href="HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a> before completion.</div>
@@ -175,6 +196,40 @@ loadScripts(document, 'script');</script>
 <dd><code>requireTrailerHeader</code> - <code>true</code> if <a href="https://tools.ietf.org/html/rfc7230#section-4.4">Trailer</a>
  header is required to accept trailers. <code>false</code> assumes trailers may be present if other criteria allows.</dd>
 <dd><code>headersFactory</code> - <a href="HttpHeadersFactory.html" title="interface in io.servicetalk.http.api"><code>HttpHeadersFactory</code></a> to use.</dd>
+<dt>Returns:</dt>
+<dd>a new <a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpResponse</code></a>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="newTransportResponse(io.servicetalk.http.api.HttpResponseStatus,io.servicetalk.http.api.HttpProtocolVersion,io.servicetalk.http.api.HttpHeaders,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Publisher,boolean,io.servicetalk.http.api.HttpHeadersFactory,java.util.function.LongConsumer)">
+<h3>newTransportResponse</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a></span>&nbsp;<span class="element-name">newTransportResponse</span><wbr><span class="parameters">(<a href="HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a>&nbsp;status,
+ <a href="HttpProtocolVersion.html" title="class in io.servicetalk.http.api">HttpProtocolVersion</a>&nbsp;version,
+ <a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;headers,
+ <a href="../../buffer/api/BufferAllocator.html" title="interface in io.servicetalk.buffer.api">BufferAllocator</a>&nbsp;allocator,
+ <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;messageBody,
+ boolean&nbsp;requireTrailerHeader,
+ <a href="HttpHeadersFactory.html" title="interface in io.servicetalk.http.api">HttpHeadersFactory</a>&nbsp;headersFactory,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/LongConsumer.html" title="class or interface in java.util.function" class="external-link">LongConsumer</a>&nbsp;payloadSizeLimiter)</span></div>
+<div class="block">Creates a new <a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpResponse</code></a> which is read from the transport, applying a limit to the size of the
+ payload that may be buffered when the response is later aggregated. If the response contains
+ <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a> then the passed <code>payload</code>
+ <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> should also emit <a href="HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a> before completion.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>status</code> - the <a href="HttpResponseStatus.html" title="class in io.servicetalk.http.api"><code>HttpResponseStatus</code></a> of the response.</dd>
+<dd><code>version</code> - the <a href="HttpProtocolVersion.html" title="class in io.servicetalk.http.api"><code>HttpProtocolVersion</code></a> of the response.</dd>
+<dd><code>headers</code> - the <a href="HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a> of the response.</dd>
+<dd><code>allocator</code> - the allocator used for serialization purposes if necessary.</dd>
+<dd><code>messageBody</code> - a <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> for payload that optionally emits <a href="HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a> if the
+ response contains <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.</dd>
+<dd><code>requireTrailerHeader</code> - <code>true</code> if <a href="https://tools.ietf.org/html/rfc7230#section-4.4">Trailer</a>
+ header is required to accept trailers. <code>false</code> assumes trailers may be present if other criteria allows.</dd>
+<dd><code>headersFactory</code> - <a href="HttpHeadersFactory.html" title="interface in io.servicetalk.http.api"><code>HttpHeadersFactory</code></a> to use.</dd>
+<dd><code>payloadSizeLimiter</code> - invoked with the running aggregated payload size (in bytes) as the response is
+ aggregated (e.g. via <a href="StreamingHttpResponse.html#toResponse()"><code>StreamingHttpResponse.toResponse()</code></a>); it may reject an oversized message by throwing
+ a <a href="PayloadTooLargeException.html" title="class in io.servicetalk.http.api"><code>PayloadTooLargeException</code></a>. Use <code>size -&gt; { }</code> to leave the payload unbounded.</dd>
 <dt>Returns:</dt>
 <dd>a new <a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpResponse</code></a>.</dd>
 </dl>

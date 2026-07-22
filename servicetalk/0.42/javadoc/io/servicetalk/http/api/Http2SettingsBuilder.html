@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -79,7 +79,29 @@ loadScripts(document, 'script');</script>
 <div class="type-signature"><span class="modifiers">public final class </span><span class="element-name type-name-label">Http2SettingsBuilder</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
 <div class="block">Builder to help create a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link"><code>Map</code></a> for
- <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.1">HTTP/2 Setting</a>.</div>
+ <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.1">HTTP/2 Setting</a>.
+ <p>
+ Some default values deviate from the
+ <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">RFC 7540 §6.5.2</a> initial values to
+ impose safer resource ceilings on peers.
+ <p>
+ Applied to both clients and servers:
+ <ul>
+   <li><code>SETTINGS_INITIAL_WINDOW_SIZE</code>: 1 MiB (RFC: 65535 bytes).</li>
+   <li><code>SETTINGS_MAX_HEADER_LIST_SIZE</code>: 32 KiB (RFC: unlimited).</li>
+ </ul>
+ Applied to clients only:
+ <ul>
+   <li><code>SETTINGS_MAX_CONCURRENT_STREAMS</code>: when the server does not advertise this setting, the
+       client transport assumes <code>100</code> as a per-connection cap rather than treating the peer as
+       unbounded. Not configurable through this builder.</li>
+ </ul>
+ Applied to servers only:
+ <ul>
+   <li><code>SETTINGS_MAX_CONCURRENT_STREAMS</code>: <code>100</code> (RFC: unbounded). Applied by the server
+       transport when <a href="#maxConcurrentStreams(long)"><code>maxConcurrentStreams(long)</code></a> was not called, so
+       <a href="Http2Settings.html#maxConcurrentStreams()"><code>Http2Settings.maxConcurrentStreams()</code></a> may still return <code>null</code> on the built settings.</li>
+ </ul></div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -104,8 +126,8 @@ loadScripts(document, 'script');</script>
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
-<div class="summary-table three-column-summary">
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -203,7 +225,11 @@ loadScripts(document, 'script');</script>
 <h3>maxConcurrentStreams</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="Http2SettingsBuilder.html" title="class in io.servicetalk.http.api">Http2SettingsBuilder</a></span>&nbsp;<span class="element-name">maxConcurrentStreams</span><wbr><span class="parameters">(long&nbsp;value)</span></div>
 <div class="block">Set the value for
- <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">SETTINGS_MAX_CONCURRENT_STREAMS</a>.</div>
+ <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">SETTINGS_MAX_CONCURRENT_STREAMS</a>.
+ <p>
+ See the class-level javadoc for the default applied by the server transport when this is not set.
+ Clients always advertise <code>0</code> regardless of the value configured here (server push is not
+ supported).</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>value</code> - The value.</dd>

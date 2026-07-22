@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -88,8 +88,8 @@ loadScripts(document, 'script');</script>
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
-<div class="summary-table three-column-summary">
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -103,6 +103,11 @@ loadScripts(document, 'script');</script>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#combine(io.servicetalk.transport.api.TransportObserver...)" class="member-name-link">combine</a><wbr>(<a href="TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a>...&nbsp;other)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Combines multiple <a href="TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a>s into a single <a href="TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#unpack(io.servicetalk.transport.api.TransportObserver)" class="member-name-link">unpack</a><wbr>(<a href="TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a>&nbsp;observer)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Unpacks a <a href="TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a> into the list of observers it aggregates.</div>
 </div>
 </div>
 </div>
@@ -140,12 +145,54 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="combine(io.servicetalk.transport.api.TransportObserver...)">
 <h3>combine</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a></span>&nbsp;<span class="element-name">combine</span><wbr><span class="parameters">(<a href="TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a>...&nbsp;other)</span></div>
-<div class="block">Combines multiple <a href="TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a>s into a single <a href="TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a>.</div>
+<div class="block">Combines multiple <a href="TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a>s into a single <a href="TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a>.
+ <p>
+ When more than one observer is provided, the returned observer fans out every event to all combined observers
+ and is exception-safe: each combined observer is wrapped with <a href="#asSafeObserver(io.servicetalk.transport.api.TransportObserver)"><code>asSafeObserver(TransportObserver)</code></a>, so an
+ exception thrown by one observer is caught and logged rather than rethrown, and never prevents the remaining
+ observers from being notified. When a single observer is provided it is returned as-is, without this safety
+ wrapping.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>other</code> - <a href="TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a>s to combine</dd>
 <dt>Returns:</dt>
 <dd>a <a href="TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a> that delegates all invocations to the provided <a href="TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a>s</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="#asSafeObserver(io.servicetalk.transport.api.TransportObserver)"><code>asSafeObserver(TransportObserver)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="unpack(io.servicetalk.transport.api.TransportObserver)">
+<h3>unpack</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a>&gt;</span>&nbsp;<span class="element-name">unpack</span><wbr><span class="parameters">(<a href="TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a>&nbsp;observer)</span></div>
+<div class="block">Unpacks a <a href="TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a> into the list of observers it aggregates.
+ <p>
+ If the provided <code>observer</code> was created using the <a href="#combine(io.servicetalk.transport.api.TransportObserver...)"><code>combine</code></a> method,
+ this method returns the individual observers that were combined. Otherwise, it returns a singleton list
+ containing the provided observer.
+ <p>
+ Only the observers produced by this class are unwrapped: the aggregating observer created by
+ <a href="#combine(io.servicetalk.transport.api.TransportObserver...)"><code>combine</code></a> and the safe wrapper created by
+ <a href="#asSafeObserver(io.servicetalk.transport.api.TransportObserver)"><code>asSafeObserver</code></a>. Any other <a href="TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a> &mdash; including
+ a third-party implementation that internally wraps or aggregates other observers &mdash; is treated as opaque:
+ wherever it occurs in the combined structure it appears as a single element of the returned list, and its
+ contents are never unwrapped.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>observer</code> - <a href="TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a> to unpack</dd>
+<dt>Returns:</dt>
+<dd>a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link"><code>List</code></a> of <a href="TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a>s</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="#combine(io.servicetalk.transport.api.TransportObserver...)"><code>combine(TransportObserver...)</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>

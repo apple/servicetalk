@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="script.js"></script>
-<script type="text/javascript" src="script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="deprecated-list-page">
@@ -700,136 +700,142 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/DefaultGrpcClientMetadata.html#requestEncoding()">io.servicetalk.grpc.api.DefaultGrpcClientMetadata.requestEncoding()</a></div>
 <div class="col-last even-row-color"></div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newBlockingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#from(io.servicetalk.http.api.StreamingHttpClient,java.time.Duration)">io.servicetalk.grpc.api.GrpcClientCallFactory.from<wbr>(StreamingHttpClient, Duration)</a></div>
 <div class="col-last odd-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#from(io.servicetalk.http.api.StreamingHttpClient,io.servicetalk.grpc.api.GrpcClientCallConfig)"><code>GrpcClientCallFactory.from(StreamingHttpClient, GrpcClientCallConfig)</code></a> to configure the client call factory;
+ this overload applies the default inbound message-size limit. Configuration is normally provided via the
+ <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientBuilder</code></a>.</div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newBlockingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">use <a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>GrpcClientCallFactory.newBlockingCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingRequestStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newBlockingRequestStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingRequestStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newBlockingRequestStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingRequestStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>GrpcClientCallFactory.newBlockingRequestStreamingCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingResponseStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newBlockingResponseStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingResponseStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newBlockingResponseStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingResponseStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>GrpcClientCallFactory.newBlockingResponseStreamingCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newBlockingStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newBlockingStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>GrpcClientCallFactory.newBlockingStreamingCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>GrpcClientCallFactory.newCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newRequestStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newRequestStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newRequestStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newRequestStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newRequestStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>GrpcClientCallFactory.newRequestStreamingCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newResponseStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newResponseStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newResponseStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newResponseStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newResponseStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>GrpcClientCallFactory.newResponseStreamingCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>GrpcClientCallFactory.newStreamingCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcClientFactory.html#supportedMessageCodings()">io.servicetalk.grpc.api.GrpcClientFactory.supportedMessageCodings()</a></div>
-<div class="col-last odd-row-color">
-<div class="deprecation-comment">Use generated code methods targeting <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link"><code>List</code></a> of
- <a href="io/servicetalk/encoding/api/BufferEncoder.html" title="interface in io.servicetalk.encoding.api"><code>BufferEncoder</code></a>s and <a href="io/servicetalk/encoding/api/BufferDecoderGroup.html" title="interface in io.servicetalk.encoding.api"><code>BufferDecoderGroup</code></a>.</div>
-</div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcClientFactory.html#supportedMessageCodings(java.util.List)">io.servicetalk.grpc.api.GrpcClientFactory.supportedMessageCodings<wbr>(List&lt;ContentCodec&gt;)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcClientFactory.html#supportedMessageCodings()">io.servicetalk.grpc.api.GrpcClientFactory.supportedMessageCodings()</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use generated code methods targeting <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link"><code>List</code></a> of
  <a href="io/servicetalk/encoding/api/BufferEncoder.html" title="interface in io.servicetalk.encoding.api"><code>BufferEncoder</code></a>s and <a href="io/servicetalk/encoding/api/BufferDecoderGroup.html" title="interface in io.servicetalk.encoding.api"><code>BufferDecoderGroup</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcClientMetadata.html#requestEncoding()">io.servicetalk.grpc.api.GrpcClientMetadata.requestEncoding()</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcClientFactory.html#supportedMessageCodings(java.util.List)">io.servicetalk.grpc.api.GrpcClientFactory.supportedMessageCodings<wbr>(List&lt;ContentCodec&gt;)</a></div>
 <div class="col-last odd-row-color">
+<div class="deprecation-comment">Use generated code methods targeting <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link"><code>List</code></a> of
+ <a href="io/servicetalk/encoding/api/BufferEncoder.html" title="interface in io.servicetalk.encoding.api"><code>BufferEncoder</code></a>s and <a href="io/servicetalk/encoding/api/BufferDecoderGroup.html" title="interface in io.servicetalk.encoding.api"><code>BufferDecoderGroup</code></a>.</div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcClientMetadata.html#requestEncoding()">io.servicetalk.grpc.api.GrpcClientMetadata.requestEncoding()</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcClientMetadata.html#requestCompressor()"><code>GrpcClientMetadata.requestCompressor()</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcExecutionStrategies.html#offloadNever()">io.servicetalk.grpc.api.GrpcExecutionStrategies.offloadNever()</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcExecutionStrategies.html#offloadNever()">io.servicetalk.grpc.api.GrpcExecutionStrategies.offloadNever()</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcExecutionStrategies.html#offloadNone()"><code>GrpcExecutionStrategies.offloadNone()</code></a> instead.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcMetadata.html#path()">io.servicetalk.grpc.api.GrpcMetadata.path()</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcMetadata.html#path()">io.servicetalk.grpc.api.GrpcMetadata.path()</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/MethodDescriptor.html#httpPath()"><code>MethodDescriptor.httpPath()</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingRequestStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.BlockingRequestStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingRequestStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.BlockingRequestStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingRequestStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.BlockingRequestStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingRequestStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.BlockingRequestStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingRequestStreamingRoute(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.BlockingRequestStreamingRoute)"><code>GrpcRoutes.addBlockingRequestStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List, BlockingRequestStreamingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingRequestStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.BlockingRequestStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingRequestStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.BlockingRequestStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingRequestStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.BlockingRequestStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingRequestStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.BlockingRequestStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingStreamingRoute(java.lang.Class,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.BlockingStreamingRoute)"><code>GrpcRoutes.addBlockingStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, BlockingStreamingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingResponseStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.BlockingResponseStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingResponseStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.BlockingResponseStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingResponseStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.BlockingResponseStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingResponseStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.BlockingResponseStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingResponseStreamingRoute(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.BlockingResponseStreamingRoute)"><code>GrpcRoutes.addBlockingResponseStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List, BlockingResponseStreamingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingResponseStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.BlockingResponseStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingResponseStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.BlockingResponseStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingResponseStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.BlockingResponseStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingResponseStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.BlockingResponseStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingResponseStreamingRoute(java.lang.Class,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.BlockingResponseStreamingRoute)"><code>GrpcRoutes.addBlockingResponseStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, BlockingResponseStreamingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.BlockingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.BlockingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.BlockingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.BlockingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingRoute(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.BlockingRoute)"><code>GrpcRoutes.addBlockingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List, BlockingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.BlockingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.BlockingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.BlockingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.BlockingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingRoute(java.lang.Class,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.BlockingRoute)"><code>GrpcRoutes.addBlockingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, BlockingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.BlockingStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.BlockingStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.BlockingStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.BlockingStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingStreamingRoute(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.BlockingStreamingRoute)"><code>GrpcRoutes.addBlockingStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List, BlockingStreamingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.BlockingStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.BlockingStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.BlockingStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.BlockingStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingStreamingRoute(java.lang.Class,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.BlockingStreamingRoute)"><code>GrpcRoutes.addBlockingStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, BlockingStreamingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRequestStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.RequestStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addRequestStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.RequestStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRequestStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.RequestStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addRequestStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.RequestStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRequestStreamingRoute(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.RequestStreamingRoute)"><code>GrpcRoutes.addRequestStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List, RequestStreamingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRequestStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.RequestStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addRequestStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.RequestStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRequestStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.RequestStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addRequestStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.RequestStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRequestStreamingRoute(java.lang.Class,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.RequestStreamingRoute)"><code>GrpcRoutes.addRequestStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, RequestStreamingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addResponseStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.ResponseStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addResponseStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.ResponseStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addResponseStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.ResponseStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addResponseStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.ResponseStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addResponseStreamingRoute(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.ResponseStreamingRoute)"><code>GrpcRoutes.addResponseStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List, ResponseStreamingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addResponseStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.ResponseStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addResponseStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.ResponseStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addResponseStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.ResponseStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addResponseStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.ResponseStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addResponseStreamingRoute(java.lang.Class,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.ResponseStreamingRoute)"><code>GrpcRoutes.addResponseStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, ResponseStreamingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.Route,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.Route&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.Route,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.Route&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRoute(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.Route)"><code>GrpcRoutes.addRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List, Route)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.Route,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.Route&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.Route,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.Route&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRoute(java.lang.Class,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.Route)"><code>GrpcRoutes.addRoute(Class, MethodDescriptor, BufferDecoderGroup, List, Route)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.StreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.StreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.StreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.StreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addStreamingRoute(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.StreamingRoute)"><code>GrpcRoutes.addStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List, StreamingRoute)</code></a></div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.StreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.StreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.StreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.StreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addStreamingRoute(java.lang.Class,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.StreamingRoute)"><code>GrpcRoutes.addStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, StreamingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingResponseStreamingRoute.html#handle(io.servicetalk.grpc.api.GrpcServiceContext,Req,io.servicetalk.grpc.api.GrpcPayloadWriter)">io.servicetalk.grpc.api.GrpcRoutes.BlockingResponseStreamingRoute.handle<wbr>(GrpcServiceContext, Req, GrpcPayloadWriter&lt;Resp&gt;)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingResponseStreamingRoute.html#handle(io.servicetalk.grpc.api.GrpcServiceContext,Req,io.servicetalk.grpc.api.GrpcPayloadWriter)">io.servicetalk.grpc.api.GrpcRoutes.BlockingResponseStreamingRoute.handle<wbr>(GrpcServiceContext, Req, GrpcPayloadWriter&lt;Resp&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingResponseStreamingRoute.html#handle(io.servicetalk.grpc.api.GrpcServiceContext,Req,io.servicetalk.grpc.api.BlockingStreamingGrpcServerResponse)"><code>GrpcRoutes.BlockingResponseStreamingRoute.handle(GrpcServiceContext, Object, BlockingStreamingGrpcServerResponse)</code></a>.
  In the next release, this method will have a default implementation but the new overload won't. To avoid
  breaking API changes, make sure to implement both methods. The release after next will remove this method.
@@ -840,8 +846,8 @@ loadScripts(document, 'script');</script>
  Otherwise, the default <a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingResponseStreamingRoute.html#handle(io.servicetalk.grpc.api.GrpcServiceContext,Req,io.servicetalk.grpc.api.BlockingStreamingGrpcServerResponse)"><code>GrpcRoutes.BlockingResponseStreamingRoute.handle(GrpcServiceContext, Object, BlockingStreamingGrpcServerResponse)</code></a>
  implementation will be used.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingStreamingRoute.html#handle(io.servicetalk.grpc.api.GrpcServiceContext,io.servicetalk.concurrent.BlockingIterable,io.servicetalk.grpc.api.GrpcPayloadWriter)">io.servicetalk.grpc.api.GrpcRoutes.BlockingStreamingRoute.handle<wbr>(GrpcServiceContext, BlockingIterable&lt;Req&gt;, GrpcPayloadWriter&lt;Resp&gt;)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingStreamingRoute.html#handle(io.servicetalk.grpc.api.GrpcServiceContext,io.servicetalk.concurrent.BlockingIterable,io.servicetalk.grpc.api.GrpcPayloadWriter)">io.servicetalk.grpc.api.GrpcRoutes.BlockingStreamingRoute.handle<wbr>(GrpcServiceContext, BlockingIterable&lt;Req&gt;, GrpcPayloadWriter&lt;Resp&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingStreamingRoute.html#handle(io.servicetalk.grpc.api.GrpcServiceContext,io.servicetalk.concurrent.BlockingIterable,io.servicetalk.grpc.api.BlockingStreamingGrpcServerResponse)"><code>GrpcRoutes.BlockingStreamingRoute.handle(GrpcServiceContext, BlockingIterable, BlockingStreamingGrpcServerResponse)</code></a>.
  In the next release, this method will have a default implementation but the new overload won't. To avoid
  breaking API changes, make sure to implement both methods. The release after next will remove this method.
@@ -852,21 +858,26 @@ loadScripts(document, 'script');</script>
  <a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingStreamingRoute.html#handle(io.servicetalk.grpc.api.GrpcServiceContext,io.servicetalk.concurrent.BlockingIterable,io.servicetalk.grpc.api.BlockingStreamingGrpcServerResponse)"><code>GrpcRoutes.BlockingStreamingRoute.handle(GrpcServiceContext, BlockingIterable, BlockingStreamingGrpcServerResponse)</code></a> implementation
  will be used.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#newServiceFromRoutes(io.servicetalk.grpc.api.GrpcRoutes.AllGrpcRoutes)">io.servicetalk.grpc.api.GrpcRoutes.newServiceFromRoutes<wbr>(GrpcRoutes.AllGrpcRoutes)</a></div>
-<div class="col-last even-row-color">
-<div class="deprecation-comment">This method is not used starting from version 0.42.0 (see
- <a href="https://github.com/apple/servicetalk/pull/1893">PR#1893</a>), we plan to remove it in future releases.
- In case you have a use-case, let us know.</div>
-</div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#registerRoutes(Service)">io.servicetalk.grpc.api.GrpcRoutes.registerRoutes<wbr>(Service)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#newServiceFromRoutes(io.servicetalk.grpc.api.GrpcRoutes.AllGrpcRoutes)">io.servicetalk.grpc.api.GrpcRoutes.newServiceFromRoutes<wbr>(GrpcRoutes.AllGrpcRoutes)</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">This method is not used starting from version 0.42.0 (see
  <a href="https://github.com/apple/servicetalk/pull/1893">PR#1893</a>), we plan to remove it in future releases.
  In case you have a use-case, let us know.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcServiceContext.html#supportedMessageCodings()">io.servicetalk.grpc.api.GrpcServiceContext.supportedMessageCodings()</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#registerRoutes(Service)">io.servicetalk.grpc.api.GrpcRoutes.registerRoutes<wbr>(Service)</a></div>
 <div class="col-last even-row-color">
+<div class="deprecation-comment">This method is not used starting from version 0.42.0 (see
+ <a href="https://github.com/apple/servicetalk/pull/1893">PR#1893</a>), we plan to remove it in future releases.
+ In case you have a use-case, let us know.</div>
+</div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcServiceContext.html#supportedMessageCodings()">io.servicetalk.grpc.api.GrpcServiceContext.supportedMessageCodings()</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Will be removed along with <a href="io/servicetalk/encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api"><code>ContentCodec</code></a>.</div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcServiceFactory.html#bind(io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder,io.servicetalk.transport.api.ExecutionContext)">io.servicetalk.grpc.api.GrpcServiceFactory.bind<wbr>(GrpcServiceFactory.ServerBinder, ExecutionContext&lt;?&gt;)</a></div>
+<div class="col-last even-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcServiceFactory.html#bind(io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder,io.servicetalk.grpc.api.GrpcServiceConfig)"><code>GrpcServiceFactory.bind(ServerBinder, GrpcServiceConfig)</code></a>; this overload applies the default inbound
+ message-size limit.</div>
 </div>
 <div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcStatus.html#asException()">io.servicetalk.grpc.api.GrpcStatus.asException()</a></div>
 <div class="col-last odd-row-color">
@@ -1253,27 +1264,37 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/StreamingHttpRequest.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpStreamingDeserializer,io.servicetalk.http.api.HttpStreamingSerializer)"><code>StreamingHttpRequest.transformPayloadBody(Function, HttpStreamingDeserializer, HttpStreamingSerializer)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/StreamingHttpRequests.html#newTransportRequest(io.servicetalk.http.api.HttpRequestMethod,java.lang.String,io.servicetalk.http.api.HttpProtocolVersion,io.servicetalk.http.api.HttpHeaders,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Publisher,boolean,io.servicetalk.http.api.HttpHeadersFactory)">io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest<wbr>(HttpRequestMethod, String, HttpProtocolVersion, HttpHeaders, BufferAllocator, Publisher&lt;Object&gt;, boolean, HttpHeadersFactory)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/StreamingHttpRequests.html#newTransportRequest(io.servicetalk.http.api.HttpRequestMetaData,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Publisher,boolean,io.servicetalk.http.api.HttpHeadersFactory)">io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest<wbr>(HttpRequestMetaData, BufferAllocator, Publisher&lt;Object&gt;, boolean, HttpHeadersFactory)</a></div>
 <div class="col-last even-row-color">
-<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/StreamingHttpRequests.html#newTransportRequest(io.servicetalk.http.api.HttpRequestMetaData,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Publisher,boolean,io.servicetalk.http.api.HttpHeadersFactory)"><code>StreamingHttpRequests.newTransportRequest(HttpRequestMetaData, BufferAllocator, Publisher, boolean, HttpHeadersFactory)</code></a> instead.</div>
+<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/StreamingHttpRequests.html#newTransportRequest(io.servicetalk.http.api.HttpRequestMetaData,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Publisher,boolean,io.servicetalk.http.api.HttpHeadersFactory,java.util.function.LongConsumer)"><code>StreamingHttpRequests.newTransportRequest(HttpRequestMetaData, BufferAllocator, Publisher, boolean, HttpHeadersFactory, LongConsumer)</code></a> which allows bounding the size of the payload buffered during
+ aggregation. This overload leaves the aggregated payload unbounded.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/StreamingHttpResponse.html#encoding(io.servicetalk.encoding.api.ContentCodec)">io.servicetalk.http.api.StreamingHttpResponse.encoding<wbr>(ContentCodec)</a></div>
-<div class="col-last odd-row-color"></div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/StreamingHttpResponse.html#payloadBody(io.servicetalk.concurrent.api.Publisher,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.StreamingHttpResponse.payloadBody<wbr>(Publisher&lt;T&gt;, HttpSerializer&lt;T&gt;)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/StreamingHttpRequests.html#newTransportRequest(io.servicetalk.http.api.HttpRequestMethod,java.lang.String,io.servicetalk.http.api.HttpProtocolVersion,io.servicetalk.http.api.HttpHeaders,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Publisher,boolean,io.servicetalk.http.api.HttpHeadersFactory)">io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest<wbr>(HttpRequestMethod, String, HttpProtocolVersion, HttpHeaders, BufferAllocator, Publisher&lt;Object&gt;, boolean, HttpHeadersFactory)</a></div>
+<div class="col-last odd-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/StreamingHttpRequests.html#newTransportRequest(io.servicetalk.http.api.HttpRequestMetaData,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Publisher,boolean,io.servicetalk.http.api.HttpHeadersFactory,java.util.function.LongConsumer)"><code>StreamingHttpRequests.newTransportRequest(HttpRequestMetaData, BufferAllocator, Publisher, boolean, HttpHeadersFactory, LongConsumer)</code></a> instead.</div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/StreamingHttpResponse.html#encoding(io.servicetalk.encoding.api.ContentCodec)">io.servicetalk.http.api.StreamingHttpResponse.encoding<wbr>(ContentCodec)</a></div>
+<div class="col-last even-row-color"></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/StreamingHttpResponse.html#payloadBody(io.servicetalk.concurrent.api.Publisher,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.StreamingHttpResponse.payloadBody<wbr>(Publisher&lt;T&gt;, HttpSerializer&lt;T&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/StreamingHttpResponse.html#payloadBody(io.servicetalk.concurrent.api.Publisher,io.servicetalk.http.api.HttpStreamingSerializer)"><code>StreamingHttpResponse.payloadBody(Publisher, HttpStreamingSerializer)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/StreamingHttpResponse.html#payloadBody(io.servicetalk.http.api.HttpDeserializer)">io.servicetalk.http.api.StreamingHttpResponse.payloadBody<wbr>(HttpDeserializer&lt;T&gt;)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/StreamingHttpResponse.html#payloadBody(io.servicetalk.http.api.HttpDeserializer)">io.servicetalk.http.api.StreamingHttpResponse.payloadBody<wbr>(HttpDeserializer&lt;T&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/StreamingHttpResponse.html#payloadBody(io.servicetalk.http.api.HttpStreamingDeserializer)"><code>StreamingHttpResponse.payloadBody(HttpStreamingDeserializer)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/StreamingHttpResponse.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.StreamingHttpResponse.transformPayloadBody<wbr>(Function&lt;Publisher&lt;Buffer&gt;, Publisher&lt;T&gt;&gt;, HttpSerializer&lt;T&gt;)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/StreamingHttpResponse.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.StreamingHttpResponse.transformPayloadBody<wbr>(Function&lt;Publisher&lt;Buffer&gt;, Publisher&lt;T&gt;&gt;, HttpSerializer&lt;T&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/StreamingHttpResponse.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpStreamingSerializer)"><code>StreamingHttpResponse.transformPayloadBody(Function, HttpStreamingSerializer)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/StreamingHttpResponse.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpDeserializer,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.StreamingHttpResponse.transformPayloadBody<wbr>(Function&lt;Publisher&lt;T&gt;, Publisher&lt;R&gt;&gt;, HttpDeserializer&lt;T&gt;, HttpSerializer&lt;R&gt;)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/StreamingHttpResponse.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpDeserializer,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.StreamingHttpResponse.transformPayloadBody<wbr>(Function&lt;Publisher&lt;T&gt;, Publisher&lt;R&gt;&gt;, HttpDeserializer&lt;T&gt;, HttpSerializer&lt;R&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/StreamingHttpResponse.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpStreamingDeserializer,io.servicetalk.http.api.HttpStreamingSerializer)"><code>StreamingHttpResponse.transformPayloadBody(Function, HttpStreamingDeserializer, HttpStreamingSerializer)</code></a>.</div>
+</div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/StreamingHttpResponses.html#newTransportResponse(io.servicetalk.http.api.HttpResponseStatus,io.servicetalk.http.api.HttpProtocolVersion,io.servicetalk.http.api.HttpHeaders,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Publisher,boolean,io.servicetalk.http.api.HttpHeadersFactory)">io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse<wbr>(HttpResponseStatus, HttpProtocolVersion, HttpHeaders, BufferAllocator, Publisher&lt;Object&gt;, boolean, HttpHeadersFactory)</a></div>
+<div class="col-last odd-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/StreamingHttpResponses.html#newTransportResponse(io.servicetalk.http.api.HttpResponseStatus,io.servicetalk.http.api.HttpProtocolVersion,io.servicetalk.http.api.HttpHeaders,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Publisher,boolean,io.servicetalk.http.api.HttpHeadersFactory,java.util.function.LongConsumer)"><code>StreamingHttpResponses.newTransportResponse(HttpResponseStatus, HttpProtocolVersion, HttpHeaders, BufferAllocator, Publisher, boolean, HttpHeadersFactory, LongConsumer)</code></a> which allows bounding the
+ size of the payload buffered during aggregation. This overload leaves the aggregated payload unbounded.</div>
 </div>
 <div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/netty/DefaultHttpLoadBalancerFactory.Builder.html#fromDefaults()">io.servicetalk.http.netty.DefaultHttpLoadBalancerFactory.Builder.fromDefaults()</a></div>
 <div class="col-last even-row-color">

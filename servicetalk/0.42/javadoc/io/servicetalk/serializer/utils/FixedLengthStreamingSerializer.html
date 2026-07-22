@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -103,6 +103,13 @@ implements <a href="../api/StreamingSerializerDeserializer.html" title="interfac
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.serializer.api.SerializerDeserializer,java.util.function.ToIntFunction)" class="member-name-link">FixedLengthStreamingSerializer</a><wbr>(<a href="../api/SerializerDeserializer.html" title="interface in io.servicetalk.serializer.api">SerializerDeserializer</a>&lt;<a href="FixedLengthStreamingSerializer.html" title="type parameter in FixedLengthStreamingSerializer">T</a>&gt;&nbsp;serializer,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/ToIntFunction.html" title="class or interface in java.util.function" class="external-link">ToIntFunction</a>&lt;<a href="FixedLengthStreamingSerializer.html" title="type parameter in FixedLengthStreamingSerializer">T</a>&gt;&nbsp;bytesEstimator)</code></div>
 <div class="col-last even-row-color">
+<div class="block">Create a new instance that limits deserialized messages to the default maximum size
+ (4194304 bytes).</div>
+</div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.serializer.api.SerializerDeserializer,java.util.function.ToIntFunction,int)" class="member-name-link">FixedLengthStreamingSerializer</a><wbr>(<a href="../api/SerializerDeserializer.html" title="interface in io.servicetalk.serializer.api">SerializerDeserializer</a>&lt;<a href="FixedLengthStreamingSerializer.html" title="type parameter in FixedLengthStreamingSerializer">T</a>&gt;&nbsp;serializer,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/ToIntFunction.html" title="class or interface in java.util.function" class="external-link">ToIntFunction</a>&lt;<a href="FixedLengthStreamingSerializer.html" title="type parameter in FixedLengthStreamingSerializer">T</a>&gt;&nbsp;bytesEstimator,
+ int&nbsp;maxMessageSize)</code></div>
+<div class="col-last odd-row-color">
 <div class="block">Create a new instance.</div>
 </div>
 </div>
@@ -114,8 +121,8 @@ implements <a href="../api/StreamingSerializerDeserializer.html" title="interfac
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
-<div class="summary-table three-column-summary">
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -159,11 +166,35 @@ implements <a href="../api/StreamingSerializerDeserializer.html" title="interfac
 <h3>FixedLengthStreamingSerializer</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">FixedLengthStreamingSerializer</span><wbr><span class="parameters">(<a href="../api/SerializerDeserializer.html" title="interface in io.servicetalk.serializer.api">SerializerDeserializer</a>&lt;<a href="FixedLengthStreamingSerializer.html" title="type parameter in FixedLengthStreamingSerializer">T</a>&gt;&nbsp;serializer,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/ToIntFunction.html" title="class or interface in java.util.function" class="external-link">ToIntFunction</a>&lt;<a href="FixedLengthStreamingSerializer.html" title="type parameter in FixedLengthStreamingSerializer">T</a>&gt;&nbsp;bytesEstimator)</span></div>
+<div class="block">Create a new instance that limits deserialized messages to the default maximum size
+ (4194304 bytes). The default can be changed globally via the
+ "io.servicetalk.serializer.utils.temporaryDefaultMaxMessageSize" system property (a temporary property that will be
+ removed in a future release), which also accepts <code>-1</code> to enable warn-only mode globally (a rate-limited
+ log instead of rejecting). Use
+ <a href="#%3Cinit%3E(io.servicetalk.serializer.api.SerializerDeserializer,java.util.function.ToIntFunction,int)"><code>FixedLengthStreamingSerializer(SerializerDeserializer, ToIntFunction, int)</code></a> to configure a different
+ limit or disable it.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>serializer</code> - The <a href="../api/SerializerDeserializer.html" title="interface in io.servicetalk.serializer.api"><code>SerializerDeserializer</code></a> used to serialize/deserialize individual objects.</dd>
+<dd><code>bytesEstimator</code> - Provides the length in bytes for each <a href="FixedLengthStreamingSerializer.html" title="class in io.servicetalk.serializer.utils"><code>FixedLengthStreamingSerializer</code></a> being serialized.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="&lt;init&gt;(io.servicetalk.serializer.api.SerializerDeserializer,java.util.function.ToIntFunction,int)">
+<h3>FixedLengthStreamingSerializer</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">FixedLengthStreamingSerializer</span><wbr><span class="parameters">(<a href="../api/SerializerDeserializer.html" title="interface in io.servicetalk.serializer.api">SerializerDeserializer</a>&lt;<a href="FixedLengthStreamingSerializer.html" title="type parameter in FixedLengthStreamingSerializer">T</a>&gt;&nbsp;serializer,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/ToIntFunction.html" title="class or interface in java.util.function" class="external-link">ToIntFunction</a>&lt;<a href="FixedLengthStreamingSerializer.html" title="type parameter in FixedLengthStreamingSerializer">T</a>&gt;&nbsp;bytesEstimator,
+ int&nbsp;maxMessageSize)</span></div>
 <div class="block">Create a new instance.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>serializer</code> - The <a href="../api/SerializerDeserializer.html" title="interface in io.servicetalk.serializer.api"><code>SerializerDeserializer</code></a> used to serialize/deserialize individual objects.</dd>
 <dd><code>bytesEstimator</code> - Provides the length in bytes for each <a href="FixedLengthStreamingSerializer.html" title="class in io.servicetalk.serializer.utils"><code>FixedLengthStreamingSerializer</code></a> being serialized.</dd>
+<dd><code>maxMessageSize</code> - The maximum length (in bytes) declared by a frame's length prefix that will be accepted
+ during deserialization. A frame declaring a larger length is rejected with a
+ <a href="../api/MaxMessageSizeExceededException.html" title="class in io.servicetalk.serializer.api"><code>MaxMessageSizeExceededException</code></a> before any of its bytes are buffered.
+ <code>0</code> disables the limit and any positive value enforces it. Must be non-negative.</dd>
 </dl>
 </section>
 </li>

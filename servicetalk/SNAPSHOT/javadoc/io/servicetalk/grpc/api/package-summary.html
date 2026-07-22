@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="package-declaration-page">
@@ -73,8 +73,8 @@ loadScripts(document, 'script');</script>
 <li>
 <div id="class-summary">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="class-summary-tab0" role="tab" aria-selected="true" aria-controls="class-summary.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary', 2)" class="active-table-tab">All Classes and Interfaces</button><button id="class-summary-tab1" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab1', 2)" class="table-tab">Interfaces</button><button id="class-summary-tab2" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab2', 2)" class="table-tab">Classes</button><button id="class-summary-tab3" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab3', 2)" class="table-tab">Enum Classes</button><button id="class-summary-tab5" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab5', 2)" class="table-tab">Exceptions</button></div>
-<div id="class-summary.tabpanel" role="tabpanel" aria-labelledby="class-summary-tab0">
-<div class="summary-table two-column-summary">
+<div id="class-summary.tabpanel" role="tabpanel">
+<div class="summary-table two-column-summary" aria-labelledby="class-summary-tab0">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color class-summary class-summary-tab1"><a href="BlockingGrpcClient.html" title="interface in io.servicetalk.grpc.api">BlockingGrpcClient</a>&lt;Client extends <a href="GrpcClient.html" title="interface in io.servicetalk.grpc.api">GrpcClient</a>&gt;</div>
@@ -124,6 +124,15 @@ loadScripts(document, 'script');</script>
 <div class="block">An interface to create multiple <a href="https://www.grpc.io">gRPC</a> clients that share the underlying
  transport.</div>
 </div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="GrpcClientCallConfig.html" title="class in io.servicetalk.grpc.api">GrpcClientCallConfig</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="block">Configuration for a client <a href="GrpcClientCallFactory.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientCallFactory</code></a>: the shared message settings from <a href="GrpcConfig.html" title="class in io.servicetalk.grpc.api"><code>GrpcConfig</code></a> plus
+ client-only settings such as the default call timeout.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="GrpcClientCallConfig.Builder.html" title="class in io.servicetalk.grpc.api">GrpcClientCallConfig.Builder</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="block">Builder for <a href="GrpcClientCallConfig.html" title="class in io.servicetalk.grpc.api"><code>GrpcClientCallConfig</code></a>.</div>
+</div>
 <div class="col-first odd-row-color class-summary class-summary-tab1"><a href="GrpcClientCallFactory.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">A factory to create <a href="https://www.grpc.io">gRPC</a> client call objects for different
@@ -169,6 +178,15 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color class-summary class-summary-tab1"><a href="GrpcClientMetadata.html" title="interface in io.servicetalk.grpc.api">GrpcClientMetadata</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">Metadata for a <a href="https://www.grpc.io">gRPC</a> client call.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="GrpcConfig.html" title="class in io.servicetalk.grpc.api">GrpcConfig</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="block">Base <a href="https://www.grpc.io">gRPC</a> configuration shared by the client
+ (<a href="GrpcClientCallConfig.html" title="class in io.servicetalk.grpc.api"><code>GrpcClientCallConfig</code></a>) and server (<a href="GrpcServiceConfig.html" title="class in io.servicetalk.grpc.api"><code>GrpcServiceConfig</code></a>) binding entry points.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="GrpcConfig.Builder.html" title="class in io.servicetalk.grpc.api">GrpcConfig.Builder</a>&lt;B extends <a href="GrpcConfig.Builder.html" title="class in io.servicetalk.grpc.api">GrpcConfig.Builder</a>&lt;B&gt;&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="block">Base builder for <a href="GrpcConfig.html" title="class in io.servicetalk.grpc.api"><code>GrpcConfig</code></a> subtypes.</div>
 </div>
 <div class="col-first even-row-color class-summary class-summary-tab2"><a href="GrpcExceptionMapperServiceFilter.html" title="class in io.servicetalk.grpc.api">GrpcExceptionMapperServiceFilter</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
@@ -298,6 +316,15 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color class-summary class-summary-tab1"><a href="GrpcService.html" title="interface in io.servicetalk.grpc.api">GrpcService</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">A <a href="https://www.grpc.io">gRPC</a> service.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="GrpcServiceConfig.html" title="class in io.servicetalk.grpc.api">GrpcServiceConfig</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="block">Configuration for binding a <a href="GrpcServiceFactory.html" title="class in io.servicetalk.grpc.api"><code>GrpcServiceFactory</code></a> to a server: the shared message settings from
+ <a href="GrpcConfig.html" title="class in io.servicetalk.grpc.api"><code>GrpcConfig</code></a> plus the <a href="GrpcExecutionContext.html" title="interface in io.servicetalk.grpc.api"><code>GrpcExecutionContext</code></a> the bound service runs on.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="GrpcServiceConfig.Builder.html" title="class in io.servicetalk.grpc.api">GrpcServiceConfig.Builder</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="block">Builder for <a href="GrpcServiceConfig.html" title="class in io.servicetalk.grpc.api"><code>GrpcServiceConfig</code></a>.</div>
 </div>
 <div class="col-first even-row-color class-summary class-summary-tab1"><a href="GrpcServiceContext.html" title="interface in io.servicetalk.grpc.api">GrpcServiceContext</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab1">

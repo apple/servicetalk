@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -108,8 +108,8 @@ implements <a href="HttpServerBuilder.html" title="interface in io.servicetalk.h
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
-<div class="summary-table three-column-summary">
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -260,52 +260,57 @@ implements <a href="HttpServerBuilder.html" title="interface in io.servicetalk.h
 <div class="block">Starts this server and returns the <a href="HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a> after the server has been successfully started.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#protocols(io.servicetalk.http.api.HttpProtocolConfig...)" class="member-name-link">protocols</a><wbr>(<a href="HttpProtocolConfig.html" title="interface in io.servicetalk.http.api">HttpProtocolConfig</a>...&nbsp;protocols)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#maxAggregatedPayloadSize(int)" class="member-name-link">maxAggregatedPayloadSize</a><wbr>(int&nbsp;maxAggregatedPayloadSize)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Sets the maximum size, in bytes, of an aggregated request payload body that this server will buffer in memory.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#protocols(io.servicetalk.http.api.HttpProtocolConfig...)" class="member-name-link">protocols</a><wbr>(<a href="HttpProtocolConfig.html" title="interface in io.servicetalk.http.api">HttpProtocolConfig</a>...&nbsp;protocols)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Configurations of various HTTP protocol versions.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;T&gt;&nbsp;<a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#socketOption(java.net.SocketOption,T)" class="member-name-link">socketOption</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketOption.html" title="class or interface in java.net" class="external-link">SocketOption</a>&lt;T&gt;&nbsp;option,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;T&gt;&nbsp;<a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#socketOption(java.net.SocketOption,T)" class="member-name-link">socketOption</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketOption.html" title="class or interface in java.net" class="external-link">SocketOption</a>&lt;T&gt;&nbsp;option,
  T&nbsp;value)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Adds a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketOption.html" title="class or interface in java.net" class="external-link"><code>SocketOption</code></a> that is applied to connected/accepted socket channels.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig(io.servicetalk.transport.api.ServerSslConfig)" class="member-name-link">sslConfig</a><wbr>(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;config)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig(io.servicetalk.transport.api.ServerSslConfig)" class="member-name-link">sslConfig</a><wbr>(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;config)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the SSL/TLS configuration.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig(io.servicetalk.transport.api.ServerSslConfig,boolean)" class="member-name-link">sslConfig</a><wbr>(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;config,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig(io.servicetalk.transport.api.ServerSslConfig,boolean)" class="member-name-link">sslConfig</a><wbr>(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;config,
  boolean&nbsp;acceptInsecureConnections)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the SSL/TLS configuration and allows to specify if insecure connections should also be allowed.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map)" class="member-name-link">sslConfig</a><wbr>(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;defaultConfig,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map)" class="member-name-link">sslConfig</a><wbr>(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;defaultConfig,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&gt;&nbsp;sniMap)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map,int,java.time.Duration)" class="member-name-link">sslConfig</a><wbr>(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;defaultConfig,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map,int,java.time.Duration)" class="member-name-link">sslConfig</a><wbr>(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;defaultConfig,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&gt;&nbsp;sniMap,
  int&nbsp;maxClientHelloLength,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;clientHelloTimeout)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#transportConfig(io.servicetalk.transport.api.TransportConfig)" class="member-name-link">transportConfig</a><wbr>(<a href="../../transport/api/TransportConfig.html" title="interface in io.servicetalk.transport.api">TransportConfig</a>&nbsp;transportConfig)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#transportConfig(io.servicetalk.transport.api.TransportConfig)" class="member-name-link">transportConfig</a><wbr>(<a href="../../transport/api/TransportConfig.html" title="interface in io.servicetalk.transport.api">TransportConfig</a>&nbsp;transportConfig)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the transport configuration.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#transportObserver(io.servicetalk.transport.api.TransportObserver)" class="member-name-link">transportObserver</a><wbr>(<a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a>&nbsp;transportObserver)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#transportObserver(io.servicetalk.transport.api.TransportObserver)" class="member-name-link">transportObserver</a><wbr>(<a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a>&nbsp;transportObserver)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Sets a <a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a> that provides visibility into transport events.</div>
 </div>
 </div>
@@ -644,6 +649,37 @@ implements <a href="HttpServerBuilder.html" title="interface in io.servicetalk.h
 <dt>Parameters:</dt>
 <dd><code>allowDrop</code> - <code>true</code> if request <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailers</a>
  are allowed to be dropped.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="maxAggregatedPayloadSize(int)">
+<h3>maxAggregatedPayloadSize</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></span>&nbsp;<span class="element-name">maxAggregatedPayloadSize</span><wbr><span class="parameters">(int&nbsp;maxAggregatedPayloadSize)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="HttpServerBuilder.html#maxAggregatedPayloadSize(int)">HttpServerBuilder</a></code></span></div>
+<div class="block">Sets the maximum size, in bytes, of an aggregated request payload body that this server will buffer in memory.
+ <p>
+ The limit applies only when a request is <strong>aggregated</strong> (an <a href="HttpRequest.html" title="interface in io.servicetalk.http.api"><code>aggregated
+ programming paradigm</code></a> or a filter calling <a href="StreamingHttpRequest.html#toRequest()"><code>StreamingHttpRequest.toRequest()</code></a>); requests consumed as a
+ <a href="StreamingHttpRequest.html#payloadBody()"><code>stream</code></a> are not affected. Exceeding it raises a
+ <a href="PayloadTooLargeException.html" title="class in io.servicetalk.http.api"><code>PayloadTooLargeException</code></a>, which the default exception mapping turns into a
+ <a href="HttpResponseStatus.html#PAYLOAD_TOO_LARGE"><code>413 Payload Too Large</code></a> response. The limit is measured against the
+ fully decoded payload at the point of aggregation &mdash; <em>after</em> any decompression or body transformation
+ by earlier filters &mdash; not the bytes received from the network nor any declared <code>Content-Length</code>.
+ <p>
+ The default is 4 MiB, overridable globally via the temporary
+ <code>io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize</code> system property, which also accepts
+ <code>-1</code> for warn-only mode (oversized requests are served but logged); an explicit call here always takes
+ precedence and is enforced. For an opt-in limit that fails fast on <code>Content-Length</code>, see
+ <code>PayloadSizeLimitingHttpServiceFilter</code>; both apply.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="HttpServerBuilder.html#maxAggregatedPayloadSize(int)">maxAggregatedPayloadSize</a></code>&nbsp;in interface&nbsp;<code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>maxAggregatedPayloadSize</code> - the maximum number of payload bytes to buffer when a request is aggregated;
+ <code>0</code> disables the limit. Must be non-negative.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code></dd>
 </dl>

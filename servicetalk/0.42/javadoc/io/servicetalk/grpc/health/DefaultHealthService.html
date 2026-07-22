@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -129,6 +129,11 @@ implements <a href="../../health/v1/Health.HealthService.html" title="interface 
 <div class="col-last odd-row-color">
 <div class="block">Create a new instance.</div>
 </div>
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.util.function.Predicate,int)" class="member-name-link">DefaultHealthService</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;watchAllowed,
+ int&nbsp;maxServices)</code></div>
+<div class="col-last even-row-color">
+<div class="block">Create a new instance.</div>
+</div>
 </div>
 </section>
 </li>
@@ -138,8 +143,8 @@ implements <a href="../../health/v1/Health.HealthService.html" title="interface 
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
-<div class="summary-table three-column-summary">
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -229,7 +234,13 @@ implements <a href="../../health/v1/Health.HealthService.html" title="interface 
 <section class="detail" id="&lt;init&gt;()">
 <h3>DefaultHealthService</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">DefaultHealthService</span>()</div>
-<div class="block">Create a new instance. Service <a href="#OVERALL_SERVICE_NAME"><code>OVERALL_SERVICE_NAME</code></a> state is set to <a href="../../health/v1/HealthCheckResponse.ServingStatus.html#SERVING"><code>HealthCheckResponse.ServingStatus.SERVING</code></a>.</div>
+<div class="block">Create a new instance. Service <a href="#OVERALL_SERVICE_NAME"><code>OVERALL_SERVICE_NAME</code></a> state is set to <a href="../../health/v1/HealthCheckResponse.ServingStatus.html#SERVING"><code>HealthCheckResponse.ServingStatus.SERVING</code></a>.
+ <p>
+ Watches are permitted for any service name. The number of tracked services is bounded by a default limit of
+ 1000; once reached, a <a href="#watch(io.servicetalk.grpc.api.GrpcServiceContext,io.servicetalk.health.v1.HealthCheckRequest)"><code>watch(GrpcServiceContext, HealthCheckRequest)</code></a> for a
+ service that isn't already known fails with <a href="../api/GrpcStatusCode.html#RESOURCE_EXHAUSTED"><code>GrpcStatusCode.RESOURCE_EXHAUSTED</code></a>. Use
+ <a href="#%3Cinit%3E(java.util.function.Predicate)"><code>DefaultHealthService(Predicate)</code></a> to restrict which service names may be watched, or
+ <a href="#%3Cinit%3E(java.util.function.Predicate,int)"><code>DefaultHealthService(Predicate, int)</code></a> to also configure the limit.</div>
 </section>
 </li>
 <li>
@@ -242,7 +253,27 @@ implements <a href="../../health/v1/Health.HealthService.html" title="interface 
 <dd><code>watchAllowed</code> - <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link"><code>Predicate</code></a> that determines if a <a href="#watch(io.servicetalk.grpc.api.GrpcServiceContext,io.servicetalk.health.v1.HealthCheckRequest)"><code>watch(GrpcServiceContext, HealthCheckRequest)</code></a>
  request that doesn't match an existing service will succeed or fail with
  <a href="../api/GrpcStatusCode.html#FAILED_PRECONDITION"><code>GrpcStatusCode.FAILED_PRECONDITION</code></a>. This can be used to bound memory by restricting watches to expected
+ service names. The number of tracked services is additionally bounded by a default limit of
+ 1000; use <a href="#%3Cinit%3E(java.util.function.Predicate,int)"><code>DefaultHealthService(Predicate, int)</code></a> to configure it.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="&lt;init&gt;(java.util.function.Predicate,int)">
+<h3>DefaultHealthService</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">DefaultHealthService</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;watchAllowed,
+ int&nbsp;maxServices)</span></div>
+<div class="block">Create a new instance. Service <a href="#OVERALL_SERVICE_NAME"><code>OVERALL_SERVICE_NAME</code></a> state is set to <a href="../../health/v1/HealthCheckResponse.ServingStatus.html#SERVING"><code>HealthCheckResponse.ServingStatus.SERVING</code></a>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>watchAllowed</code> - <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link"><code>Predicate</code></a> that determines if a <a href="#watch(io.servicetalk.grpc.api.GrpcServiceContext,io.servicetalk.health.v1.HealthCheckRequest)"><code>watch(GrpcServiceContext, HealthCheckRequest)</code></a>
+ request that doesn't match an existing service will succeed or fail with
+ <a href="../api/GrpcStatusCode.html#FAILED_PRECONDITION"><code>GrpcStatusCode.FAILED_PRECONDITION</code></a>. This can be used to bound memory by restricting watches to expected
  service names.</dd>
+<dd><code>maxServices</code> - Upper bound on the number of services tracked, counting both services registered via
+ <a href="#setStatus(java.lang.String,io.servicetalk.health.v1.HealthCheckResponse.ServingStatus)"><code>setStatus(String, ServingStatus)</code></a> and services created by <a href="#watch(io.servicetalk.grpc.api.GrpcServiceContext,io.servicetalk.health.v1.HealthCheckRequest)"><code>watch(GrpcServiceContext, HealthCheckRequest)</code></a>. A <a href="#watch(io.servicetalk.grpc.api.GrpcServiceContext,io.servicetalk.health.v1.HealthCheckRequest)"><code>watch(GrpcServiceContext, HealthCheckRequest)</code></a> request for a service that isn't
+ already known will fail with <a href="../api/GrpcStatusCode.html#RESOURCE_EXHAUSTED"><code>GrpcStatusCode.RESOURCE_EXHAUSTED</code></a> once this limit is reached. Must be
+ positive, and should be sized above the number of services the server registers.</dd>
 </dl>
 </section>
 </li>

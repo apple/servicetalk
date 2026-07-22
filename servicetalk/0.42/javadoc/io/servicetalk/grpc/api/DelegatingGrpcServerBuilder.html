@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -115,8 +115,8 @@ implements <a href="GrpcServerBuilder.html" title="interface in io.servicetalk.g
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
-<div class="summary-table three-column-summary">
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -166,9 +166,14 @@ implements <a href="GrpcServerBuilder.html" title="interface in io.servicetalk.g
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Starts this server and returns the <a href="GrpcServerContext.html" title="interface in io.servicetalk.grpc.api"><code>GrpcServerContext</code></a> after the server has been successfully started.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="GrpcServerBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#maxInboundMessageSize(int)" class="member-name-link">maxInboundMessageSize</a><wbr>(int&nbsp;maxInboundMessageSize)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Set the maximum size, in bytes, of a decoded inbound (request) gRPC message that this server will accept.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
@@ -284,6 +289,32 @@ implements <a href="GrpcServerBuilder.html" title="interface in io.servicetalk.g
  before any offloading filters) or
  <a href="../../http/api/HttpServerBuilder.html#appendServiceFilter(io.servicetalk.http.api.StreamingHttpServiceFilterFactory)"><code>HttpServerBuilder.appendServiceFilter(StreamingHttpServiceFilterFactory)</code></a> (if you require different
  ordering).</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="maxInboundMessageSize(int)">
+<h3>maxInboundMessageSize</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="GrpcServerBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcServerBuilder</a></span>&nbsp;<span class="element-name">maxInboundMessageSize</span><wbr><span class="parameters">(int&nbsp;maxInboundMessageSize)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="GrpcServerBuilder.html#maxInboundMessageSize(int)">GrpcServerBuilder</a></code></span></div>
+<div class="block">Set the maximum size, in bytes, of a decoded inbound (request) gRPC message that this server will accept.
+ Messages whose declared length exceeds this limit are rejected with
+ <a href="GrpcStatusCode.html#RESOURCE_EXHAUSTED"><code>GrpcStatusCode.RESOURCE_EXHAUSTED</code></a> before their payload is buffered, bounding the memory a peer can
+ cause this server to allocate. The default is 4 MiB (matching grpc-java) and can be changed globally via the
+ <code>io.servicetalk.grpc.netty.temporaryDefaultMaxInboundMessageSize</code> system property (a temporary property
+ that will be removed in a future release), which also accepts <code>-1</code> to enable warn-only mode globally (a
+ rate-limited log instead of rejecting).
+ <p>
+ For a compressed message this bounds the on-wire length and the decoded length. The memory used while
+ decompressing is bounded separately by the codec's own decompressed-bytes cap, not by this limit.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="GrpcServerBuilder.html#maxInboundMessageSize(int)">maxInboundMessageSize</a></code>&nbsp;in interface&nbsp;<code><a href="GrpcServerBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>maxInboundMessageSize</code> - the maximum inbound message size in bytes: <code>0</code> disables the limit and any
+ positive value enforces it. Must be non-negative.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
 </dl>

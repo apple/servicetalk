@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -107,8 +107,8 @@ loadScripts(document, 'script');</script>
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
-<div class="summary-table three-column-summary">
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -122,6 +122,11 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Sets an initializer for <a href="HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a> related to
  <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-9.3.6">HTTP/1.1 CONNECT</a> request.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="ProxyConfigBuilder.html" title="class in io.servicetalk.http.api">ProxyConfigBuilder</a>&lt;<a href="ProxyConfigBuilder.html" title="type parameter in ProxyConfigBuilder">A</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig(io.servicetalk.transport.api.ClientSslConfig)" class="member-name-link">sslConfig</a><wbr>(<a href="../../transport/api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api">ClientSslConfig</a>&nbsp;sslConfig)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Sets the <a href="../../transport/api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ClientSslConfig</code></a> for the TLS handshake to the proxy itself.</div>
 </div>
 </div>
 </div>
@@ -181,6 +186,52 @@ loadScripts(document, 'script');</script>
 <dd>
 <ul class="see-list-long">
 <li><a href="ProxyConfig.html#connectRequestHeadersInitializer()"><code>ProxyConfig.connectRequestHeadersInitializer()</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="sslConfig(io.servicetalk.transport.api.ClientSslConfig)">
+<h3>sslConfig</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="ProxyConfigBuilder.html" title="class in io.servicetalk.http.api">ProxyConfigBuilder</a>&lt;<a href="ProxyConfigBuilder.html" title="type parameter in ProxyConfigBuilder">A</a>&gt;</span>&nbsp;<span class="element-name">sslConfig</span><wbr><span class="parameters">(@Nullable
+ <a href="../../transport/api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api">ClientSslConfig</a>&nbsp;sslConfig)</span></div>
+<div class="block">Sets the <a href="../../transport/api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ClientSslConfig</code></a> for the TLS handshake to the proxy itself.
+ <p>
+ Distinct from the origin SSL config configured via
+ <a href="SingleAddressHttpClientBuilder.html#sslConfig(io.servicetalk.transport.api.ClientSslConfig)"><code>SingleAddressHttpClientBuilder.sslConfig(ClientSslConfig)</code></a>, which applies to the inner TLS handshake
+ performed after the <code>HTTP/1.1 CONNECT</code> tunnel is established. <code>peerHost</code>, <code>peerPort</code>,
+ and <code>sniHostname</code> default from the proxy <a href="ProxyConfig.html#address()"><code>address</code></a> when unset; ALPN is
+ restricted to <code>http/1.1</code>. See <a href="ProxyConfig.html#sslConfig()"><code>ProxyConfig.sslConfig()</code></a> for details.
+ <p>
+ <strong>Note on proxy mode (CONNECT vs forward):</strong> ServiceTalk currently does not have an
+ explicit knob for selecting CONNECT-proxy vs forward-proxy semantics. The choice is implicitly
+ determined by whether the parent
+ <a href="SingleAddressHttpClientBuilder.html#sslConfig(io.servicetalk.transport.api.ClientSslConfig)"><code>origin SSL</code></a> is set:
+ setting it routes through <code>CONNECT</code>; leaving it unset routes through forward-proxy mode
+ (absolute-URI request lines). Proxy SSL set here is orthogonal — it applies to the hop to the proxy
+ regardless of which mode was inferred. Supported combinations:
+ <ul>
+   <li>proxy SSL no, origin SSL no  → plaintext forward proxy</li>
+   <li>proxy SSL no, origin SSL yes → plaintext CONNECT, inner TLS to origin</li>
+   <li>proxy SSL yes, origin SSL yes → TLS to CONNECT proxy, inner TLS to origin (layered TLS)</li>
+ </ul>
+ <p>
+ The combination "proxy SSL set + origin SSL unset" is rejected at build time
+ (<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/IllegalStateException.html" title="class or interface in java.lang" class="external-link"><code>IllegalStateException</code></a>) as this makes it difficult to reason about security.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>sslConfig</code> - the <a href="../../transport/api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ClientSslConfig</code></a> for the proxy TLS stage, or <code>null</code> for plaintext to the proxy.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
+<dt>Throws:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if <code>sslConfig</code> advertises any ALPN protocol other than <code>http/1.1</code>.
+ The proxy TLS session always carries an HTTP/1.1 CONNECT exchange, so any non-<code>http/1.1</code> ALPN advertised
+ here would risk the proxy negotiating a protocol on which CONNECT is not defined.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="ProxyConfig.html#sslConfig()"><code>ProxyConfig.sslConfig()</code></a></li>
 </ul>
 </dd>
 </dl>

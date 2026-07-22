@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -80,8 +80,13 @@ loadScripts(document, 'script');</script>
 <dt>All Known Implementing Classes:</dt>
 <dd><code><a href="DefaultStreamingHttpRequestResponseFactory.html" title="class in io.servicetalk.http.api">DefaultStreamingHttpRequestResponseFactory</a></code>, <code><a href="DelegatingFilterableStreamingHttpLoadBalancedConnection.html" title="class in io.servicetalk.http.api">DelegatingFilterableStreamingHttpLoadBalancedConnection</a></code>, <code><a href="HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection.html" title="class in io.servicetalk.http.api">HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection</a></code>, <code><a href="ReservedStreamingHttpConnectionFilter.html" title="class in io.servicetalk.http.api">ReservedStreamingHttpConnectionFilter</a></code>, <code><a href="StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api">StreamingHttpClientFilter</a></code>, <code><a href="StreamingHttpConnectionFilter.html" title="class in io.servicetalk.http.api">StreamingHttpConnectionFilter</a></code></dd>
 </dl>
+<dl class="notes">
+<dt>Functional Interface:</dt>
+<dd>This is a functional interface and can therefore be used as the assignment target for a lambda expression or method reference.</dd>
+</dl>
 <hr>
-<div class="type-signature"><span class="modifiers">public interface </span><span class="element-name type-name-label">StreamingHttpRequestFactory</span></div>
+<div class="type-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/FunctionalInterface.html" title="class or interface in java.lang" class="external-link">@FunctionalInterface</a>
+</span><span class="modifiers">public interface </span><span class="element-name type-name-label">StreamingHttpRequestFactory</span></div>
 <div class="block">A factory for creating <a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpRequest</code></a>s.</div>
 </section>
 <section class="summary">
@@ -92,8 +97,8 @@ loadScripts(document, 'script');</script>
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button><button id="method-summary-table-tab5" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab5', 3)" class="table-tab">Default Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
-<div class="summary-table three-column-summary">
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
