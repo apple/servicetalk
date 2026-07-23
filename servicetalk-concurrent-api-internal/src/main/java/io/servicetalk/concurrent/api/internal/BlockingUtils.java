@@ -64,16 +64,7 @@ public final class BlockingUtils {
      * @throws Exception InterrupedException upon interruption or unchecked exceptions for any other exception.
      */
     public static <T> T blockingInvocation(Single<T> source) throws Exception {
-        // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So
-        // we don't apply any explicit timeout here and just wait forever.
-        try {
-            return source.toFuture().get();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw e;
-        } catch (final ExecutionException e) {
-            return throwException(executionExceptionCause(e));
-        }
+        return futureGetCancelOnInterrupt(source.toFuture());
     }
 
     /**
@@ -84,16 +75,7 @@ public final class BlockingUtils {
      * @throws Exception unchecked exceptions for any exception that occurs.
      */
     public static void blockingInvocation(Completable source) throws Exception {
-        // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So
-        // we don't apply any explicit timeout here and just wait forever.
-        try {
-            source.toFuture().get();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw e;
-        } catch (final ExecutionException e) {
-            throwException(executionExceptionCause(e));
-        }
+        futureGetCancelOnInterrupt(source.toFuture());
     }
 
     private static Throwable executionExceptionCause(ExecutionException original) {
