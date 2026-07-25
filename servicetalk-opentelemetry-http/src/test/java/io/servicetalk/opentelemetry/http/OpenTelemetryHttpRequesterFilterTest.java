@@ -463,6 +463,8 @@ class OpenTelemetryHttpRequesterFilterTest {
                     Future<HttpResponse> result = client.request(client.get("/slow")).toFuture();
                     TestUtils.sleep(20);
                     result.cancel(true);
+                    // onExchangeFinally() observes the complete dispatch lifecycle and may run after the tracing
+                    // span ends, which only covers request sent through response received.
                     assertTrue(lifecycleObserver.awaitExchangeFinally(10, SECONDS));
                     sleep();
                     otelTesting.assertTraces().hasTracesSatisfyingExactly(ta ->
