@@ -15,6 +15,10 @@
  */
 package io.servicetalk.http.netty;
 
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.IoEventLoopGroup;
+import io.netty.channel.uring.IoUring;
+import io.netty.channel.uring.IoUringIoHandler;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
@@ -22,9 +26,6 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 import io.servicetalk.transport.netty.internal.IoUringUtils;
 import io.servicetalk.transport.netty.internal.NettyIoExecutors;
-
-import io.netty.incubator.channel.uring.IOUring;
-import io.netty.incubator.channel.uring.IOUringEventLoopGroup;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -50,8 +51,8 @@ class IoUringTest {
 
     @Test
     @EnabledOnOs(MAC)
-    void ioUringIsNotAvailableOnMacOs() {
-        assertFalse(IOUring.isAvailable());
+    void testIoUringIsNotAvailableOnMacOs() {
+        assertFalse(IoUring.isAvailable());
         try {
             IoUringUtils.tryIoUring(false);
             assertFalse(IoUringUtils.isAvailable());
@@ -65,16 +66,18 @@ class IoUringTest {
     @ParameterizedTest(name = "{displayName} [{index}] noOffloading={0}")
     @ValueSource(booleans = {false, true})
     @EnabledOnOs(LINUX)
-    void ioUringIsAvailableOnLinux(boolean noOffloading) throws Exception {
+    void testIoUringIsAvailableOnLinux(boolean noOffloading) throws Exception {
         EventLoopAwareNettyIoExecutor ioUringExecutor = null;
         try {
             IoUringUtils.tryIoUring(true);
             assumeTrue(IoUringUtils.isAvailable(), "io_uring is unavailable on " +
                     System.getProperty("os.name") + ' ' + System.getProperty("os.version"));
-            IOUring.ensureAvailability();
+            IoUring.ensureAvailability();
 
             ioUringExecutor = NettyIoExecutors.createIoExecutor(2, "io-uring");
-            assertThat(ioUringExecutor.eventLoopGroup(), is(instanceOf(IOUringEventLoopGroup.class)));
+            EventLoopGroup group = ioUringExecutor.eventLoopGroup();
+            assertThat(group, is(instanceOf(IoEventLoopGroup.class)));
+            assertThat(((IoEventLoopGroup) group).isIoType(IoUringIoHandler.class), is(true));
 
             try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                     .ioExecutor(ioUringExecutor)

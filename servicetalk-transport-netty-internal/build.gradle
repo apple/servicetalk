@@ -17,6 +17,7 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 ext.isNettySnapshot = "$nettyVersion".endsWithAny("SNAPSHOT", "+")
+ext.isNettyIoUringSupported = "$nettyVersion".startsWithAny("4.2.")
 
 dependencies {
   api platform("io.netty:netty-bom:$nettyVersion")
@@ -39,11 +40,12 @@ dependencies {
   implementation project(":servicetalk-utils-internal")
   implementation "io.netty:netty-codec"
   implementation "io.netty:netty-transport-classes-epoll"
+  if (project.ext.isNettyIoUringSupported) {
+    implementation "io.netty:netty-transport-classes-io_uring"
+  }
   implementation "io.netty:netty-transport-classes-kqueue"
   implementation "io.netty:netty-transport-native-unix-common"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
-
-  compileOnly "io.netty.incubator:netty-incubator-transport-classes-io_uring:$nettyIoUringVersion"
 
   runtimeOnly (group:"io.netty", name:"netty-tcnative-boringssl-static", classifier:"linux-x86_64")
   runtimeOnly (group:"io.netty", name:"netty-tcnative-boringssl-static", classifier:"linux-aarch_64")
@@ -52,6 +54,11 @@ dependencies {
   runtimeOnly "io.netty:netty-transport-native-epoll"
   runtimeOnly (group:"io.netty", name:"netty-transport-native-epoll", classifier:"linux-x86_64")
   runtimeOnly (group:"io.netty", name:"netty-transport-native-epoll", classifier:"linux-aarch_64")
+  if (project.ext.isNettyIoUringSupported) {
+    runtimeOnly "io.netty:netty-transport-native-io_uring"
+    runtimeOnly (group:"io.netty", name:"netty-transport-native-io_uring", classifier:"linux-x86_64")
+    runtimeOnly (group:"io.netty", name:"netty-transport-native-io_uring", classifier:"linux-aarch_64")
+  }
   runtimeOnly "io.netty:netty-transport-native-kqueue"
   if (!project.ext.isNettySnapshot) {
     // Netty doesn't publish snapshots for macos artifacts
@@ -80,11 +87,12 @@ dependencies {
   testFixturesApi "io.netty:netty-transport"
   testFixturesApi "org.junit.jupiter:junit-jupiter-api"
 
-  testFixturesCompileOnly "io.netty.incubator:netty-incubator-transport-classes-io_uring:$nettyIoUringVersion"
-
   testFixturesImplementation project(":servicetalk-buffer-netty")
   testFixturesImplementation project(":servicetalk-utils-internal")
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  if (project.ext.isNettyIoUringSupported) {
+    testFixturesImplementation "io.netty:netty-transport-classes-io_uring"
+  }
   testFixturesImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testFixturesImplementation "org.slf4j:slf4j-api:$slf4jVersion"
 }

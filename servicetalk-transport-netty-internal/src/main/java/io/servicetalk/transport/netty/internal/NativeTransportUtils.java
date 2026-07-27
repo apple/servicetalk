@@ -21,12 +21,15 @@ import io.servicetalk.utils.internal.PlatformDependent;
 
 import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.IoEventLoopGroup;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollIoHandler;
 import io.netty.channel.kqueue.KQueue;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
-import io.netty.incubator.channel.uring.IOUring;
-import io.netty.incubator.channel.uring.IOUringEventLoopGroup;
+import io.netty.channel.kqueue.KQueueIoHandler;
+import io.netty.channel.uring.IoUring;
+import io.netty.channel.uring.IoUringIoHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,12 +107,12 @@ final class NativeTransportUtils {
     }
 
     /**
-     * Determine if {@link IOUring} is available.
+     * Determine if {@link IoUring} is available.
      *
-     * @return {@code true} if {@link IOUring} is available
+     * @return {@code true} if {@link IoUring} is available
      */
     static boolean isIoUringAvailable() {
-        return IS_LINUX && TRY_IO_URING.get() && IOUring.isAvailable();
+        return IS_LINUX && TRY_IO_URING.get() && IoUring.isAvailable();
     }
 
     /**
@@ -131,19 +134,22 @@ final class NativeTransportUtils {
     }
 
     /**
-     * Returns {@code true} if native {@link IOUring} transport could be used.
+     * Returns {@code true} if native {@link IoUring} transport could be used.
      *
      * @param group the used {@link EventLoopGroup}
-     * @return {@code true} if native {@link IOUring} transport could be used
+     * @return {@code true} if native {@link IoUring} transport could be used
      */
     static boolean useIoUring(final EventLoopGroup group) {
         if (!isIoUringAvailable()) {
             return false;
         }
-        // Check if we should use the io_uring transport. This is true if either the IOUringEventLoopGroup is used
-        // directly or if the passed group is an EventLoop and it's parent is an IOUringEventLoopGroup.
-        return group instanceof IOUringEventLoopGroup || (group instanceof EventLoop &&
-                ((EventLoop) group).parent() instanceof IOUringEventLoopGroup);
+        // Check if we should use the io_uring transport. This is true if either the IoUringEventLoopGroup is used
+        // directly or if the passed group is an EventLoop and it's parent is an IoUringEventLoopGroup.
+        return isIoUringGroup(group) || (group instanceof EventLoop && isIoUringGroup(((EventLoop) group).parent()));
+    }
+
+    private static boolean isIoUringGroup(final EventLoopGroup group) {
+        return group instanceof IoEventLoopGroup && ((IoEventLoopGroup) group).isIoType(IoUringIoHandler.class);
     }
 
     /**
@@ -158,8 +164,13 @@ final class NativeTransportUtils {
         }
         // Check if we should use the epoll transport. This is true if either the EpollEventLoopGroup is used directly
         // or if the passed group is an EventLoop and it's parent is an EpollEventLoopGroup.
-        return group instanceof EpollEventLoopGroup || (group instanceof EventLoop &&
-                ((EventLoop) group).parent() instanceof EpollEventLoopGroup);
+        return isEpollGroup(group) || (group instanceof EventLoop && isEpollGroup(((EventLoop) group).parent()));
+    }
+
+    @SuppressWarnings("deprecation")
+    private static boolean isEpollGroup(final EventLoopGroup group) {
+        return group instanceof EpollEventLoopGroup ||
+                (group instanceof IoEventLoopGroup && ((IoEventLoopGroup) group).isIoType(EpollIoHandler.class));
     }
 
     /**
@@ -174,8 +185,13 @@ final class NativeTransportUtils {
         }
         // Check if we should use the kqueue transport. This is true if either the KQueueEventLoopGroup is used directly
         // or if the passed group is an EventLoop and it's parent is an KQueueEventLoopGroup.
-        return group instanceof KQueueEventLoopGroup || (group instanceof EventLoop &&
-                ((EventLoop) group).parent() instanceof KQueueEventLoopGroup);
+        return isKQueueGroup(group) || (group instanceof EventLoop && isKQueueGroup(((EventLoop) group).parent()));
+    }
+
+    @SuppressWarnings("deprecation")
+    private static boolean isKQueueGroup(final EventLoopGroup group) {
+        return group instanceof KQueueEventLoopGroup ||
+                (group instanceof IoEventLoopGroup && ((IoEventLoopGroup) group).isIoType(KQueueIoHandler.class));
     }
 
     /**
