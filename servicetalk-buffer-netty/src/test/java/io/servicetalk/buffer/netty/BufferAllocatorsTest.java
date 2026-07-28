@@ -19,7 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.util.internal.PlatformDependent;
+import io.netty.buffer.ByteBufAllocator;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -37,6 +37,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -241,10 +242,9 @@ class BufferAllocatorsTest {
     }
 
     private void assertBuffer(BufferAllocator allocator, Buffer buffer) {
-        // JDK24+ disables unsafe by default, which means allocators like PREFER_DIRECT will also fall back to
-        // heap allocations if unsafe is not explicitly enabled via a JVM arg.
-        final boolean direct = allocator != PREFER_HEAP_ALLOCATOR && PlatformDependent.hasUnsafe();
-        assertBuffer(buffer, direct);
+        // Try allocating a ByteBuf to check if the underlying allocator uses direct or heap memory:
+        assertThat(allocator, is(instanceOf(ByteBufAllocator.class)));
+        assertBuffer(buffer, ((ByteBufAllocator) allocator).buffer().isDirect());
     }
 
     private static void assertBuffer(Buffer buffer, boolean direct) {
@@ -258,6 +258,7 @@ class BufferAllocatorsTest {
         assertBufferIsUnreleasable(buffer);
     }
 
+    @SuppressWarnings("deprecation")
     private static void assertBufferIsUnreleasable(Buffer buffer) {
         ByteBuf byteBuf = BufferUtils.toByteBuf(buffer);
         byteBuf.markReaderIndex();
