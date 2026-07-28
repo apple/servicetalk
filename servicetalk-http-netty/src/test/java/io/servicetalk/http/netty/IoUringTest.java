@@ -15,10 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.IoEventLoopGroup;
-import io.netty.channel.uring.IoUring;
-import io.netty.channel.uring.IoUringIoHandler;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
@@ -26,7 +22,13 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 import io.servicetalk.transport.netty.internal.IoUringUtils;
 import io.servicetalk.transport.netty.internal.NettyIoExecutors;
+
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.IoEventLoopGroup;
+import io.netty.channel.uring.IoUring;
+import io.netty.channel.uring.IoUringIoHandler;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -47,6 +49,10 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.junit.jupiter.api.condition.OS.LINUX;
 import static org.junit.jupiter.api.condition.OS.MAC;
 
+// io_uring was promoted from an incubator artifact into Netty core in 4.2 and does not exist for Netty 4.1.x, so
+// these tests reference classes that are absent when tests run against a 4.1.x version (see `testNettyVersion`).
+@DisabledIfEnvironmentVariable(named = "ORG_GRADLE_PROJECT_testNettyVersion", matches = "4\\.1.*",
+        disabledReason = "io_uring is not available with Netty 4.1.x")
 class IoUringTest {
 
     @Test

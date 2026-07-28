@@ -24,7 +24,8 @@ if (!repositories) {
     repositories {
       mavenCentral()
       gradlePluginPortal()
-      if ("$nettyVersion".endsWith("+")) {
+      def testNettyVersion = "${project.findProperty("testNettyVersion") ?: nettyVersion}"
+      if ("$nettyVersion".endsWithAny("SNAPSHOT", "+") || testNettyVersion.endsWithAny("SNAPSHOT", "+")) {
         maven {
           name "Netty Snapshots"
           url "https://central.sonatype.com/repository/maven-snapshots/"
@@ -109,6 +110,38 @@ subprojects {
     resolutionStrategy {
       force "net.bytebuddy:byte-buddy:$byteBuddyVersion"
       force "net.bytebuddy:byte-buddy-agent:$byteBuddyVersion"
+    }
+  }
+
+  // Main and test sources always compile against `nettyVersion` (see gradle.properties). Tests can be executed
+  // against a different Netty version by setting the `testNettyVersion` project property (e.g. via
+  // `ORG_GRADLE_PROJECT_testNettyVersion`). Only test *runtime* classpaths are overridden, so compilation stays
+  // pinned to `nettyVersion` and only the classes that are exercised at runtime differ. This is used by
+  // .github/workflows/ci-netty-snapshot.yml to verify compatibility with multiple Netty versions.
+  def testNettyVersion = "${project.findProperty("testNettyVersion") ?: nettyVersion}"
+  if (testNettyVersion != "$nettyVersion") {
+    def testNettyIoUringSupported = testNettyVersion.startsWith("4.2")
+    def testNettySnapshot = testNettyVersion.endsWithAny("SNAPSHOT", "+")
+    configurations.matching { it.name.startsWith("test") && it.name.endsWith("RuntimeClasspath") }.all {
+      resolutionStrategy.eachDependency { details ->
+        // netty-tcnative has its own independent version line, don't override it.
+        if (details.requested.group == "io.netty" && !details.requested.name.startsWith("netty-tcnative")) {
+          details.useVersion(testNettyVersion)
+          details.because("ServiceTalk tests run against Netty $testNettyVersion")
+        }
+      }
+      if (!testNettyIoUringSupported) {
+        // io_uring was promoted from an incubator artifact into Netty core in 4.2; these core artifacts don't
+        // exist for 4.1.x versions, so drop them from the test runtime classpath.
+        exclude group: "io.netty", module: "netty-transport-classes-io_uring"
+        exclude group: "io.netty", module: "netty-transport-native-io_uring"
+      }
+      if (testNettySnapshot) {
+        // Netty doesn't publish snapshots for macOS native artifacts, so they can't be resolved for a snapshot
+        // version. They are not used when running tests on Linux (CI), which is where snapshots are exercised.
+        exclude group: "io.netty", module: "netty-transport-native-kqueue"      // servicetalk-transport-netty-internal
+        exclude group: "io.netty", module: "netty-resolver-dns-native-macos"    // servicetalk-dns-discovery-netty
+      }
     }
   }
 

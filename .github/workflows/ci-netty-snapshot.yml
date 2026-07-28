@@ -18,7 +18,7 @@ jobs:
     name: Netty ${{ matrix.netty }} Snapshot
     runs-on: ${{ matrix.os }}
     env:
-      ORG_GRADLE_PROJECT_nettyVersion: ${{ matrix.netty }}
+      ORG_GRADLE_PROJECT_testNettyVersion: ${{ matrix.netty }}
     strategy:
       fail-fast: false
       matrix:
@@ -37,8 +37,6 @@ jobs:
         run: java -version
       - name: Make gradlew Executable
         run: chmod +x gradlew
-      - name: Regenerate Lock Files
-        run: ./gradlew resolveAndLockAll --write-locks
       - name: Print Netty Version
         run: ./gradlew :servicetalk-grpc-netty:dependencyInsight --configuration testRuntimeClasspath --dependency io.netty:netty-codec-http2 | head -n 50
       - name: Clean Gradle project

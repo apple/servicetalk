@@ -16,8 +16,6 @@
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
-ext.isNettyIoUringSupported = "$nettyVersion".startsWithAny("4.2.")
-
 dependencies {
   api project(":servicetalk-client-api")
   api project(":servicetalk-concurrent-api")
@@ -70,9 +68,7 @@ dependencies {
   testImplementation project(":servicetalk-test-resources")
   testImplementation project(":servicetalk-transport-netty")
   testImplementation "com.fasterxml.jackson.core:jackson-core"
-  if (project.ext.isNettyIoUringSupported) {
-      testImplementation "io.netty:netty-transport-classes-io_uring"
-  }
+  testImplementation "io.netty:netty-transport-classes-io_uring"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.junit.jupiter:junit-jupiter-params"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"

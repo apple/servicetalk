@@ -15,6 +15,10 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.IoThreadFactory;
+import io.servicetalk.transport.api.IoThreadFactory.IoThread;
+
 import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.MultiThreadIoEventLoopGroup;
@@ -22,9 +26,6 @@ import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.uring.IoUringIoHandler;
-import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.IoThreadFactory;
-import io.servicetalk.transport.api.IoThreadFactory.IoThread;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

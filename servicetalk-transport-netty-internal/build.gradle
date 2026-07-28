@@ -16,9 +16,6 @@
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
-ext.isNettySnapshot = "$nettyVersion".endsWithAny("SNAPSHOT", "+")
-ext.isNettyIoUringSupported = "$nettyVersion".startsWithAny("4.2.")
-
 dependencies {
   api platform("io.netty:netty-bom:$nettyVersion")
   api project(":servicetalk-buffer-api")
@@ -40,9 +37,7 @@ dependencies {
   implementation project(":servicetalk-utils-internal")
   implementation "io.netty:netty-codec"
   implementation "io.netty:netty-transport-classes-epoll"
-  if (project.ext.isNettyIoUringSupported) {
-    implementation "io.netty:netty-transport-classes-io_uring"
-  }
+  implementation "io.netty:netty-transport-classes-io_uring"
   implementation "io.netty:netty-transport-classes-kqueue"
   implementation "io.netty:netty-transport-native-unix-common"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
@@ -54,17 +49,12 @@ dependencies {
   runtimeOnly "io.netty:netty-transport-native-epoll"
   runtimeOnly (group:"io.netty", name:"netty-transport-native-epoll", classifier:"linux-x86_64")
   runtimeOnly (group:"io.netty", name:"netty-transport-native-epoll", classifier:"linux-aarch_64")
-  if (project.ext.isNettyIoUringSupported) {
-    runtimeOnly "io.netty:netty-transport-native-io_uring"
-    runtimeOnly (group:"io.netty", name:"netty-transport-native-io_uring", classifier:"linux-x86_64")
-    runtimeOnly (group:"io.netty", name:"netty-transport-native-io_uring", classifier:"linux-aarch_64")
-  }
+  runtimeOnly "io.netty:netty-transport-native-io_uring"
+  runtimeOnly (group:"io.netty", name:"netty-transport-native-io_uring", classifier:"linux-x86_64")
+  runtimeOnly (group:"io.netty", name:"netty-transport-native-io_uring", classifier:"linux-aarch_64")
   runtimeOnly "io.netty:netty-transport-native-kqueue"
-  if (!project.ext.isNettySnapshot) {
-    // Netty doesn't publish snapshots for macos artifacts
-    runtimeOnly (group:"io.netty", name:"netty-transport-native-kqueue", classifier:"osx-x86_64")
-    runtimeOnly (group:"io.netty", name:"netty-transport-native-kqueue", classifier:"osx-aarch_64")
-  }
+  runtimeOnly (group:"io.netty", name:"netty-transport-native-kqueue", classifier:"osx-x86_64")
+  runtimeOnly (group:"io.netty", name:"netty-transport-native-kqueue", classifier:"osx-aarch_64")
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
@@ -90,9 +80,7 @@ dependencies {
   testFixturesImplementation project(":servicetalk-buffer-netty")
   testFixturesImplementation project(":servicetalk-utils-internal")
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  if (project.ext.isNettyIoUringSupported) {
-    testFixturesImplementation "io.netty:netty-transport-classes-io_uring"
-  }
+  testFixturesImplementation "io.netty:netty-transport-classes-io_uring"
   testFixturesImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testFixturesImplementation "org.slf4j:slf4j-api:$slf4jVersion"
 }
