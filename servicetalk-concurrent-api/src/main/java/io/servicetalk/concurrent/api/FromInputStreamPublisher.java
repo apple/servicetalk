@@ -202,7 +202,7 @@ final class FromInputStreamPublisher<T> extends SubscribablePublisher<T> {
             final int readChunkSize = mapper.maxBufferSize();
             final byte[] buffer;
             if (readByte >= 0) {
-                buffer = new byte[min(available + 1, readChunkSize)];
+                buffer = new byte[min(addWithOverflowProtection(available, 1), readChunkSize)];
                 buffer[writeIdx++] = (byte) readByte;
             } else {
                 buffer = new byte[min(available, readChunkSize)];
