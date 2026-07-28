@@ -29,11 +29,12 @@
  */
 package io.servicetalk.http.api;
 
-import io.netty.handler.codec.DateFormatter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Date;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.http.api.HeaderUtils.COOKIE_STRICT_RFC_6265;
@@ -220,10 +221,9 @@ class LegacyCookieParsingTest {
 
     // Client cookie (SET_COOKIE header) decoder tests
     @Test
-    @SuppressWarnings("PMD.ReplaceJavaUtilDate")
     void testDecodingSingleCookieV0() {
         String cookieString = "myCookie=myValue;expires="
-                + DateFormatter.format(new Date(System.currentTimeMillis() + 50_000))
+                + DateTimeFormatter.RFC_1123_DATE_TIME.format(OffsetDateTime.now(ZoneOffset.UTC).plusSeconds(50))
                 + ";path=/apathsomewhere;domain=.adomainsomewhere;secure;SameSite=None";
 
         HttpSetCookie cookie = headers.add(SET_COOKIE, cookieString).getSetCookie("myCookie");
