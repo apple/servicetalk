@@ -16,6 +16,22 @@
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
+afterEvaluate {
+    if (tasks.findByName("projectHealth")) {
+        dependencyAnalysis {
+            issues {
+                // FIXME: 0.43 - remove after dropping support for Netty 4.1.x
+                onUnusedDependencies {
+                    exclude("io.netty:netty-codec")
+                }
+                onUsedTransitiveDependencies {
+                    exclude("io.netty:netty-codec-base")
+                }
+            }
+        }
+    }
+}
+
 dependencies {
   api project(":servicetalk-client-api")
   api project(":servicetalk-concurrent-api")
