@@ -56,6 +56,7 @@ final class NativeTransportUtils {
     private static final AtomicBoolean TRY_IO_URING;    // non-primitive boolean to allow overrides in tests
     private static final boolean IS_LINUX;
     private static final boolean IS_OSX_OR_BSD;
+    // FIXME: 0.43 - remove isClassAvailable after dropping support for Netty 4.1.x
     /**
      * {@code true} if the {@link IoUring} classes are available on the classpath.
      * {@code io_uring} was promoted from an incubator artifact into Netty core in 4.2 and does not exist for 4.1.x.

@@ -131,6 +131,7 @@ subprojects {
         }
       }
       if (!testNettyIoUringSupported) {
+        // FIXME: 0.43 - remove after dropping support for Netty 4.1.x
         // io_uring was promoted from an incubator artifact into Netty core in 4.2; these core artifacts don't
         // exist for 4.1.x versions, so drop them from the test runtime classpath.
         exclude group: "io.netty", module: "netty-transport-classes-io_uring"
