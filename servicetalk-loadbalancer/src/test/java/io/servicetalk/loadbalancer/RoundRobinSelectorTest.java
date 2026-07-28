@@ -70,13 +70,18 @@ class RoundRobinSelectorTest {
         assertThat(addresses, contains("addr-1", "addr-2", "addr-1", "addr-2", "addr-1"));
     }
 
-    @Test
-    void roundRobiningWithUnequalWeights() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: negativeIndex={0}")
+    @ValueSource(booleans = {true, false})
+    void roundRobiningWithUnequalWeights(boolean negativeIndex) throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = SelectorTestHelpers.generateHosts(
                 "addr-1", "addr-2", "addr-3");
         when(hosts.get(0).weight()).thenReturn(1.0);
         when(hosts.get(1).weight()).thenReturn(2.0);
         when(hosts.get(2).weight()).thenReturn(3.0);
+        // Scheduler.nextIndex() reads the shared index as unsigned, so a negative int is simply a counter that has
+        // already passed 2^31. Unsigned -1000 is 4294966296, a multiple of hosts.size(), so selection still starts on
+        // a host boundary and 18 selections cover exactly 9 passes.
+        index.set(negativeIndex ? -1000 : 0);
         init(hosts);
         List<String> addresses = new ArrayList<>();
         for (int i = 0; i < 18; i++) {
@@ -89,20 +94,34 @@ class RoundRobinSelectorTest {
         assertThat(addresses.stream().filter("addr-2"::equals).count(), equalTo(6L));
         assertThat(addresses.stream().filter("addr-3"::equals).count(), equalTo(9L));
 
-        // The stream of selections should be should be
-        // addr-1, addr-2, addr-3
-        // F       T       T
-        // F       F       T
-        // T       T       T
-        // F       T       T <- starting repetition
-        // ...
-        assertThat(addresses, contains(
-                "addr-2", "addr-3", "addr-3",
-                "addr-1", "addr-2", "addr-3",
-                "addr-2", "addr-3", "addr-3",
-                "addr-1", "addr-2", "addr-3",
-                "addr-2", "addr-3", "addr-3",
-                "addr-1", "addr-2", "addr-3"));
+        // The weights scale to [21845, 43690, 65535], which selects addr-1 when pass % 3 == 2, addr-2 when
+        // pass % 3 != 1, and addr-3 on every pass. Only the starting pass differs between the two cases, which
+        // rotates the same repeating group of 6 selections.
+        if (negativeIndex) {
+            // Unsigned index 4294966296 starts on a pass where pass % 3 == 1.
+            assertThat(addresses, contains(
+                    "addr-3", "addr-1", "addr-2",
+                    "addr-3", "addr-2", "addr-3",
+                    "addr-3", "addr-1", "addr-2",
+                    "addr-3", "addr-2", "addr-3",
+                    "addr-3", "addr-1", "addr-2",
+                    "addr-3", "addr-2", "addr-3"));
+        } else {
+            // The stream of selections should be should be
+            // addr-1, addr-2, addr-3
+            // F       T       T
+            // F       F       T
+            // T       T       T
+            // F       T       T <- starting repetition
+            // ...
+            assertThat(addresses, contains(
+                    "addr-2", "addr-3", "addr-3",
+                    "addr-1", "addr-2", "addr-3",
+                    "addr-2", "addr-3", "addr-3",
+                    "addr-1", "addr-2", "addr-3",
+                    "addr-2", "addr-3", "addr-3",
+                    "addr-1", "addr-2", "addr-3"));
+        }
     }
 
     @Test
