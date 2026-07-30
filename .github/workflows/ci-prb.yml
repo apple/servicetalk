@@ -29,6 +29,12 @@ jobs:
           - java: 11
             os: [self-hosted, macos, general]
             os_label: macos
+          # FIXME: 0.43 - remove after dropping support for Netty 4.1.x
+          # Verify that ServiceTalk remains compatible with the latest Netty 4.1.x release at runtime.
+          - java: 11
+            os: ubuntu-latest
+            os_label: ubuntu-netty-4.1
+            netty: '4.1.+'
     steps:
       - name: Checkout Code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -50,8 +56,14 @@ jobs:
           fi
       - name: Set Test Java Version
         run: echo "TEST_JAVA_VERSION=${{ matrix.java }}" >> "$GITHUB_ENV"
+      - name: Set Test Netty Version
+        if: matrix.netty != ''
+        run: echo "ORG_GRADLE_PROJECT_testNettyVersion=${{ matrix.netty }}" >> "$GITHUB_ENV"
       - name: Make gradlew Executable
         run: chmod +x gradlew
+      - name: Print Netty Version
+        if: matrix.netty != ''
+        run: ./gradlew :servicetalk-http-netty:dependencyInsight --configuration testRuntimeClasspath --dependency io.netty:netty-codec-http2 | head -n 50
       - name: Clean Gradle project
         run: ./gradlew --parallel clean
       - name: Build and Test (Linux)

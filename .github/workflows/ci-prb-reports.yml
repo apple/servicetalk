@@ -23,6 +23,11 @@ jobs:
           - java: 11
             os: [self-hosted, macos, general]
             os_label: macos
+          # FIXME: 0.43 - remove after dropping support for Netty 4.1.x
+          - java: 11
+            os: ubuntu-latest
+            os_label: ubuntu-netty-4.1
+            netty: '4.1.+'
     steps:
       - name: Download Artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
