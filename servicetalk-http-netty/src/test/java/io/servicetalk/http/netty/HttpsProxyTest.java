@@ -97,8 +97,8 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -485,7 +485,7 @@ class HttpsProxyTest {
         final List<HttpProtocol> protocols = singletonList(HttpProtocol.HTTP_1);
         initMocks();
         proxyTunnel.sslContext(buildProxyMtlsSslContext());
-        proxyTunnel.needClientAuth();
+        proxyTunnel.needClientAuth(true);
         proxyAddress = proxyTunnel.startProxy();
         startServer(protocols);
         client = BuilderUtils.newClientBuilder(serverContext, CLIENT_CTX)
@@ -507,10 +507,9 @@ class HttpsProxyTest {
         try (InputStream is = DefaultTestCerts.loadClientPem()) {
             expectedClientCert = cf.generateCertificate(is);
         }
-        final Certificate[] peerCertificates = proxyTunnel.lastPeerCertificates();
-        assertThat(peerCertificates, is(notNullValue()));
-        assertThat(peerCertificates.length, is(greaterThan(0)));
-        assertThat(peerCertificates[0], is(equalTo(expectedClientCert)));
+        final List<Certificate> peerCertificates = proxyTunnel.lastPeerCertificates();
+        assertThat(peerCertificates, is(not(empty())));
+        assertThat(peerCertificates.get(0), is(equalTo(expectedClientCert)));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")

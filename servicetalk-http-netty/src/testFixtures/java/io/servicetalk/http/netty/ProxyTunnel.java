@@ -31,6 +31,7 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.cert.Certificate;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -51,6 +52,9 @@ import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED;
 import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.unmodifiableList;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -64,7 +68,7 @@ public final class ProxyTunnel implements AutoCloseable {
     private final ExecutorService executor = newCachedThreadPool(new DefaultThreadFactory("proxy-tunnel"));
     private final AtomicInteger connectCount = new AtomicInteger();
     private final AtomicReference<HttpHeaders> lastConnectHeaders = new AtomicReference<>();
-    private final AtomicReference<Certificate[]> lastPeerCertificates = new AtomicReference<>();
+    private final AtomicReference<List<Certificate>> lastPeerCertificates = new AtomicReference<>(emptyList());
 
     @Nullable
     private ServerSocket serverSocket;
@@ -128,7 +132,8 @@ public final class ProxyTunnel implements AutoCloseable {
                         lastConnectHeaders.set(headers);
                         if (needClientAuth && socket instanceof SSLSocket) {
                             try {
-                                lastPeerCertificates.set(((SSLSocket) socket).getSession().getPeerCertificates());
+                                lastPeerCertificates.set(unmodifiableList(asList(
+                                        ((SSLSocket) socket).getSession().getPeerCertificates())));
                             } catch (SSLPeerUnverifiedException e) {
                                 LOGGER.debug("Client did not present a certificate socket={}", socket, e);
                             }
@@ -218,7 +223,8 @@ public final class ProxyTunnel implements AutoCloseable {
      * performs a TLS handshake before reading the {@code CONNECT} request. Must be called before {@link #startProxy()}.
      * <p>
      * The {@link SSLContext} controls only server-side identity and trust.  Pass {@code null} (default) for a plaintext
-     * proxy listener. To require the client to present a certificate (mTLS), also call {@link #needClientAuth()}.
+     * proxy listener. To require the client to present a certificate (mTLS), also call
+     * {@link #needClientAuth(boolean)}.
      *
      * @param sslContext the {@link SSLContext} that will be used for the proxy listener, or {@code null} for plaintext
      */
@@ -227,14 +233,15 @@ public final class ProxyTunnel implements AutoCloseable {
     }
 
     /**
-     * Configures this proxy to require a client certificate during the TLS handshake on its listener, enabling mTLS.
-     * Only takes effect when TLS is enabled via {@link #sslContext(SSLContext)}. Must be called before
+     * Configures whether this proxy requires a client certificate during the TLS handshake on its listener, enabling
+     * mTLS. Only takes effect when TLS is enabled via {@link #sslContext(SSLContext)}. Must be called before
      * {@link #startProxy()}. The presented certificate chain can be inspected via {@link #lastPeerCertificates()}.
      *
+     * @param needClientAuth whether the client is required to present a certificate
      * @return {@code this}
      */
-    public ProxyTunnel needClientAuth() {
-        this.needClientAuth = true;
+    public ProxyTunnel needClientAuth(final boolean needClientAuth) {
+        this.needClientAuth = needClientAuth;
         return this;
     }
 
@@ -260,16 +267,14 @@ public final class ProxyTunnel implements AutoCloseable {
 
     /**
      * Returns the client certificate chain presented during the most recent TLS handshake on the proxy listener.
-     * Populated only when TLS with client auth is enabled (see {@link #needClientAuth()}). Useful for tests that
-     * need to assert the client presented its expected identity (true proxy mTLS).
+     * Populated only when TLS with client auth is enabled (see {@link #needClientAuth(boolean)}). Useful for tests
+     * that need to assert the client presented its expected identity (true proxy mTLS).
      *
-     * @return the peer certificate chain from the most recent handshake, or {@code null} if no client certificate
+     * @return the peer certificate chain from the most recent handshake, or an empty list if no client certificate
      * was presented (or the proxy is not using client-auth TLS)
      */
-    @Nullable
-    public Certificate[] lastPeerCertificates() {
-        final Certificate[] certificates = lastPeerCertificates.get();
-        return certificates == null ? null : certificates.clone();
+    public List<Certificate> lastPeerCertificates() {
+        return lastPeerCertificates.get();
     }
 
     private static String readLine(final InputStream in) throws IOException {
