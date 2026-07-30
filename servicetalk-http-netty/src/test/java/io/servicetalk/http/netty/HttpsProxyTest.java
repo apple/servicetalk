@@ -60,6 +60,8 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.security.KeyStore;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateFactory;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -70,6 +72,7 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.TrustManagerFactory;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -95,6 +98,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -190,6 +194,28 @@ class HttpsProxyTest {
         kmf.init(ks, KEYSTORE_PASSWORD);
         final SSLContext ctx = SSLContext.getInstance("TLS");
         ctx.init(kmf.getKeyManagers(), null, null);
+        return ctx;
+    }
+
+    private static SSLContext buildProxyMtlsSslContext() throws Exception {
+        final KeyStore ks = KeyStore.getInstance("PKCS12");
+        try (InputStream is = DefaultTestCerts.loadServerP12()) {
+            ks.load(is, KEYSTORE_PASSWORD);
+        }
+        final KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        kmf.init(ks, KEYSTORE_PASSWORD);
+
+        final KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        trustStore.load(null, null);
+        final CertificateFactory cf = CertificateFactory.getInstance("X.509");
+        try (InputStream is = DefaultTestCerts.loadClientCAPem()) {
+            trustStore.setCertificateEntry("client-ca", cf.generateCertificate(is));
+        }
+        final TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        tmf.init(trustStore);
+
+        final SSLContext ctx = SSLContext.getInstance("TLS");
+        ctx.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
         return ctx;
     }
 
@@ -452,6 +478,39 @@ class HttpsProxyTest {
         assertThat(client.request(client.get("/path")).status(), is(OK));
         verify(connectionObserver, atLeastOnce()).onProxySecurityHandshake(any(SslConfig.class));
         verify(proxySecurityHandshakeObserver, atLeastOnce()).handshakeComplete(any());
+    }
+
+    @Test
+    void testProxyMtlsClientPresentsCertificate() throws Exception {
+        final List<HttpProtocol> protocols = singletonList(HttpProtocol.HTTP_1);
+        initMocks();
+        proxyTunnel.sslContext(buildProxyMtlsSslContext());
+        proxyTunnel.needClientAuth();
+        proxyAddress = proxyTunnel.startProxy();
+        startServer(protocols);
+        client = BuilderUtils.newClientBuilder(serverContext, CLIENT_CTX)
+                .proxyConfig(new ProxyConfigBuilder<>(proxyAddress)
+                        .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                                .keyManager(DefaultTestCerts::loadClientPem, DefaultTestCerts::loadClientKey)
+                                .peerHost(serverPemHostname())
+                                .build())
+                        .build())
+                .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                        .peerHost(serverPemHostname()).build())
+                .protocols(toConfigs(protocols))
+                .buildBlocking();
+
+        assertThat(client.request(client.get("/path")).status(), is(OK));
+
+        final CertificateFactory cf = CertificateFactory.getInstance("X.509");
+        final Certificate expectedClientCert;
+        try (InputStream is = DefaultTestCerts.loadClientPem()) {
+            expectedClientCert = cf.generateCertificate(is);
+        }
+        final Certificate[] peerCertificates = proxyTunnel.lastPeerCertificates();
+        assertThat(peerCertificates, is(notNullValue()));
+        assertThat(peerCertificates.length, is(greaterThan(0)));
+        assertThat(peerCertificates[0], is(equalTo(expectedClientCert)));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")

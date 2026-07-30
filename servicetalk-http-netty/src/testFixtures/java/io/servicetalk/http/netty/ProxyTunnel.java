@@ -30,11 +30,15 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.cert.Certificate;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSocket;
 
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
@@ -60,6 +64,7 @@ public final class ProxyTunnel implements AutoCloseable {
     private final ExecutorService executor = newCachedThreadPool(new DefaultThreadFactory("proxy-tunnel"));
     private final AtomicInteger connectCount = new AtomicInteger();
     private final AtomicReference<HttpHeaders> lastConnectHeaders = new AtomicReference<>();
+    private final AtomicReference<Certificate[]> lastPeerCertificates = new AtomicReference<>();
 
     @Nullable
     private ServerSocket serverSocket;
@@ -67,6 +72,7 @@ public final class ProxyTunnel implements AutoCloseable {
     private volatile String authToken;
     @Nullable
     private volatile SSLContext sslContext;
+    private volatile boolean needClientAuth;
     private volatile ProxyRequestHandler handler = this::handleRequest;
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -97,6 +103,8 @@ public final class ProxyTunnel implements AutoCloseable {
             // Terminate TLS on the proxy listener. The accepted Socket is an SSLSocket whose handshake is performed
             // implicitly on first read/write; downstream code is plain InputStream/OutputStream and is unaffected.
             serverSocket = sslCtx.getServerSocketFactory().createServerSocket(0, 50, getLoopbackAddress());
+            // Client auth is a property of the SSLServerSocket, not the SSLContext, so it must be enabled here.
+            ((SSLServerSocket) serverSocket).setNeedClientAuth(needClientAuth);
         }
         executor.submit(() -> {
             while (!executor.isShutdown()) {
@@ -118,6 +126,13 @@ public final class ProxyTunnel implements AutoCloseable {
 
                         final HttpHeaders headers = readHeaders(in);
                         lastConnectHeaders.set(headers);
+                        if (needClientAuth && socket instanceof SSLSocket) {
+                            try {
+                                lastPeerCertificates.set(((SSLSocket) socket).getSession().getPeerCertificates());
+                            } catch (SSLPeerUnverifiedException e) {
+                                LOGGER.debug("Client did not present a certificate socket={}", socket, e);
+                            }
+                        }
                         final CharSequence hostHeader = headers.get(HOST);
                         if (hostHeader == null || !authority.equalsIgnoreCase(hostHeader.toString())) {
                             badRequest(socket, "Host header value must be identical to authority " +
@@ -202,13 +217,25 @@ public final class ProxyTunnel implements AutoCloseable {
      * Configures this proxy to terminate TLS on its listener using the provided {@link SSLContext}. The proxy then
      * performs a TLS handshake before reading the {@code CONNECT} request. Must be called before {@link #startProxy()}.
      * <p>
-     * Pass an {@link SSLContext} configured with {@code clientAuth=REQUIRE} (or equivalent via the underlying
-     * {@code SSLServerSocket}) to test mTLS-style proxies. Pass {@code null} (default) for a plaintext proxy listener.
+     * The {@link SSLContext} controls only server-side identity and trust.  Pass {@code null} (default) for a plaintext
+     * proxy listener. To require the client to present a certificate (mTLS), also call {@link #needClientAuth()}.
      *
      * @param sslContext the {@link SSLContext} that will be used for the proxy listener, or {@code null} for plaintext
      */
     public void sslContext(@Nullable final SSLContext sslContext) {
         this.sslContext = sslContext;
+    }
+
+    /**
+     * Configures this proxy to require a client certificate during the TLS handshake on its listener, enabling mTLS.
+     * Only takes effect when TLS is enabled via {@link #sslContext(SSLContext)}. Must be called before
+     * {@link #startProxy()}. The presented certificate chain can be inspected via {@link #lastPeerCertificates()}.
+     *
+     * @return {@code this}
+     */
+    public ProxyTunnel needClientAuth() {
+        this.needClientAuth = true;
+        return this;
     }
 
     /**
@@ -229,6 +256,20 @@ public final class ProxyTunnel implements AutoCloseable {
     @Nullable
     public HttpHeaders lastConnectHeaders() {
         return lastConnectHeaders.get();
+    }
+
+    /**
+     * Returns the client certificate chain presented during the most recent TLS handshake on the proxy listener.
+     * Populated only when TLS with client auth is enabled (see {@link #needClientAuth()}). Useful for tests that
+     * need to assert the client presented its expected identity (true proxy mTLS).
+     *
+     * @return the peer certificate chain from the most recent handshake, or {@code null} if no client certificate
+     * was presented (or the proxy is not using client-auth TLS)
+     */
+    @Nullable
+    public Certificate[] lastPeerCertificates() {
+        final Certificate[] certificates = lastPeerCertificates.get();
+        return certificates == null ? null : certificates.clone();
     }
 
     private static String readLine(final InputStream in) throws IOException {
