@@ -41,6 +41,7 @@ import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Math.ceil;
 import static java.lang.Math.min;
 import static java.lang.System.arraycopy;
+import static java.util.stream.IntStream.concat;
 import static java.util.stream.IntStream.generate;
 import static java.util.stream.IntStream.of;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -678,5 +679,16 @@ class FromInputStreamPublisherTest {
         toSource(pub).subscribe(sub1);
         sub1.awaitSubscription().request(1);
         sub1.awaitOnComplete();
+    }
+
+    @Test
+    void dontFailWhenSingleReadTriggersAvailabilityExceedingVmArraySizeLimit() throws Throwable {
+        // available() reports nothing before the first byte is read (as many InputStream implementations do), but the
+        // single read() unblocks availability of more data than Integer.MAX_VALUE bytes, which available() saturates to
+        // Integer.MAX_VALUE. Buffer sizing must not overflow when accounting for the already read byte.
+        initChunkedStream(smallBuff, concat(of(0, MAX_VALUE), ofAll(0)),
+                                     concat(of(smallBuff.length), ofAll(0)));
+
+        verifySuccess(new byte[][] {smallBuff});
     }
 }
