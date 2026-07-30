@@ -21,12 +21,15 @@ import io.servicetalk.utils.internal.PlatformDependent;
 
 import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.IoEventLoopGroup;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollIoHandler;
 import io.netty.channel.kqueue.KQueue;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
-import io.netty.incubator.channel.uring.IOUring;
-import io.netty.incubator.channel.uring.IOUringEventLoopGroup;
+import io.netty.channel.kqueue.KQueueIoHandler;
+import io.netty.channel.uring.IoUring;
+import io.netty.channel.uring.IoUringIoHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +56,19 @@ final class NativeTransportUtils {
     private static final AtomicBoolean TRY_IO_URING;    // non-primitive boolean to allow overrides in tests
     private static final boolean IS_LINUX;
     private static final boolean IS_OSX_OR_BSD;
+    // FIXME: 0.43 - remove isClassAvailable after dropping support for Netty 4.1.x
+    /**
+     * {@code true} if the {@link IoUring} classes are available on the classpath.
+     * {@code io_uring} was promoted from an incubator artifact into Netty core in 4.2 and does not exist for 4.1.x.
+     */
+    private static final boolean IO_URING_CLASSES_AVAILABLE = isClassAvailable("io.netty.channel.uring.IoUring");
+    /**
+     * {@code true} if Netty's 4.2 {@code io.netty.channel.IoEventLoopGroup} / {@code IoHandler} model is available on
+     * the classpath. This is used as a runtime marker to remain compatible with Netty 4.1.x, where these types do not
+     * exist. Every access to a 4.2-only type below is short-circuited behind this flag (or
+     * {@link #IO_URING_CLASSES_AVAILABLE}), so those types are never linked on a 4.1.x runtime.
+     */
+    private static final boolean NEW_IO_MODEL_SUPPORTED = isClassAvailable("io.netty.channel.IoEventLoopGroup");
 
     static {
         final String os = PlatformDependent.normalizedOs();
@@ -63,6 +79,8 @@ final class NativeTransportUtils {
         LOGGER.debug("-D{}={}", REQUIRE_NATIVE_LIBS_NAME, REQUIRE_NATIVE_LIBS);
         LOGGER.debug("-D{}={}", NETTY_NO_NATIVE_NAME, NETTY_NO_NATIVE);
         LOGGER.debug("-D{}={}", TRY_IO_URING_NAME, TRY_IO_URING.get());
+        LOGGER.debug("IoUring classes available: {}", IO_URING_CLASSES_AVAILABLE);
+        LOGGER.debug("IoEventLoopGroup available: {}", NEW_IO_MODEL_SUPPORTED);
         LOGGER.debug("Operating system: {}", os);
 
         if (IS_LINUX && !Epoll.isAvailable()) {
@@ -74,6 +92,17 @@ final class NativeTransportUtils {
 
     private NativeTransportUtils() {
         // No instances
+    }
+
+    private static boolean isClassAvailable(final String className) {
+        try {
+            Class.forName(className, false, NativeTransportUtils.class.getClassLoader());
+            return true;
+        } catch (Throwable cause) {
+            LOGGER.debug("Class {} is not available on the classpath, assuming an older Netty version at runtime.",
+                    className, cause);
+            return false;
+        }
     }
 
     private static void reactOnUnavailability(final String transport, final String os, final Throwable cause) {
@@ -104,12 +133,12 @@ final class NativeTransportUtils {
     }
 
     /**
-     * Determine if {@link IOUring} is available.
+     * Determine if {@link IoUring} is available.
      *
-     * @return {@code true} if {@link IOUring} is available
+     * @return {@code true} if {@link IoUring} is available
      */
     static boolean isIoUringAvailable() {
-        return IS_LINUX && TRY_IO_URING.get() && IOUring.isAvailable();
+        return IO_URING_CLASSES_AVAILABLE && IS_LINUX && TRY_IO_URING.get() && IoUring.isAvailable();
     }
 
     /**
@@ -131,19 +160,23 @@ final class NativeTransportUtils {
     }
 
     /**
-     * Returns {@code true} if native {@link IOUring} transport could be used.
+     * Returns {@code true} if native {@link IoUring} transport could be used.
      *
      * @param group the used {@link EventLoopGroup}
-     * @return {@code true} if native {@link IOUring} transport could be used
+     * @return {@code true} if native {@link IoUring} transport could be used
      */
     static boolean useIoUring(final EventLoopGroup group) {
         if (!isIoUringAvailable()) {
             return false;
         }
-        // Check if we should use the io_uring transport. This is true if either the IOUringEventLoopGroup is used
-        // directly or if the passed group is an EventLoop and it's parent is an IOUringEventLoopGroup.
-        return group instanceof IOUringEventLoopGroup || (group instanceof EventLoop &&
-                ((EventLoop) group).parent() instanceof IOUringEventLoopGroup);
+        // Check if we should use the io_uring transport. This is true if either an io_uring IoEventLoopGroup is used
+        // directly or if the passed group is an EventLoop and it's parent is an io_uring IoEventLoopGroup.
+        return isIoUringGroup(group) || (group instanceof EventLoop && isIoUringGroup(((EventLoop) group).parent()));
+    }
+
+    private static boolean isIoUringGroup(final EventLoopGroup group) {
+        return IO_URING_CLASSES_AVAILABLE && NEW_IO_MODEL_SUPPORTED && group instanceof IoEventLoopGroup &&
+                ((IoEventLoopGroup) group).isIoType(IoUringIoHandler.class);
     }
 
     /**
@@ -158,8 +191,14 @@ final class NativeTransportUtils {
         }
         // Check if we should use the epoll transport. This is true if either the EpollEventLoopGroup is used directly
         // or if the passed group is an EventLoop and it's parent is an EpollEventLoopGroup.
-        return group instanceof EpollEventLoopGroup || (group instanceof EventLoop &&
-                ((EventLoop) group).parent() instanceof EpollEventLoopGroup);
+        return isEpollGroup(group) || (group instanceof EventLoop && isEpollGroup(((EventLoop) group).parent()));
+    }
+
+    @SuppressWarnings("deprecation")
+    private static boolean isEpollGroup(final EventLoopGroup group) {
+        return group instanceof EpollEventLoopGroup ||
+                (NEW_IO_MODEL_SUPPORTED && group instanceof IoEventLoopGroup &&
+                        ((IoEventLoopGroup) group).isIoType(EpollIoHandler.class));
     }
 
     /**
@@ -174,8 +213,14 @@ final class NativeTransportUtils {
         }
         // Check if we should use the kqueue transport. This is true if either the KQueueEventLoopGroup is used directly
         // or if the passed group is an EventLoop and it's parent is an KQueueEventLoopGroup.
-        return group instanceof KQueueEventLoopGroup || (group instanceof EventLoop &&
-                ((EventLoop) group).parent() instanceof KQueueEventLoopGroup);
+        return isKQueueGroup(group) || (group instanceof EventLoop && isKQueueGroup(((EventLoop) group).parent()));
+    }
+
+    @SuppressWarnings("deprecation")
+    private static boolean isKQueueGroup(final EventLoopGroup group) {
+        return group instanceof KQueueEventLoopGroup ||
+                (NEW_IO_MODEL_SUPPORTED && group instanceof IoEventLoopGroup &&
+                        ((IoEventLoopGroup) group).isIoType(KQueueIoHandler.class));
     }
 
     /**

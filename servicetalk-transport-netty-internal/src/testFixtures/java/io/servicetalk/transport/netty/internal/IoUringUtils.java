@@ -15,10 +15,10 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.netty.incubator.channel.uring.IOUring;
+import io.netty.channel.uring.IoUring;
 
 /**
- * Utilities for {@link IOUring}.
+ * Utilities for {@link IoUring}.
  */
 public final class IoUringUtils {
 
@@ -27,21 +27,21 @@ public final class IoUringUtils {
     }
 
     /**
-     * Sets ability to try {@link IOUring} transport.
+     * Sets ability to try {@link IoUring} transport.
      * <p>
-     * Use of {@link IOUring} is concurrently protected by a system property which is initialized when
+     * Use of {@link IoUring} is concurrently protected by a system property which is initialized when
      * {@link NativeTransportUtils} class is loaded. This utility allows to override this value for testing purposes.
      *
-     * @param tryIoUring {@code true} to try {@link IOUring}, {@code false} otherwise
+     * @param tryIoUring {@code true} to try {@link IoUring}, {@code false} otherwise
      */
     public static void tryIoUring(final boolean tryIoUring) {
         NativeTransportUtils.tryIoUring(tryIoUring);
     }
 
     /**
-     * Determine if {@link IOUring} is available.
+     * Determine if {@link IoUring} is available.
      *
-     * @return {@code true} if {@link IOUring} is available
+     * @return {@code true} if {@link IoUring} is available
      */
     public static boolean isAvailable() {
         return NativeTransportUtils.isIoUringAvailable();

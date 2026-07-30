@@ -41,9 +41,6 @@ dependencies {
     api "com.sun.activation:jakarta.activation:$javaxActivationVersion"
     api "com.sun.xml.bind:jaxb-core:$javaxJaxbCoreVersion"
 
-    // Ideally these come from the Netty BOM
-    api "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion"
-
     api "io.github.resilience4j:resilience4j-circuitbreaker:$resilience4jVersion"
     api "io.opentracing:opentracing-api:$openTracingVersion"
     api "io.zipkin.reporter2:zipkin-reporter:$zipkinReporterVersion"
@@ -96,16 +93,6 @@ publishing {
         ciManagement {
           system = 'ServiceTalk CI'
           url = "${ciManagementUrl}"
-        }
-        // Gradle ignores dependencies constraints with classifiers when it generates pom.xml. To workaround it, we are
-        // forced to use withXml. See https://github.com/gradle/gradle/issues/8561
-        withXml {
-          Node pomNode = asNode()
-          Node dependencies = pomNode.dependencyManagement.dependencies.get(0)
-          addDependency(dependencies, "io.netty.incubator", "netty-incubator-transport-native-io_uring",
-              "${nettyIoUringVersion}", "linux-x86_64")
-          addDependency(dependencies, "io.netty.incubator", "netty-incubator-transport-native-io_uring",
-              "${nettyIoUringVersion}", "linux-aarch_64")
         }
       }
     }

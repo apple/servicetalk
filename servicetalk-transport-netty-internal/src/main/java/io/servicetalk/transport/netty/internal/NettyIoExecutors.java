@@ -21,10 +21,11 @@ import io.servicetalk.transport.api.IoThreadFactory.IoThread;
 
 import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.MultiThreadIoEventLoopGroup;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.incubator.channel.uring.IOUringEventLoopGroup;
+import io.netty.channel.uring.IoUringIoHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,11 +115,19 @@ public final class NettyIoExecutors {
     private static <T extends Thread & IoThread> EventLoopGroup createEventLoopGroup(int ioThreads,
             IoThreadFactory<T> threadFactory) {
         validateIoThreads(ioThreads);
-        final EventLoopGroup group = isIoUringAvailable() ? new IOUringEventLoopGroup(ioThreads, threadFactory) :
-                isEpollAvailable() ? new EpollEventLoopGroup(ioThreads, threadFactory) :
-                        isKQueueAvailable() ? new KQueueEventLoopGroup(ioThreads, threadFactory) :
-                                new NioEventLoopGroup(ioThreads, threadFactory);
-        LOGGER.debug("Created {} for {} threads using {}.", group.getClass().getSimpleName(), ioThreads, threadFactory);
+        EventLoopGroup group;
+        if (isIoUringAvailable()) {
+            group = new MultiThreadIoEventLoopGroup(ioThreads, threadFactory, IoUringIoHandler.newFactory());
+            LOGGER.debug("Created IoEventLoopGroup with {} for {} threads using {}.",
+                    IoUringIoHandler.class.getSimpleName(), ioThreads, threadFactory);
+        } else {
+            //noinspection deprecation to remain compatible with Netty 4.1.x
+            group = isEpollAvailable() ? new EpollEventLoopGroup(ioThreads, threadFactory) :
+                    isKQueueAvailable() ? new KQueueEventLoopGroup(ioThreads, threadFactory) :
+                    new NioEventLoopGroup(ioThreads, threadFactory);
+            LOGGER.debug("Created {} for {} threads using {}.",
+                    group.getClass().getSimpleName(), ioThreads, threadFactory);
+        }
         return group;
     }
 

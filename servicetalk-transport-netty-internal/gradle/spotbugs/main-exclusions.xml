@@ -100,6 +100,13 @@
   <!-- Parameters/state is intentional -->
   <Match>
     <Class name="io.servicetalk.transport.netty.internal.NettyPipelinedConnection"/>
+    <Field name="connection"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
+  <!-- Parameters/state is intentional -->
+  <Match>
+    <Class name="io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable"/>
+    <Field name="channel"/>
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
 

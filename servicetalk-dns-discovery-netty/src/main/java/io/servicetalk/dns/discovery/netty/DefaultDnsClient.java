@@ -190,6 +190,7 @@ final class DefaultDnsClient implements DnsClient {
         final Class<? extends SocketChannel> socketChannelClass =
                 (Class<? extends SocketChannel>) socketChannel(eventLoop, InetSocketAddress.class);
         final ResolvedAddressTypes resolvedAddressTypes = DnsResolverAddressTypes.toNettyType(addressTypes);
+        //noinspection deprecation to remain compatible with Netty 4.1.x
         final DnsNameResolverBuilder builder = new DnsNameResolverBuilder(eventLoop)
                 .localAddress(localAddress)
                 .channelType(datagramChannel(eventLoop))

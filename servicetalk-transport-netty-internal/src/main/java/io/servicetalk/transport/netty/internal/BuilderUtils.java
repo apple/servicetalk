@@ -36,9 +36,9 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.channel.unix.DomainSocketAddress;
-import io.netty.incubator.channel.uring.IOUringDatagramChannel;
-import io.netty.incubator.channel.uring.IOUringServerSocketChannel;
-import io.netty.incubator.channel.uring.IOUringSocketChannel;
+import io.netty.channel.uring.IoUringDatagramChannel;
+import io.netty.channel.uring.IoUringServerSocketChannel;
+import io.netty.channel.uring.IoUringSocketChannel;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -74,7 +74,7 @@ public final class BuilderUtils {
     public static Class<? extends ServerChannel> serverChannel(EventLoopGroup group,
                                                                Class<? extends SocketAddress> addressClass) {
         if (useIoUring(group)) {
-            return IOUringServerSocketChannel.class;
+            return IoUringServerSocketChannel.class;
         } else if (useEpoll(group)) {
             return DomainSocketAddress.class.isAssignableFrom(addressClass) ? EpollServerDomainSocketChannel.class :
                     EpollServerSocketChannel.class;
@@ -99,7 +99,7 @@ public final class BuilderUtils {
             if (DomainSocketAddress.class.isAssignableFrom(addressClass)) {
                 throw new IllegalArgumentException("io_uring does not support DomainSocketAddress");
             }
-            return IOUringSocketChannel.class;
+            return IoUringSocketChannel.class;
         } else if (useEpoll(group)) {
             return DomainSocketAddress.class.isAssignableFrom(addressClass) ? EpollDomainSocketChannel.class :
                     EpollSocketChannel.class;
@@ -194,7 +194,7 @@ public final class BuilderUtils {
      */
     public static Class<? extends DatagramChannel> datagramChannel(EventLoopGroup group) {
         if (useIoUring(group)) {
-            return IOUringDatagramChannel.class;
+            return IoUringDatagramChannel.class;
         } else if (useEpoll(group)) {
             return EpollDatagramChannel.class;
         } else if (useKQueue(group)) {

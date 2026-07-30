@@ -23,9 +23,12 @@ import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 import io.servicetalk.transport.netty.internal.IoUringUtils;
 import io.servicetalk.transport.netty.internal.NettyIoExecutors;
 
-import io.netty.incubator.channel.uring.IOUring;
-import io.netty.incubator.channel.uring.IOUringEventLoopGroup;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.IoEventLoopGroup;
+import io.netty.channel.uring.IoUring;
+import io.netty.channel.uring.IoUringIoHandler;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -46,12 +49,16 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.junit.jupiter.api.condition.OS.LINUX;
 import static org.junit.jupiter.api.condition.OS.MAC;
 
+// io_uring was promoted from an incubator artifact into Netty core in 4.2 and does not exist for Netty 4.1.x, so
+// these tests reference classes that are absent when tests run against a 4.1.x version (see `testNettyVersion`).
+@DisabledIfEnvironmentVariable(named = "ORG_GRADLE_PROJECT_testNettyVersion", matches = "4\\.1.*",
+        disabledReason = "io_uring is not available with Netty 4.1.x")
 class IoUringTest {
 
     @Test
     @EnabledOnOs(MAC)
-    void ioUringIsNotAvailableOnMacOs() {
-        assertFalse(IOUring.isAvailable());
+    void testIoUringIsNotAvailableOnMacOs() {
+        assertFalse(IoUring.isAvailable());
         try {
             IoUringUtils.tryIoUring(false);
             assertFalse(IoUringUtils.isAvailable());
@@ -65,16 +72,18 @@ class IoUringTest {
     @ParameterizedTest(name = "{displayName} [{index}] noOffloading={0}")
     @ValueSource(booleans = {false, true})
     @EnabledOnOs(LINUX)
-    void ioUringIsAvailableOnLinux(boolean noOffloading) throws Exception {
+    void testIoUringIsAvailableOnLinux(boolean noOffloading) throws Exception {
         EventLoopAwareNettyIoExecutor ioUringExecutor = null;
         try {
             IoUringUtils.tryIoUring(true);
             assumeTrue(IoUringUtils.isAvailable(), "io_uring is unavailable on " +
                     System.getProperty("os.name") + ' ' + System.getProperty("os.version"));
-            IOUring.ensureAvailability();
+            IoUring.ensureAvailability();
 
             ioUringExecutor = NettyIoExecutors.createIoExecutor(2, "io-uring");
-            assertThat(ioUringExecutor.eventLoopGroup(), is(instanceOf(IOUringEventLoopGroup.class)));
+            EventLoopGroup group = ioUringExecutor.eventLoopGroup();
+            assertThat(group, is(instanceOf(IoEventLoopGroup.class)));
+            assertThat(((IoEventLoopGroup) group).isIoType(IoUringIoHandler.class), is(true));
 
             try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                     .ioExecutor(ioUringExecutor)
