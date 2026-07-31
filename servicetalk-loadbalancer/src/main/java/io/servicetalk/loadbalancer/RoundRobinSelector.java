@@ -197,9 +197,9 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
             while (true) {
                 long counter = nextIndex();
                 long pass = counter / hostsSize;
-                int i = (int) counter % hostsSize;
+                int i = (int) (counter % hostsSize);
                 // We add a unique offset for each offset which could be anything so long as it's constant throughout
-                // iteration. This is helpful in the  case where weights are [1, .. 1, 5] since the scheduling could
+                // iteration. This is helpful in the case where weights are [1, .. 1, 5] since the scheduling could
                 // otherwise look something like this:
                 //  ....
                 //  [t, .., t, t]
