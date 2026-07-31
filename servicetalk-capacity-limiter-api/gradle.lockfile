@@ -3,6 +3,6 @@
 # This file is expected to be part of source control.
 # To regenerate this file, run: ./gradlew :servicetalk-capacity-limiter-api:dependencies --write-locks
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
-org.jctools:jctools-core:4.0.5=runtimeClasspath
+org.jctools:jctools-core:4.0.6=runtimeClasspath
 org.slf4j:slf4j-api:1.7.36=compileClasspath,runtimeClasspath
 empty=annotationProcessor,jmhCompileClasspath,jmhRuntimeClasspath,spotbugsPlugins,testAnnotationProcessor

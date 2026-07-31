@@ -9,6 +9,6 @@ com.google.protobuf:protobuf-java:3.25.8=compileClasspath,runtimeClasspath
 io.netty:netty-bom:4.2.16.Final=runtimeClasspath
 io.netty:netty-buffer:4.2.16.Final=runtimeClasspath
 io.netty:netty-common:4.2.16.Final=runtimeClasspath
-org.jctools:jctools-core:4.0.5=runtimeClasspath
+org.jctools:jctools-core:4.0.6=runtimeClasspath
 org.slf4j:slf4j-api:1.7.36=compileClasspath,runtimeClasspath
 empty=annotationProcessor,jmhCompileClasspath,jmhRuntimeClasspath,protobuf,spotbugsPlugins,testAnnotationProcessor,testProtobuf
