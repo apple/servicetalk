@@ -75,6 +75,7 @@ import static io.servicetalk.grpc.protoc.Types.ContentCodec;
 import static io.servicetalk.grpc.protoc.Types.DefaultGrpcClientMetadata;
 import static io.servicetalk.grpc.protoc.Types.EmptyBufferDecoderGroup;
 import static io.servicetalk.grpc.protoc.Types.GrpcBindableService;
+import static io.servicetalk.grpc.protoc.Types.GrpcBlockingUtils;
 import static io.servicetalk.grpc.protoc.Types.GrpcClient;
 import static io.servicetalk.grpc.protoc.Types.GrpcClientCallFactory;
 import static io.servicetalk.grpc.protoc.Types.GrpcClientFactory;
@@ -1575,19 +1576,18 @@ final class Generator {
         state.clientMetaDatas.forEach(clientMetaData -> {
             final CodeBlock requestExpression = clientMetaData.methodProto.getClientStreaming() ?
                     CodeBlock.of("$T.fromIterable($L)", Publisher, request) : CodeBlock.of(request);
-            final String responseConversionExpression = clientMetaData.methodProto.getServerStreaming() ?
-                    ".toIterable()" : ".toFuture().get()";
+            final boolean serverStreaming = clientMetaData.methodProto.getServerStreaming();
 
             typeSpecBuilder
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, CLIENT), false,
                             (n, b) -> b.addAnnotation(Override.class)
-                                    .addStatement("return $L.$L($L)$L", client, n, requestExpression,
-                                            responseConversionExpression)))
+                                    .addStatement(blockingResponseStatement(serverStreaming,
+                                            CodeBlock.of("$L.$L($L)", client, n, requestExpression)))))
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, CLIENT), false,
                             (n, b) -> b.addAnnotation(Override.class)
                                     .addParameter(GrpcClientMetadata, metadata, FINAL)
-                                    .addStatement("return $L.$L($L, $L)$L", client, n, metadata, requestExpression,
-                                            responseConversionExpression)));
+                                    .addStatement(blockingResponseStatement(serverStreaming,
+                                            CodeBlock.of("$L.$L($L, $L)", client, n, metadata, requestExpression)))));
 
             if (!skipDeprecated) {
                 typeSpecBuilder.addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, CLIENT),
@@ -1595,12 +1595,18 @@ final class Generator {
                         (n, b) -> b.addAnnotation(Deprecated.class)
                                 .addAnnotation(Override.class)
                                 .addParameter(clientMetaData.className, metadata, FINAL)
-                                .addStatement("return $L.$L($L, $L)$L", client, n, metadata, requestExpression,
-                                        responseConversionExpression)));
+                                .addStatement(blockingResponseStatement(serverStreaming,
+                                        CodeBlock.of("$L.$L($L, $L)", client, n, metadata, requestExpression)))));
             }
         });
 
         return typeSpecBuilder.build();
+    }
+
+    private static CodeBlock blockingResponseStatement(final boolean serverStreaming, final CodeBlock call) {
+        return serverStreaming ?
+                CodeBlock.of("return $L.toIterable()", call) :
+                CodeBlock.of("return $T.blockingInvocation($L)", GrpcBlockingUtils, call);
     }
 
     /**
@@ -1842,7 +1848,7 @@ final class Generator {
                 .addModifiers(PUBLIC)
                 .addAnnotation(Override.class)
                 .addException(Exception.class)
-                .addStatement("$L.$L().toFuture().get()", fieldName, completableMethodName)
+                .addStatement("$T.blockingInvocation($L.$L())", GrpcBlockingUtils, fieldName, completableMethodName)
                 .build();
     }
 }
