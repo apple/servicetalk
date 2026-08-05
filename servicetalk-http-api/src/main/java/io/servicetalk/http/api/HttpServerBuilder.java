@@ -213,28 +213,26 @@ public interface HttpServerBuilder {
     HttpServerBuilder allowDropRequestTrailers(boolean allowDrop);
 
     /**
-     * Sets the maximum size, in bytes, of an aggregated request payload body that this server will buffer in memory.
+     * Sets the maximum size, in bytes, of an aggregated request payload body this server buffers in memory.
      * <p>
-     * The limit applies only when a request is <strong>aggregated</strong> (an {@link HttpRequest aggregated
-     * programming paradigm} or a filter calling {@link StreamingHttpRequest#toRequest()}); requests consumed as a
-     * {@link StreamingHttpRequest#payloadBody() stream} are not affected. The limit is measured against the fully
-     * decoded payload at the point of aggregation &mdash; <em>after</em> any decompression or body transformation by
-     * earlier filters &mdash; not the bytes received from the network nor any declared {@code Content-Length}.
+     * Applies only when a request is <strong>aggregated</strong> (an {@link HttpRequest aggregated paradigm} or a
+     * filter calling {@link StreamingHttpRequest#toRequest()}); {@link StreamingHttpRequest#payloadBody() streamed}
+     * requests are unaffected. Measured against the fully decoded payload at aggregation &mdash; after any
+     * decompression or transformation by earlier filters &mdash; not the wire bytes or {@code Content-Length}.
      * <p>
-     * The sign of the argument selects the mode and the magnitude selects the threshold:
+     * The sign selects the mode, the magnitude the threshold:
      * <ul>
-     *     <li>a <strong>positive</strong> value enforces the limit, raising a {@link PayloadTooLargeException} that the
-     *     default exception mapping turns into a {@link HttpResponseStatus#PAYLOAD_TOO_LARGE 413 Payload Too Large}
-     *     response;</li>
-     *     <li>a <strong>negative</strong> value enables warn-only mode at {@code abs(value)} bytes: oversized requests
-     *     are still served, but a rate-limited warning is logged;</li>
-     *     <li>{@code 0} disables the limit entirely.</li>
+     *     <li><strong>positive</strong> enforces, raising a {@link PayloadTooLargeException} that the default exception
+     *     mapping turns into a {@link HttpResponseStatus#PAYLOAD_TOO_LARGE 413 Payload Too Large};</li>
+     *     <li><strong>negative</strong> warns at {@code abs(value)} bytes: oversized requests are still served, with a
+     *     rate-limited warning;</li>
+     *     <li>{@code 0} disables it.</li>
      * </ul>
-     * The default is warn-only at 16 MiB; enforcing is planned to become the default in a future release. For an opt-in
-     * limit that fails fast on {@code Content-Length}, see {@code PayloadSizeLimitingHttpServiceFilter}; both apply.
+     * Defaults to warn-only at 16 MiB; enforcing is planned to become the default in a future release. See also
+     * {@code PayloadSizeLimitingHttpServiceFilter} for a {@code Content-Length} fail-fast; both apply.
      *
-     * @param maxAggregatedPayloadSize the maximum number of payload bytes to buffer when a request is aggregated;
-     * positive enforces at that size, negative warns at its magnitude, {@code 0} disables the limit
+     * @param maxAggregatedPayloadSize bytes to buffer when a request is aggregated; positive enforces, negative warns
+     * at its magnitude, {@code 0} disables
      * @return {@code this}
      */
     // FIXME: 0.43 - consider removing default impl

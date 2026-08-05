@@ -132,19 +132,15 @@ final class AggregatedPayloadSizeLimiter implements LongConsumer {
         final long last = lastWarnNanos.get();
         if (now - last >= WARN_INTERVAL_NANOS && lastWarnNanos.compareAndSet(last, now)) {
             if (role == CLIENT) {
-                LOGGER.warn("Aggregated payload size={} exceeded {} bytes for {}. This client is receiving very " +
-                        "large message bodies; consider using the streaming APIs instead to prevent memory pressure " +
-                        "issues. Largest payload observed so far is {} bytes. This warning is rate-limited to once " +
-                        "per 5 minutes per client.",
+                LOGGER.warn("Aggregated payload size={} exceeded {} bytes for {} (largest observed {} bytes). This " +
+                        "client is buffering very large message bodies; consider the streaming APIs to avoid memory " +
+                        "pressure. Warn-only mode, rate-limited to once per 5 minutes per client.",
                         totalSize, maxAggregatedSize, owner, maxObserved, constructionSite);
             } else {
-                LOGGER.warn("Aggregated payload size={} exceeded the configured maximum of {} bytes for {}, but the " +
-                        "limit is configured in warn-only mode so the payload is allowed through. This server is " +
-                        "receiving very large message bodies; consider using the streaming APIs instead to prevent " +
-                        "memory pressure issues. Largest payload observed so far is {} bytes. Configure an enforcing " +
-                        "maxAggregatedPayloadSize(int) to reject oversized payloads; enforcing is planned to become " +
-                        "the default in a future release. This warning is rate-limited to once per 5 minutes per " +
-                        "server.",
+                LOGGER.warn("Aggregated payload size={} exceeded the configured {} bytes for {} (largest observed " +
+                        "{} bytes), allowed through in warn-only mode. Consider the streaming APIs to avoid memory " +
+                        "pressure, or set an enforcing maxAggregatedPayloadSize(int) to reject oversized payloads " +
+                        "(planned to become the default). Rate-limited to once per 5 minutes per server.",
                         totalSize, maxAggregatedSize, owner, maxObserved, constructionSite);
             }
         }

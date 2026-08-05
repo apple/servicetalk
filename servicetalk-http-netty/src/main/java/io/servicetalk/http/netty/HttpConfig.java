@@ -121,19 +121,18 @@ final class HttpConfig {
         try {
             final Integer value = Integer.valueOf(raw.trim());
             if (legacy) {
-                LOGGER.warn("-D{}={} This property is deprecated in favor of -D{} and -D{} and will be removed in a " +
-                                "future release. Configure this value per client/server builder via " +
-                                "maxAggregatedPayloadSize(int) instead.", name, value,
+                LOGGER.warn("-D{}={} is deprecated in favor of -D{} and -D{} and will be removed in a future " +
+                        "release; set maxAggregatedPayloadSize(int) per client/server instead.", name, value,
                         DEFAULT_CLIENT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY,
                         DEFAULT_SERVER_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY);
             } else {
-                LOGGER.warn("-D{}={} This property is temporary and will be removed in a future release. Configure " +
-                        "this value per client/server builder via maxAggregatedPayloadSize(int) instead.", name, value);
+                LOGGER.warn("-D{}={} is temporary and will be removed in a future release; set " +
+                        "maxAggregatedPayloadSize(int) per client/server instead.", name, value);
             }
             return value;
         } catch (NumberFormatException e) {
-            LOGGER.warn("-D{}={} DANGEROUS_CONFIG_WARNING: The value is not a valid integer; ignoring it and using " +
-                    "the built-in per-client/server defaults.", name, raw);
+            LOGGER.warn("-D{}={} DANGEROUS_CONFIG_WARNING: not a valid integer; ignoring it and using the built-in " +
+                    "per-client/server defaults.", name, raw);
             return null;
         }
     }

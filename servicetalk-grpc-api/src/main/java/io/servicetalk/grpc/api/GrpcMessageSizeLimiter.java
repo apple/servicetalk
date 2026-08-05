@@ -204,19 +204,18 @@ final class GrpcMessageSizeLimiter {
         try {
             final Integer value = Integer.valueOf(raw.trim());
             if (legacy) {
-                LOGGER.warn("-D{}={} This property is deprecated in favor of -D{} and -D{} and will be removed in a " +
-                                "future release. Configure this value per client/server builder via " +
-                                "maxInboundMessageSize(int) instead.", name, value,
+                LOGGER.warn("-D{}={} is deprecated in favor of -D{} and -D{} and will be removed in a future " +
+                        "release; set maxInboundMessageSize(int) per client/server instead.", name, value,
                         DEFAULT_CLIENT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY,
                         DEFAULT_SERVER_MAX_INBOUND_MESSAGE_SIZE_PROPERTY);
             } else {
-                LOGGER.warn("-D{}={} This property is temporary and will be removed in a future release. Configure " +
-                        "this value per client/server builder via maxInboundMessageSize(int) instead.", name, value);
+                LOGGER.warn("-D{}={} is temporary and will be removed in a future release; set " +
+                        "maxInboundMessageSize(int) per client/server instead.", name, value);
             }
             return value;
         } catch (NumberFormatException e) {
-            LOGGER.warn("-D{}={} DANGEROUS_CONFIG_WARNING: The value is not a valid integer; ignoring it and using " +
-                    "the built-in per-client/server defaults.", name, raw);
+            LOGGER.warn("-D{}={} DANGEROUS_CONFIG_WARNING: not a valid integer; ignoring it and using the built-in " +
+                    "per-client/server defaults.", name, raw);
             return null;
         }
     }
@@ -232,19 +231,16 @@ final class GrpcMessageSizeLimiter {
         if (now - last >= WARN_INTERVAL_NANOS && lastWarnNanos.compareAndSet(last, now)) {
             final String forOwner = owner == null ? "" : " for " + owner;
             if (role == CLIENT) {
-                LOGGER.warn("gRPC message size={} exceeded the configured maximum inbound message size of {} bytes{}," +
-                        " but the limit is configured in warn-only mode so the message is allowed through. This " +
-                        "client is receiving very large messages, which can cause memory pressure. Largest message " +
-                        "observed so far is {} bytes. Configure an enforcing maxInboundMessageSize(int) to reject " +
-                        "oversized messages with RESOURCE_EXHAUSTED. This warning is rate-limited to once per 5 " +
-                        "minutes per client.", messageSize, maxMessageSize, forOwner, maxObserved, constructionSite);
+                LOGGER.warn("gRPC message size={} exceeded the maximum inbound message size of {} bytes{} (largest " +
+                        "observed {} bytes), allowed through in warn-only mode. Large messages can cause memory " +
+                        "pressure. Rate-limited to once per 5 minutes per client.",
+                        messageSize, maxMessageSize, forOwner, maxObserved, constructionSite);
             } else {
-                LOGGER.warn("gRPC message size={} exceeded the configured maximum inbound message size of {} bytes{}," +
-                        " but the limit is configured in warn-only mode so the message is allowed through. This " +
-                        "server is receiving very large messages, which can cause memory pressure. Largest message " +
-                        "observed so far is {} bytes. Configure an enforcing maxInboundMessageSize(int) to reject " +
-                        "oversized messages with RESOURCE_EXHAUSTED; enforcing is planned to become the default in a " +
-                        "future release. This warning is rate-limited to once per 5 minutes per server.",
+                LOGGER.warn("gRPC message size={} exceeded the maximum inbound message size of {} bytes{} (largest " +
+                        "observed {} bytes), allowed through in warn-only mode. Large messages can cause memory " +
+                        "pressure; set an enforcing maxInboundMessageSize(int) to reject them with " +
+                        "RESOURCE_EXHAUSTED (planned to become the default). Rate-limited to once per 5 minutes per " +
+                        "server.",
                         messageSize, maxMessageSize, forOwner, maxObserved, constructionSite);
             }
         }

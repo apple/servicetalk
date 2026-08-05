@@ -52,17 +52,15 @@ public abstract class GrpcConfig {
         }
 
         /**
-         * Set the maximum size, in bytes, of a decoded inbound gRPC message. The sign selects the mode and the
-         * magnitude the threshold: a <em>positive</em> value enforces the limit &mdash; a message whose declared length
-         * exceeds it is rejected with {@link GrpcStatusCode#RESOURCE_EXHAUSTED} before its payload is buffered, and for
-         * a compressed message the limit is also applied to the decoded size &mdash; a <em>negative</em> value enables
-         * warn-only mode at {@code abs(value)} bytes (oversized messages are still delivered, but a rate-limited
-         * warning is logged), and {@code 0} disables the limit. Memory used while decompressing is bounded separately
-         * by the codec's own decompressed-bytes cap, not by this limit. By default the client warns at 64 MiB and the
-         * server warns at 16 MiB; enforcing is planned to become the default for servers in a future release.
+         * Set the maximum size, in bytes, of a decoded inbound gRPC message. The sign selects the mode, the magnitude
+         * the threshold: <em>positive</em> enforces &mdash; a message whose declared length exceeds it is rejected with
+         * {@link GrpcStatusCode#RESOURCE_EXHAUSTED} before buffering (also applied to a compressed message's decoded
+         * size); <em>negative</em> warns at {@code abs(value)} bytes (oversized messages still delivered, with a
+         * rate-limited warning); {@code 0} disables it. Decompression memory is bounded separately by the codec's
+         * decompressed-bytes cap. By default the client warns at 64 MiB and the server at 16 MiB; server enforcing is
+         * planned to become the default in a future release.
          *
-         * @param maxInboundMessageSize the maximum inbound message size in bytes: positive enforces at that size,
-         * negative warns at its magnitude, {@code 0} disables the limit
+         * @param maxInboundMessageSize bytes: positive enforces, negative warns at its magnitude, {@code 0} disables
          * @return {@code this}.
          */
         public final B maxInboundMessageSize(final int maxInboundMessageSize) {
