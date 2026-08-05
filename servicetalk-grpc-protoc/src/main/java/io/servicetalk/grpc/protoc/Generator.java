@@ -66,6 +66,7 @@ import static io.servicetalk.grpc.protoc.Types.BlockingRoute;
 import static io.servicetalk.grpc.protoc.Types.BlockingStreamingClientCall;
 import static io.servicetalk.grpc.protoc.Types.BlockingStreamingGrpcServerResponse;
 import static io.servicetalk.grpc.protoc.Types.BlockingStreamingRoute;
+import static io.servicetalk.grpc.protoc.Types.BlockingUtils;
 import static io.servicetalk.grpc.protoc.Types.BufferDecoderGroup;
 import static io.servicetalk.grpc.protoc.Types.BufferEncoderList;
 import static io.servicetalk.grpc.protoc.Types.ClientCall;
@@ -75,7 +76,6 @@ import static io.servicetalk.grpc.protoc.Types.ContentCodec;
 import static io.servicetalk.grpc.protoc.Types.DefaultGrpcClientMetadata;
 import static io.servicetalk.grpc.protoc.Types.EmptyBufferDecoderGroup;
 import static io.servicetalk.grpc.protoc.Types.GrpcBindableService;
-import static io.servicetalk.grpc.protoc.Types.GrpcBlockingUtils;
 import static io.servicetalk.grpc.protoc.Types.GrpcClient;
 import static io.servicetalk.grpc.protoc.Types.GrpcClientCallFactory;
 import static io.servicetalk.grpc.protoc.Types.GrpcClientFactory;
@@ -1135,7 +1135,7 @@ final class Generator {
                 + state.blockingClientClass.simpleName());
 
         clientSpecBuilder.addMethod(methodBuilder(asBlockingClient)
-                .addModifiers(PUBLIC, DEFAULT)
+                .addModifiers(PUBLIC, DEFAULT)  // FIXME: 0.43 - remove default implementation
                 .addAnnotation(Override.class)
                 .returns(state.blockingClientClass)
                 .addStatement("return new $T(this)", clientToBlockingClientClass).build());
@@ -1606,7 +1606,7 @@ final class Generator {
     private static CodeBlock blockingResponseStatement(final boolean serverStreaming, final CodeBlock call) {
         return serverStreaming ?
                 CodeBlock.of("return $L.toIterable()", call) :
-                CodeBlock.of("return $T.blockingInvocation($L)", GrpcBlockingUtils, call);
+                CodeBlock.of("return $T.blockingInvocation($L)", BlockingUtils, call);
     }
 
     /**
@@ -1848,7 +1848,7 @@ final class Generator {
                 .addModifiers(PUBLIC)
                 .addAnnotation(Override.class)
                 .addException(Exception.class)
-                .addStatement("$T.blockingInvocation($L.$L())", GrpcBlockingUtils, fieldName, completableMethodName)
+                .addStatement("$T.awaitTermination($L.$L())", BlockingUtils, fieldName, completableMethodName)
                 .build();
     }
 }

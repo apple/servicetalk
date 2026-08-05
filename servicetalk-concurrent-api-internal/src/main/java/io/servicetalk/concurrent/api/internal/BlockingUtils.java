@@ -21,10 +21,10 @@ import io.servicetalk.concurrent.api.Single;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
-
 /**
  * Common utility functions to unwrap {@link ExecutionException} from async operations.
+ * <p>
+ * Delegates to {@link io.servicetalk.concurrent.api.BlockingUtils}, the public entry point for this behavior.
  */
 public final class BlockingUtils {
 
@@ -43,15 +43,7 @@ public final class BlockingUtils {
      * @throws Exception InterrupedException upon interruption or unchecked exceptions for any other exception.
      */
     public static <T> T futureGetCancelOnInterrupt(Future<T> future) throws Exception {
-        try {
-            return future.get();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            future.cancel(false);
-            throw e;
-        } catch (ExecutionException e) {
-            return throwException(executionExceptionCause(e));
-        }
+        return io.servicetalk.concurrent.api.BlockingUtils.futureGetCancelOnInterrupt(future);
     }
 
     /**
@@ -64,7 +56,7 @@ public final class BlockingUtils {
      * @throws Exception InterrupedException upon interruption or unchecked exceptions for any other exception.
      */
     public static <T> T blockingInvocation(Single<T> source) throws Exception {
-        return futureGetCancelOnInterrupt(source.toFuture());
+        return io.servicetalk.concurrent.api.BlockingUtils.blockingInvocation(source);
     }
 
     /**
@@ -75,10 +67,6 @@ public final class BlockingUtils {
      * @throws Exception unchecked exceptions for any exception that occurs.
      */
     public static void blockingInvocation(Completable source) throws Exception {
-        futureGetCancelOnInterrupt(source.toFuture());
-    }
-
-    private static Throwable executionExceptionCause(ExecutionException original) {
-        return (original.getCause() != null) ? original.getCause() : original;
+        io.servicetalk.concurrent.api.BlockingUtils.blockingInvocation(source);
     }
 }

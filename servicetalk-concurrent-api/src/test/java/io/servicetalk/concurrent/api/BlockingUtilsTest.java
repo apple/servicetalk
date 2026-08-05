@@ -13,10 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.grpc.api;
-
-import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Single;
+package io.servicetalk.concurrent.api;
 
 import org.junit.jupiter.api.Test;
 
@@ -25,21 +22,22 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class GrpcBlockingUtilsTest {
+class BlockingUtilsTest {
 
     @Test
     void singleReturnsValue() throws Exception {
-        assertThat(GrpcBlockingUtils.blockingInvocation(Single.succeeded("foo")), is("foo"));
+        assertThat(BlockingUtils.blockingInvocation(Single.succeeded("foo")), is("foo"));
     }
 
     @Test
     void singleThrowsCauseDirectly() {
         IllegalStateException cause = new IllegalStateException("deliberate");
         assertThat(assertThrows(IllegalStateException.class,
-                () -> GrpcBlockingUtils.blockingInvocation(Single.failed(cause))), sameInstance(cause));
+                () -> BlockingUtils.blockingInvocation(Single.failed(cause))), sameInstance(cause));
     }
 
     @Test
@@ -48,7 +46,7 @@ class GrpcBlockingUtilsTest {
         Single<String> source = Single.<String>never().whenCancel(() -> cancelled.set(true));
         Thread.currentThread().interrupt();
         try {
-            assertThrows(InterruptedException.class, () -> GrpcBlockingUtils.blockingInvocation(source));
+            assertThrows(InterruptedException.class, () -> BlockingUtils.blockingInvocation(source));
             assertTrue(Thread.currentThread().isInterrupted(), "interrupt status should be preserved");
             assertTrue(cancelled.get(), "source should be cancelled on interrupt");
         } finally {
@@ -60,7 +58,7 @@ class GrpcBlockingUtilsTest {
     void completableThrowsCauseDirectly() {
         IllegalStateException cause = new IllegalStateException("deliberate");
         assertThat(assertThrows(IllegalStateException.class,
-                () -> GrpcBlockingUtils.blockingInvocation(Completable.failed(cause))), sameInstance(cause));
+                () -> BlockingUtils.blockingInvocation(Completable.failed(cause))), sameInstance(cause));
     }
 
     @Test
@@ -69,9 +67,35 @@ class GrpcBlockingUtilsTest {
         Completable source = Completable.never().whenCancel(() -> cancelled.set(true));
         Thread.currentThread().interrupt();
         try {
-            assertThrows(InterruptedException.class, () -> GrpcBlockingUtils.blockingInvocation(source));
+            assertThrows(InterruptedException.class, () -> BlockingUtils.blockingInvocation(source));
             assertTrue(Thread.currentThread().isInterrupted(), "interrupt status should be preserved");
             assertTrue(cancelled.get(), "source should be cancelled on interrupt");
+        } finally {
+            Thread.interrupted();
+        }
+    }
+
+    @Test
+    void awaitTerminationCompletes() throws Exception {
+        BlockingUtils.awaitTermination(Completable.completed());
+    }
+
+    @Test
+    void awaitTerminationThrowsCauseDirectly() {
+        IllegalStateException cause = new IllegalStateException("deliberate");
+        assertThat(assertThrows(IllegalStateException.class,
+                () -> BlockingUtils.awaitTermination(Completable.failed(cause))), sameInstance(cause));
+    }
+
+    @Test
+    void awaitTerminationPreservesInterruptButDoesNotCancel() {
+        AtomicBoolean cancelled = new AtomicBoolean();
+        Completable source = Completable.never().whenCancel(() -> cancelled.set(true));
+        Thread.currentThread().interrupt();
+        try {
+            assertThrows(InterruptedException.class, () -> BlockingUtils.awaitTermination(source));
+            assertTrue(Thread.currentThread().isInterrupted(), "interrupt status should be preserved");
+            assertFalse(cancelled.get(), "close source must not be cancelled on interrupt");
         } finally {
             Thread.interrupted();
         }
