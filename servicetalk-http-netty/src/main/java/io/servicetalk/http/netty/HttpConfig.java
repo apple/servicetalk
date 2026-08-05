@@ -26,8 +26,6 @@ import java.util.function.LongConsumer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
-import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
-import static java.lang.Integer.getInteger;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -37,60 +35,67 @@ import static java.util.Objects.requireNonNull;
 final class HttpConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpConfig.class);
 
-    static final int DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE = 4 * 1024 * 1024;
-    // Magic value accepted by the temporaryDefaultMaxAggregatedPayloadSize system property (but not by the
-    // maxAggregatedPayloadSize(int) builder API), and the built-in default: warn (rate-limited) when the
-    // DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE threshold is exceeded rather than rejecting. Eases rollout of a
-    // global limit; a value set programmatically via the builder is always definitive.
-    static final int WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE = -1;
-    // FIXME: 0.43 - remove this temporary property
+    static final int DEFAULT_CLIENT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE = 64 * 1024 * 1024;
+    static final int DEFAULT_SERVER_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE = 16 * 1024 * 1024;
+    // FIXME: 0.43 - remove these temporary properties
+    static final String DEFAULT_CLIENT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY =
+            "io.servicetalk.http.netty.temporaryDefaultClientMaxAggregatedPayloadSize";
+    static final String DEFAULT_SERVER_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY =
+            "io.servicetalk.http.netty.temporaryDefaultServerMaxAggregatedPayloadSize";
+    // Deprecated in favor of the client/server-specific properties above; kept for a release or two in case a
+    // deployment already relies on it. A role-specific property, when set, takes precedence over this legacy one.
     static final String DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY =
             "io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize";
-    static final int DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE;
+    // When set, override the built-in per-role default using the same sign convention as the builder API (see
+    // maxAggregatedPayloadSize(int)). Null when neither the role-specific nor the legacy property is set.
+    @Nullable
+    static final Integer DEFAULT_CLIENT_MAX_AGGREGATED_PAYLOAD_SIZE_OVERRIDE;
+    @Nullable
+    static final Integer DEFAULT_SERVER_MAX_AGGREGATED_PAYLOAD_SIZE_OVERRIDE;
 
     static {
-        // Warn-only by default unless the temporary property overrides it. The property additionally accepts the
-        // warn-only magic value; only values below it are invalid. Don't throw from this static initializer; fall
-        // back to warn-only instead.
-        final int value = getInteger(DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY,
-                WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE);
-        if (value < WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE) {
-            LOGGER.warn("-D{}={} DANGEROUS_CONFIG_WARNING: The value is invalid (expected >= {}). Falling back to " +
-                            "warn-only mode at {} bytes.",
-                    DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY, value, WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE,
-                    DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE);
-            DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE = WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE;
-        } else {
-            DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE = value;
-            // getInteger can't distinguish "unset" (the warn-only default) from an explicit value; only warn about
-            // the temporary property when it is actually set.
-            if (System.getProperty(DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY) != null) {
-                if (value == WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE) {
-                    LOGGER.warn("-D{}={} DANGEROUS_CONFIG_WARNING: Setting this property to -1 (warn-only mode) may " +
-                                    "be used temporarily to unblock deployment but exposes the service to the risk " +
-                                    "of aggregating unbounded amount of data on the heap. Configure appropriate " +
-                                    "value per client/server builder via maxAggregatedPayloadSize(int) instead.",
-                            DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY, value);
-                } else {
-                    LOGGER.warn("-D{}={} This property will be removed in the future releases. Configure this value " +
-                                    "per client/server builder via maxAggregatedPayloadSize(int) instead.",
-                            DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY, value);
-                }
-            }
+        final Integer legacy = parseTemporaryProperty(DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY, true);
+        final Integer client = parseTemporaryProperty(DEFAULT_CLIENT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY, false);
+        final Integer server = parseTemporaryProperty(DEFAULT_SERVER_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY, false);
+        DEFAULT_CLIENT_MAX_AGGREGATED_PAYLOAD_SIZE_OVERRIDE = client != null ? client : legacy;
+        DEFAULT_SERVER_MAX_AGGREGATED_PAYLOAD_SIZE_OVERRIDE = server != null ? server : legacy;
+    }
+
+    /**
+     * Whether a config belongs to a client or a server. Selects the built-in default aggregation limit and the wording
+     * of the warn-only log message.
+     */
+    enum Role {
+        CLIENT(DEFAULT_CLIENT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE, "client"),
+        SERVER(DEFAULT_SERVER_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE, "server");
+
+        // Negative => warn-only (rate-limited) at this magnitude by default rather than rejecting; a value set
+        // programmatically via the builder is always definitive.
+        final int defaultMaxAggregatedPayloadSize;
+        final String description;
+
+        Role(final int defaultWarnSize, final String description) {
+            this.defaultMaxAggregatedPayloadSize = -defaultWarnSize;
+            this.description = description;
         }
     }
 
     private final Consumer<H2ProtocolConfig> h2ConfigValidator;
+    private final Role role;
     @Nullable
     private H1ProtocolConfig h1Config;
     @Nullable
     private H2ProtocolConfig h2Config;
     private List<String> supportedAlpnProtocols;
     private boolean allowDropTrailers;
-    private int maxAggregatedPayloadSize = DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE;
+    private int maxAggregatedPayloadSize;
 
-    HttpConfig(final Consumer<H2ProtocolConfig> h2ConfigValidator) {
+    HttpConfig(final Consumer<H2ProtocolConfig> h2ConfigValidator, final Role role) {
         this.h2ConfigValidator = requireNonNull(h2ConfigValidator);
+        this.role = role;
+        final Integer override = role == Role.CLIENT ? DEFAULT_CLIENT_MAX_AGGREGATED_PAYLOAD_SIZE_OVERRIDE :
+                DEFAULT_SERVER_MAX_AGGREGATED_PAYLOAD_SIZE_OVERRIDE;
+        this.maxAggregatedPayloadSize = override != null ? override : role.defaultMaxAggregatedPayloadSize;
         h1Config = h1Default();
         h2Config = null;
         supportedAlpnProtocols = emptyList();
@@ -98,11 +103,39 @@ final class HttpConfig {
 
     HttpConfig(final HttpConfig from) {
         this.h2ConfigValidator = from.h2ConfigValidator;
+        this.role = from.role;
         this.h1Config = from.h1Config;
         this.h2Config = from.h2Config;
         this.supportedAlpnProtocols = from.supportedAlpnProtocols;
         this.allowDropTrailers = from.allowDropTrailers;
         this.maxAggregatedPayloadSize = from.maxAggregatedPayloadSize;
+    }
+
+    // Don't throw from the static initializer; ignore an invalid value and fall back to the per-role defaults.
+    @Nullable
+    private static Integer parseTemporaryProperty(final String name, final boolean legacy) {
+        final String raw = System.getProperty(name);
+        if (raw == null) {
+            return null;
+        }
+        try {
+            final Integer value = Integer.valueOf(raw.trim());
+            if (legacy) {
+                LOGGER.warn("-D{}={} This property is deprecated in favor of -D{} and -D{} and will be removed in a " +
+                                "future release. Configure this value per client/server builder via " +
+                                "maxAggregatedPayloadSize(int) instead.", name, value,
+                        DEFAULT_CLIENT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY,
+                        DEFAULT_SERVER_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY);
+            } else {
+                LOGGER.warn("-D{}={} This property is temporary and will be removed in a future release. Configure " +
+                        "this value per client/server builder via maxAggregatedPayloadSize(int) instead.", name, value);
+            }
+            return value;
+        } catch (NumberFormatException e) {
+            LOGGER.warn("-D{}={} DANGEROUS_CONFIG_WARNING: The value is not a valid integer; ignoring it and using " +
+                    "the built-in per-client/server defaults.", name, raw);
+            return null;
+        }
     }
 
     @Nullable
@@ -128,7 +161,7 @@ final class HttpConfig {
     }
 
     void maxAggregatedPayloadSize(int maxAggregatedPayloadSize) {
-        this.maxAggregatedPayloadSize = ensureNonNegative(maxAggregatedPayloadSize, "maxAggregatedPayloadSize");
+        this.maxAggregatedPayloadSize = maxAggregatedPayloadSize;
     }
 
     /**
@@ -138,24 +171,23 @@ final class HttpConfig {
      * {@link ReadOnlyHttpServerConfig}) and shared across its connections.
      */
     LongConsumer newAggregatedPayloadSizeLimiter(@Nullable final Object owner) {
-        return toAggregatedPayloadSizeLimiter(maxAggregatedPayloadSize, DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE, owner);
+        return toAggregatedPayloadSizeLimiter(maxAggregatedPayloadSize, role, owner);
     }
 
     /**
-     * Map a configured {@code maxAggregatedPayloadSize} to a limiter. {@code 0} disables it, {@code >0} enforces
-     * (rejects) at that size, and {@link #WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE -1} warns (without rejecting) at
-     * {@code resolvedDefault}. Because the {@code resolvedDefault} can itself be the warn-only ({@code -1}) or disabled
-     * ({@code 0}) selector when the default was set via system property, warn-only mode falls back to
-     * {@link #DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE} when {@code resolvedDefault} is not positive, so warn-only
-     * mode never silently collapses to "disabled".
+     * Map a configured {@code maxAggregatedPayloadSize} to a limiter: {@code 0} disables it, {@code >0} enforces
+     * (rejects) at that size, and {@code <0} warns (without rejecting) at {@code abs(configured)}. The sign selects the
+     * mode and the magnitude selects the threshold.
      */
-    static LongConsumer toAggregatedPayloadSizeLimiter(final int configured, final int resolvedDefault,
+    static LongConsumer toAggregatedPayloadSizeLimiter(final int configured, final Role role,
                                                        @Nullable final Object owner) {
-        if (configured == WARN_ONLY_MAX_AGGREGATED_PAYLOAD_SIZE) {
-            return AggregatedPayloadSizeLimiter.warning(
-                    resolvedDefault > 0 ? resolvedDefault : DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE, owner);
+        if (configured >= 0) {
+            return AggregatedPayloadSizeLimiter.enforcing(configured);
         }
-        return AggregatedPayloadSizeLimiter.enforcing(configured);
+        // -Integer.MIN_VALUE overflows back to a negative value; clamp so it stays a warn-only limiter rather than
+        // collapsing to disabled.
+        final int warnThreshold = configured == Integer.MIN_VALUE ? Integer.MAX_VALUE : -configured;
+        return AggregatedPayloadSizeLimiter.warning(warnThreshold, role, owner);
     }
 
     void protocols(final HttpProtocolConfig... protocols) {

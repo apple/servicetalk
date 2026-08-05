@@ -62,7 +62,7 @@ final class HttpClientConfig {
                 throw new IllegalArgumentException("Server Push is not supported by the client, " +
                         "expected MAX_CONCURRENT_STREAMS value is null or 0, settings=" + settings);
             }
-        });
+        }, HttpConfig.Role.CLIENT);
     }
 
     HttpClientConfig(final HttpClientConfig from) {

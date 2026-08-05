@@ -46,7 +46,7 @@ final class HttpServerConfig {
                 throw new IllegalArgumentException(
                         "Server cannot set SETTINGS_ENABLE_PUSH value other than 0, settings=" + settings);
             }
-        });
+        }, HttpConfig.Role.SERVER);
     }
 
     HttpServerConfig(final HttpServerConfig from) {

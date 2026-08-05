@@ -217,20 +217,24 @@ public interface HttpServerBuilder {
      * <p>
      * The limit applies only when a request is <strong>aggregated</strong> (an {@link HttpRequest aggregated
      * programming paradigm} or a filter calling {@link StreamingHttpRequest#toRequest()}); requests consumed as a
-     * {@link StreamingHttpRequest#payloadBody() stream} are not affected. Exceeding it raises a
-     * {@link PayloadTooLargeException}, which the default exception mapping turns into a
-     * {@link HttpResponseStatus#PAYLOAD_TOO_LARGE 413 Payload Too Large} response. The limit is measured against the
-     * fully decoded payload at the point of aggregation &mdash; <em>after</em> any decompression or body transformation
-     * by earlier filters &mdash; not the bytes received from the network nor any declared {@code Content-Length}.
+     * {@link StreamingHttpRequest#payloadBody() stream} are not affected. The limit is measured against the fully
+     * decoded payload at the point of aggregation &mdash; <em>after</em> any decompression or body transformation by
+     * earlier filters &mdash; not the bytes received from the network nor any declared {@code Content-Length}.
      * <p>
-     * The default is 4 MiB, overridable globally via the temporary
-     * {@code io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize} system property, which also accepts
-     * {@code -1} for warn-only mode (oversized requests are served but logged); an explicit call here always takes
-     * precedence and is enforced. For an opt-in limit that fails fast on {@code Content-Length}, see
-     * {@code PayloadSizeLimitingHttpServiceFilter}; both apply.
+     * The sign of the argument selects the mode and the magnitude selects the threshold:
+     * <ul>
+     *     <li>a <strong>positive</strong> value enforces the limit, raising a {@link PayloadTooLargeException} that the
+     *     default exception mapping turns into a {@link HttpResponseStatus#PAYLOAD_TOO_LARGE 413 Payload Too Large}
+     *     response;</li>
+     *     <li>a <strong>negative</strong> value enables warn-only mode at {@code abs(value)} bytes: oversized requests
+     *     are still served, but a rate-limited warning is logged;</li>
+     *     <li>{@code 0} disables the limit entirely.</li>
+     * </ul>
+     * The default is warn-only at 16 MiB; enforcing is planned to become the default in a future release. For an opt-in
+     * limit that fails fast on {@code Content-Length}, see {@code PayloadSizeLimitingHttpServiceFilter}; both apply.
      *
      * @param maxAggregatedPayloadSize the maximum number of payload bytes to buffer when a request is aggregated;
-     * {@code 0} disables the limit. Must be non-negative.
+     * positive enforces at that size, negative warns at its magnitude, {@code 0} disables the limit
      * @return {@code this}
      */
     // FIXME: 0.43 - consider removing default impl
