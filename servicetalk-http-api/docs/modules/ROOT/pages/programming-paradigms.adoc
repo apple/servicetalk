@@ -29,6 +29,11 @@ client raises a `PayloadTooLargeException`), a *negative* value enables *warn-on
 aggregated messages are still served/delivered, but a warning is logged, rate-limited to once every five minutes
 per client/server), and `0` disables the limit. By default the client warns at 64 MiB and the server warns at
 16 MiB; enforcing is planned to become the default for servers in a future release.
+
+The built-in defaults can be overridden globally with the
+`io.servicetalk.http.netty.defaultClientMaxAggregatedPayloadSize` and
+`io.servicetalk.http.netty.defaultServerMaxAggregatedPayloadSize` system properties (same sign convention); a
+per-builder call takes precedence.
 ====
 
 [#service-programming-paradigms]

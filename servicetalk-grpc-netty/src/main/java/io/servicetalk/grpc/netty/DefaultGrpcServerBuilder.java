@@ -158,7 +158,7 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
     private Single<GrpcServerContext> doListen(final GrpcServiceFactory<?> serviceFactory) {
         interceptorBuilder = preBuild();
         // Only override the config's default when the user set an explicit value, so an unset limit defers to the
-        // GrpcConfig default (which resolves the temporary properties and is warn-only by default).
+        // GrpcConfig default (which resolves the client/server default properties and is warn-only by default).
         final GrpcServiceConfig.Builder serviceConfigBuilder = new GrpcServiceConfig.Builder()
                 .executionContext(interceptorBuilder.contextBuilder.build());
         if (maxInboundMessageSize != null) {

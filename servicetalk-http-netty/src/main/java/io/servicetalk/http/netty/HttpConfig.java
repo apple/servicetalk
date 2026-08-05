@@ -37,13 +37,13 @@ final class HttpConfig {
 
     static final int DEFAULT_CLIENT_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE = 64 * 1024 * 1024;
     static final int DEFAULT_SERVER_MAX_AGGREGATED_PAYLOAD_SIZE_VALUE = 16 * 1024 * 1024;
-    // FIXME: 0.43 - remove these temporary properties
     static final String DEFAULT_CLIENT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY =
-            "io.servicetalk.http.netty.temporaryDefaultClientMaxAggregatedPayloadSize";
+            "io.servicetalk.http.netty.defaultClientMaxAggregatedPayloadSize";
     static final String DEFAULT_SERVER_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY =
-            "io.servicetalk.http.netty.temporaryDefaultServerMaxAggregatedPayloadSize";
-    // Deprecated in favor of the client/server-specific properties above; kept for a release or two in case a
-    // deployment already relies on it. A role-specific property, when set, takes precedence over this legacy one.
+            "io.servicetalk.http.netty.defaultServerMaxAggregatedPayloadSize";
+    // Deprecated legacy property, superseded by the client/server-specific properties above; kept for a release or
+    // two in case a deployment already relies on it. A role-specific property, when set, takes precedence over it.
+    // FIXME: 0.43 - remove this deprecated property
     static final String DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY =
             "io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize";
     // When set, override the built-in per-role default using the same sign convention as the builder API (see
@@ -54,9 +54,9 @@ final class HttpConfig {
     static final Integer DEFAULT_SERVER_MAX_AGGREGATED_PAYLOAD_SIZE_OVERRIDE;
 
     static {
-        final Integer legacy = parseTemporaryProperty(DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY, true);
-        final Integer client = parseTemporaryProperty(DEFAULT_CLIENT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY, false);
-        final Integer server = parseTemporaryProperty(DEFAULT_SERVER_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY, false);
+        final Integer legacy = parseDefaultOverride(DEFAULT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY, true);
+        final Integer client = parseDefaultOverride(DEFAULT_CLIENT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY, false);
+        final Integer server = parseDefaultOverride(DEFAULT_SERVER_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY, false);
         DEFAULT_CLIENT_MAX_AGGREGATED_PAYLOAD_SIZE_OVERRIDE = client != null ? client : legacy;
         DEFAULT_SERVER_MAX_AGGREGATED_PAYLOAD_SIZE_OVERRIDE = server != null ? server : legacy;
     }
@@ -113,7 +113,7 @@ final class HttpConfig {
 
     // Don't throw from the static initializer; ignore an invalid value and fall back to the per-role defaults.
     @Nullable
-    private static Integer parseTemporaryProperty(final String name, final boolean legacy) {
+    private static Integer parseDefaultOverride(final String name, final boolean legacy) {
         final String raw = System.getProperty(name);
         if (raw == null) {
             return null;
@@ -121,13 +121,12 @@ final class HttpConfig {
         try {
             final Integer value = Integer.valueOf(raw.trim());
             if (legacy) {
-                LOGGER.warn("-D{}={} is deprecated in favor of -D{} and -D{} and will be removed in a future " +
-                        "release; set maxAggregatedPayloadSize(int) per client/server instead.", name, value,
-                        DEFAULT_CLIENT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY,
+                LOGGER.warn("-D{}={} is a deprecated legacy property, superseded by -D{} and -D{}, and will be " +
+                        "removed in a future release; set maxAggregatedPayloadSize(int) per client/server instead.",
+                        name, value, DEFAULT_CLIENT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY,
                         DEFAULT_SERVER_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY);
             } else {
-                LOGGER.warn("-D{}={} is temporary and will be removed in a future release; set " +
-                        "maxAggregatedPayloadSize(int) per client/server instead.", name, value);
+                LOGGER.info("-D{}={} overrides the built-in default maxAggregatedPayloadSize.", name, value);
             }
             return value;
         } catch (NumberFormatException e) {

@@ -74,6 +74,11 @@ rate-limited warning is logged (once every five minutes per client/server) inste
 the limit. By default the client warns at 64 MiB and the server warns at 16 MiB; enforcing is planned to become the
 default for servers in a future release.
 
+The built-in defaults can be overridden globally with the
+`io.servicetalk.grpc.netty.defaultClientMaxInboundMessageSize` and
+`io.servicetalk.grpc.netty.defaultServerMaxInboundMessageSize` system properties (same sign convention); a per-builder
+call takes precedence.
+
 NOTE: `maxInboundMessageSize` does not bound the memory used *while* decompressing a compressed message. That is
 governed independently by the codec's own decompressed-bytes cap (`ZipCompressionBuilder#maxDecompressedBytes(long)`,
 *64 MiB* by default), which fails fast before the decoded message is checked against `maxInboundMessageSize`.

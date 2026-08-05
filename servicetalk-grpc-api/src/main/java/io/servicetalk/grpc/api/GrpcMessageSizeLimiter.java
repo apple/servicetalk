@@ -51,25 +51,25 @@ final class GrpcMessageSizeLimiter {
     // limit; a value set programmatically via the builder is always definitive.
     private static final int DEFAULT_CLIENT_MAX_MESSAGE_SIZE = 64 * 1024 * 1024;
     private static final int DEFAULT_SERVER_MAX_MESSAGE_SIZE = 16 * 1024 * 1024;
-    // FIXME: 0.43 - remove these temporary properties
     private static final String DEFAULT_CLIENT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY =
-            "io.servicetalk.grpc.netty.temporaryDefaultClientMaxInboundMessageSize";
+            "io.servicetalk.grpc.netty.defaultClientMaxInboundMessageSize";
     private static final String DEFAULT_SERVER_MAX_INBOUND_MESSAGE_SIZE_PROPERTY =
-            "io.servicetalk.grpc.netty.temporaryDefaultServerMaxInboundMessageSize";
-    // Deprecated in favor of the client/server-specific properties above; kept for a release or two in case a
-    // deployment already relies on it. A role-specific property, when set, takes precedence over this legacy one.
+            "io.servicetalk.grpc.netty.defaultServerMaxInboundMessageSize";
+    // Deprecated legacy property, superseded by the client/server-specific properties above; kept for a release or
+    // two in case a deployment already relies on it. A role-specific property, when set, takes precedence over it.
+    // FIXME: 0.43 - remove this deprecated property
     private static final String DEFAULT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY =
             "io.servicetalk.grpc.netty.temporaryDefaultMaxInboundMessageSize";
-    // The built-in per-role default, overridable by the temporary properties using the same sign convention as the
-    // builder API (see forMaxInboundMessageSize). Read back by servicetalk-grpc-netty via a default-built config so the
-    // properties are parsed in exactly one place.
+    // The built-in per-role default, overridable by the client/server default properties using the same sign
+    // convention as the builder API (see forMaxInboundMessageSize). Seeds GrpcConfig.Builder, so the properties are
+    // parsed in exactly one place.
     static final int DEFAULT_CLIENT_MAX_INBOUND_MESSAGE_SIZE;
     static final int DEFAULT_SERVER_MAX_INBOUND_MESSAGE_SIZE;
 
     static {
-        final Integer legacy = parseTemporaryProperty(DEFAULT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY, true);
-        final Integer client = parseTemporaryProperty(DEFAULT_CLIENT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY, false);
-        final Integer server = parseTemporaryProperty(DEFAULT_SERVER_MAX_INBOUND_MESSAGE_SIZE_PROPERTY, false);
+        final Integer legacy = parseDefaultOverride(DEFAULT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY, true);
+        final Integer client = parseDefaultOverride(DEFAULT_CLIENT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY, false);
+        final Integer server = parseDefaultOverride(DEFAULT_SERVER_MAX_INBOUND_MESSAGE_SIZE_PROPERTY, false);
         DEFAULT_CLIENT_MAX_INBOUND_MESSAGE_SIZE = client != null ? client :
                 legacy != null ? legacy : Role.CLIENT.defaultMaxInboundMessageSize;
         DEFAULT_SERVER_MAX_INBOUND_MESSAGE_SIZE = server != null ? server :
@@ -196,7 +196,7 @@ final class GrpcMessageSizeLimiter {
 
     // Don't throw from the static initializer; ignore an invalid value and fall back to the per-role defaults.
     @Nullable
-    private static Integer parseTemporaryProperty(final String name, final boolean legacy) {
+    private static Integer parseDefaultOverride(final String name, final boolean legacy) {
         final String raw = System.getProperty(name);
         if (raw == null) {
             return null;
@@ -204,13 +204,12 @@ final class GrpcMessageSizeLimiter {
         try {
             final Integer value = Integer.valueOf(raw.trim());
             if (legacy) {
-                LOGGER.warn("-D{}={} is deprecated in favor of -D{} and -D{} and will be removed in a future " +
-                        "release; set maxInboundMessageSize(int) per client/server instead.", name, value,
-                        DEFAULT_CLIENT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY,
+                LOGGER.warn("-D{}={} is a deprecated legacy property, superseded by -D{} and -D{}, and will be " +
+                        "removed in a future release; set maxInboundMessageSize(int) per client/server instead.",
+                        name, value, DEFAULT_CLIENT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY,
                         DEFAULT_SERVER_MAX_INBOUND_MESSAGE_SIZE_PROPERTY);
             } else {
-                LOGGER.warn("-D{}={} is temporary and will be removed in a future release; set " +
-                        "maxInboundMessageSize(int) per client/server instead.", name, value);
+                LOGGER.info("-D{}={} overrides the built-in default maxInboundMessageSize.", name, value);
             }
             return value;
         } catch (NumberFormatException e) {

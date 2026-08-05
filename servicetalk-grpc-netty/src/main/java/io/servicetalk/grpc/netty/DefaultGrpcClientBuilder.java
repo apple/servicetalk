@@ -142,7 +142,7 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
         httpInitializer.initialize(builder);
         Duration timeout = isInfinite(defaultTimeout, GRPC_MAX_TIMEOUT) ? null : defaultTimeout;
         // Only override the config's default when the user set an explicit value, so an unset limit defers to the
-        // GrpcConfig default (which resolves the temporary properties and is warn-only by default).
+        // GrpcConfig default (which resolves the client/server default properties and is warn-only by default).
         final GrpcClientCallConfig.Builder callConfigBuilder = new GrpcClientCallConfig.Builder()
                 .defaultTimeout(timeout);
         if (maxInboundMessageSize != null) {
