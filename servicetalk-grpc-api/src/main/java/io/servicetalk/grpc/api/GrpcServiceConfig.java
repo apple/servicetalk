@@ -79,6 +79,13 @@ public final class GrpcServiceConfig extends GrpcConfig {
         private ExecutionContext<?> executionContext;
 
         /**
+         * Creates a new builder seeded with the server's built-in default inbound message-size limit.
+         */
+        public Builder() {
+            super(GrpcMessageSizeLimiter.DEFAULT_SERVER_MAX_INBOUND_MESSAGE_SIZE);
+        }
+
+        /**
          * Set the {@link ExecutionContext} the bound service runs on; it is adapted to a {@link GrpcExecutionContext}.
          *
          * @param executionContext the {@link ExecutionContext} to use for the bound service.

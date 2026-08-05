@@ -80,6 +80,13 @@ public final class GrpcClientCallConfig extends GrpcConfig {
         private Duration defaultTimeout;
 
         /**
+         * Creates a new builder seeded with the client's built-in default inbound message-size limit.
+         */
+        public Builder() {
+            super(GrpcMessageSizeLimiter.DEFAULT_CLIENT_MAX_INBOUND_MESSAGE_SIZE);
+        }
+
+        /**
          * Set the default timeout applied to calls that carry no deadline of their own; a timeout specified on a
          * request supersedes this default.
          *

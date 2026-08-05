@@ -15,8 +15,6 @@
  */
 package io.servicetalk.grpc.api;
 
-import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
-
 /**
  * Base <a href="https://www.grpc.io">gRPC</a> configuration shared by the client
  * ({@link GrpcClientCallConfig}) and server ({@link GrpcServiceConfig}) binding entry points.
@@ -31,7 +29,7 @@ public abstract class GrpcConfig {
 
     /**
      * Returns the maximum inbound message size in bytes. See {@link Builder#maxInboundMessageSize(int)} for the
-     * semantics of the special value {@code 0}.
+     * semantics of the sign and the special value {@code 0}.
      *
      * @return the maximum inbound message size in bytes.
      */
@@ -46,27 +44,29 @@ public abstract class GrpcConfig {
      */
     public abstract static class Builder<B extends Builder<B>> {
 
-        private int maxInboundMessageSize = GrpcMessageSizeLimiter.DEFAULT_MAX_INBOUND_MESSAGE_SIZE;
+        private int maxInboundMessageSize;
 
-        Builder() {
-            // package private constructor to prevent extension.
+        Builder(final int defaultMaxInboundMessageSize) {
+            // package private constructor to prevent extension. The subtype supplies its role's built-in default.
+            this.maxInboundMessageSize = defaultMaxInboundMessageSize;
         }
 
         /**
-         * Set the maximum size, in bytes, of a decoded inbound gRPC message. A message whose declared length exceeds
-         * the limit is rejected with {@link GrpcStatusCode#RESOURCE_EXHAUSTED} before its payload is buffered; for a
-         * compressed message the limit is also applied to the decoded size. Memory used while decompressing is bounded
-         * separately by the codec's own decompressed-bytes cap, not by this limit. Defaults to 4 MiB (matching
-         * grpc-java), or to the value of the {@code io.servicetalk.grpc.netty.temporaryDefaultMaxInboundMessageSize}
-         * system property when it is set (which also accepts {@code -1} for warn-only mode).
+         * Set the maximum size, in bytes, of a decoded inbound gRPC message. The sign selects the mode and the
+         * magnitude the threshold: a <em>positive</em> value enforces the limit &mdash; a message whose declared length
+         * exceeds it is rejected with {@link GrpcStatusCode#RESOURCE_EXHAUSTED} before its payload is buffered, and for
+         * a compressed message the limit is also applied to the decoded size &mdash; a <em>negative</em> value enables
+         * warn-only mode at {@code abs(value)} bytes (oversized messages are still delivered, but a rate-limited
+         * warning is logged), and {@code 0} disables the limit. Memory used while decompressing is bounded separately
+         * by the codec's own decompressed-bytes cap, not by this limit. By default the client warns at 64 MiB and the
+         * server warns at 16 MiB; enforcing is planned to become the default for servers in a future release.
          *
-         * @param maxInboundMessageSize the maximum inbound message size in bytes: {@code 0} disables the limit and any
-         * positive value enforces it. Must be non-negative.
+         * @param maxInboundMessageSize the maximum inbound message size in bytes: positive enforces at that size,
+         * negative warns at its magnitude, {@code 0} disables the limit
          * @return {@code this}.
-         * @throws IllegalArgumentException if {@code maxInboundMessageSize < 0}
          */
         public final B maxInboundMessageSize(final int maxInboundMessageSize) {
-            this.maxInboundMessageSize = ensureNonNegative(maxInboundMessageSize, "maxInboundMessageSize");
+            this.maxInboundMessageSize = maxInboundMessageSize;
             return thisBuilder();
         }
 
