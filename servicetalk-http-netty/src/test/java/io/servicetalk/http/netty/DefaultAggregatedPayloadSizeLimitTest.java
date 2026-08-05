@@ -31,7 +31,6 @@ import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -141,18 +140,30 @@ class DefaultAggregatedPayloadSizeLimitTest {
 
     @ParameterizedTest
     @EnumSource(HttpProtocol.class)
-    void negativeServerLimitRejected(HttpProtocol protocol) {
-        // A programmatically configured limit must be non-negative; warn-only mode (-1) is only available via the
-        // system property, not through the builder API.
-        assertThrows(IllegalArgumentException.class,
-                () -> newServerBuilder(SERVER_CTX, protocol).maxAggregatedPayloadSize(-1));
+    void negativeServerLimitWarnsButServes(HttpProtocol protocol) throws Exception {
+        // A negative value selects warn-only mode at abs(value): oversized requests are logged but still served.
+        try (HttpServerContext server = startEchoServer(protocol, -MAX_PAYLOAD);
+             StreamingHttpClient client = newStreamingClient(server, protocol, 0)) {
+            HttpClient aggregated = client.asClient();
+            String body = repeat('x', MAX_PAYLOAD + 1);
+            HttpResponse response = aggregated.request(
+                    aggregated.post("/").payloadBody(alloc(client).fromAscii(body))).toFuture().get();
+            assertThat(response.status(), is(OK));
+            assertThat(response.payloadBody().toString(US_ASCII), equalTo(body));
+        }
     }
 
     @ParameterizedTest
     @EnumSource(HttpProtocol.class)
-    void negativeClientLimitRejected(HttpProtocol protocol) {
-        assertThrows(IllegalArgumentException.class, () ->
-                newClientBuilder(HostAndPort.of("localhost", 8080), CLIENT_CTX, protocol).maxAggregatedPayloadSize(-1));
+    void negativeClientLimitWarnsButDelivers(HttpProtocol protocol) throws Exception {
+        // A negative value selects warn-only mode at abs(value): oversized responses are logged but still delivered.
+        try (HttpServerContext server = startFixedResponseServer(protocol, MAX_PAYLOAD + 1);
+             StreamingHttpClient client = newStreamingClient(server, protocol, -MAX_PAYLOAD)) {
+            HttpClient aggregated = client.asClient();
+            HttpResponse response = aggregated.request(aggregated.get("/")).toFuture().get();
+            assertThat(response.status(), is(OK));
+            assertThat(response.payloadBody().readableBytes(), is(MAX_PAYLOAD + 1));
+        }
     }
 
     @ParameterizedTest

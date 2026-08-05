@@ -95,19 +95,16 @@ public interface GrpcClientBuilder<U, R> {
     }
 
     /**
-     * Set the maximum size, in bytes, of a decoded inbound (response) gRPC message that this client will accept.
-     * Messages whose declared length exceeds this limit are rejected with
-     * {@link GrpcStatusCode#RESOURCE_EXHAUSTED} before their payload is buffered, bounding the memory a peer can
-     * cause this client to allocate. The default is 4 MiB (matching grpc-java) and can be changed globally via the
-     * {@code io.servicetalk.grpc.netty.temporaryDefaultMaxInboundMessageSize} system property (a temporary property
-     * that will be removed in a future release), which also accepts {@code -1} to enable warn-only mode globally (a
-     * rate-limited log instead of rejecting).
+     * Set the maximum size, in bytes, of a decoded inbound (response) gRPC message this client accepts, bounding the
+     * memory a peer can make it allocate. The sign selects the mode, the magnitude the threshold: <em>positive</em>
+     * enforces, rejecting a message whose declared length exceeds it with {@link GrpcStatusCode#RESOURCE_EXHAUSTED}
+     * before its payload is buffered; <em>negative</em> warns at {@code abs(value)} bytes (oversized messages are still
+     * delivered, with a rate-limited warning); {@code 0} disables it. Defaults to warn-only at 64 MiB.
      * <p>
-     * For a compressed message this bounds the on-wire length and the decoded length. The memory used while
-     * decompressing is bounded separately by the codec's own decompressed-bytes cap, not by this limit.
+     * For a compressed message this bounds both the on-wire and decoded lengths; decompression memory itself is bounded
+     * separately by the codec's decompressed-bytes cap.
      *
-     * @param maxInboundMessageSize the maximum inbound message size in bytes: {@code 0} disables the limit and any
-     * positive value enforces it. Must be non-negative.
+     * @param maxInboundMessageSize bytes: positive enforces, negative warns at its magnitude, {@code 0} disables
      * @return {@code this}.
      */
     default GrpcClientBuilder<U, R> maxInboundMessageSize(int maxInboundMessageSize) {

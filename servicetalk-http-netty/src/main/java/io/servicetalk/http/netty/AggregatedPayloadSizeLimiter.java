@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.PayloadTooLargeException;
+import io.servicetalk.http.netty.HttpConfig.Role;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongConsumer;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.netty.HttpConfig.Role.CLIENT;
 import static java.lang.System.nanoTime;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
@@ -56,18 +58,24 @@ final class AggregatedPayloadSizeLimiter implements LongConsumer {
     // Identifies the owning client/server in the warning; null when not warn-only.
     @Nullable
     private final Object owner;
+    // The role (client/server) whose warning wording to emit; null when not warn-only.
+    @Nullable
+    private final Role role;
     @Nullable
     private final Throwable constructionSite;
 
-    private AggregatedPayloadSizeLimiter(final int maxAggregatedSize, final boolean warnOnly,
+    private AggregatedPayloadSizeLimiter(final int maxAggregatedSize, @Nullable final Role role,
                                          @Nullable final Object owner) {
         this.maxAggregatedSize = maxAggregatedSize;
+        final boolean warnOnly = role != null;
         // Seed in the past so the first time the limit is exceeded a warning is emitted immediately.
         this.lastWarnNanos = warnOnly ? new AtomicLong(nanoTime() - WARN_INTERVAL_NANOS) : null;
         this.maxObservedSize = warnOnly ? new AtomicLong() : null;
         this.owner = warnOnly ? owner : null;
+        this.role = role;
         this.constructionSite = warnOnly ? new Throwable(
-                "Client/server with a warn-only maxAggregatedPayloadSize created here (not an error)") : null;
+                "This " + role.description + " with a warn-only maxAggregatedPayloadSize created here (not an error)")
+                : null;
     }
 
     /**
@@ -78,7 +86,7 @@ final class AggregatedPayloadSizeLimiter implements LongConsumer {
      * @return a limiter, or {@link #NONE} when {@code maxAggregatedSize <= 0}
      */
     static LongConsumer enforcing(final int maxAggregatedSize) {
-        return maxAggregatedSize <= 0 ? NONE : new AggregatedPayloadSizeLimiter(maxAggregatedSize, false, null);
+        return maxAggregatedSize <= 0 ? NONE : new AggregatedPayloadSizeLimiter(maxAggregatedSize, null, null);
     }
 
     /**
@@ -87,11 +95,12 @@ final class AggregatedPayloadSizeLimiter implements LongConsumer {
      * per client/server).
      *
      * @param maxAggregatedSize the size in bytes above which a warning is emitted; {@code 0} or negative disables it
+     * @param role selects the warning wording (client vs. server)
      * @param owner identifies the owning client/server in the warning (e.g. its target/bind address)
      * @return a limiter, or {@link #NONE} when {@code maxAggregatedSize <= 0}
      */
-    static LongConsumer warning(final int maxAggregatedSize, @Nullable final Object owner) {
-        return maxAggregatedSize <= 0 ? NONE : new AggregatedPayloadSizeLimiter(maxAggregatedSize, true, owner);
+    static LongConsumer warning(final int maxAggregatedSize, final Role role, @Nullable final Object owner) {
+        return maxAggregatedSize <= 0 ? NONE : new AggregatedPayloadSizeLimiter(maxAggregatedSize, role, owner);
     }
 
     /**
@@ -117,15 +126,23 @@ final class AggregatedPayloadSizeLimiter implements LongConsumer {
         assert lastWarnNanos != null;
         assert maxObservedSize != null;
         assert constructionSite != null;
+        assert role != null;
         final long maxObserved = maxObservedSize.accumulateAndGet(totalSize, Math::max);
         final long now = nanoTime();
         final long last = lastWarnNanos.get();
         if (now - last >= WARN_INTERVAL_NANOS && lastWarnNanos.compareAndSet(last, now)) {
-            LOGGER.warn("Aggregated payload size={} exceeded the configured maximum of {} bytes for {}, but the " +
-                    "limit is configured in warn-only mode so the payload is allowed through. Largest payload " +
-                    "observed so far is {} bytes. Configure an enforcing maxAggregatedPayloadSize(int) to reject " +
-                    "oversized payloads. This warning is rate-limited to once per 5 minutes per client/server.",
-                    totalSize, maxAggregatedSize, owner, maxObserved, constructionSite);
+            if (role == CLIENT) {
+                LOGGER.warn("Aggregated payload size={} exceeded {} bytes for {} (largest observed {} bytes). This " +
+                        "client is buffering very large message bodies; consider the streaming APIs to avoid memory " +
+                        "pressure. Warn-only mode, rate-limited to once per 5 minutes per client.",
+                        totalSize, maxAggregatedSize, owner, maxObserved, constructionSite);
+            } else {
+                LOGGER.warn("Aggregated payload size={} exceeded the configured {} bytes for {} (largest observed " +
+                        "{} bytes), allowed through in warn-only mode. Consider the streaming APIs to avoid memory " +
+                        "pressure, or set an enforcing maxAggregatedPayloadSize(int) to reject oversized payloads " +
+                        "(planned to become the default). Rate-limited to once per 5 minutes per server.",
+                        totalSize, maxAggregatedSize, owner, maxObserved, constructionSite);
+            }
         }
     }
 }
