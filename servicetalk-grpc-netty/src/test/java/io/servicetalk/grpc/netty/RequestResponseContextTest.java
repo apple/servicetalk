@@ -61,9 +61,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.util.Locale;
 
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
+import static io.servicetalk.concurrent.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.concurrent.api.internal.BlockingUtils.blockingInvocation;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS;

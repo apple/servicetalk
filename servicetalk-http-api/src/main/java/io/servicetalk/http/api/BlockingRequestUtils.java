@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import static io.servicetalk.concurrent.api.internal.BlockingUtils.blockingInvocation;
+import static io.servicetalk.concurrent.api.BlockingUtils.blockingInvocation;
 
 final class BlockingRequestUtils {
 

@@ -23,9 +23,10 @@ import java.util.concurrent.Future;
 
 /**
  * Common utility functions to unwrap {@link ExecutionException} from async operations.
- * <p>
- * Delegates to {@link io.servicetalk.concurrent.api.BlockingUtils}, the public entry point for this behavior.
+ *
+ * @deprecated Use {@link io.servicetalk.concurrent.api.BlockingUtils} instead; this class delegates to it.
  */
+@Deprecated // FIXME: 0.43 - remove deprecated class
 public final class BlockingUtils {
 
     private BlockingUtils() {

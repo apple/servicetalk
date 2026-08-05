@@ -17,14 +17,17 @@ package io.servicetalk.concurrent.api;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BlockingUtilsTest {
 
@@ -41,38 +44,10 @@ class BlockingUtilsTest {
     }
 
     @Test
-    void singlePreservesInterruptAndCancels() {
-        AtomicBoolean cancelled = new AtomicBoolean();
-        Single<String> source = Single.<String>never().whenCancel(() -> cancelled.set(true));
-        Thread.currentThread().interrupt();
-        try {
-            assertThrows(InterruptedException.class, () -> BlockingUtils.blockingInvocation(source));
-            assertTrue(Thread.currentThread().isInterrupted(), "interrupt status should be preserved");
-            assertTrue(cancelled.get(), "source should be cancelled on interrupt");
-        } finally {
-            Thread.interrupted();
-        }
-    }
-
-    @Test
     void completableThrowsCauseDirectly() {
         IllegalStateException cause = new IllegalStateException("deliberate");
         assertThat(assertThrows(IllegalStateException.class,
                 () -> BlockingUtils.blockingInvocation(Completable.failed(cause))), sameInstance(cause));
-    }
-
-    @Test
-    void completablePreservesInterruptAndCancels() {
-        AtomicBoolean cancelled = new AtomicBoolean();
-        Completable source = Completable.never().whenCancel(() -> cancelled.set(true));
-        Thread.currentThread().interrupt();
-        try {
-            assertThrows(InterruptedException.class, () -> BlockingUtils.blockingInvocation(source));
-            assertTrue(Thread.currentThread().isInterrupted(), "interrupt status should be preserved");
-            assertTrue(cancelled.get(), "source should be cancelled on interrupt");
-        } finally {
-            Thread.interrupted();
-        }
     }
 
     @Test
@@ -88,16 +63,115 @@ class BlockingUtilsTest {
     }
 
     @Test
-    void awaitTerminationPreservesInterruptButDoesNotCancel() {
-        AtomicBoolean cancelled = new AtomicBoolean();
-        Completable source = Completable.never().whenCancel(() -> cancelled.set(true));
-        Thread.currentThread().interrupt();
-        try {
-            assertThrows(InterruptedException.class, () -> BlockingUtils.awaitTermination(source));
-            assertTrue(Thread.currentThread().isInterrupted(), "interrupt status should be preserved");
-            assertFalse(cancelled.get(), "close source must not be cancelled on interrupt");
-        } finally {
-            Thread.interrupted();
+    void singleRestoresInterruptFlagOnInterrupt() throws InterruptedException {
+        final InterruptOutcome outcome = runInterrupted(subscribed ->
+                BlockingUtils.blockingInvocation(Single.never().afterOnSubscribe(c -> subscribed.countDown())));
+        assertThat(outcome.thrown, is(instanceOf(InterruptedException.class)));
+        assertThat("interrupt flag was not restored", outcome.interruptFlagRestored, is(true));
+    }
+
+    @Test
+    void completableRestoresInterruptFlagOnInterrupt() throws InterruptedException {
+        final InterruptOutcome outcome = runInterrupted(subscribed ->
+                BlockingUtils.blockingInvocation(Completable.never().afterOnSubscribe(c -> subscribed.countDown())));
+        assertThat(outcome.thrown, is(instanceOf(InterruptedException.class)));
+        assertThat("interrupt flag was not restored", outcome.interruptFlagRestored, is(true));
+    }
+
+    @Test
+    void singleCancelsSourceOnInterrupt() throws InterruptedException {
+        final CountDownLatch cancelled = new CountDownLatch(1);
+        final InterruptOutcome outcome = runInterrupted(subscribed ->
+                BlockingUtils.blockingInvocation(Single.never()
+                        .afterCancel(cancelled::countDown)
+                        .afterOnSubscribe(c -> subscribed.countDown())));
+        assertThat(outcome.thrown, is(instanceOf(InterruptedException.class)));
+        cancelled.await();
+    }
+
+    @Test
+    void completableCancelsSourceOnInterrupt() throws InterruptedException {
+        final CountDownLatch cancelled = new CountDownLatch(1);
+        final InterruptOutcome outcome = runInterrupted(subscribed ->
+                BlockingUtils.blockingInvocation(Completable.never()
+                        .afterCancel(cancelled::countDown)
+                        .afterOnSubscribe(c -> subscribed.countDown())));
+        assertThat(outcome.thrown, is(instanceOf(InterruptedException.class)));
+        cancelled.await();
+    }
+
+    @Test
+    void futureGetCancelsSourceOnInterrupt() throws InterruptedException {
+        final CountDownLatch cancelled = new CountDownLatch(1);
+        // toFuture() subscribes eagerly, so the source is already subscribed before futureGetCancelOnInterrupt blocks.
+        final Future<?> future = Single.never().afterCancel(cancelled::countDown).toFuture();
+        final InterruptOutcome outcome = runInterrupted(subscribed -> {
+            subscribed.countDown();
+            BlockingUtils.futureGetCancelOnInterrupt(future);
+        });
+        assertThat(outcome.thrown, is(instanceOf(InterruptedException.class)));
+        cancelled.await();
+    }
+
+    @Test
+    void awaitTerminationRestoresInterruptFlagButDoesNotCancel() throws InterruptedException {
+        final AtomicBoolean cancelled = new AtomicBoolean();
+        final InterruptOutcome outcome = runInterrupted(subscribed ->
+                BlockingUtils.awaitTermination(Completable.never()
+                        .afterCancel(() -> cancelled.set(true))
+                        .afterOnSubscribe(c -> subscribed.countDown())));
+        assertThat(outcome.thrown, is(instanceOf(InterruptedException.class)));
+        assertThat("interrupt flag was not restored", outcome.interruptFlagRestored, is(true));
+        assertThat("close source must not be cancelled on interrupt", cancelled.get(), is(false));
+    }
+
+    /**
+     * Runs {@code blockingCall} on a dedicated thread, interrupts it once it has subscribed, and captures the throwable
+     * it propagated together with the thread's interrupt status observed immediately after the throw. Interrupting only
+     * after subscription (rather than a timing-based sleep) makes the interrupt deterministic: even if it lands before
+     * {@link Future#get()} is reached, {@code get()} observes the set flag on entry and throws.
+     */
+    private static InterruptOutcome runInterrupted(final InterruptibleInvocation blockingCall)
+            throws InterruptedException {
+        final CountDownLatch subscribed = new CountDownLatch(1);
+        final CountDownLatch done = new CountDownLatch(1);
+        final AtomicReference<Throwable> thrown = new AtomicReference<>();
+        final AtomicBoolean interruptFlagRestored = new AtomicBoolean();
+
+        final Thread t = new Thread(() -> {
+            try {
+                blockingCall.invoke(subscribed);
+            } catch (Throwable e) {
+                thrown.set(e);
+                // Must be captured before any further blocking call clears the flag again.
+                interruptFlagRestored.set(Thread.currentThread().isInterrupted());
+            } finally {
+                done.countDown();
+            }
+        });
+        t.start();
+
+        subscribed.await();
+        t.interrupt();
+        done.await();
+        t.join();
+
+        assertThat("blocking call did not propagate a throwable", thrown.get(), is(notNullValue()));
+        return new InterruptOutcome(thrown.get(), interruptFlagRestored.get());
+    }
+
+    private static final class InterruptOutcome {
+        private final Throwable thrown;
+        private final boolean interruptFlagRestored;
+
+        private InterruptOutcome(final Throwable thrown, final boolean interruptFlagRestored) {
+            this.thrown = thrown;
+            this.interruptFlagRestored = interruptFlagRestored;
         }
+    }
+
+    @FunctionalInterface
+    private interface InterruptibleInvocation {
+        void invoke(CountDownLatch onSubscribed) throws Exception;
     }
 }
