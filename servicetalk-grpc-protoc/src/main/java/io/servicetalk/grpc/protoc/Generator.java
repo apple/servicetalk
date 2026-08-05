@@ -66,6 +66,7 @@ import static io.servicetalk.grpc.protoc.Types.BlockingRoute;
 import static io.servicetalk.grpc.protoc.Types.BlockingStreamingClientCall;
 import static io.servicetalk.grpc.protoc.Types.BlockingStreamingGrpcServerResponse;
 import static io.servicetalk.grpc.protoc.Types.BlockingStreamingRoute;
+import static io.servicetalk.grpc.protoc.Types.BlockingUtils;
 import static io.servicetalk.grpc.protoc.Types.BufferDecoderGroup;
 import static io.servicetalk.grpc.protoc.Types.BufferEncoderList;
 import static io.servicetalk.grpc.protoc.Types.ClientCall;
@@ -1134,7 +1135,7 @@ final class Generator {
                 + state.blockingClientClass.simpleName());
 
         clientSpecBuilder.addMethod(methodBuilder(asBlockingClient)
-                .addModifiers(PUBLIC, DEFAULT)
+                .addModifiers(PUBLIC, DEFAULT)  // FIXME: 0.43 - remove default implementation
                 .addAnnotation(Override.class)
                 .returns(state.blockingClientClass)
                 .addStatement("return new $T(this)", clientToBlockingClientClass).build());
@@ -1575,19 +1576,18 @@ final class Generator {
         state.clientMetaDatas.forEach(clientMetaData -> {
             final CodeBlock requestExpression = clientMetaData.methodProto.getClientStreaming() ?
                     CodeBlock.of("$T.fromIterable($L)", Publisher, request) : CodeBlock.of(request);
-            final String responseConversionExpression = clientMetaData.methodProto.getServerStreaming() ?
-                    ".toIterable()" : ".toFuture().get()";
+            final boolean serverStreaming = clientMetaData.methodProto.getServerStreaming();
 
             typeSpecBuilder
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, CLIENT), false,
                             (n, b) -> b.addAnnotation(Override.class)
-                                    .addStatement("return $L.$L($L)$L", client, n, requestExpression,
-                                            responseConversionExpression)))
+                                    .addStatement(blockingResponseStatement(serverStreaming,
+                                            CodeBlock.of("$L.$L($L)", client, n, requestExpression)))))
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, CLIENT), false,
                             (n, b) -> b.addAnnotation(Override.class)
                                     .addParameter(GrpcClientMetadata, metadata, FINAL)
-                                    .addStatement("return $L.$L($L, $L)$L", client, n, metadata, requestExpression,
-                                            responseConversionExpression)));
+                                    .addStatement(blockingResponseStatement(serverStreaming,
+                                            CodeBlock.of("$L.$L($L, $L)", client, n, metadata, requestExpression)))));
 
             if (!skipDeprecated) {
                 typeSpecBuilder.addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, CLIENT),
@@ -1595,12 +1595,18 @@ final class Generator {
                         (n, b) -> b.addAnnotation(Deprecated.class)
                                 .addAnnotation(Override.class)
                                 .addParameter(clientMetaData.className, metadata, FINAL)
-                                .addStatement("return $L.$L($L, $L)$L", client, n, metadata, requestExpression,
-                                        responseConversionExpression)));
+                                .addStatement(blockingResponseStatement(serverStreaming,
+                                        CodeBlock.of("$L.$L($L, $L)", client, n, metadata, requestExpression)))));
             }
         });
 
         return typeSpecBuilder.build();
+    }
+
+    private static CodeBlock blockingResponseStatement(final boolean serverStreaming, final CodeBlock call) {
+        return serverStreaming ?
+                CodeBlock.of("return $L.toIterable()", call) :
+                CodeBlock.of("return $T.blockingInvocation($L)", BlockingUtils, call);
     }
 
     /**
@@ -1842,7 +1848,7 @@ final class Generator {
                 .addModifiers(PUBLIC)
                 .addAnnotation(Override.class)
                 .addException(Exception.class)
-                .addStatement("$L.$L().toFuture().get()", fieldName, completableMethodName)
+                .addStatement("$T.awaitTermination($L.$L())", BlockingUtils, fieldName, completableMethodName)
                 .build();
     }
 }

@@ -27,8 +27,8 @@ import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import java.io.IOException;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.BlockingUtils.futureGetCancelOnInterrupt;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.internal.BlockingUtils.futureGetCancelOnInterrupt;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.util.Objects.requireNonNull;

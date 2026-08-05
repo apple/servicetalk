@@ -50,6 +50,8 @@ final class Types {
 
     static final ClassName BlockingIterable = ClassName.get(concurrentPkg, "BlockingIterable");
 
+    static final ClassName BlockingUtils = ClassName.get(concurrentApiPkg, "BlockingUtils");
+
     static final ClassName AsyncCloseable = ClassName.get(concurrentApiPkg, "AsyncCloseable");
     static final ClassName Completable = ClassName.get(concurrentApiPkg, "Completable");
     static final ClassName Publisher = ClassName.get(concurrentApiPkg, "Publisher");
