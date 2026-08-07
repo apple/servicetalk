@@ -75,4 +75,35 @@ class ServiceTalkHttp2HeadersTest {
         assertDoesNotThrow(() -> newHeaders(false).add("Uppercase-And-Space Name", "v"));
         assertDoesNotThrow(() -> newHeaders(false).add(new AsciiString(new byte[]{(byte) 0xF0}), "v"));
     }
+
+    /**
+     * Pseudo-header <em>values</em> are stored in raw fields rather than in the underlying {@code HttpHeaders}, so
+     * they skip its value validation, and the container's own check is gated on {@code validateValues}, which is
+     * {@code false} on both real paths ({@code ServiceTalkHttp2HeadersDecoder} inherits Netty's {@code false}
+     * default; {@code H2ToStH1Utils#h1HeadersToH2Headers} hardcodes it). That is why {@code :path} validation lives
+     * in the duplex handlers ({@code H2ToStH1Utils#invalidPathReason}); this documents the split so nobody assumes
+     * the container covers it.
+     */
+    @Test
+    void pseudoHeaderValuesAreNotValidatedByTheContainer() {
+        assertDoesNotThrow(() -> newHeaders(true).path("/a" + (char) 0x0d + (char) 0x0a + "X: y"));
+        assertDoesNotThrow(() -> newHeaders(true).method("GET" + (char) 0x00));
+    }
+
+    /**
+     * Turning {@code validateValues} on would still not cover {@code :path}: the container delegates to
+     * {@code HttpHeaderValidationUtil.validateValidHeaderValue}, which enforces the generic {@code field-value}
+     * grammar of RFC 9110, 5.5 ({@code field-vchar = VCHAR / obs-text}, SP/HTAB allowed in the interior). Both of
+     * these are legal field values yet illegal in the RFC 9113, 8.3.1 {@code absolute-path [ "?" query ]} production,
+     * so {@code H2ToStH1Utils#invalidPathReason} is required regardless of how the flag is wired.
+     */
+    @Test
+    void valueValidationIsTooWeakForPath() {
+        final Http2Headers validating = new ServiceTalkHttp2Headers(
+                new H2HeadersFactory(true, false, true).newHeaders(), false, true, true);
+        // Sanity check that the flag is actually on: CR is prohibited even by the generic grammar.
+        assertThrows(IllegalArgumentException.class, () -> validating.path("/a" + (char) 0x0d + "b"));
+        assertDoesNotThrow(() -> validating.path("/a b"));
+        assertDoesNotThrow(() -> validating.path("/a" + (char) 0xe9 + "b"));
+    }
 }

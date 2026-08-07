@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,12 +39,12 @@ import javax.annotation.Nullable;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpHeaderValues.ZERO;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.METHOD;
-import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.PATH;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
 import static io.servicetalk.http.netty.H2ToStH1ClientDuplexHandler.isInterim;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h2HeadersSanitizeForH1;
+import static io.servicetalk.http.netty.H2ToStH1Utils.invalidPathReason;
 import static io.servicetalk.http.netty.HeaderUtils.clientMaySendPayloadBodyFor;
 import static io.servicetalk.http.netty.HeaderUtils.shouldAddZeroContentLength;
 
@@ -94,9 +94,10 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
             if (!readHeaders) {
                 closeHandler.protocolPayloadBeginInbound(ctx);
                 CharSequence pathSequence = h2Headers.path();
-                if (pathSequence == null) {
-                    throw protocolError(ctx, streamId, false,
-                            "Incoming request must have '" + PATH.value() + "' header");
+                // Covers absent, empty and illegal characters in one pass.
+                final String pathError = invalidPathReason(pathSequence);
+                if (pathError != null) {
+                    throw protocolError(ctx, streamId, false, pathError);
                 }
                 CharSequence method = h2Headers.method();
                 if (method == null) {
