@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,12 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.http.api.EmptyHttpHeaders;
+import io.servicetalk.http.api.Http2ErrorCode;
 import io.servicetalk.http.api.Http2Exception;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpMetaData;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -34,14 +36,22 @@ import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http2.DefaultHttp2DataFrame;
 import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
 import io.netty.handler.codec.http2.Http2DataFrame;
+import io.netty.handler.codec.http2.Http2Error;
 import io.netty.handler.codec.http2.Http2FrameStream;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2HeadersFrame;
+import io.netty.handler.codec.http2.Http2ResetFrame;
 import io.netty.handler.codec.http2.Http2StreamChannel;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+
+import java.util.stream.Stream;
 
 import static io.netty.buffer.ByteBufUtil.writeAscii;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
@@ -55,6 +65,7 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
+import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
@@ -62,10 +73,12 @@ import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -77,6 +90,22 @@ import static org.mockito.Mockito.when;
 class AbstractH2DuplexHandlerTest {
 
     private static final HttpHeadersFactory HEADERS_FACTORY = H2HeadersFactory.INSTANCE;
+
+    /**
+     * {@code :path} values RFC 9113 forbids; see {@link H2ToStH1Utils#invalidPathReason(CharSequence)}. The exhaustive
+     * per-octet contract lives in {@code H2ToStH1UtilsTest}, so this list only needs one case per shape.
+     */
+    private static final String[] ILLEGAL_PATHS = {
+            "/a b",                                     // SP, and the request-line injection primitive
+            "/a" + (char) 0x09 + "b",                   // HTAB
+            "/a" + (char) 0x0d + (char) 0x0a + "X: y",  // CRLF, header injection when downgraded to HTTP/1.1
+            "/a" + (char) 0x00 + "b",                   // NUL
+            "/a" + (char) 0x7f + "b",                   // DEL
+            " /a",                                      // leading SP
+            "/a ",                                      // trailing SP
+            "/a" + (char) 0xe9 + "b",                   // obs-text: legal field-vchar, not a legal absolute-path
+            "/a" + (char) 0x0161 + "b",                 // above one octet
+    };
 
     private enum Variant {
 
@@ -419,8 +448,119 @@ class AbstractH2DuplexHandlerTest {
         dataFrame.release();
     }
 
+    @ParameterizedTest(name = "{displayName} [{index}] path={0} endStream={1}")
+    @MethodSource("illegalPathsAndEndStream")
+    void serverRejectsIllegalPath(String path, boolean endStream) {
+        setUp(Variant.SERVER_HANDLER);
+        // Production does not validate pseudo-header values, so the handler itself must catch this.
+        Http2Headers headers = newTestHeaders().method(HttpMethod.GET.asciiName()).path(path);
+
+        Http2Exception e = assertThrows(Http2Exception.class,
+                () -> channel.writeInbound(headersFrame(headers, endStream)));
+        assertThat(e.getMessage(), startsWith("':path'"));
+        assertThat(e.errorCode(), is(Http2ErrorCode.PROTOCOL_ERROR));
+        // Rejecting late is not rejecting: the request must never reach the service.
+        assertThat("Illegal :path was surfaced", channel.inboundMessages(), is(empty()));
+        // RFC 9113 8.1.1 makes a malformed request a stream error, and 5.4.2 says an endpoint that detects one sends
+        // RST_STREAM - with no carve-out for a stream already half-closed, so this holds for endStream either way.
+        assertThat("No RST_STREAM was sent", channel.outboundMessages(), contains(instanceOf(Http2ResetFrame.class)));
+        assertThat(((Http2ResetFrame) channel.outboundMessages().peek()).errorCode(),
+                is(Http2Error.PROTOCOL_ERROR.code()));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] path={0}")
+    @ValueSource(strings = {"/", "*", "/ok", "/a?q=1", "/a%20b"})
+    void serverAcceptsLegalPath(String path) {
+        setUp(Variant.SERVER_HANDLER);
+        channel.writeInbound(headersFrame(
+                newTestHeaders().method(HttpMethod.GET.asciiName()).path(path), true));
+
+        HttpRequestMetaData metaData = channel.readInbound();
+        assertThat(metaData.requestTarget(), equalTo(path));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] path={0}")
+    @MethodSource("illegalPaths")
+    void clientRejectsIllegalRequestTarget(String path) {
+        setUp(Variant.CLIENT_HANDLER);
+        // RFC 9113 8.3.1 requires exactly one valid value for :path, and 8.1.1 forbids forwarding a malformed request.
+        // Note writeOutbound is varargs, so pass only the request or extra args land in outboundMessages().
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                () -> channel.writeOutbound(newRequest(GET, path, HTTP_2_0,
+                        HEADERS_FACTORY.newHeaders(), DEFAULT_ALLOCATOR, HEADERS_FACTORY)));
+        assertThat(e.getMessage(), startsWith("':path'"));
+        assertThat("Illegal :path was written", channel.outboundMessages(), is(empty()));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] path={0}")
+    @ValueSource(strings = {"/", "*", "/ok", "/a?q=1", "/a%20b"})
+    void clientAcceptsLegalRequestTarget(String path) {
+        setUp(Variant.CLIENT_HANDLER);
+        channel.writeOutbound(newRequest(GET, path, HTTP_2_0, HEADERS_FACTORY.newHeaders(),
+                DEFAULT_ALLOCATOR, HEADERS_FACTORY));
+
+        Http2HeadersFrame frame = channel.readOutbound();
+        assertThat(frame.headers().path(), contentEqualTo(path));
+    }
+
+    /**
+     * RFC 9113 8.3.1: a request with no path component sends {@code "/"} rather than an empty {@code :path}, which is
+     * also what {@code HttpRequestEncoder} writes for HTTP/1.x.
+     */
+    @Test
+    void clientSubstitutesSlashForEmptyRequestTarget() {
+        setUp(Variant.CLIENT_HANDLER);
+        channel.writeOutbound(newRequest(GET, "", HTTP_2_0, HEADERS_FACTORY.newHeaders(),
+                DEFAULT_ALLOCATOR, HEADERS_FACTORY));
+
+        Http2HeadersFrame frame = channel.readOutbound();
+        assertThat(frame.headers().path(), contentEqualTo("/"));
+    }
+
+    /** An empty {@code :path} on the wire is malformed; only the outbound side substitutes. */
+    @Test
+    void serverRejectsEmptyPath() {
+        setUp(Variant.SERVER_HANDLER);
+        Http2Headers headers = newTestHeaders().method(HttpMethod.GET.asciiName()).path("");
+
+        Http2Exception e = assertThrows(Http2Exception.class,
+                () -> channel.writeInbound(headersFrame(headers, true)));
+        assertThat(e.getMessage(), startsWith("':path'"));
+        assertThat(channel.inboundMessages(), is(empty()));
+    }
+
+    /** RFC 9113 8.3.1 omits {@code :path} for CONNECT, so the non-empty check must not reject it. */
+    @Test
+    void clientConnectOmitsPath() {
+        setUp(Variant.CLIENT_HANDLER);
+        channel.writeOutbound(newRequest(CONNECT, "example.com:443", HTTP_2_0, HEADERS_FACTORY.newHeaders(),
+                DEFAULT_ALLOCATOR, HEADERS_FACTORY));
+
+        Http2HeadersFrame frame = channel.readOutbound();
+        assertThat(frame.headers().path(), is(nullValue()));
+        assertThat(frame.headers().scheme(), is(nullValue()));
+    }
+
+    private static Stream<String> illegalPaths() {
+        return Stream.of(ILLEGAL_PATHS);
+    }
+
+    private static Stream<Arguments> illegalPathsAndEndStream() {
+        // The rejection sits above the endStream branch in H2ToStH1ServerDuplexHandler#channelRead, so this pins that
+        // it is independent of the flag - including that RST_STREAM is still sent on a half-closed stream.
+        return illegalPaths().flatMap(p -> Stream.of(Arguments.of(p, true), Arguments.of(p, false)));
+    }
+
+    /**
+     * Headers configured the way the inbound pipeline really configures them, in particular
+     * {@code validateValues=false}: {@link ServiceTalkHttp2HeadersDecoder#newHeaders()} passes
+     * {@code validateHeaderValues()}, and every {@code io.netty.handler.codec.http2.DefaultHttp2HeadersDecoder}
+     * constructor it calls defaults that to {@code false}. Pseudo-header <em>values</em> are therefore unvalidated on
+     * the wire, which is why {@link H2ToStH1Utils#invalidPathReason(CharSequence)} exists; a test factory that
+     * validated them would pass because of a flag that is off in production.
+     */
     private static Http2Headers newTestHeaders() {
-        return new ServiceTalkHttp2Headers(HEADERS_FACTORY.newHeaders(), false, true, true);
+        return new ServiceTalkHttp2Headers(HEADERS_FACTORY.newHeaders(), false, true, false);
     }
 
     private static Http2HeadersFrame headersFrame(Http2Headers headers, boolean endStream) {
