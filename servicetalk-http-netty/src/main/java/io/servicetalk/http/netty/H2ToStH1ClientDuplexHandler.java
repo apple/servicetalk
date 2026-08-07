@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATION
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h2HeadersSanitizeForH1;
+import static io.servicetalk.http.netty.H2ToStH1Utils.invalidPathReason;
 import static io.servicetalk.http.netty.HeaderUtils.REQ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HeaderUtils.responseMayHaveContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.serverMaySendPayloadBodyFor;
@@ -87,7 +88,17 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                 // The ":scheme" and ":path" pseudo-header fields MUST be omitted for CONNECT.
                 // https://tools.ietf.org/html/rfc7540#section-8.3
                 h2Headers.scheme(scheme.name());
-                h2Headers.path(metaData.requestTarget());
+                // RFC 9113 8.3.1: an http/https URI with no path component MUST send "/", matching what
+                // HttpRequestEncoder writes for HTTP/1.x. 8.1.1 forbids forwarding a malformed request, so reject
+                // before the value reaches HPACK. IllegalArgumentException because the caller supplied this target
+                // through the public API - inbound, a bad :path is a peer protocol violation and resets the stream.
+                final String requestTarget = metaData.requestTarget();
+                final String path = requestTarget.isEmpty() ? "/" : requestTarget;
+                final String pathError = invalidPathReason(path);
+                if (pathError != null) {
+                    throw new IllegalArgumentException(pathError);
+                }
+                h2Headers.path(path);
             }
             try {
                 writeMetaData(ctx, metaData, h2Headers, true, promise);

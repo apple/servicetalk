@@ -75,4 +75,30 @@ class ServiceTalkHttp2HeadersTest {
         assertDoesNotThrow(() -> newHeaders(false).add("Uppercase-And-Space Name", "v"));
         assertDoesNotThrow(() -> newHeaders(false).add(new AsciiString(new byte[]{(byte) 0xF0}), "v"));
     }
+
+    /**
+     * Pseudo-header values live in raw fields rather than in the underlying {@code HttpHeaders}, so they skip its
+     * validation, and the container's own check is gated on {@code validateValues}, which is {@code false} on both
+     * real paths. That is why {@code :path} validation lives in the duplex handlers.
+     */
+    @Test
+    void pseudoHeaderValuesAreNotValidatedByTheContainer() {
+        assertDoesNotThrow(() -> newHeaders(true).path("/a" + (char) 0x0d + (char) 0x0a + "X: y"));
+        assertDoesNotThrow(() -> newHeaders(true).method("GET" + (char) 0x00));
+    }
+
+    /**
+     * Turning {@code validateValues} on would still not cover {@code :path}: it enforces the generic
+     * {@code field-value} grammar of RFC 9110, 5.5, which permits obs-text and interior SP. Both values below are
+     * legal field values yet illegal in the RFC 9113, 8.3.1 {@code absolute-path [ "?" query ]} production.
+     */
+    @Test
+    void valueValidationIsTooWeakForPath() {
+        final Http2Headers validating = new ServiceTalkHttp2Headers(
+                new H2HeadersFactory(true, false, true).newHeaders(), false, true, true);
+        // Sanity check that the flag is on: CR is prohibited even by the generic grammar.
+        assertThrows(IllegalArgumentException.class, () -> validating.path("/a" + (char) 0x0d + "b"));
+        assertDoesNotThrow(() -> validating.path("/a b"));
+        assertDoesNotThrow(() -> validating.path("/a" + (char) 0xe9 + "b"));
+    }
 }

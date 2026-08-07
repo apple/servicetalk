@@ -1081,7 +1081,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         return value == SP || value == HT;
     }
 
-    static boolean isVCHAR(final byte value) {
+    static boolean isVCHAR(final int value) {
         return value >= '!' && value <= '~';
     }
 
