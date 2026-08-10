@@ -49,8 +49,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class GrpcLargeMessageTest {
 
-    // Larger than both the HTTP-level default aggregated payload limit and the gRPC default inbound message limit
-    // (both 4 MiB). Used with the gRPC limit disabled to prove neither default silently caps gRPC payloads.
+    // A multi-MiB payload used with the gRPC limit disabled to prove a large message round-trips end to end and is
+    // not silently capped by the coordinated HTTP aggregation bound. The built-in defaults are warn-only (per-role),
+    // so they would not reject regardless; disabling additionally turns off the HTTP aggregation backstop.
     private static final int PAYLOAD_SIZE = 8 * 1024 * 1024;
     // A small inbound limit and a message comfortably above it, for the enforcement tests.
     private static final int SMALL_LIMIT = 1024;
@@ -108,6 +109,33 @@ class GrpcLargeMessageTest {
             GrpcStatusException e = assertThrows(GrpcStatusException.class, () ->
                     client.sayHello(HelloRequest.newBuilder().setName(repeat(ABOVE_SMALL_LIMIT)).build()));
             assertThat(e.status().code(), equalTo(RESOURCE_EXHAUSTED));
+        }
+    }
+
+    @Test
+    void serverWarnsButServesRequestExceedingNegativeMaxInboundMessageSize() throws Exception {
+        // A negative value selects warn-only mode at abs(value): an oversized request is logged but still served.
+        final String large = repeat(ABOVE_SMALL_LIMIT);
+        try (GrpcServerContext server = forAddress(localAddress(0))
+                     .maxInboundMessageSize(-SMALL_LIMIT)
+                     .listenAndAwait(echoService());
+             BlockingGreeterClient client = forAddress(serverHostAndPort(server))
+                     .buildBlocking(new ClientFactory())) {
+            HelloReply reply = client.sayHello(HelloRequest.newBuilder().setName(large).build());
+            assertThat(reply.getMessage(), equalTo(large));
+        }
+    }
+
+    @Test
+    void clientWarnsButDeliversResponseExceedingNegativeMaxInboundMessageSize() throws Exception {
+        // A negative value selects warn-only mode at abs(value): an oversized response is logged but still delivered.
+        final String large = repeat(ABOVE_SMALL_LIMIT);
+        try (GrpcServerContext server = forAddress(localAddress(0)).listenAndAwait(echoService());
+             BlockingGreeterClient client = forAddress(serverHostAndPort(server))
+                     .maxInboundMessageSize(-SMALL_LIMIT)
+                     .buildBlocking(new ClientFactory())) {
+            HelloReply reply = client.sayHello(HelloRequest.newBuilder().setName(large).build());
+            assertThat(reply.getMessage(), equalTo(large));
         }
     }
 

@@ -163,23 +163,25 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
     SingleAddressHttpClientBuilder<U, R> allowDropResponseTrailers(boolean allowDrop);
 
     /**
-     * Sets the maximum size, in bytes, of an aggregated response payload body that this client will buffer in memory.
+     * Sets the maximum size, in bytes, of an aggregated response payload body this client buffers in memory.
      * <p>
-     * The limit applies only when a response is <strong>aggregated</strong> (an {@link HttpResponse aggregated
-     * programming paradigm} or a filter calling {@link StreamingHttpResponse#toResponse()}); responses consumed as a
-     * {@link StreamingHttpResponse#payloadBody() stream} are not affected. Exceeding it raises a
-     * {@link PayloadTooLargeException} to the caller. The limit is measured against the fully decoded payload at the
-     * point of aggregation &mdash; <em>after</em> any decompression or body transformation by earlier filters &mdash;
-     * not the bytes received from the network nor any declared {@code Content-Length}.
+     * Applies only when a response is <strong>aggregated</strong> (an {@link HttpResponse aggregated paradigm} or a
+     * filter calling {@link StreamingHttpResponse#toResponse()}); {@link StreamingHttpResponse#payloadBody() streamed}
+     * responses are unaffected. Measured against the fully decoded payload at aggregation &mdash; after any
+     * decompression or transformation by earlier filters &mdash; not the wire bytes or {@code Content-Length}.
      * <p>
-     * The default is 4 MiB, overridable globally via the temporary
-     * {@code io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize} system property, which also accepts
-     * {@code -1} for warn-only mode (oversized responses are delivered but logged); an explicit call here always takes
-     * precedence and is enforced. For an opt-in limit that fails fast on {@code Content-Length}, see
-     * {@code PayloadSizeLimitingHttpRequesterFilter}; both apply.
+     * The sign selects the mode, the magnitude the threshold:
+     * <ul>
+     *     <li><strong>positive</strong> enforces, raising a {@link PayloadTooLargeException} to the caller;</li>
+     *     <li><strong>negative</strong> warns at {@code abs(value)} bytes: oversized responses are still delivered,
+     *     with a rate-limited warning suggesting the streaming APIs;</li>
+     *     <li>{@code 0} disables it.</li>
+     * </ul>
+     * Defaults to warn-only at 64 MiB. See also {@code PayloadSizeLimitingHttpRequesterFilter} for a
+     * {@code Content-Length} fail-fast; both apply.
      *
-     * @param maxAggregatedPayloadSize the maximum number of payload bytes to buffer when a response is aggregated;
-     * {@code 0} disables the limit. Must be non-negative.
+     * @param maxAggregatedPayloadSize bytes to buffer when a response is aggregated; positive enforces, negative warns
+     * at its magnitude, {@code 0} disables
      * @return {@code this}
      */
     // FIXME: 0.43 - consider removing default impl

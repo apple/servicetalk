@@ -52,8 +52,7 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
     @Nullable
     private Duration defaultTimeout;
     private boolean appendTimeoutFilter = true;
-    @Nullable
-    private Integer maxInboundMessageSize;
+    private int maxInboundMessageSize = GrpcMessageSizeUtils.DEFAULT_CLIENT_MAX_INBOUND_MESSAGE_SIZE;
     private HttpInitializer<U, R> httpInitializer = builder -> {
         // no-op
     };
@@ -87,7 +86,7 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
 
     @Override
     public GrpcClientBuilder<U, R> maxInboundMessageSize(final int maxInboundMessageSize) {
-        this.maxInboundMessageSize = GrpcMessageSizeUtils.validateMaxInboundMessageSize(maxInboundMessageSize);
+        this.maxInboundMessageSize = maxInboundMessageSize;
         return this;
     }
 
@@ -123,11 +122,10 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
     private GrpcClientCallFactory newGrpcClientCallFactory() {
         SingleAddressHttpClientBuilder<U, R> builder = httpClientBuilderSupplier.get()
             .protocols(h2Default())
-            // Bound HTTP response aggregation to the gRPC inbound message-size limit so oversized unary (aggregated)
-            // responses are rejected before the whole body is buffered. gRPC frames its own messages, so a unary body
-            // is a single frame that maps cleanly to this bound; streaming responses are deframed incrementally and
-            // unaffected. Set before initializeHttp so users can still override it.
-            .maxAggregatedPayloadSize(GrpcMessageSizeUtils.httpAggregationLimitFor(effectiveMaxInboundMessageSize()));
+            // Backstop oversized unary (aggregated) responses at the HTTP layer before the whole body is buffered
+            // (streaming responses are deframed incrementally and unaffected); the limit defaults to the resolved
+            // client default, so unary stays bounded if it becomes enforcing. Set before initializeHttp to override.
+            .maxAggregatedPayloadSize(GrpcMessageSizeUtils.httpAggregationLimitFor(maxInboundMessageSize));
         builder.appendClientFilter(CatchAllHttpClientFilter.INSTANCE);
         if (appendTimeoutFilter) {
             builder.appendClientFilter(newGrpcDeadlineClientFilterFactory());
@@ -138,20 +136,11 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
         builder.appendConnectionFactoryFilter(GrpcRequestTracker.filter());
         httpInitializer.initialize(builder);
         Duration timeout = isInfinite(defaultTimeout, GRPC_MAX_TIMEOUT) ? null : defaultTimeout;
-        // Only override the config's default when the user set an explicit value, so an unset limit defers to the
-        // GrpcConfig default (which resolves the temporary system property, including its warn-only -1 selector).
-        final GrpcClientCallConfig.Builder callConfigBuilder = new GrpcClientCallConfig.Builder()
-                .defaultTimeout(timeout);
-        if (maxInboundMessageSize != null) {
-            callConfigBuilder.maxInboundMessageSize(maxInboundMessageSize);
-        }
-        return GrpcClientCallFactory.from(builder.buildStreaming(), callConfigBuilder.build());
-    }
-
-    // The effective inbound limit: the user's explicit value, else the GrpcConfig default (property-derived).
-    private int effectiveMaxInboundMessageSize() {
-        return maxInboundMessageSize != null ? maxInboundMessageSize
-                : GrpcMessageSizeUtils.DEFAULT_MAX_INBOUND_MESSAGE_SIZE;
+        final GrpcClientCallConfig callConfig = new GrpcClientCallConfig.Builder()
+                .defaultTimeout(timeout)
+                .maxInboundMessageSize(maxInboundMessageSize)
+                .build();
+        return GrpcClientCallFactory.from(builder.buildStreaming(), callConfig);
     }
 
     static final class CatchAllHttpClientFilter implements StreamingHttpClientFilterFactory {
