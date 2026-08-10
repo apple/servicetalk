@@ -107,7 +107,7 @@ class BlockingUtilsTest {
         final Future<?> future = Single.never().afterCancel(cancelled::countDown).toFuture();
         final InterruptOutcome outcome = runInterrupted(subscribed -> {
             subscribed.countDown();
-            BlockingUtils.futureGetCancelOnInterrupt(future);
+            BlockingUtils.futureGet(future, true);
         });
         assertThat(outcome.thrown, is(instanceOf(InterruptedException.class)));
         cancelled.await();

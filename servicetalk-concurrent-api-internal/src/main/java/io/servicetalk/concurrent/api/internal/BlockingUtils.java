@@ -21,6 +21,8 @@ import io.servicetalk.concurrent.api.Single;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
+
 /**
  * Common utility functions to unwrap {@link ExecutionException} from async operations.
  *
@@ -44,7 +46,15 @@ public final class BlockingUtils {
      * @throws Exception InterrupedException upon interruption or unchecked exceptions for any other exception.
      */
     public static <T> T futureGetCancelOnInterrupt(Future<T> future) throws Exception {
-        return io.servicetalk.concurrent.api.BlockingUtils.futureGetCancelOnInterrupt(future);
+        try {
+            return future.get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            future.cancel(false);
+            throw e;
+        } catch (ExecutionException e) {
+            return throwException(executionExceptionCause(e));
+        }
     }
 
     /**
@@ -69,5 +79,9 @@ public final class BlockingUtils {
      */
     public static void blockingInvocation(Completable source) throws Exception {
         io.servicetalk.concurrent.api.BlockingUtils.blockingInvocation(source);
+    }
+
+    private static Throwable executionExceptionCause(ExecutionException original) {
+        return (original.getCause() != null) ? original.getCause() : original;
     }
 }

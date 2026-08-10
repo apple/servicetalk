@@ -25,6 +25,7 @@ import static java.lang.Thread.currentThread;
  * A set of utilities for interacting with {@link Future}.
  */
 public final class FutureUtils {
+    // FIXME: 0.43 - replace with public io.servicetalk.concurrent.api.BlockingUtils and remove this class.
 
     private FutureUtils() {
         // No instances.

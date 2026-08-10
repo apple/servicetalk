@@ -31,28 +31,6 @@ public final class BlockingUtils {
     }
 
     /**
-     * Completes a {@link Future} by invoking {@link Future#get()}.
-     * Any occurred {@link Exception} will be converted to unchecked, and {@link ExecutionException}s will be unwrapped.
-     * Upon interruption, the {@link Future} is cancelled.
-     *
-     * @param future The future to operate on.
-     * @param <T> The type of the result.
-     * @return The result of the future.
-     * @throws Exception {@link InterruptedException} upon interruption or unchecked exceptions for any other exception.
-     */
-    public static <T> T futureGetCancelOnInterrupt(Future<T> future) throws Exception {
-        try {
-            return future.get();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            future.cancel(false);
-            throw e;
-        } catch (ExecutionException e) {
-            return throwException(executionExceptionCause(e));
-        }
-    }
-
-    /**
      * Subscribes to a {@link Single} immediately and awaits the result.
      * Any occurred {@link Exception} will be converted to unchecked, and {@link ExecutionException}s will be unwrapped.
      * Upon interruption, the operation is cancelled.
@@ -63,7 +41,7 @@ public final class BlockingUtils {
      * @throws Exception {@link InterruptedException} upon interruption or unchecked exceptions for any other exception.
      */
     public static <T> T blockingInvocation(Single<T> source) throws Exception {
-        return futureGetCancelOnInterrupt(source.toFuture());
+        return futureGet(source.toFuture(), true);
     }
 
     /**
@@ -75,7 +53,7 @@ public final class BlockingUtils {
      * @throws Exception {@link InterruptedException} upon interruption or unchecked exceptions for any other exception.
      */
     public static void blockingInvocation(Completable source) throws Exception {
-        futureGetCancelOnInterrupt(source.toFuture());
+        futureGet(source.toFuture(), true);
     }
 
     /**
@@ -89,14 +67,25 @@ public final class BlockingUtils {
      * @throws Exception {@link InterruptedException} upon interruption or unchecked exceptions for any other exception.
      */
     public static void awaitTermination(Completable source) throws Exception {
-        final Future<Void> future = source.toFuture();
+        futureGet(source.toFuture(), false);
+    }
+
+    /**
+     * Completes a {@link Future} by invoking {@link Future#get()}, converting checked exceptions to unchecked and
+     * unwrapping {@link ExecutionException}. Upon interruption the thread's interrupt status is restored and the
+     * {@link Future} is cancelled only when {@code cancelOnInterrupt} is {@code true}.
+     */
+    static <T> T futureGet(Future<T> future, boolean cancelOnInterrupt) throws Exception {
         try {
-            future.get();
+            return future.get();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            if (cancelOnInterrupt) {
+                future.cancel(false);
+            }
             throw e;
         } catch (ExecutionException e) {
-            throwException(executionExceptionCause(e));
+            return throwException(executionExceptionCause(e));
         }
     }
 

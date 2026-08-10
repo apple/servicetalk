@@ -27,7 +27,7 @@ import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import java.io.IOException;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.BlockingUtils.futureGetCancelOnInterrupt;
+import static io.servicetalk.concurrent.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
@@ -51,7 +51,7 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
     public void handle(final HttpServiceContext ctx,
                        final BlockingStreamingHttpRequest request,
                        final BlockingStreamingHttpServerResponse svcResponse) throws Exception {
-        futureGetCancelOnInterrupt(handleBlockingRequest(ctx, request, svcResponse).toFuture());
+        blockingInvocation(handleBlockingRequest(ctx, request, svcResponse));
     }
 
     private Completable handleBlockingRequest(final HttpServiceContext ctx,
