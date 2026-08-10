@@ -15,18 +15,33 @@
  */
 package io.servicetalk.grpc.netty;
 
+import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.grpc.api.GrpcClientCallConfig;
+import io.servicetalk.grpc.api.GrpcExecutionContext;
+import io.servicetalk.grpc.api.GrpcExecutionStrategy;
+import io.servicetalk.grpc.api.GrpcServiceConfig;
+import io.servicetalk.transport.api.IoExecutor;
+
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 
 /**
- * Coordinates the {@code maxInboundMessageSize} configured on the gRPC client/server builders with the underlying HTTP
- * transport. The builder API accepts {@code 0} (disables), a positive value (enforces), or a negative value (warns at
- * its magnitude). The HTTP aggregation backstop below is applied only for an explicitly configured enforcing value; an
- * unset or warn-only limit leaves it disabled, and a property-derived default is still enforced by the gRPC deframer.
+ * Coordinates the gRPC {@code maxInboundMessageSize} with the underlying HTTP transport's aggregation limit. The
+ * resolved per-role default is parsed once in {@code servicetalk-grpc-api} and read back via
+ * {@link #DEFAULT_CLIENT_MAX_INBOUND_MESSAGE_SIZE} / {@link #DEFAULT_SERVER_MAX_INBOUND_MESSAGE_SIZE}; an unset builder
+ * limit falls back to it so oversized unary messages stay bounded even once the default becomes enforcing.
  */
 final class GrpcMessageSizeUtils {
 
     // A unary gRPC message is a single frame: a 5-byte header (1 compression flag + 4-byte length) plus the message.
     static final int GRPC_FRAME_HEADER_BYTES = 5;
+    // Read back from default-built configs (properties are parsed once, in servicetalk-grpc-api). The size is
+    // independent of the execution context, so the server default is read via a placeholder context.
+    static final int DEFAULT_CLIENT_MAX_INBOUND_MESSAGE_SIZE =
+            new GrpcClientCallConfig.Builder().build().maxInboundMessageSize();
+    static final int DEFAULT_SERVER_MAX_INBOUND_MESSAGE_SIZE =
+            new GrpcServiceConfig.Builder().executionContext(PlaceholderGrpcExecutionContext.INSTANCE).build()
+                    .maxInboundMessageSize();
 
     private GrpcMessageSizeUtils() {
         // No instances.
@@ -49,5 +64,37 @@ final class GrpcMessageSizeUtils {
     static int httpAggregationLimitFor(final int maxInboundMessageSize) {
         return maxInboundMessageSize <= 0 ? 0 :
                 addWithOverflowProtection(maxInboundMessageSize, GRPC_FRAME_HEADER_BYTES);
+    }
+
+    /**
+     * A placeholder {@link GrpcExecutionContext} used only to build a default {@link GrpcServiceConfig} and read its
+     * (context-independent) {@code maxInboundMessageSize}; its accessors are never invoked.
+     */
+    private static final class PlaceholderGrpcExecutionContext implements GrpcExecutionContext {
+        static final GrpcExecutionContext INSTANCE = new PlaceholderGrpcExecutionContext();
+
+        @Override
+        public BufferAllocator bufferAllocator() {
+            throw notUsed();
+        }
+
+        @Override
+        public IoExecutor ioExecutor() {
+            throw notUsed();
+        }
+
+        @Override
+        public Executor executor() {
+            throw notUsed();
+        }
+
+        @Override
+        public GrpcExecutionStrategy executionStrategy() {
+            throw notUsed();
+        }
+
+        private static UnsupportedOperationException notUsed() {
+            return new UnsupportedOperationException("Placeholder: accessors must never be invoked");
+        }
     }
 }

@@ -122,11 +122,12 @@ final class HttpConfig {
             final Integer value = Integer.valueOf(raw.trim());
             if (legacy) {
                 LOGGER.warn("-D{}={} is a deprecated legacy property, superseded by -D{} and -D{}, and will be " +
-                        "removed in a future release; set maxAggregatedPayloadSize(int) per client/server instead.",
+                        "removed in a future release; use those or set maxAggregatedPayloadSize(int) per " +
+                        "client/server instead.",
                         name, value, DEFAULT_CLIENT_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY,
                         DEFAULT_SERVER_MAX_AGGREGATED_PAYLOAD_SIZE_PROPERTY);
             } else {
-                LOGGER.info("-D{}={} overrides the built-in default maxAggregatedPayloadSize.", name, value);
+                LOGGER.debug("-D{}={}", name, value);
             }
             return value;
         } catch (NumberFormatException e) {

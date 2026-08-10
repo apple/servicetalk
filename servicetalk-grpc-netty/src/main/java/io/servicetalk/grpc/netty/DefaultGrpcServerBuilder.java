@@ -68,8 +68,7 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
     @Nullable
     private Duration defaultTimeout;
     private boolean appendTimeoutFilter = true;
-    @Nullable
-    private Integer maxInboundMessageSize;
+    private int maxInboundMessageSize = GrpcMessageSizeUtils.DEFAULT_SERVER_MAX_INBOUND_MESSAGE_SIZE;
 
     // Do not use this ctor directly, GrpcServers is the entry point for creating a new builder.
     DefaultGrpcServerBuilder(final Supplier<HttpServerBuilder> httpServerBuilderSupplier) {
@@ -77,14 +76,11 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
                 requireNonNull(httpServerBuilderSupplier.get(), "Supplier<HttpServerBuilder> result was null")
                     .protocols(h2Default())
                     .allowDropRequestTrailers(true)
-                    // Bound HTTP request aggregation to an explicitly configured gRPC inbound message-size limit so
-                    // oversized unary (aggregated) requests are rejected before the whole body is buffered; streaming
-                    // requests are deframed incrementally and unaffected. Only an explicit builder value drives this
-                    // backstop: an unset limit leaves it disabled (the warn-only default needs no HTTP reject, and a
-                    // property-derived enforcing default is still enforced by the gRPC deframer). Applied before
-                    // initializeHttp so users can override it.
-                    .maxAggregatedPayloadSize(maxInboundMessageSize == null ? 0 :
-                            GrpcMessageSizeUtils.httpAggregationLimitFor(maxInboundMessageSize));
+                    // Backstop oversized unary (aggregated) requests at the HTTP layer before the whole body is
+                    // buffered (streaming requests are deframed incrementally and unaffected); the limit defaults to
+                    // the resolved server default, so unary stays bounded if it becomes enforcing. Applied before
+                    // initializeHttp to override.
+                    .maxAggregatedPayloadSize(GrpcMessageSizeUtils.httpAggregationLimitFor(maxInboundMessageSize));
     }
 
     @Override
@@ -157,14 +153,11 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
      */
     private Single<GrpcServerContext> doListen(final GrpcServiceFactory<?> serviceFactory) {
         interceptorBuilder = preBuild();
-        // Only override the config's default when the user set an explicit value, so an unset limit defers to the
-        // GrpcConfig default (which resolves the client/server default properties and is warn-only by default).
-        final GrpcServiceConfig.Builder serviceConfigBuilder = new GrpcServiceConfig.Builder()
-                .executionContext(interceptorBuilder.contextBuilder.build());
-        if (maxInboundMessageSize != null) {
-            serviceConfigBuilder.maxInboundMessageSize(maxInboundMessageSize);
-        }
-        return serviceFactory.bind(this, serviceConfigBuilder.build());
+        final GrpcServiceConfig serviceConfig = new GrpcServiceConfig.Builder()
+                .executionContext(interceptorBuilder.contextBuilder.build())
+                .maxInboundMessageSize(maxInboundMessageSize)
+                .build();
+        return serviceFactory.bind(this, serviceConfig);
     }
 
     private ExecutionContextInterceptorHttpServerBuilder preBuild() {

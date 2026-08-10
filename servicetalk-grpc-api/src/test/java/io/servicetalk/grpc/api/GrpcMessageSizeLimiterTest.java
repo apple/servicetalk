@@ -15,10 +15,13 @@
  */
 package io.servicetalk.grpc.api;
 
+import io.servicetalk.grpc.api.GrpcMessageSizeLimiter.Role;
+
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static io.servicetalk.grpc.api.GrpcMessageSizeLimiter.NONE;
-import static io.servicetalk.grpc.api.GrpcMessageSizeLimiter.Role.CLIENT;
 import static io.servicetalk.grpc.api.GrpcMessageSizeLimiter.Role.SERVER;
 import static io.servicetalk.grpc.api.GrpcMessageSizeLimiter.forMaxInboundMessageSize;
 import static io.servicetalk.grpc.api.GrpcStatusCode.RESOURCE_EXHAUSTED;
@@ -61,18 +64,12 @@ class GrpcMessageSizeLimiterTest {
         assertThat(e.status().description(), startsWith("Decompressed gRPC message size=11"));
     }
 
-    @Test
-    void warnOnlyDeliversOverLimit() {
-        // Negative selects warn-only mode at abs(value): over the threshold it warns (rate-limited) but must not throw.
-        final GrpcMessageSizeLimiter limiter = forMaxInboundMessageSize(-10, SERVER);
-        assertDoesNotThrow(() -> limiter.accept(11));
-        assertDoesNotThrow(() -> limiter.accept(Long.MAX_VALUE));
-    }
-
-    @Test
-    void clientWarnOnlyDeliversOverLimit() {
-        // Exercises the CLIENT warn-message branch: warns (rate-limited) over the threshold but must not throw.
-        final GrpcMessageSizeLimiter limiter = forMaxInboundMessageSize(-10, CLIENT);
+    @ParameterizedTest
+    @EnumSource(Role.class)
+    void warnOnlyDeliversOverLimit(final Role role) {
+        // Negative selects warn-only mode at abs(value): over the threshold each role warns (rate-limited) but must
+        // not throw. Parameterizing over Role exercises both the CLIENT and SERVER warn-message branches.
+        final GrpcMessageSizeLimiter limiter = forMaxInboundMessageSize(-10, role);
         assertDoesNotThrow(() -> limiter.accept(11));
         assertDoesNotThrow(() -> limiter.accept(Long.MAX_VALUE));
     }

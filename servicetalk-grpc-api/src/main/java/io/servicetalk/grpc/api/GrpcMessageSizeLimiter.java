@@ -205,11 +205,12 @@ final class GrpcMessageSizeLimiter {
             final Integer value = Integer.valueOf(raw.trim());
             if (legacy) {
                 LOGGER.warn("-D{}={} is a deprecated legacy property, superseded by -D{} and -D{}, and will be " +
-                        "removed in a future release; set maxInboundMessageSize(int) per client/server instead.",
+                        "removed in a future release; use those or set maxInboundMessageSize(int) per " +
+                        "client/server instead.",
                         name, value, DEFAULT_CLIENT_MAX_INBOUND_MESSAGE_SIZE_PROPERTY,
                         DEFAULT_SERVER_MAX_INBOUND_MESSAGE_SIZE_PROPERTY);
             } else {
-                LOGGER.info("-D{}={} overrides the built-in default maxInboundMessageSize.", name, value);
+                LOGGER.debug("-D{}={}", name, value);
             }
             return value;
         } catch (NumberFormatException e) {
@@ -232,14 +233,14 @@ final class GrpcMessageSizeLimiter {
             if (role == CLIENT) {
                 LOGGER.warn("gRPC message size={} exceeded the maximum inbound message size of {} bytes{} (largest " +
                         "observed {} bytes), allowed through in warn-only mode. Large messages can cause memory " +
-                        "pressure. Rate-limited to once per 5 minutes per client.",
+                        "pressure; set maxInboundMessageSize(int) to enforce (reject with RESOURCE_EXHAUSTED) or " +
+                        "raise the warn threshold. Rate-limited per client.",
                         messageSize, maxMessageSize, forOwner, maxObserved, constructionSite);
             } else {
                 LOGGER.warn("gRPC message size={} exceeded the maximum inbound message size of {} bytes{} (largest " +
                         "observed {} bytes), allowed through in warn-only mode. Large messages can cause memory " +
                         "pressure; set an enforcing maxInboundMessageSize(int) to reject them with " +
-                        "RESOURCE_EXHAUSTED (planned to become the default). Rate-limited to once per 5 minutes per " +
-                        "server.",
+                        "RESOURCE_EXHAUSTED (planned to become the default). Rate-limited per server.",
                         messageSize, maxMessageSize, forOwner, maxObserved, constructionSite);
             }
         }

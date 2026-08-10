@@ -70,7 +70,7 @@ Configure it with `GrpcServerBuilder#maxInboundMessageSize(int)` / `GrpcClientBu
 where the sign selects the mode and the magnitude selects the threshold: a *positive* value enforces the limit,
 rejecting a message whose declared length exceeds it with `RESOURCE_EXHAUSTED` *before* its payload is buffered; a
 *negative* value enables *warn-only* mode at `abs(value)` bytes, where an oversized message is delivered but a
-rate-limited warning is logged (once every five minutes per client/server) instead of being rejected; and `0` disables
+rate-limited warning is logged per client/server instead of being rejected; and `0` disables
 the limit. By default the client warns at 64 MiB and the server warns at 16 MiB; enforcing is planned to become the
 default for servers in a future release.
 

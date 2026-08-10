@@ -134,13 +134,14 @@ final class AggregatedPayloadSizeLimiter implements LongConsumer {
             if (role == CLIENT) {
                 LOGGER.warn("Aggregated payload size={} exceeded {} bytes for {} (largest observed {} bytes). This " +
                         "client is buffering very large message bodies; consider the streaming APIs to avoid memory " +
-                        "pressure. Warn-only mode, rate-limited to once per 5 minutes per client.",
+                        "pressure, or set an enforcing maxAggregatedPayloadSize(int) to reject oversized responses. " +
+                        "Warn-only mode, rate-limited per client.",
                         totalSize, maxAggregatedSize, owner, maxObserved, constructionSite);
             } else {
                 LOGGER.warn("Aggregated payload size={} exceeded the configured {} bytes for {} (largest observed " +
                         "{} bytes), allowed through in warn-only mode. Consider the streaming APIs to avoid memory " +
                         "pressure, or set an enforcing maxAggregatedPayloadSize(int) to reject oversized payloads " +
-                        "(planned to become the default). Rate-limited to once per 5 minutes per server.",
+                        "(planned to become the default). Rate-limited per server.",
                         totalSize, maxAggregatedSize, owner, maxObserved, constructionSite);
             }
         }
