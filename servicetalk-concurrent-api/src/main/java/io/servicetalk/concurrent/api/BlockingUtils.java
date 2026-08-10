@@ -41,7 +41,7 @@ public final class BlockingUtils {
      * @throws Exception {@link InterruptedException} upon interruption or unchecked exceptions for any other exception.
      */
     public static <T> T blockingInvocation(Single<T> source) throws Exception {
-        return futureGet(source.toFuture(), true);
+        return futureGetCancelOnInterrupt(source.toFuture());
     }
 
     /**
@@ -53,36 +53,15 @@ public final class BlockingUtils {
      * @throws Exception {@link InterruptedException} upon interruption or unchecked exceptions for any other exception.
      */
     public static void blockingInvocation(Completable source) throws Exception {
-        futureGet(source.toFuture(), true);
+        futureGetCancelOnInterrupt(source.toFuture());
     }
 
-    /**
-     * Subscribes to a {@link Completable} immediately and awaits completion <b>without cancelling it on
-     * interruption</b>, unlike {@link #blockingInvocation(Completable)}. Any occurred {@link Exception} will be
-     * converted to unchecked, and {@link ExecutionException}s will be unwrapped. Upon interruption the thread's
-     * interrupt status is restored and {@link InterruptedException} is thrown, but {@code source} is left running so
-     * that in-progress work (e.g. resource cleanup during close) can complete rather than being aborted.
-     *
-     * @param source The {@link Completable} to await.
-     * @throws Exception {@link InterruptedException} upon interruption or unchecked exceptions for any other exception.
-     */
-    public static void awaitTermination(Completable source) throws Exception {
-        futureGet(source.toFuture(), false);
-    }
-
-    /**
-     * Completes a {@link Future} by invoking {@link Future#get()}, converting checked exceptions to unchecked and
-     * unwrapping {@link ExecutionException}. Upon interruption the thread's interrupt status is restored and the
-     * {@link Future} is cancelled only when {@code cancelOnInterrupt} is {@code true}.
-     */
-    static <T> T futureGet(Future<T> future, boolean cancelOnInterrupt) throws Exception {
+    private static <T> T futureGetCancelOnInterrupt(Future<T> future) throws Exception {
         try {
             return future.get();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            if (cancelOnInterrupt) {
-                future.cancel(false);
-            }
+            future.cancel(false);
             throw e;
         } catch (ExecutionException e) {
             return throwException(executionExceptionCause(e));

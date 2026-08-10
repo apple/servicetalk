@@ -1848,7 +1848,9 @@ final class Generator {
                 .addModifiers(PUBLIC)
                 .addAnnotation(Override.class)
                 .addException(Exception.class)
-                .addStatement("$T.awaitTermination($L.$L())", BlockingUtils, fieldName, completableMethodName)
+                // Cancelled on interrupt like any other call; closeAsync() implementations are cancel-safe
+                // (fire-once, completes independently of the subscription), so cleanup is never aborted.
+                .addStatement("$T.blockingInvocation($L.$L())", BlockingUtils, fieldName, completableMethodName)
                 .build();
     }
 }

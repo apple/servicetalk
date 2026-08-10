@@ -51,18 +51,6 @@ class BlockingUtilsTest {
     }
 
     @Test
-    void awaitTerminationCompletes() throws Exception {
-        BlockingUtils.awaitTermination(Completable.completed());
-    }
-
-    @Test
-    void awaitTerminationThrowsCauseDirectly() {
-        IllegalStateException cause = new IllegalStateException("deliberate");
-        assertThat(assertThrows(IllegalStateException.class,
-                () -> BlockingUtils.awaitTermination(Completable.failed(cause))), sameInstance(cause));
-    }
-
-    @Test
     void singleRestoresInterruptFlagOnInterrupt() throws InterruptedException {
         final InterruptOutcome outcome = runInterrupted(subscribed ->
                 BlockingUtils.blockingInvocation(Single.never().afterOnSubscribe(c -> subscribed.countDown())));
@@ -98,31 +86,6 @@ class BlockingUtilsTest {
                         .afterOnSubscribe(c -> subscribed.countDown())));
         assertThat(outcome.thrown, is(instanceOf(InterruptedException.class)));
         cancelled.await();
-    }
-
-    @Test
-    void futureGetCancelsSourceOnInterrupt() throws InterruptedException {
-        final CountDownLatch cancelled = new CountDownLatch(1);
-        // toFuture() subscribes eagerly, so the source is already subscribed before futureGetCancelOnInterrupt blocks.
-        final Future<?> future = Single.never().afterCancel(cancelled::countDown).toFuture();
-        final InterruptOutcome outcome = runInterrupted(subscribed -> {
-            subscribed.countDown();
-            BlockingUtils.futureGet(future, true);
-        });
-        assertThat(outcome.thrown, is(instanceOf(InterruptedException.class)));
-        cancelled.await();
-    }
-
-    @Test
-    void awaitTerminationRestoresInterruptFlagButDoesNotCancel() throws InterruptedException {
-        final AtomicBoolean cancelled = new AtomicBoolean();
-        final InterruptOutcome outcome = runInterrupted(subscribed ->
-                BlockingUtils.awaitTermination(Completable.never()
-                        .afterCancel(() -> cancelled.set(true))
-                        .afterOnSubscribe(c -> subscribed.countDown())));
-        assertThat(outcome.thrown, is(instanceOf(InterruptedException.class)));
-        assertThat("interrupt flag was not restored", outcome.interruptFlagRestored, is(true));
-        assertThat("close source must not be cancelled on interrupt", cancelled.get(), is(false));
     }
 
     /**
