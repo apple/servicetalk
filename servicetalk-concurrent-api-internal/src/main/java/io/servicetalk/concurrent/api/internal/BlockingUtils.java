@@ -25,7 +25,10 @@ import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 
 /**
  * Common utility functions to unwrap {@link ExecutionException} from async operations.
+ *
+ * @deprecated Use {@link io.servicetalk.concurrent.api.BlockingUtils} instead; this class delegates to it.
  */
+@Deprecated // FIXME: 0.43 - remove deprecated class
 public final class BlockingUtils {
 
     private BlockingUtils() {
@@ -64,7 +67,7 @@ public final class BlockingUtils {
      * @throws Exception InterrupedException upon interruption or unchecked exceptions for any other exception.
      */
     public static <T> T blockingInvocation(Single<T> source) throws Exception {
-        return futureGetCancelOnInterrupt(source.toFuture());
+        return io.servicetalk.concurrent.api.BlockingUtils.blockingInvocation(source);
     }
 
     /**
@@ -75,7 +78,7 @@ public final class BlockingUtils {
      * @throws Exception unchecked exceptions for any exception that occurs.
      */
     public static void blockingInvocation(Completable source) throws Exception {
-        futureGetCancelOnInterrupt(source.toFuture());
+        io.servicetalk.concurrent.api.BlockingUtils.blockingInvocation(source);
     }
 
     private static Throwable executionExceptionCause(ExecutionException original) {

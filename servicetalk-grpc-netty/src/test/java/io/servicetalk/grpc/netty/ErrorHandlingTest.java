@@ -17,10 +17,12 @@ package io.servicetalk.grpc.netty;
 
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.AsyncCloseable;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
+import io.servicetalk.grpc.api.GrpcExecutionContext;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.grpc.api.GrpcPayloadWriter;
 import io.servicetalk.grpc.api.GrpcServiceContext;
@@ -500,6 +502,19 @@ class ErrorHandlingTest {
 
     @ParameterizedTest(name = "{index}: mode = {0} server = {1} client = {2}")
     @MethodSource("data")
+    void scalarFromClientAsBlockingClient(TestMode testMode, GrpcExecutionStrategy serverStrategy,
+                                          GrpcExecutionStrategy clientStrategy) throws Exception {
+        setUp(testMode, serverStrategy, clientStrategy);
+        // asBlockingClient()'s default interface method returns the async-to-blocking wrapper; the generated client
+        // overrides it with the native blocking client, so the wrapper is only reachable via a custom TesterClient.
+        BlockingTesterClient wrapperClient = new DelegatingTesterClient(client).asBlockingClient();
+        assertThat(assertThrows(GrpcStatusException.class,
+                () -> wrapperClient.test(requestPublisherTakeFirstRequest())).status().code(),
+                equalTo(expectedStatus()));
+    }
+
+    @ParameterizedTest(name = "{index}: mode = {0} server = {1} client = {2}")
+    @MethodSource("data")
     void bidiStreamingFromBlockingClient(TestMode testMode, GrpcExecutionStrategy serverStrategy,
                                          GrpcExecutionStrategy clientStrategy) throws Exception {
         setUp(testMode, serverStrategy, clientStrategy);
@@ -736,6 +751,54 @@ class ErrorHandlingTest {
                     return Single.failed(cause);
                 }
             };
+        }
+    }
+
+    private static final class DelegatingTesterClient implements TesterClient {
+        private final TesterClient delegate;
+
+        DelegatingTesterClient(final TesterClient delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public Single<TestResponse> test(final TestRequest request) {
+            return delegate.test(request);
+        }
+
+        @Override
+        public Publisher<TestResponse> testBiDiStream(final Publisher<TestRequest> request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Publisher<TestResponse> testResponseStream(final TestRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Single<TestResponse> testRequestStream(final Publisher<TestRequest> request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public GrpcExecutionContext executionContext() {
+            return delegate.executionContext();
+        }
+
+        @Override
+        public Completable onClose() {
+            return delegate.onClose();
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return delegate.closeAsync();
+        }
+
+        @Override
+        public void close() throws Exception {
+            delegate.close();
         }
     }
 }
