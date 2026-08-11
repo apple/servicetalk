@@ -94,6 +94,7 @@ abstract class AbstractReservableRequestConcurrencyController implements Reserva
             @Override
             protected void handleSubscribe(Subscriber subscriber) {
                 try {
+                    // Ignore cancellation: release must always return the connection to the pool.
                     subscriber.onSubscribe(IGNORE_CANCEL);
                 } catch (Throwable cause) {
                     handleExceptionFromOnSubscribe(subscriber, cause);

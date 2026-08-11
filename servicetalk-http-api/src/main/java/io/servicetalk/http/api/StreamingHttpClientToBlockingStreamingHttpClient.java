@@ -18,7 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.BlockingIterable;
 
 import static io.servicetalk.concurrent.api.BlockingUtils.blockingInvocation;
-import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_SEND_EVENT_STRATEGY;
 import static io.servicetalk.http.api.HttpApiConversions.assignStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
@@ -132,7 +131,7 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
 
         @Override
         public void release() throws Exception {
-            awaitTermination(connection.releaseAsync().toFuture());
+            blockingInvocation(connection.releaseAsync());
         }
 
         @Override
