@@ -461,6 +461,10 @@ public final class OutlierDetectorConfig {
          */
         public Builder(final OutlierDetectorConfig outlierDetectorConfig) {
             this.ewmaHalfLife = outlierDetectorConfig.ewmaHalfLife;
+            this.ewmaCancellationPenalty = outlierDetectorConfig.ewmaCancellationPenalty;
+            this.ewmaErrorPenalty = outlierDetectorConfig.ewmaErrorPenalty;
+            this.concurrentRequestPenalty = outlierDetectorConfig.concurrentRequestPenalty;
+            this.cancellationIsError = outlierDetectorConfig.cancellationIsError;
             this.failedConnectionsThreshold = outlierDetectorConfig.failedConnectionsThreshold;
             this.intervalJitter = outlierDetectorConfig.failureDetectorIntervalJitter;
             this.serviceDiscoveryResubscribeInterval = outlierDetectorConfig.serviceDiscoveryResubscribeInterval;
@@ -653,7 +657,8 @@ public final class OutlierDetectorConfig {
          * <p>
          * These tasks can include detection of outlier or the active revival checks.
          * <p>
-         * This method will also use either the default jitter or the provided interval, whichever is smaller.
+         * When no explicit jitter is provided, the jitter is derived from {@code interval}: half the interval when it
+         * is shorter than 5 seconds, otherwise a 3 second default.
          * <p>
          * Defaults to 10 second interval with 3 second jitter.
          *

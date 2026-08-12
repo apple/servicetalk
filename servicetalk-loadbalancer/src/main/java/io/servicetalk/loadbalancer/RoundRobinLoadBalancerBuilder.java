@@ -145,7 +145,7 @@ public interface RoundRobinLoadBalancerBuilder<ResolvedAddress, C extends LoadBa
      * Use a negative value of the argument to disable health checking.
      *
      * @param threshold number of consecutive connection failures to consider a host unhealthy and eligible for
-     * background health checking. Use negative value to disable the health checking mechanism.
+     * background health checking. Use negative value to disable the health checking mechanism. Must not be {@code 0}.
      * @return {@code this}.
      * @see #backgroundExecutor(Executor)
      */
