@@ -88,8 +88,8 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
      * that have been determined to be unhealthy or slow. The details of the selection process are determined by the
      * {@link LoadBalancingPolicy} while the health status is determined by the outlier detection configuration.
      *
-     * @param outlierDetectorConfig the {@link OutlierDetectorConfig} to use, or {@code null} to use the default
-     *                              outlier detection.
+     * @param outlierDetectorConfig the {@link OutlierDetectorConfig} to use. If not set, the configuration built by
+     *                              {@code new OutlierDetectorConfig.Builder().build()} is used.
      * @return {code this}
      * @see #loadBalancingPolicy(LoadBalancingPolicy)
      * @see OutlierDetectorConfigs for common preconfigured policies
