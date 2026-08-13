@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.TE;
 import static io.netty.handler.codec.http.HttpHeaderValues.TRAILERS;
@@ -69,6 +70,50 @@ final class H2ToStH1Utils {
 
     static void h2HeadersSanitizeForH1(Http2Headers h2Headers) {
         h2HeadersCompressCookieCrumbs(h2Headers);
+    }
+
+    /**
+     * Validate a {@code :path} pseudo-header value: non-empty, visible US-ASCII only ({@code VCHAR},
+     * {@code 0x21-0x7e}).
+     * <p>
+     * <a href="https://www.rfc-editor.org/rfc/rfc9113#section-8.3.1">RFC 9113, 8.3.1</a> requires "exactly one valid
+     * value", non-empty for an {@code http}/{@code https} URI, and its {@code absolute-path [ "?" query ]} production
+     * resolves through <a href="https://www.rfc-editor.org/rfc/rfc9110#section-4.1">RFC 9110, 4.1</a> to
+     * <a href="https://www.rfc-editor.org/rfc/rfc3986#section-3.3">RFC 3986, 3.3</a>, which is US-ASCII only:
+     * {@code SP}, {@code DEL}, the controls and {@code obs-text} ({@code 0x80-0xff}) are all excluded, so anything
+     * outside that set must be percent-encoded by whoever produces the URI. The laxer generic field rules (8.2.1,
+     * {@code field-vchar}, which permit {@code obs-text} and interior {@code SP}) are not the authority for a
+     * pseudo-header: 8.3 makes an invalid one malformed and
+     * <a href="https://www.rfc-editor.org/rfc/rfc9113#section-8.1.1">8.1.1</a> a {@code PROTOCOL_ERROR} that
+     * {@code MUST NOT} be forwarded, "deliberately strict" because of attacks against HTTP.
+     * <p>
+     * We enforce the {@code VCHAR} superset, not the exact {@code pchar} set, matching {@code HttpObjectDecoder} for
+     * an HTTP/1.x request-target: {@code pchar} also excludes {@code #}, {@code [}, {@code ]} and {@code |}, commonly
+     * sent unencoded, so rejecting those is a separate compatibility decision.
+     *
+     * @param path the {@code :path} pseudo-header value to validate, {@code null} if absent
+     * @return a description of why {@code path} is invalid, or {@code null} if it is valid
+     */
+    @Nullable
+    static String invalidPathReason(@Nullable final CharSequence path) {
+        if (path == null) {
+            return "':path' is missing";
+        }
+        final int len = path.length();
+        if (len == 0) {
+            // CONNECT omits :path entirely and never reaches here. An outbound request with no path component sends
+            // "/" instead of an empty value, so only a peer can trigger this.
+            return "':path' must not be empty";
+        }
+        for (int i = 0; i < len; ++i) {
+            final char c = path.charAt(i);
+            if (!HttpObjectDecoder.isVCHAR(c)) {
+                // Keep the "expected" wording identical to HttpObjectDecoder's request-target check.
+                return "':path' contains an illegal character at index " + i + ": 0x" + Integer.toHexString(c) +
+                        ", expected [VCHAR (0x21-0x7e)]";
+            }
+        }
+        return null;
     }
 
     /**

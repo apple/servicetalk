@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -349,6 +349,78 @@ class H2PriorKnowledgeFeatureParityTest {
                 assertEquals(responseBody, response.payloadBody(textSerializerUtf8()));
             }
         }
+    }
+
+    /**
+     * An illegal request-target must fail locally on both protocols and never reach the server.
+     */
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}, target={2}")
+    @MethodSource("clientExecutorsIllegalTargets")
+    void illegalRequestTargetIsRejectedLocally(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge,
+                                               String requestTarget) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
+        AtomicInteger serverRequests = new AtomicInteger();
+        InetSocketAddress serverAddress = bindHttpSynchronousResponseServer(r -> serverRequests.incrementAndGet());
+        try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy).buildBlocking()) {
+            // The cause chains differ - HTTP/1.x wraps IllegalCharacterException, HTTP/2 throws
+            // IllegalArgumentException straight out of write() - so IllegalArgumentException is the common shape.
+            // Asserting it stops a failure for any other reason from passing.
+            Exception e = assertThrows(Exception.class, () -> client.request(client.get(requestTarget)));
+            assertThat(e, instanceOf(IOException.class));
+            assertThat("No IllegalArgumentException in: " + causeChain(e),
+                    hasIllegalArgumentCause(e), is(true));
+            assertThat("Request reached the server", serverRequests.get(), is(0));
+        }
+    }
+
+    private static boolean hasIllegalArgumentCause(Throwable t) {
+        for (Throwable c = t; c != null; c = c.getCause() == c ? null : c.getCause()) {
+            if (c instanceof IllegalArgumentException) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String causeChain(Throwable t) {
+        StringBuilder sb = new StringBuilder();
+        for (Throwable c = t; c != null; c = c.getCause() == c ? null : c.getCause()) {
+            sb.append(sb.length() == 0 ? "" : " <- ").append(c.getClass().getName());
+        }
+        return sb.toString();
+    }
+
+    /**
+     * RFC 9113 8.3.1: no path component sends {@code "/"}, as {@code HttpRequestEncoder} does for HTTP/1.x, so an
+     * empty request-target must succeed on both protocols rather than fail.
+     */
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void emptyRequestTargetIsSentAsSlash(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge)
+            throws Exception {
+        setUp(strategy, h2PriorKnowledge);
+        BlockingQueue<String> targets = new LinkedBlockingQueue<>();
+        InetSocketAddress serverAddress = bindHttpSynchronousResponseServer(r -> targets.add(r.requestTarget()));
+        try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy).buildBlocking()) {
+            client.request(client.get(""));
+            assertThat(targets.take(), equalTo("/"));
+        }
+    }
+
+    private static Stream<Arguments> clientExecutorsIllegalTargets() {
+        // Only targets both codecs reject locally. obs-text is absent on purpose: HTTP/2 rejects it, but
+        // HttpRequestEncoder writes it as UTF-8, so HTTP/1.x only fails later at the peer's decoder.
+        return clientExecutors().flatMap(base -> Stream.of(
+                        "/a b",                                     // SP
+                        "/a" + (char) 0x09 + "b",                    // HTAB
+                        "/a" + (char) 0x0d + (char) 0x0a + "X: y",   // CRLF
+                        "/a" + (char) 0x00 + "b",                    // NUL
+                        "/a" + (char) 0x7f + "b")                    // DEL
+                .map(target -> Arguments.of(base.get()[0], base.get()[1], target)));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] strategy={0}, h2PriorKnowledge={1}, strictRfc6265={2}, " +
@@ -1543,7 +1615,24 @@ class H2PriorKnowledgeFeatureParityTest {
         assertH2ServerResetsStreamWithProtocolError(headerName, "some-value");
     }
 
+    // A peer that skips validation can put an illegal :path on the wire. Only proves the wiring, so one case per
+    // RFC 9113 rule - the per-octet contract is in H2ToStH1UtilsTest, handler behaviour in AbstractH2DuplexHandlerTest.
+    @ParameterizedTest(name = "{displayName} [{index}] path={0}")
+    @MethodSource("illegalPaths")
+    void h2ServerResetsStreamForIllegalPath(String path) throws Exception {
+        assertH2ServerResetsStreamWithProtocolError(headers -> headers.path(path));
+    }
+
+    private static Stream<String> illegalPaths() {
+        return Stream.of("/a" + (char) 0x0d + (char) 0x0a + "X: y", "/a b", "/a" + (char) 0xe9 + "b", "");
+    }
+
     private void assertH2ServerResetsStreamWithProtocolError(CharSequence headerName, CharSequence headerValue)
+            throws Exception {
+        assertH2ServerResetsStreamWithProtocolError(headers -> headers.add(headerName, headerValue));
+    }
+
+    private void assertH2ServerResetsStreamWithProtocolError(Consumer<Http2Headers> customizer)
             throws Exception {
         setUp(DEFAULT, true);
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
@@ -1607,8 +1696,8 @@ class H2PriorKnowledgeFeatureParityTest {
                         .method("POST")
                         .path("/")
                         .scheme("http")
-                        .authority("localhost")
-                        .add(headerName, headerValue);
+                        .authority("localhost");
+                customizer.accept(headers);
                 stream.writeAndFlush(new DefaultHttp2HeadersFrame(headers)).sync();
 
                 Http2StreamFrame resetFrame = frames.take();
