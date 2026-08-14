@@ -216,6 +216,22 @@ Using the following classes:
 NOTE: This example uses the link:#blocking-aggregated[blocking + aggregated] API, as the TLS/SSL configuration API is
 the same across all the HTTP APIs.
 
+[#HTTPS-Proxy]
+== HTTPS Proxy
+
+This example demonstrates how a client can reach an origin server through an HTTP `CONNECT` proxy that itself requires
+mutual TLS. Two independent TLS configurations are involved: the outer handshake authenticates the client to the proxy,
+and the inner handshake performs standard server-auth TLS with the origin, tunneled over the established `CONNECT`.
+
+Using the following classes:
+
+- link:{source-root}/servicetalk-examples/http/https-proxy/src/main/java/io/servicetalk/examples/http/httpsproxy/HttpsProxyServer.java[HttpsProxyServer] - Starts an origin HTTPS server and a mutual-TLS `CONNECT` proxy in front of it.
+- link:{source-root}/servicetalk-examples/http/https-proxy/src/main/java/io/servicetalk/examples/http/httpsproxy/HttpsProxyClient.java[HttpsProxyClient] - A client that configures mutual TLS to the proxy and server-auth TLS to the origin.
+- link:{source-root}/servicetalk-examples/http/https-proxy/src/main/java/io/servicetalk/examples/http/httpsproxy/HandshakeLoggingTransportObserver.java[HandshakeLoggingTransportObserver] - A `TransportObserver` that logs both the proxy and origin TLS handshakes.
+
+NOTE: This example uses the link:#blocking-aggregated[blocking + aggregated] API, as the TLS/SSL configuration API is
+the same across all the HTTP APIs.
+
 [#Observer]
 == Observer
 This example demonstrates the following:
