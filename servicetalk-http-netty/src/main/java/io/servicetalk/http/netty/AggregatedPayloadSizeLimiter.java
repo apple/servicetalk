@@ -27,7 +27,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.netty.HttpConfig.Role.CLIENT;
 import static java.lang.System.nanoTime;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.HOURS;
 
 /**
  * Bounds the size of an aggregated HTTP payload body. Created once per client/server (see
@@ -41,7 +41,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 final class AggregatedPayloadSizeLimiter implements LongConsumer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AggregatedPayloadSizeLimiter.class);
-    private static final long WARN_INTERVAL_NANOS = MINUTES.toNanos(5);
+    private static final long WARN_INTERVAL_NANOS = HOURS.toNanos(2);
 
     /**
      * A no-op limiter that never rejects or warns, regardless of payload size.
@@ -91,7 +91,7 @@ final class AggregatedPayloadSizeLimiter implements LongConsumer {
 
     /**
      * Create a limiter that logs a rate-limited warning when an aggregated payload exceeds {@code maxAggregatedSize}
-     * but otherwise lets it through. Warnings are throttled to one entry per five minutes for this limiter (and hence
+     * but otherwise lets it through. Warnings are throttled to one entry per two hours for this limiter (and hence
      * per client/server).
      *
      * @param maxAggregatedSize the size in bytes above which a warning is emitted; {@code 0} or negative disables it
