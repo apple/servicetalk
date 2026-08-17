@@ -24,7 +24,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.grpc.api.GrpcMessageSizeLimiter.Role.CLIENT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.RESOURCE_EXHAUSTED;
 import static java.lang.System.nanoTime;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.HOURS;
 
 /**
  * Bounds the size of a single inbound gRPC message before it is buffered/deserialized. Created once per client/server
@@ -39,7 +39,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 final class GrpcMessageSizeLimiter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GrpcMessageSizeLimiter.class);
-    private static final long WARN_INTERVAL_NANOS = MINUTES.toNanos(5);
+    private static final long WARN_INTERVAL_NANOS = HOURS.toNanos(2);
 
     /**
      * A no-op limiter that never rejects or warns, regardless of message size.
