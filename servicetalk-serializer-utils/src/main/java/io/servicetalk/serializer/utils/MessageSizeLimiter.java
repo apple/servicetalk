@@ -25,7 +25,7 @@ import javax.annotation.Nullable;
 
 import static java.lang.Integer.getInteger;
 import static java.lang.System.nanoTime;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.HOURS;
 
 /**
  * Enforces (or warns on) the maximum size of a length-prefixed message for the streaming serializers in this package,
@@ -41,13 +41,13 @@ final class MessageSizeLimiter {
      */
     static final int WARN_ONLY = -1;
 
-    static final int DEFAULT_MAX_MESSAGE_SIZE_VALUE = 4 * 1024 * 1024;
+    static final int DEFAULT_MAX_MESSAGE_SIZE_VALUE = 16 * 1024 * 1024;
     // FIXME: 0.43 - remove this temporary property
     static final String DEFAULT_MAX_MESSAGE_SIZE_PROPERTY =
             "io.servicetalk.serializer.utils.temporaryDefaultMaxMessageSize";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageSizeLimiter.class);
-    private static final long WARN_INTERVAL_NANOS = MINUTES.toNanos(5);
+    private static final long WARN_INTERVAL_NANOS = HOURS.toNanos(2);
 
     /**
      * A limiter that never rejects or warns, regardless of message size (the limit is disabled).
@@ -161,8 +161,8 @@ final class MessageSizeLimiter {
         if (now - last >= WARN_INTERVAL_NANOS && lastWarnNanos.compareAndSet(last, now)) {
             LOGGER.warn("Message-Length {} exceeded the configured maximum of {} bytes, but the limit is configured " +
                     "in warn-only mode so the message is allowed through. Largest message observed so far is {} " +
-                    "bytes. Configure an enforcing maxMessageSize to reject oversized messages. This warning is " +
-                    "rate-limited to once per 5 minutes.", length, maxMessageSize, maxObserved, constructionSite);
+                    "bytes. Configure an enforcing maxMessageSize to reject oversized messages. Rate-limited per " +
+                    "serializer.", length, maxMessageSize, maxObserved, constructionSite);
         }
     }
 }

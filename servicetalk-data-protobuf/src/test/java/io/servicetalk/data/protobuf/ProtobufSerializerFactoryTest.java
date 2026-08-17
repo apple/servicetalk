@@ -169,7 +169,8 @@ class ProtobufSerializerFactoryTest {
         // The default (PROTOBUF singleton) limit is warn-only, so an oversized message is delivered, not rejected.
         StreamingSerializerDeserializer<DummyMessage> serializer =
                 PROTOBUF.streamingSerializerDeserializer(DummyMessage.class);
-        DummyMessage oversized = newMsg(4 * 1024 * 1024 + 1);
+        // Exceeds the serializer's 16 MiB warn-only default.
+        DummyMessage oversized = newMsg(16 * 1024 * 1024 + 1);
         Buffer buffer = DEFAULT_ALLOCATOR.newBuffer();
         oversized.writeDelimitedTo(asOutputStream(buffer));
 
