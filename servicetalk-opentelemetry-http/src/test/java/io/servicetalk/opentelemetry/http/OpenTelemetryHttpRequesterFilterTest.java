@@ -80,6 +80,7 @@ import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryHttpRequest
 import static io.servicetalk.opentelemetry.http.TestUtils.SPAN_STATE_SERIALIZER;
 import static io.servicetalk.opentelemetry.http.TestUtils.TRACING_TEST_LOG_LINE_PREFIX;
 import static io.servicetalk.opentelemetry.http.TestUtils.TestTracingClientLoggerFilter;
+import static io.servicetalk.opentelemetry.http.TestUtils.awaitSpans;
 import static io.servicetalk.opentelemetry.http.TestUtils.clientBuilder;
 import static io.servicetalk.opentelemetry.http.TestUtils.sleep;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -122,9 +123,7 @@ class OpenTelemetryHttpRequesterFilterTest {
                 HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
 
-                // Allow span export to complete before assertions to avoid flakiness, especially on HTTP/2.
-                sleep();
-
+                awaitSpans(otelTesting, 1);
                 verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), requestUrl,
                     serverSpanState.getTraceId(), serverSpanState.getSpanId(),
                     TRACING_TEST_LOG_LINE_PREFIX);
@@ -157,6 +156,7 @@ class OpenTelemetryHttpRequesterFilterTest {
                 HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
 
+                awaitSpans(otelTesting, 2);
                 verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), requestUrl,
                     serverSpanState.getTraceId(), serverSpanState.getSpanId(),
                     TRACING_TEST_LOG_LINE_PREFIX);
@@ -236,6 +236,7 @@ class OpenTelemetryHttpRequesterFilterTest {
                 verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), requestPath,
                         serverSpanState.getTraceId(), serverSpanState.getSpanId(),
                         TRACING_TEST_LOG_LINE_PREFIX);
+                awaitSpans(otelTesting, 3);
                 assertThat(otelTesting.getSpans()).hasSize(3);
                 assertThat(otelTesting.getSpans()).extracting("traceId")
                         .containsExactly(serverSpanState.getTraceId(), serverSpanState.getTraceId(),
@@ -283,6 +284,7 @@ class OpenTelemetryHttpRequesterFilterTest {
                     .addHeader("some-request-header", "request-header-value")).toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
 
+                awaitSpans(otelTesting, 1);
                 verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), requestUrl,
                     serverSpanState.getTraceId(), serverSpanState.getSpanId(),
                     TRACING_TEST_LOG_LINE_PREFIX);
@@ -436,7 +438,7 @@ class OpenTelemetryHttpRequesterFilterTest {
                     verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), "/",
                             serverSpanState.getTraceId(), serverSpanState.getSpanId(),
                             TRACING_TEST_LOG_LINE_PREFIX);
-                    sleep();
+                    awaitSpans(otelTesting, 1);
                     assertThat(otelTesting.getSpans()).hasSize(1);
                     assertThat(otelTesting.getSpans()).extracting("traceId")
                             .containsExactly(serverSpanState.getTraceId());
@@ -466,7 +468,7 @@ class OpenTelemetryHttpRequesterFilterTest {
                     // onExchangeFinally() observes the complete dispatch lifecycle and may run after the tracing
                     // span ends, which only covers request sent through response received.
                     assertTrue(lifecycleObserver.awaitExchangeFinally(10, SECONDS));
-                    sleep();
+                    awaitSpans(otelTesting, 1);
                     otelTesting.assertTraces().hasTracesSatisfyingExactly(ta ->
                             ta.hasSpansSatisfyingExactly(span -> {
                                 span.hasAttribute(TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY, "set");
@@ -478,7 +480,7 @@ class OpenTelemetryHttpRequesterFilterTest {
                     context.close();
                     context = null;
                     assertThrows(Exception.class, () -> client.request(client.get("/")).toFuture().get());
-                    sleep();
+                    awaitSpans(otelTesting, 1);
                     otelTesting.assertTraces().hasTracesSatisfyingExactly(ta ->
                             ta.hasSpansSatisfyingExactly(span -> {
                                 span.hasEventsSatisfying(eventData -> {
@@ -522,7 +524,7 @@ class OpenTelemetryHttpRequesterFilterTest {
                     .appendConnectionFilter(filter)
                     .build()) {
                     client.request(client.get(requestUrl)).toFuture().get();
-                sleep();
+                awaitSpans(otelTesting, 3);
 
                 // Should have 3 spans: logical client span, physical client span, and server span
                 assertThat(otelTesting.getSpans()).hasSize(3);
@@ -558,7 +560,7 @@ class OpenTelemetryHttpRequesterFilterTest {
                     .appendClientFilter(filter)
                     .build()) {
                 client.request(client.get(requestUrl)).toFuture().get();
-                sleep();
+                awaitSpans(otelTesting, 2);
 
                 // Should have 2 spans: logical client span and server span
                 otelTesting.assertTraces().hasTracesSatisfyingExactly(ta -> ta.hasSpansSatisfyingExactly(
@@ -589,7 +591,7 @@ class OpenTelemetryHttpRequesterFilterTest {
                     .appendConnectionFilter(filter)
                     .build()) {
                 client.request(client.get(requestUrl)).toFuture().get();
-                sleep();
+                awaitSpans(otelTesting, 2);
 
                 // Should have 2 spans: physical client span and server span
                 otelTesting.assertTraces().hasTracesSatisfyingExactly(ta -> ta.hasSpansSatisfyingExactly(
@@ -629,6 +631,9 @@ class OpenTelemetryHttpRequesterFilterTest {
                     }
                 });
             }
+            // Suppression must yield only the server span. Await it deterministically, then settle briefly so a
+            // regression that wrongly created client spans would surface before we assert the exact count.
+            awaitSpans(otelTesting, 1);
             sleep();
 
             // Should have 1 span: server span
@@ -667,7 +672,7 @@ class OpenTelemetryHttpRequesterFilterTest {
                     return resp;
                 }).toFuture().get();
             }
-            sleep();
+            awaitSpans(otelTesting, 3);
 
             // Should have 3 spans: server span, logical client span, and physical client span.
             assertThat(otelTesting.getSpans()).hasSize(3);

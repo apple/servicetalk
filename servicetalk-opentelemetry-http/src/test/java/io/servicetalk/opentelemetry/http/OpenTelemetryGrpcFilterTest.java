@@ -47,6 +47,7 @@ import static io.opentelemetry.api.internal.InstrumentationUtil.suppressInstrume
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.INSTRUMENTATION_SCOPE_NAME;
+import static io.servicetalk.opentelemetry.http.TestUtils.awaitSpans;
 import static io.servicetalk.opentelemetry.http.TestUtils.sleep;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -198,6 +199,9 @@ class OpenTelemetryGrpcFilterTest {
             }
         });
 
+        // Suppression must yield only the server span. Await it deterministically, then settle briefly so a
+        // regression that wrongly created client spans would surface before we assert the exact count.
+        awaitSpans(otelTesting, 1);
         sleep();
 
         // Should have 0 spans because suppression context was active
@@ -212,7 +216,7 @@ class OpenTelemetryGrpcFilterTest {
 
         // Execute gRPC call within suppression context
         client.asBlockingClient().test(newRequest());
-        sleep();
+        awaitSpans(otelTesting, 3);
 
         // Should have 2 client spans and 1 server span
         assertThat(otelTesting.getSpans()).hasSize(3);
@@ -254,7 +258,7 @@ class OpenTelemetryGrpcFilterTest {
     }
 
     private void assertTraceStructure() throws InterruptedException {
-        sleep();
+        awaitSpans(otelTesting, 2);
         assertThat(otelTesting.getSpans()).hasSize(2); // client + server spans
         // Verify they're part of the same trace
         assertThat(findSpanByKind(SpanKind.CLIENT).getTraceId())

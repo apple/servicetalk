@@ -37,6 +37,7 @@ import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
+import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +50,7 @@ import static io.servicetalk.data.jackson.JacksonSerializerFactory.JACKSON;
 import static io.servicetalk.http.api.HttpSerializers.jsonSerializer;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public final class TestUtils {
 
@@ -97,6 +99,18 @@ public final class TestUtils {
             Thread.sleep(millis);
         } catch (InterruptedException ex) {
             throw new RuntimeException(ex);
+        }
+    }
+
+    /**
+     * Wait until at least {@code expectedSpanCount} spans have been exported, working around the race where a client
+     * observes the response before the server-side span is ended (span completion runs after the response terminal
+     * is delivered downstream; see {@code AfterFinallyHttpOperator}).
+     */
+    static void awaitSpans(OpenTelemetryExtension otelTesting, int expectedSpanCount) throws InterruptedException {
+        final long deadline = System.nanoTime() + MILLISECONDS.toNanos(DEFAULT_SLEEP_TIME);
+        while (otelTesting.getSpans().size() < expectedSpanCount && System.nanoTime() < deadline) {
+            Thread.sleep(10);
         }
     }
 
