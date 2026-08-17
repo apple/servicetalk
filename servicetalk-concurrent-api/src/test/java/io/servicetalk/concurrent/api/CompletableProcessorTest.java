@@ -31,6 +31,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Future;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.GcTestUtils.assertEventuallyEnqueued;
 import static io.servicetalk.concurrent.api.Single.collectUnordered;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -38,7 +39,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -119,9 +119,7 @@ class CompletableProcessorTest {
         ReferenceQueue<Subscriber> queue = new ReferenceQueue<>();
         WeakReference<Subscriber> subscriberRef =
                 synchronousCancelStillAllowsForGCDoSubscribe(processor, queue);
-        System.gc();
-        Thread.sleep(300);
-        assertEquals(subscriberRef, queue.remove(100));
+        assertEventuallyEnqueued(processor, subscriberRef, queue);
     }
 
     private WeakReference<Subscriber> synchronousCancelStillAllowsForGCDoSubscribe(
