@@ -19,7 +19,6 @@ import io.servicetalk.serializer.api.MaxMessageSizeExceededException;
 
 import org.junit.jupiter.api.Test;
 
-import static io.servicetalk.serializer.utils.MessageSizeLimiter.WARN_ONLY;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -42,11 +41,12 @@ class MessageSizeLimiterTest {
 
     @Test
     void warnOnlyAllowsAboveLimit() {
-        assertDoesNotThrow(() -> MessageSizeLimiter.forMaxMessageSize(WARN_ONLY).checkMessageSize(Integer.MAX_VALUE));
+        assertDoesNotThrow(() -> MessageSizeLimiter.forMaxMessageSize(-8).checkMessageSize(9));
     }
 
     @Test
-    void invalidMaxMessageSizeRejected() {
-        assertThrows(IllegalArgumentException.class, () -> MessageSizeLimiter.forMaxMessageSize(-2));
+    void warnOnlyMinValueDoesNotOverflow() {
+        assertDoesNotThrow(
+                () -> MessageSizeLimiter.forMaxMessageSize(Integer.MIN_VALUE).checkMessageSize(Integer.MAX_VALUE));
     }
 }
