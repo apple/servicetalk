@@ -93,20 +93,31 @@ public final class ProxyTunnel implements AutoCloseable {
     }
 
     /**
-     * Starts the proxy server and returns its {@link HostAndPort} to connect to.
+     * Starts the proxy server on an ephemeral port and returns its {@link HostAndPort} to connect to.
      *
      * @return the {@link HostAndPort} to use to connect to the proxy
      * @throws IOException In case of any I/O exception
      */
-    @SuppressWarnings("PMD.ExceptionAsFlowControl")
     public HostAndPort startProxy() throws IOException {
+        return startProxy(0);
+    }
+
+    /**
+     * Starts the proxy server on the specified port and returns its {@link HostAndPort} to connect to.
+     *
+     * @param port the port to bind to, or {@code 0} to bind an ephemeral port
+     * @return the {@link HostAndPort} to use to connect to the proxy
+     * @throws IOException In case of any I/O exception
+     */
+    @SuppressWarnings("PMD.ExceptionAsFlowControl")
+    public HostAndPort startProxy(final int port) throws IOException {
         final SSLContext sslCtx = this.sslContext;
         if (sslCtx == null) {
-            serverSocket = new ServerSocket(0, 50, getLoopbackAddress());
+            serverSocket = new ServerSocket(port, 50, getLoopbackAddress());
         } else {
             // Terminate TLS on the proxy listener. The accepted Socket is an SSLSocket whose handshake is performed
             // implicitly on first read/write; downstream code is plain InputStream/OutputStream and is unaffected.
-            serverSocket = sslCtx.getServerSocketFactory().createServerSocket(0, 50, getLoopbackAddress());
+            serverSocket = sslCtx.getServerSocketFactory().createServerSocket(port, 50, getLoopbackAddress());
             // Client auth is a property of the SSLServerSocket, not the SSLContext, so it must be enabled here.
             ((SSLServerSocket) serverSocket).setNeedClientAuth(needClientAuth);
         }
@@ -125,7 +136,7 @@ public final class ProxyTunnel implements AutoCloseable {
                         final String authority = initialLine.substring(CONNECT_PREFIX.length(), end);
                         final int colon = authority.indexOf(':');
                         final String host = authority.substring(0, colon);
-                        final int port = Integer.parseInt(authority.substring(colon + 1));
+                        final int originPort = Integer.parseInt(authority.substring(colon + 1));
                         final String protocol = initialLine.substring(end + 1);
 
                         final HttpHeaders headers = readHeaders(in);
@@ -151,7 +162,7 @@ public final class ProxyTunnel implements AutoCloseable {
                             proxyAuthRequired(socket, protocol);
                             return;
                         }
-                        handler.handle(socket, host, port, protocol);
+                        handler.handle(socket, host, originPort, protocol);
                     } catch (Exception e) {
                         LOGGER.debug("Error from proxy socket={}", socket, e);
                     } finally {

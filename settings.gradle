@@ -65,6 +65,7 @@ include "servicetalk-annotations",
         "servicetalk-examples:grpc:keepalive",
         "servicetalk-examples:http:helloworld",
         "servicetalk-examples:http:mutual-tls",
+        "servicetalk-examples:http:https-proxy",
         "servicetalk-examples:http:redirects",
         "servicetalk-examples:http:http2",
         "servicetalk-examples:http:jaxrs",
@@ -170,6 +171,7 @@ project(":servicetalk-examples:http:service-composition").name = "servicetalk-ex
 project(":servicetalk-examples:http:traffic-resilience").name = "servicetalk-examples-http-traffic-resilience"
 project(":servicetalk-examples:http:uds").name = "servicetalk-examples-http-uds"
 project(":servicetalk-examples:http:mutual-tls").name = "servicetalk-examples-http-mutual-tls"
+project(":servicetalk-examples:http:https-proxy").name = "servicetalk-examples-http-https-proxy"
 project(":servicetalk-examples:http:redirects").name = "servicetalk-examples-http-redirects"
 project(":servicetalk-examples:http:compression").name = "servicetalk-examples-http-compression"
 project(":servicetalk-examples:http:files").name = "servicetalk-examples-http-files"
