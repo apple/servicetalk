@@ -32,15 +32,12 @@ final class GcTestUtils {
     static <T> void assertEventuallyEnqueued(Object keepAlive, WeakReference<T> expected,
                                              ReferenceQueue<T> queue) throws InterruptedException {
         Reference<? extends T> actual = null;
-        // Keep the owner alive while collecting the referent. Otherwise, collecting the owner and all its fields could
-        // make this assertion pass even if the owner still retains the referent.
-        synchronized (keepAlive) {
-            for (int i = 0; i < MAX_GC_ATTEMPTS && actual == null; ++i) {
-                System.gc();
-                actual = queue.remove(QUEUE_WAIT_MILLIS);
-            }
+        for (int i = 0; i < MAX_GC_ATTEMPTS && actual == null; ++i) {
+            System.gc();
+            actual = queue.remove(QUEUE_WAIT_MILLIS);
         }
         assertSame(expected, actual, "Weak reference was not enqueued after " + MAX_GC_ATTEMPTS +
-                " GC attempts; referent was " + (expected.get() == null ? "cleared" : "still reachable"));
+                " GC attempts; referent was " + (expected.get() == null ? "cleared" : "still reachable") +
+                "; parent: " + keepAlive);
     }
 }
