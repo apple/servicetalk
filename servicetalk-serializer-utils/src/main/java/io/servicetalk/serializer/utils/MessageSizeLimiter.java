@@ -34,8 +34,12 @@ import static java.util.concurrent.TimeUnit.HOURS;
  */
 final class MessageSizeLimiter {
     static final int DEFAULT_MAX_MESSAGE_SIZE_VALUE = 16 * 1024 * 1024;
-    // FIXME: 0.43 - remove this temporary property
     static final String DEFAULT_MAX_MESSAGE_SIZE_PROPERTY =
+            "io.servicetalk.serializer.utils.defaultMaxMessageSize";
+    // Deprecated legacy property, superseded by the property above; kept for a release or two in case a deployment
+    // already relies on it. The permanent property, when set, takes precedence over it.
+    // FIXME: 0.43 - remove this deprecated property
+    static final String LEGACY_DEFAULT_MAX_MESSAGE_SIZE_PROPERTY =
             "io.servicetalk.serializer.utils.temporaryDefaultMaxMessageSize";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageSizeLimiter.class);
@@ -48,29 +52,16 @@ final class MessageSizeLimiter {
 
     // The value the 2-arg (default) serializer constructors resolve to, using the same sign convention as
     // forMaxMessageSize: 0 disables, >0 enforces, <0 warns at abs(value). Defaults to warn-only at
-    // DEFAULT_MAX_MESSAGE_SIZE_VALUE bytes, overridable by the temporary property above.
+    // DEFAULT_MAX_MESSAGE_SIZE_VALUE bytes, overridable by the properties above.
     static final int DEFAULT_MAX_MESSAGE_SIZE;
 
     static {
-        // Warn-only by default unless the temporary property overrides it. Don't throw from this static initializer -
-        // fall back to warn-only so a bad property can't break serializer construction (e.g. the static
-        // HttpSerializers instances).
-        int value = -DEFAULT_MAX_MESSAGE_SIZE_VALUE;
-        final String raw = System.getProperty(DEFAULT_MAX_MESSAGE_SIZE_PROPERTY);
-        if (raw != null) {
-            try {
-                value = Integer.parseInt(raw.trim());
-                LOGGER.warn("-D{}={} DANGEROUS_CONFIG_WARNING: this is a temporary property that will be removed in " +
-                        "a future release; set maxMessageSize per serializer via the 3-arg " +
-                        "FixedLengthStreamingSerializer / VarIntLengthStreamingSerializer constructor instead.",
-                        DEFAULT_MAX_MESSAGE_SIZE_PROPERTY, value);
-            } catch (NumberFormatException e) {
-                LOGGER.warn("-D{}={} DANGEROUS_CONFIG_WARNING: not a valid integer; ignoring it and using the " +
-                        "built-in warn-only default of {} bytes.", DEFAULT_MAX_MESSAGE_SIZE_PROPERTY, raw,
-                        DEFAULT_MAX_MESSAGE_SIZE_VALUE);
-            }
-        }
-        DEFAULT_MAX_MESSAGE_SIZE = value;
+        // The permanent property takes precedence over the deprecated legacy one, which takes precedence over the
+        // built-in warn-only default.
+        final Integer configured = parseDefaultOverride(DEFAULT_MAX_MESSAGE_SIZE_PROPERTY, false);
+        final Integer legacy = parseDefaultOverride(LEGACY_DEFAULT_MAX_MESSAGE_SIZE_PROPERTY, true);
+        DEFAULT_MAX_MESSAGE_SIZE = configured != null ? configured :
+                legacy != null ? legacy : -DEFAULT_MAX_MESSAGE_SIZE_VALUE;
     }
 
     private final int maxMessageSize;
@@ -126,6 +117,32 @@ final class MessageSizeLimiter {
                     "Message-Length " + length + " exceeds maximum " + maxMessageSize);
         }
         maybeWarn(length);
+    }
+
+    // Don't throw from the static initializer; ignore an invalid value and fall back to the built-in default so a bad
+    // property can't break serializer construction (e.g. the static HttpSerializers instances).
+    @Nullable
+    private static Integer parseDefaultOverride(final String name, final boolean legacy) {
+        final String raw = System.getProperty(name);
+        if (raw == null) {
+            return null;
+        }
+        try {
+            final Integer value = Integer.valueOf(raw.trim());
+            if (legacy) {
+                LOGGER.warn("-D{}={} is a deprecated legacy property, superseded by -D{}, and will be removed in a " +
+                        "future release; use that or set maxMessageSize per serializer via the 3-arg " +
+                        "FixedLengthStreamingSerializer / VarIntLengthStreamingSerializer constructor instead.",
+                        name, value, DEFAULT_MAX_MESSAGE_SIZE_PROPERTY);
+            } else {
+                LOGGER.debug("-D{}={}", name, value);
+            }
+            return value;
+        } catch (NumberFormatException e) {
+            LOGGER.warn("-D{}={} DANGEROUS_CONFIG_WARNING: not a valid integer; ignoring it and using the built-in " +
+                    "default of {} bytes.", name, raw, DEFAULT_MAX_MESSAGE_SIZE_VALUE);
+            return null;
+        }
     }
 
     private void maybeWarn(final int length) {

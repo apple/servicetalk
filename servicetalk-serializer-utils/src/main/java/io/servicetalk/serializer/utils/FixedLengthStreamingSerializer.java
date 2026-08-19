@@ -43,8 +43,7 @@ public final class FixedLengthStreamingSerializer<T> implements StreamingSeriali
     /**
      * Create a new instance that warns (without rejecting) when a deserialized message exceeds the default threshold
      * ({@value MessageSizeLimiter#DEFAULT_MAX_MESSAGE_SIZE_VALUE} bytes). The default can be changed globally via the
-     * {@value MessageSizeLimiter#DEFAULT_MAX_MESSAGE_SIZE_PROPERTY} system property (a temporary property that will be
-     * removed in a future release), using the same sign convention as
+     * {@value MessageSizeLimiter#DEFAULT_MAX_MESSAGE_SIZE_PROPERTY} system property, using the same sign convention as
      * {@link #FixedLengthStreamingSerializer(SerializerDeserializer, ToIntFunction, int)}. Use that constructor to
      * enforce a limit, warn at a different threshold, or disable it per serializer.
      * @param serializer The {@link SerializerDeserializer} used to serialize/deserialize individual objects.
