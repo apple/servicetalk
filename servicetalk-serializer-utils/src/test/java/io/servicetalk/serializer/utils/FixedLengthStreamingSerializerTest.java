@@ -59,10 +59,14 @@ class FixedLengthStreamingSerializerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {-1, -2})
-    void negativeMaxMessageSizeRejected(int maxMessageSize) {
-        assertThrows(IllegalArgumentException.class, () -> new FixedLengthStreamingSerializer<>(
-                stringSerializer(UTF_8), String::length, maxMessageSize));
+    @ValueSource(ints = {-1, -8})
+    void negativeMaxMessageSizeWarnsButAcceptsOversizedFrame(int maxMessageSize) throws Exception {
+        // A negative limit is warn-only at abs(value), so an oversized frame is delivered, not rejected.
+        FixedLengthStreamingSerializer<String> serializer = new FixedLengthStreamingSerializer<>(
+                stringSerializer(UTF_8), String::length, maxMessageSize);
+
+        assertThat(serializer.deserialize(serializer.serialize(from("123456789"), DEFAULT_ALLOCATOR),
+                DEFAULT_ALLOCATOR).toFuture().get(), contains("123456789"));
     }
 
     @Test
