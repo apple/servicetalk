@@ -60,8 +60,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -394,7 +399,7 @@ abstract class AbstractHttpServiceAsyncContextTest {
         Assumptions.assumeFalse(isBlocking() && useImmediate, "Blocking service can only run with offloading");
 
         Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
-        AtomicReference<ContextMap> currentContextMap = new AtomicReference<>();
+        Map<SocketAddress, ContextMap> connectionContextMaps = new ConcurrentHashMap<>();
         HttpServerBuilder builder = HttpServers.forAddress(localAddress(0)).protocols(protocol.config);
         switch (connectionAcceptorType) {
             case EARLY:
@@ -417,34 +422,33 @@ abstract class AbstractHttpServiceAsyncContextTest {
                 break;
             case ALL:
                 builder.appendEarlyConnectionAcceptor(newEarly(useImmediate, conn -> {
-                    assertNotSameContext(currentContextMap.get(), errorQueue);
-                    currentContextMap.set(AsyncContext.context());
+                    connectionContextMaps.put(conn.remoteAddress(), AsyncContext.context());
                     assertEmptyContext(errorQueue);
                     AsyncContext.put(K1, "early");
                     return defer(() -> {
-                        assertNotSameContext(currentContextMap.get(), errorQueue);
+                        assertNotSameContext(connectionContextMaps.get(conn.remoteAddress()), errorQueue);
                         AsyncContext.put(K1, "changing-early");
                         return completed();
                     });
                 })).appendLateConnectionAcceptor(newLate(useImmediate, conn -> {
-                    assertSameContext(currentContextMap.get(), errorQueue);
+                    assertSameContext(connectionContextMaps.get(conn.remoteAddress()), errorQueue);
                     assertAsyncContext(K1, "early", errorQueue);
                     assertAsyncContext(K2, null, errorQueue);
                     AsyncContext.put(K2, "late");
                     return defer(() -> {
-                        assertNotSameContext(currentContextMap.get(), errorQueue);
+                        assertNotSameContext(connectionContextMaps.get(conn.remoteAddress()), errorQueue);
                         assertAsyncContext(K1, "early", errorQueue);
                         AsyncContext.put(K2, "changing-late");
                         return completed();
                     });
                 })).appendConnectionAcceptorFilter(withStrategy(original -> context -> {
-                    assertSameContext(currentContextMap.get(), errorQueue);
+                    assertSameContext(connectionContextMaps.get(context.remoteAddress()), errorQueue);
                     assertAsyncContext(K1, "early", errorQueue);
                     assertAsyncContext(K2, "late", errorQueue);
                     assertAsyncContext(K3, null, errorQueue);
                     AsyncContext.put(K3, "deprecated");
                     return defer(() -> {
-                        assertNotSameContext(currentContextMap.get(), errorQueue);
+                        assertNotSameContext(connectionContextMaps.get(context.remoteAddress()), errorQueue);
                         assertAsyncContext(K1, "early", errorQueue);
                         assertAsyncContext(K2, "late", errorQueue);
                         AsyncContext.put(K3, "changing-deprecated");
@@ -454,58 +458,57 @@ abstract class AbstractHttpServiceAsyncContextTest {
                 break;
             case ALL_TWICE:
                 builder.appendEarlyConnectionAcceptor(newEarly(useImmediate, conn -> {
-                    assertNotSameContext(currentContextMap.get(), errorQueue);
-                    currentContextMap.set(AsyncContext.context());
+                    connectionContextMaps.put(conn.remoteAddress(), AsyncContext.context());
                     assertEmptyContext(errorQueue);
                     AsyncContext.put(K1, "early-first");
                     return defer(() -> {
-                        assertSameContext(currentContextMap.get(), errorQueue);
+                        assertSameContext(connectionContextMaps.get(conn.remoteAddress()), errorQueue);
                         assertAsyncContext(K1, "early-first", errorQueue);
                         AsyncContext.put(K1, "changing-early-first");
                         return completed();
                     }).shareContextOnSubscribe();
                 })).appendEarlyConnectionAcceptor(newEarly(useImmediate, conn -> {
-                    assertSameContext(currentContextMap.get(), errorQueue);
+                    assertSameContext(connectionContextMaps.get(conn.remoteAddress()), errorQueue);
                     assertAsyncContext(K1, "changing-early-first", errorQueue);
                     AsyncContext.put(K1, "early-second");
                     return defer(() -> {
-                        assertNotSameContext(currentContextMap.get(), errorQueue);
+                        assertNotSameContext(connectionContextMaps.get(conn.remoteAddress()), errorQueue);
                         assertAsyncContext(K1, "early-second", errorQueue);
                         AsyncContext.put(K1, "changing-early");
                         return completed();
                     });
                 })).appendLateConnectionAcceptor(newLate(useImmediate, conn -> {
-                    assertSameContext(currentContextMap.get(), errorQueue);
+                    assertSameContext(connectionContextMaps.get(conn.remoteAddress()), errorQueue);
                     assertAsyncContext(K1, "early-second", errorQueue);
                     assertAsyncContext(K2, null, errorQueue);
                     AsyncContext.put(K2, "late-first");
                     return defer(() -> {
-                        assertSameContext(currentContextMap.get(), errorQueue);
+                        assertSameContext(connectionContextMaps.get(conn.remoteAddress()), errorQueue);
                         assertAsyncContext(K1, "early-second", errorQueue);
                         assertAsyncContext(K2, "late-first", errorQueue);
                         AsyncContext.put(K2, "changing-late-first");
                         return completed();
                     }).shareContextOnSubscribe();
                 })).appendLateConnectionAcceptor(newLate(useImmediate, conn -> {
-                    assertSameContext(currentContextMap.get(), errorQueue);
+                    assertSameContext(connectionContextMaps.get(conn.remoteAddress()), errorQueue);
                     assertAsyncContext(K1, "early-second", errorQueue);
                     assertAsyncContext(K2, "changing-late-first", errorQueue);
                     AsyncContext.put(K2, "late-second");
                     return defer(() -> {
-                        assertNotSameContext(currentContextMap.get(), errorQueue);
+                        assertNotSameContext(connectionContextMaps.get(conn.remoteAddress()), errorQueue);
                         assertAsyncContext(K1, "early-second", errorQueue);
                         assertAsyncContext(K2, "late-second", errorQueue);
                         AsyncContext.put(K2, "changing-late");
                         return completed();
                     });
                 })).appendConnectionAcceptorFilter(withStrategy(original -> context -> {
-                    assertSameContext(currentContextMap.get(), errorQueue);
+                    assertSameContext(connectionContextMaps.get(context.remoteAddress()), errorQueue);
                     assertAsyncContext(K1, "early-second", errorQueue);
                     assertAsyncContext(K2, "late-second", errorQueue);
                     assertAsyncContext(K3, null, errorQueue);
                     AsyncContext.put(K3, "deprecated-first");
                     return defer(() -> {
-                        assertSameContext(currentContextMap.get(), errorQueue);
+                        assertSameContext(connectionContextMaps.get(context.remoteAddress()), errorQueue);
                         assertAsyncContext(K1, "early-second", errorQueue);
                         assertAsyncContext(K2, "late-second", errorQueue);
                         assertAsyncContext(K3, "deprecated-first", errorQueue);
@@ -513,13 +516,13 @@ abstract class AbstractHttpServiceAsyncContextTest {
                         return completed();
                     }).shareContextOnSubscribe();
                 }, connectStrategy(useImmediate))).appendConnectionAcceptorFilter(withStrategy(original -> context -> {
-                    assertSameContext(currentContextMap.get(), errorQueue);
+                    assertSameContext(connectionContextMaps.get(context.remoteAddress()), errorQueue);
                     assertAsyncContext(K1, "early-second", errorQueue);
                     assertAsyncContext(K2, "late-second", errorQueue);
                     assertAsyncContext(K3, "changing-deprecated-first", errorQueue);
                     AsyncContext.put(K3, "deprecated-second");
                     return defer(() -> {
-                        assertNotSameContext(currentContextMap.get(), errorQueue);
+                        assertNotSameContext(connectionContextMaps.get(context.remoteAddress()), errorQueue);
                         assertAsyncContext(K1, "early-second", errorQueue);
                         assertAsyncContext(K2, "late-second", errorQueue);
                         assertAsyncContext(K3, "deprecated-second", errorQueue);
@@ -544,6 +547,10 @@ abstract class AbstractHttpServiceAsyncContextTest {
                 makeClientRequestWithId(connection2, "3");
             }
         }
+        Set<ContextMap> uniqueConnectionContexts = Collections.newSetFromMap(new IdentityHashMap<>());
+        uniqueConnectionContexts.addAll(connectionContextMaps.values());
+        assertThat("Each connection must have a unique context", uniqueConnectionContexts.size(),
+                is(connectionContextMaps.size()));
         assertNoAsyncErrors(errorQueue);
     }
 
