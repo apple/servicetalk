@@ -419,3 +419,13 @@ This example demonstrates asynchronous request processing where the response pay
 
 * link:{source-root}/servicetalk-examples/http/files/src/main/java/io/servicetalk/examples/http/files/FilesServer.java[FilesServer] - a server whose response body is streamed from a file.
 * link:{source-root}/servicetalk-examples/http/files/src/main/java/io/servicetalk/examples/http/files/FilesClient.java[FilesClient] - a client that requests and prints response contents.
+
+[#VirtualThreads]
+== Virtual Threads
+
+This example runs request handling on virtual threads by supplying an offloading `Executor` backed by the JDK's
+virtual-thread-per-task executor, while leaving the `IoExecutor` on platform threads. See the
+xref:{page-version}@servicetalk::virtual-threads.adoc[Virtual Threads guide] for when this is worthwhile and the
+trade-offs involved. Requires JDK 25 or later.
+
+* link:{source-root}/servicetalk-examples/http/virtual-threads/src/main/java/io/servicetalk/examples/http/virtualthreads/VirtualThreadServer.java[VirtualThreadServer] - a blocking "Hello World" server whose request handling runs on virtual threads.

@@ -5,6 +5,7 @@
 ** xref:{page-version}@servicetalk::async-context.adoc[Asynchronous Context]
 
 * xref:{page-version}@servicetalk::performance.adoc[Performance]
+* xref:{page-version}@servicetalk::virtual-threads.adoc[Virtual Threads]
 
 * Examples
 +

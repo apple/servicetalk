@@ -85,6 +85,7 @@ include "servicetalk-annotations",
         "servicetalk-examples:http:timeout",
         "servicetalk-examples:http:loadbalancer",
         "servicetalk-examples:http:files",
+        "servicetalk-examples:http:virtual-threads",
         "servicetalk-gradle-plugin-internal",
         "servicetalk-grpc-api",
         "servicetalk-grpc-health",
@@ -175,3 +176,4 @@ project(":servicetalk-examples:http:https-proxy").name = "servicetalk-examples-h
 project(":servicetalk-examples:http:redirects").name = "servicetalk-examples-http-redirects"
 project(":servicetalk-examples:http:compression").name = "servicetalk-examples-http-compression"
 project(":servicetalk-examples:http:files").name = "servicetalk-examples-http-files"
+project(":servicetalk-examples:http:virtual-threads").name = "servicetalk-examples-http-virtual-threads"
