@@ -113,6 +113,33 @@ breaks, so it is easy to miss when benchmarking. Code that relied on a value sur
 requests will also stop working. For implicitly propagating per-request state, prefer
 xref:{page-version}@servicetalk-concurrent-api::async-context.adoc[`AsyncContext`].
 
+=== AsyncContext does not propagate to threads you spawn
+
+xref:{page-version}@servicetalk-concurrent-api::async-context.adoc[`AsyncContext`] is bound to the current thread and
+is not an `InheritableThreadLocal`. ServiceTalk propagates it across its own asynchronous boundaries, but a thread your
+application starts inside a handler does not inherit it and sees an empty context — anything relying on `AsyncContext`,
+such as tracing spans, MDC, or auth, is absent there.
+
+Virtual threads make spawning a thread or subtask per unit of work — via `StructuredTaskScope`,
+`Thread.ofVirtual().start(...)`, or a fan-out to downstream calls — common, so this is more likely to occur. Capture
+and reinstall the context across the boundary with `AsyncContext.wrapCallable` / `wrapRunnable`, or wrap a JDK executor
+with `AsyncContext.wrapJdkExecutorService`:
+
+[source, java]
+----
+// Each forked subtask runs on its own virtual thread. Wrap it so it inherits the handler's AsyncContext; without the
+// wrapCallable, these calls (and any tracing/MDC they depend on) would run with an empty context.
+try (var scope = StructuredTaskScope.open()) {
+    var user = scope.fork(AsyncContext.wrapCallable(() -> userClient.lookup(id)));
+    var prefs = scope.fork(AsyncContext.wrapCallable(() -> prefsClient.lookup(id)));
+    scope.join();
+    return render(user.get(), prefs.get());
+}
+----
+
+The `wrap*` helpers share one `ContextMap` across the parent and all spawned tasks: a task's writes are visible to the
+others, and concurrent writes to the same key race. This is what you want for read-mostly context (tracing, MDC, auth).
+
 === Pinning
 
 As noted under <<Prerequisites>>, a virtual thread that blocks while holding a monitor pins its carrier thread. JDK 25
