@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -116,8 +116,8 @@ loadScripts(document, 'script');</script>
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button><button id="method-summary-table-tab5" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab5', 3)" class="table-tab">Default Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel">
-<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
+<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
+<div class="summary-table three-column-summary">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -156,7 +156,8 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;<a href="GrpcClientBuilder.html" title="type parameter in GrpcClientBuilder">U</a>,<wbr><a href="GrpcClientBuilder.html" title="type parameter in GrpcClientBuilder">R</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#maxInboundMessageSize(int)" class="member-name-link">maxInboundMessageSize</a><wbr>(int&nbsp;maxInboundMessageSize)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Set the maximum size, in bytes, of a decoded inbound (response) gRPC message that this client will accept.</div>
+<div class="block">Set the maximum size, in bytes, of a decoded inbound (response) gRPC message this client accepts, bounding the
+ memory a peer can make it allocate.</div>
 </div>
 </div>
 </div>
@@ -238,20 +239,17 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="maxInboundMessageSize(int)">
 <h3>maxInboundMessageSize</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;<a href="GrpcClientBuilder.html" title="type parameter in GrpcClientBuilder">U</a>,<wbr><a href="GrpcClientBuilder.html" title="type parameter in GrpcClientBuilder">R</a>&gt;</span>&nbsp;<span class="element-name">maxInboundMessageSize</span><wbr><span class="parameters">(int&nbsp;maxInboundMessageSize)</span></div>
-<div class="block">Set the maximum size, in bytes, of a decoded inbound (response) gRPC message that this client will accept.
- Messages whose declared length exceeds this limit are rejected with
- <a href="GrpcStatusCode.html#RESOURCE_EXHAUSTED"><code>GrpcStatusCode.RESOURCE_EXHAUSTED</code></a> before their payload is buffered, bounding the memory a peer can
- cause this client to allocate. The default is 4 MiB (matching grpc-java) and can be changed globally via the
- <code>io.servicetalk.grpc.netty.temporaryDefaultMaxInboundMessageSize</code> system property (a temporary property
- that will be removed in a future release), which also accepts <code>-1</code> to enable warn-only mode globally (a
- rate-limited log instead of rejecting).
+<div class="block">Set the maximum size, in bytes, of a decoded inbound (response) gRPC message this client accepts, bounding the
+ memory a peer can make it allocate. The sign selects the mode, the magnitude the threshold: <em>positive</em>
+ enforces, rejecting a message whose declared length exceeds it with <a href="GrpcStatusCode.html#RESOURCE_EXHAUSTED"><code>GrpcStatusCode.RESOURCE_EXHAUSTED</code></a>
+ before its payload is buffered; <em>negative</em> warns at <code>abs(value)</code> bytes (oversized messages are still
+ delivered, with a rate-limited warning); <code>0</code> disables it. Defaults to warn-only at 64 MiB.
  <p>
- For a compressed message this bounds the on-wire length and the decoded length. The memory used while
- decompressing is bounded separately by the codec's own decompressed-bytes cap, not by this limit.</div>
+ For a compressed message this bounds both the on-wire and decoded lengths; decompression memory itself is bounded
+ separately by the codec's decompressed-bytes cap.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>maxInboundMessageSize</code> - the maximum inbound message size in bytes: <code>0</code> disables the limit and any
- positive value enforces it. Must be non-negative.</dd>
+<dd><code>maxInboundMessageSize</code> - bytes: positive enforces, negative warns at its magnitude, <code>0</code> disables</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
 </dl>

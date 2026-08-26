@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -100,8 +100,8 @@ loadScripts(document, 'script');</script>
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel">
-<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
+<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
+<div class="summary-table three-column-summary">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -141,20 +141,18 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="maxInboundMessageSize(int)">
 <h3>maxInboundMessageSize</h3>
 <div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="GrpcConfig.Builder.html" title="type parameter in GrpcConfig.Builder">B</a></span>&nbsp;<span class="element-name">maxInboundMessageSize</span><wbr><span class="parameters">(int&nbsp;maxInboundMessageSize)</span></div>
-<div class="block">Set the maximum size, in bytes, of a decoded inbound gRPC message. A message whose declared length exceeds
- the limit is rejected with <a href="GrpcStatusCode.html#RESOURCE_EXHAUSTED"><code>GrpcStatusCode.RESOURCE_EXHAUSTED</code></a> before its payload is buffered; for a
- compressed message the limit is also applied to the decoded size. Memory used while decompressing is bounded
- separately by the codec's own decompressed-bytes cap, not by this limit. Defaults to 4 MiB (matching
- grpc-java), or to the value of the <code>io.servicetalk.grpc.netty.temporaryDefaultMaxInboundMessageSize</code>
- system property when it is set (which also accepts <code>-1</code> for warn-only mode).</div>
+<div class="block">Set the maximum size, in bytes, of a decoded inbound gRPC message. The sign selects the mode, the magnitude
+ the threshold: <em>positive</em> enforces &mdash; a message whose declared length exceeds it is rejected with
+ <a href="GrpcStatusCode.html#RESOURCE_EXHAUSTED"><code>GrpcStatusCode.RESOURCE_EXHAUSTED</code></a> before buffering (also applied to a compressed message's decoded
+ size); <em>negative</em> warns at <code>abs(value)</code> bytes (oversized messages still delivered, with a
+ rate-limited warning); <code>0</code> disables it. Decompression memory is bounded separately by the codec's
+ decompressed-bytes cap. By default the client warns at 64 MiB and the server at 16 MiB; server enforcing is
+ planned to become the default in a future release.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>maxInboundMessageSize</code> - the maximum inbound message size in bytes: <code>0</code> disables the limit and any
- positive value enforces it. Must be non-negative.</dd>
+<dd><code>maxInboundMessageSize</code> - bytes: positive enforces, negative warns at its magnitude, <code>0</code> disables</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
-<dt>Throws:</dt>
-<dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if <code>maxInboundMessageSize &lt; 0</code></dd>
 </dl>
 </section>
 </li>

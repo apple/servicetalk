@@ -1517,6 +1517,45 @@ the same across all the HTTP APIs.
 </div>
 </div>
 <div class="sect1">
+<h2 id="HTTPS-Proxy"><a class="anchor" href="#HTTPS-Proxy"></a><a class="link" href="#HTTPS-Proxy">HTTPS Proxy</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example demonstrates how a client can reach an origin server through an HTTP <code>CONNECT</code> proxy that itself requires
+mutual TLS. Two independent TLS configurations are involved: the outer handshake authenticates the client to the proxy,
+and the inner handshake performs standard server-auth TLS with the origin, tunneled over the established <code>CONNECT</code>.</p>
+</div>
+<div class="paragraph">
+<p>Using the following classes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/https-proxy/src/main/java/io/servicetalk/examples/http/httpsproxy/HttpsProxyServer.java">HttpsProxyServer</a> - Starts an origin HTTPS server and a mutual-TLS <code>CONNECT</code> proxy in front of it.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/https-proxy/src/main/java/io/servicetalk/examples/http/httpsproxy/HttpsProxyClient.java">HttpsProxyClient</a> - A client that configures mutual TLS to the proxy and server-auth TLS to the origin.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/https-proxy/src/main/java/io/servicetalk/examples/http/httpsproxy/HandshakeLoggingTransportObserver.java">HandshakeLoggingTransportObserver</a> - A <code>TransportObserver</code> that logs both the proxy and origin TLS handshakes.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+This example uses the <a href="#blocking-aggregated">blocking + aggregated</a> API, as the TLS/SSL configuration API is
+the same across all the HTTP APIs.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="Observer"><a class="anchor" href="#Observer"></a><a class="link" href="#Observer">Observer</a></h2>
 <div class="sectionbody">
 <div class="paragraph">

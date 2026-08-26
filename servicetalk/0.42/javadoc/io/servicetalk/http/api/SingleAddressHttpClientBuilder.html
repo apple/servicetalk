@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -97,8 +97,8 @@ loadScripts(document, 'script');</script>
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button><button id="method-summary-table-tab5" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab5', 3)" class="table-tab">Default Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel">
-<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
+<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
+<div class="summary-table three-column-summary">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -214,7 +214,7 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,<wbr><a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#maxAggregatedPayloadSize(int)" class="member-name-link">maxAggregatedPayloadSize</a><wbr>(int&nbsp;maxAggregatedPayloadSize)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Sets the maximum size, in bytes, of an aggregated response payload body that this client will buffer in memory.</div>
+<div class="block">Sets the maximum size, in bytes, of an aggregated response payload body this client buffers in memory.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,<wbr><a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#protocols(io.servicetalk.http.api.HttpProtocolConfig...)" class="member-name-link">protocols</a><wbr>(<a href="HttpProtocolConfig.html" title="interface in io.servicetalk.http.api">HttpProtocolConfig</a>...&nbsp;protocols)</code></div>
@@ -443,24 +443,26 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="maxAggregatedPayloadSize(int)">
 <h3>maxAggregatedPayloadSize</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,<wbr><a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;</span>&nbsp;<span class="element-name">maxAggregatedPayloadSize</span><wbr><span class="parameters">(int&nbsp;maxAggregatedPayloadSize)</span></div>
-<div class="block">Sets the maximum size, in bytes, of an aggregated response payload body that this client will buffer in memory.
+<div class="block">Sets the maximum size, in bytes, of an aggregated response payload body this client buffers in memory.
  <p>
- The limit applies only when a response is <strong>aggregated</strong> (an <a href="HttpResponse.html" title="interface in io.servicetalk.http.api"><code>aggregated
- programming paradigm</code></a> or a filter calling <a href="StreamingHttpResponse.html#toResponse()"><code>StreamingHttpResponse.toResponse()</code></a>); responses consumed as a
- <a href="StreamingHttpResponse.html#payloadBody()"><code>stream</code></a> are not affected. Exceeding it raises a
- <a href="PayloadTooLargeException.html" title="class in io.servicetalk.http.api"><code>PayloadTooLargeException</code></a> to the caller. The limit is measured against the fully decoded payload at the
- point of aggregation &mdash; <em>after</em> any decompression or body transformation by earlier filters &mdash;
- not the bytes received from the network nor any declared <code>Content-Length</code>.
+ Applies only when a response is <strong>aggregated</strong> (an <a href="HttpResponse.html" title="interface in io.servicetalk.http.api"><code>aggregated paradigm</code></a> or a
+ filter calling <a href="StreamingHttpResponse.html#toResponse()"><code>StreamingHttpResponse.toResponse()</code></a>); <a href="StreamingHttpResponse.html#payloadBody()"><code>streamed</code></a>
+ responses are unaffected. Measured against the fully decoded payload at aggregation &mdash; after any
+ decompression or transformation by earlier filters &mdash; not the wire bytes or <code>Content-Length</code>.
  <p>
- The default is 4 MiB, overridable globally via the temporary
- <code>io.servicetalk.http.netty.temporaryDefaultMaxAggregatedPayloadSize</code> system property, which also accepts
- <code>-1</code> for warn-only mode (oversized responses are delivered but logged); an explicit call here always takes
- precedence and is enforced. For an opt-in limit that fails fast on <code>Content-Length</code>, see
- <code>PayloadSizeLimitingHttpRequesterFilter</code>; both apply.</div>
+ The sign selects the mode, the magnitude the threshold:
+ <ul>
+     <li><strong>positive</strong> enforces, raising a <a href="PayloadTooLargeException.html" title="class in io.servicetalk.http.api"><code>PayloadTooLargeException</code></a> to the caller;</li>
+     <li><strong>negative</strong> warns at <code>abs(value)</code> bytes: oversized responses are still delivered,
+     with a rate-limited warning suggesting the streaming APIs;</li>
+     <li><code>0</code> disables it.</li>
+ </ul>
+ Defaults to warn-only at 64 MiB. See also <code>PayloadSizeLimitingHttpRequesterFilter</code> for a
+ <code>Content-Length</code> fail-fast; both apply.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>maxAggregatedPayloadSize</code> - the maximum number of payload bytes to buffer when a response is aggregated;
- <code>0</code> disables the limit. Must be non-negative.</dd>
+<dd><code>maxAggregatedPayloadSize</code> - bytes to buffer when a response is aggregated; positive enforces, negative warns
+ at its magnitude, <code>0</code> disables</dd>
 <dt>Returns:</dt>
 <dd><code>this</code></dd>
 </dl>

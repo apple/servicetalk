@@ -1196,19 +1196,24 @@ Here is a quick start example of the
 <h2 id="maxInboundMessageSize"><a class="anchor" href="#maxInboundMessageSize"></a><a class="link" href="#maxInboundMessageSize">Inbound message size limit</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>To bound memory use, ServiceTalk caps a single decoded inbound gRPC message at <strong>4 MiB</strong> by default (matching
-<a href="https://github.com/grpc/grpc-java">grpc-java</a>). A message whose declared length exceeds the limit is rejected with
-<code>RESOURCE_EXHAUSTED</code> <strong>before</strong> its payload is buffered. The limit applies on the receiving side of every paradigm: a
-server bounds request messages, a client bounds response messages. For a compressed message it bounds the on-wire
-(still-compressed) length before buffering, and the decoded length after decompression.</p>
+<p>To bound memory use, ServiceTalk limits the size of a single decoded inbound gRPC message. The limit applies on the
+receiving side of every paradigm: a server bounds request messages, a client bounds response messages. For a compressed
+message it bounds the on-wire (still-compressed) length before buffering, and the decoded length after decompression.</p>
 </div>
 <div class="paragraph">
-<p>Configure it with <code>GrpcServerBuilder#maxInboundMessageSize(int)</code> / <code>GrpcClientBuilder#maxInboundMessageSize(int)</code>:
-<code>0</code> disables the limit and a positive value enforces it (negative values are rejected). The default can be changed
-globally with the temporary <code>io.servicetalk.grpc.netty.temporaryDefaultMaxInboundMessageSize</code> system property (to be
-removed in a future release); an explicit builder call takes precedence. Setting that property to <code>-1</code> enables a
-<strong>warn-only</strong> rollout mode globally: an oversized message is delivered but a warning is logged (rate-limited to once
-every five minutes per client/server) instead of being rejected.</p>
+<p>Configure it with <code>GrpcServerBuilder#maxInboundMessageSize(int)</code> / <code>GrpcClientBuilder#maxInboundMessageSize(int)</code>,
+where the sign selects the mode and the magnitude selects the threshold: a <strong>positive</strong> value enforces the limit,
+rejecting a message whose declared length exceeds it with <code>RESOURCE_EXHAUSTED</code> <strong>before</strong> its payload is buffered; a
+<strong>negative</strong> value enables <strong>warn-only</strong> mode at <code>abs(value)</code> bytes, where an oversized message is delivered but a
+rate-limited warning is logged per client/server instead of being rejected; and <code>0</code> disables
+the limit. By default the client warns at 64 MiB and the server warns at 16 MiB; enforcing is planned to become the
+default for servers in a future release.</p>
+</div>
+<div class="paragraph">
+<p>The built-in defaults can be overridden globally with the
+<code>io.servicetalk.grpc.netty.defaultClientMaxInboundMessageSize</code> and
+<code>io.servicetalk.grpc.netty.defaultServerMaxInboundMessageSize</code> system properties (same sign convention); a per-builder
+call takes precedence.</p>
 </div>
 <div class="admonitionblock note">
 <table>
