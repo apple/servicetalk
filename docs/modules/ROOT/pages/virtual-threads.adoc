@@ -1,0 +1,148 @@
+// Configure {source-root} values based on how this document is rendered: on GitHub or not
+ifdef::env-github[]
+:source-root:
+endif::[]
+ifndef::env-github[]
+ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
+endif::[]
+
+= Virtual Threads
+
+ServiceTalk can run application request handling on
+link:https://openjdk.org/jeps/444[virtual threads]. No special mode is
+required: virtual threads are enabled by supplying an offloading `Executor` that starts a virtual thread per task.
+This page explains when that is worthwhile, how to configure it, and the trade-offs to be aware of.
+
+== Why virtual threads?
+
+A fixed platform-thread pool is an efficient, well-understood default, and it remains the right choice for most
+applications.
+
+Platform threads map to OS threads, which are expensive and limited, so a fixed pool caps how many blocking operations
+can be in flight at once. Virtual threads are cheap to create and park, so blocking calls no longer tie up a scarce
+resource.
+
+The sweet spot is an application serving many concurrent requests that spend most of their time *waiting* (for example
+on an upstream HTTP or database call) and expressed with a
+xref:{page-version}@servicetalk-http-api::blocking-safe-by-default.adoc#programming-models[blocking programming model].
+Virtual threads let you keep straightforward, sequential blocking code while scaling to far more in-flight requests than
+a fixed pool would allow. As with any performance change, benchmark it against your current configuration before
+adopting it.
+
+== Prerequisites
+
+Virtual threads require *JDK 25 or later*.
+
+While virtual threads are available from JDK 21, ServiceTalk recommends JDK 25 as the first release suitable for
+large-scale production use. Earlier releases pin the carrier (platform) thread whenever a virtual thread blocks inside a
+`synchronized` block or method, which under load silently starves the small carrier pool and negates the benefit.
+link:https://openjdk.org/jeps/491[JEP 491] resolved this in JDK 24, and JDK 25 is the first Long-Term-Support release to
+include it.
+
+== Enabling virtual threads
+
+ServiceTalk splits work between the `IoExecutor` (Netty's event loops) and an *offloading* `Executor` that runs
+application code away from the event loop — see
+xref:{page-version}@servicetalk::performance.adoc#safe-to-block[Safe-to-block (offloading)]. To use virtual threads,
+supply an offloading `Executor` that starts a virtual thread per task and leave the `IoExecutor` at its default. Give
+the threads a name rather than accepting the default `VirtualThread[#N]` names — named threads are far easier to pick
+out in thread dumps, logs, and profilers, which matters for any serious workload:
+
+[source, java]
+----
+import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.Executors;
+import io.servicetalk.http.netty.HttpServers;
+
+import java.util.concurrent.ThreadFactory;
+
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
+import static java.util.concurrent.Executors.newThreadPerTaskExecutor;
+
+ThreadFactory factory = Thread.ofVirtual().name("servicetalk-vt-", 0).factory();
+Executor executor = Executors.from(newThreadPerTaskExecutor(factory));
+
+HttpServers.forPort(8080)
+        .executor(executor)
+        .listenBlockingAndAwait((ctx, request, responseFactory) ->
+                responseFactory.ok().payloadBody("Hello World!", textSerializerUtf8()))
+        .awaitShutdown();
+----
+
+Each offloaded request now runs on a fresh virtual thread; blocking within the handler parks that virtual thread instead
+of holding a platform thread. A runnable version is in the
+xref:{page-version}@servicetalk-examples::http/index.adoc#VirtualThreads[virtual threads example].
+
+[IMPORTANT]
+Leave the `IoExecutor` on platform threads. Netty's event loops must never run on virtual threads — blocking or parking
+an event loop stalls every connection it serves. Virtual threads belong on the offloading `Executor` only.
+
+=== Client side
+
+The benefit is overwhelmingly on the server side. On a client, ServiceTalk's offloading `Executor` only runs response
+signals and filters; the blocking client APIs block the *caller's* thread, which ServiceTalk does not own. Supplying a
+virtual-thread `Executor` to a client therefore moves the needle only if you have installed genuinely *blocking*
+client-side filters — an uncommon case. If your calling code makes many concurrent blocking client calls, the threads
+worth making virtual are the ones in your application that issue those calls, not ServiceTalk's client executor.
+
+== Gotchas
+
+=== Monitoring assumptions
+
+Monitoring built around a bounded pool no longer reflects reality. There is no pool to observe — no meaningful active
+thread count, pool size, or queue depth — and a new thread exists per request rather than a stable, reusable set. Any
+dashboards, alerts, or tooling that watch thread-pool behaviour (including your own executor instrumentation and
+thread-dump-based analysis) will not report what you expect and need to be revisited.
+
+=== No built-in capacity limit
+
+A fixed pool provides an implicit back-pressure ceiling: once every thread is busy and the queue is full, the server
+sheds load. A virtual-thread executor is effectively unbounded and imposes no such limit, so an overload can create
+unbounded in-flight work rather than being rejected. Bound concurrency explicitly — for example with a capacity limiter
+from
+xref:{page-version}@servicetalk-examples::http/index.adoc#TrafficResiliency[traffic resilience] — rather than relying on
+a thread pool's size to cap it.
+
+=== ThreadLocal as a cache
+
+With a fixed pool a few dozen threads serve every request, so an expensive object stashed in a `ThreadLocal` (a
+`SimpleDateFormat`, a scratch buffer, a reusable parser) is created a handful of times during warmup and then reused for
+free. Under virtual threads each request runs on a new thread, so anything placed in a `ThreadLocal` is initialized on
+the way in and discarded on the way out. What was a cache becomes per-request allocation and GC pressure — and nothing
+breaks, so it is easy to miss when benchmarking. Code that relied on a value surviving on the same thread across
+requests will also stop working. For implicitly propagating per-request state, prefer
+xref:{page-version}@servicetalk-concurrent-api::async-context.adoc[`AsyncContext`].
+
+=== AsyncContext does not propagate to threads you spawn
+
+xref:{page-version}@servicetalk-concurrent-api::async-context.adoc[`AsyncContext`] is bound to the current thread and
+is not an `InheritableThreadLocal`. ServiceTalk propagates it across its own asynchronous boundaries, but a thread your
+application starts inside a handler does not inherit it and sees an empty context — anything relying on `AsyncContext`,
+such as tracing spans, MDC, or auth, is absent there.
+
+Virtual threads make spawning a thread or subtask per unit of work — via `StructuredTaskScope`,
+`Thread.ofVirtual().start(...)`, or a fan-out to downstream calls — common, so this is more likely to occur. Capture
+and reinstall the context across the boundary with `AsyncContext.wrapCallable` / `wrapRunnable`, or wrap a JDK executor
+with `AsyncContext.wrapJdkExecutorService`:
+
+[source, java]
+----
+// Each forked subtask runs on its own virtual thread. Wrap it so it inherits the handler's AsyncContext; without the
+// wrapCallable, these calls (and any tracing/MDC they depend on) would run with an empty context.
+try (var scope = StructuredTaskScope.open()) {
+    var user = scope.fork(AsyncContext.wrapCallable(() -> userClient.lookup(id)));
+    var prefs = scope.fork(AsyncContext.wrapCallable(() -> prefsClient.lookup(id)));
+    scope.join();
+    return render(user.get(), prefs.get());
+}
+----
+
+The `wrap*` helpers share one `ContextMap` across the parent and all spawned tasks: a task's writes are visible to the
+others, and concurrent writes to the same key race. This is what you want for read-mostly context (tracing, MDC, auth).
+
+=== Pinning
+
+As noted under <<Prerequisites>>, a virtual thread that blocks while holding a monitor pins its carrier thread. JDK 25
+removes this for `synchronized`, but blocking inside native frames or foreign functions can still pin. If throughput
+does not scale as expected, profile for pinning — for example with the `jdk.VirtualThreadPinned` JDK Flight Recorder
+event.

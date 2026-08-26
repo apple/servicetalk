@@ -1,0 +1,52 @@
+/*
+ * Copyright © 2026 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: "java"
+apply from: "../../gradle/idea.gradle"
+
+// This example's main source uses virtual-thread APIs the JDK 17 builder cannot compile, so it is built with a
+// JDK 25 toolchain. JDK 25 is the recommended runtime - the first LTS where carrier-thread pinning on `synchronized`
+// is resolved (JEP 491). Its tasks are gated on a JDK 25 being available (a JDK 25 Gradle runtime or
+// TEST_JAVA_VERSION=25) and skipped otherwise, so builds on other JDKs don't fail resolving an unavailable toolchain.
+//
+// Because auto-download is disabled and CI installs JDK 25 only on the matrix `java: 25` leg, we build this example
+// only when a JDK 25 is actually being exercised: the JDK 25 CI leg (TEST_JAVA_VERSION=25, which is where a JDK 25
+// toolchain is discoverable) or a JDK 25 Gradle runtime. On other legs its tasks are disabled so they don't fail
+// resolving an unavailable toolchain. This mirrors the TEST_JAVA_VERSION gating used for module tests.
+def requiredMajorVersion = 25
+def testJavaVersion = System.getenv("TEST_JAVA_VERSION")
+def jdk25Exercised = JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_25) ||
+    (testJavaVersion != null && testJavaVersion.isInteger() && testJavaVersion.toInteger() >= requiredMajorVersion)
+
+if (jdk25Exercised) {
+  java {
+    toolchain {
+      languageVersion = JavaLanguageVersion.of(requiredMajorVersion)
+    }
+  }
+} else {
+  tasks.withType(JavaCompile).configureEach { enabled = false }
+  tasks.withType(Javadoc).configureEach { enabled = false }
+  tasks.withType(JavaExec).configureEach { enabled = false }
+}
+
+dependencies {
+  implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-concurrent-api")
+  implementation project(":servicetalk-http-netty")
+
+  runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+}

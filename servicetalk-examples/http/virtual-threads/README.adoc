@@ -1,0 +1,15 @@
+== ServiceTalk HTTP Virtual Threads Example
+
+Runs HTTP request handling on link:https://openjdk.org/jeps/444[virtual threads] by supplying an offloading `Executor`
+backed by a named virtual-thread-per-task factory, while leaving the `IoExecutor` (Netty's event loops) on platform
+threads.
+
+See the
+xref:{page-version}@servicetalk::virtual-threads.adoc[Virtual Threads guide] for when this is worthwhile, the
+trade-offs, and the gotchas.
+
+[IMPORTANT]
+This example requires *JDK 25 or later* at runtime. Its main source uses virtual-thread APIs the JDK 17 builder cannot
+compile, so it is built with a JDK 25 toolchain rather than the builder JDK. Its build tasks are enabled only when a
+JDK 25 is being exercised - a JDK 25 Gradle runtime, or `TEST_JAVA_VERSION=25` - and are otherwise skipped, so it
+neither builds nor appears in your IDE on older JDKs.

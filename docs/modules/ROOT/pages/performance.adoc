@@ -123,6 +123,10 @@ for your use case allows ServiceTalk to be more optimal and reduce offloading
 * Opting-out of some or all offloading through use of
 xref:{page-version}@servicetalk::performance.adoc#ExecutionStrategy[ExecutionStrategy]
 
+For applications serving many concurrent, mostly-waiting requests with a blocking programming model, the offloading
+`Executor` can instead be backed by virtual threads. See xref:{page-version}@servicetalk::virtual-threads.adoc[Virtual
+Threads].
+
 == Tuning options and recommendations
 
 The following sections will offer suggestions that may improve performance depending on your use-case.
