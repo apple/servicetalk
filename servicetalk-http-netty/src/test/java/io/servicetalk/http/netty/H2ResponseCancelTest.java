@@ -60,6 +60,7 @@ import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -148,7 +149,9 @@ class H2ResponseCancelTest extends AbstractNettyHttpServerTest {
 
         ExecutionException e = assertThrows(ExecutionException.class,
                 () -> makeRequest(newRequest(connection, "close")));
-        assertThat(e.getCause(), instanceOf(H2StreamResetException.class));
+        // The client may observe either the reset frame or the closed child channel, depending on which event wins.
+        assertThat(e.getCause(), anyOf(instanceOf(H2StreamResetException.class),
+                instanceOf(ClosedChannelException.class)));
 
         // Mak sure we can use the same connection for future requests:
         assertSerializedResponse(makeRequest(newRequest(connection, "ok")), HTTP_2_0, OK, "ok");
