@@ -80,7 +80,7 @@ final class BufferMessageBodyReaderWriter implements MessageBodyReader<Buffer>, 
                            final MultivaluedMap<String, String> httpHeaders,
                            final InputStream entityStream) throws WebApplicationException {
 
-        return handleEntityStream(entityStream, ctxRefProvider.get().get().executionContext().bufferAllocator(),
+        return handleEntityStream(entityStream, ctxRefProvider.get().get().executionContext().bufferAllocator(), true,
                 (p, a) -> {
                     final Buffer buf = newBufferForRequestContent(getRequestContentLength(requestCtxProvider), a);
                     p.toIterable().forEach(buf::writeBytes);

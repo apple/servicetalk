@@ -47,7 +47,7 @@ final class BufferPublisherMessageBodyReaderWriter
                                       final MediaType mediaType,
                                       final MultivaluedMap<String, String> httpHeaders,
                                       final InputStream entityStream) throws WebApplicationException {
-        return readFrom(entityStream, (p, a) -> p, PublisherSource::new);
+        return readFrom(entityStream, false, (p, a) -> p, PublisherSource::new);
     }
 
     @Override

@@ -15,10 +15,15 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.context.api.ContextMap;
 
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 import javax.annotation.Nullable;
 
@@ -150,5 +155,101 @@ public final class StreamingHttpRequests {
                 metaData.headers(), context, metaData.encoding(), metaData.contentEncoding(), allocator, payload,
                 forTransportReceive(requireTrailerHeader, metaData.version(), metaData.headers()), headersFactory,
                 payloadSizeLimiter);
+    }
+
+    /**
+     * Enforces the aggregation payload-size limit configured on {@code request} at
+     * {@link #newTransportRequest(HttpRequestMetaData, BufferAllocator, Publisher, boolean, HttpHeadersFactory,
+     * LongConsumer) transport receive} time on the given {@code payloadBody}. Use it when aggregating a payload outside
+     * {@link StreamingHttpRequest#toRequest()} (e.g. the JAX-RS router); streaming consumers should skip it. When the
+     * request defines no limit, {@code payloadBody} is returned unchanged. The returned {@link Publisher} counts across
+     * a single subscription and must be subscribed to at most once.
+     *
+     * @param request the request whose configured limit to enforce.
+     * @param payloadBody the aggregated payload body to bound.
+     * @return {@code payloadBody}, bounded by the request's aggregation size limit when one applies.
+     */
+    public static Publisher<Buffer> applyAggregationSizeLimit(final StreamingHttpRequest request,
+                                                              final Publisher<Buffer> payloadBody) {
+        final LongConsumer limiter = aggregationSizeLimiter(request);
+        if (limiter == null) {
+            return payloadBody;
+        }
+        // Unlike PayloadSizeLimitingHttpRequesterFilter#newLimiter, no defer(): this body is subscribed exactly once,
+        // so the counter needs no per-subscribe reset.
+        return payloadBody.beforeOnNext(new AggregatedPayloadSizeCounter(limiter)).shareContextOnSubscribe();
+    }
+
+    private static final class AggregatedPayloadSizeCounter implements Consumer<Buffer> {
+        private final LongConsumer payloadSizeLimiter;
+        // Mutated only from onNext; RS signals are sequential with happens-before, so a plain long is safe.
+        private long aggregatedSize;
+
+        AggregatedPayloadSizeCounter(final LongConsumer payloadSizeLimiter) {
+            this.payloadSizeLimiter = payloadSizeLimiter;
+        }
+
+        @Override
+        public void accept(final Buffer buffer) {
+            payloadSizeLimiter.accept(aggregatedSize += buffer.readableBytes());
+        }
+    }
+
+    /**
+     * {@link InputStream} equivalent of {@link #applyAggregationSizeLimit(StreamingHttpRequest, Publisher)} for a
+     * consumer that reads the payload as a blocking {@link InputStream} (e.g. a JAX-RS {@code String}/{@code byte[]}
+     * reader). Reading past the limit throws {@link PayloadTooLargeException}. When the request defines no limit,
+     * {@code in} is returned unchanged. Only bytes read count toward the limit; bytes skipped via
+     * {@link InputStream#skip(long)} are not counted.
+     *
+     * @param request the request whose configured limit to enforce.
+     * @param in the payload {@link InputStream} to bound.
+     * @return {@code in}, bounded by the request's aggregation size limit when one applies.
+     */
+    public static InputStream applyAggregationSizeLimit(final StreamingHttpRequest request, final InputStream in) {
+        final LongConsumer limiter = aggregationSizeLimiter(request);
+        return limiter == null ? in : new PayloadSizeLimitingInputStream(in, limiter);
+    }
+
+    /**
+     * The effective aggregation size limiter for {@code request}, or {@code null} when none applies (the request was
+     * not created by the transport, or its limit is disabled).
+     */
+    @Nullable
+    private static LongConsumer aggregationSizeLimiter(final StreamingHttpRequest request) {
+        if (!(request instanceof DefaultStreamingHttpRequest)) {
+            return null;
+        }
+        final LongConsumer limiter = ((DefaultStreamingHttpRequest) request).payloadHolder().payloadSizeLimiter();
+        return limiter == StreamingHttpPayloadHolder.NO_AGGREGATED_PAYLOAD_LIMIT ? null : limiter;
+    }
+
+    private static final class PayloadSizeLimitingInputStream extends FilterInputStream {
+        private final LongConsumer payloadSizeLimiter;
+        private long aggregatedSize;
+
+        PayloadSizeLimitingInputStream(final InputStream in, final LongConsumer payloadSizeLimiter) {
+            super(in);
+            this.payloadSizeLimiter = payloadSizeLimiter;
+        }
+
+        @Override
+        public int read() throws IOException {
+            final int b = in.read();
+            if (b >= 0) {
+                payloadSizeLimiter.accept(++aggregatedSize);
+            }
+            return b;
+        }
+
+        @Override
+        public int read(final byte[] b, final int off, final int len) throws IOException {
+            final int read = in.read(b, off, len);
+            if (read > 0) {
+                aggregatedSize += read;
+                payloadSizeLimiter.accept(aggregatedSize);
+            }
+            return read;
+        }
     }
 }
