@@ -34,13 +34,10 @@ import io.netty.handler.codec.http2.UniformStreamByteDistributor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
-import static java.lang.invoke.MethodType.methodType;
 
 /**
  * Optimized variant of {@link Http2FrameCodecBuilder} that allows us to use {@link UniformStreamByteDistributor}
@@ -67,52 +64,12 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
     private static final int SECONDS_PER_WINDOW = parseProperty(SECONDS_PER_WINDOW_PROPERTY_NAME, 30);
 
     @Nullable
-    private static final MethodHandle FLUSH_PREFACE;
-
-    @Nullable
-    private static final MethodHandle DECODER_ENFORCE_MAX_RST_FRAMES_PER_WINDOW;
-
-    @Nullable
     private static final Constructor<? extends Http2ConnectionDecoder> EMPTY_DATA_FRAME_DECODER_CTOR;
 
     @Nullable
     private static final Constructor<? extends Http2ConnectionDecoder> MAX_RST_FRAME_DECODER_CTOR;
 
     static {
-        final Http2FrameCodecBuilder builder = forServer();
-
-        MethodHandle flushPreface;
-        try {
-            // Find a new method that exists only in Netty starting from 4.1.78.Final:
-            flushPreface = MethodHandles.publicLookup()
-                    .findVirtual(Http2FrameCodecBuilder.class, "flushPreface",
-                            methodType(Http2FrameCodecBuilder.class, boolean.class));
-            // Verify the method is working as expected:
-            disableFlushPreface(flushPreface, builder);
-        } catch (Throwable cause) {
-            LOGGER.debug("Http2FrameCodecBuilder#flushPreface(boolean) is available only starting from " +
-                            "Netty 4.1.78.Final. Detected Netty version: {}",
-                    Http2FrameCodecBuilder.class.getPackage().getImplementationVersion(), cause);
-            flushPreface = null;
-        }
-        FLUSH_PREFACE = flushPreface;
-
-        MethodHandle decoderEnforceMaxRstFramesPerWindow;
-        try {
-            // Find a new method that exists only in Netty starting from 4.1.100.Final:
-            decoderEnforceMaxRstFramesPerWindow = MethodHandles.publicLookup()
-                    .findVirtual(Http2FrameCodecBuilder.class, "decoderEnforceMaxRstFramesPerWindow",
-                            methodType(Http2FrameCodecBuilder.class, int.class, int.class));
-            // Verify the method is working as expected:
-            decoderEnforceMaxRstFramesPerWindow(decoderEnforceMaxRstFramesPerWindow, builder, builder.isServer());
-        } catch (Throwable cause) {
-            LOGGER.debug("Http2FrameCodecBuilder#decoderEnforceMaxRstFramesPerWindow(int, int) is available only " +
-                            "starting from Netty 4.1.100.Final. Detected Netty version: {}",
-                    Http2FrameCodecBuilder.class.getPackage().getImplementationVersion(), cause);
-            decoderEnforceMaxRstFramesPerWindow = null;
-        }
-        DECODER_ENFORCE_MAX_RST_FRAMES_PER_WINDOW = decoderEnforceMaxRstFramesPerWindow;
-
         EMPTY_DATA_FRAME_DECODER_CTOR = resolveDecoratingDecoderCtor(
                 "io.netty.handler.codec.http2.Http2EmptyDataFrameConnectionDecoder", int.class);
         MAX_RST_FRAME_DECODER_CTOR = resolveDecoratingDecoderCtor(
@@ -128,8 +85,9 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
         this.server = server;
         this.headersFactory = headersFactory;
         this.flowControlQuantum = flowControlQuantum;
-        disableFlushPreface(FLUSH_PREFACE, this);
-        decoderEnforceMaxRstFramesPerWindow(DECODER_ENFORCE_MAX_RST_FRAMES_PER_WINDOW, this, server);
+        // We manage flushes at ST level and don't want Netty to flush the preface and settings separately.
+        flushPreface(false);
+        decoderEnforceMaxRstFramesPerWindow(maxRstFramesPerWindow(server), rstSecondsPerWindow(server));
     }
 
     @Override
@@ -240,49 +198,6 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
                 // see the layering notes on ServiceTalkHttp2Headers.HTTP2_NAME_VALIDATOR.
                 .validateHeaders(config.headersFactory().validateNames())
                 .headerSensitivityDetector(config.headersSensitivityDetector()::test);
-    }
-
-    /**
-     * We manage flushes at ST level and don't want netty to flush the preface & settings only. Instead, we write
-     * headers or entire message and flush them all together. Netty changed the default flush behavior starting from
-     * 4.1.78.Final. To avoid a strict dependency on Netty 4.1.78.Final in the classpath, we use {@link MethodHandle} to
-     * check if the new method is available or not.
-     *
-     * @param flushPrefaceMethod {@link MethodHandle} for {@link Http2FrameCodecBuilder#flushPreface(boolean)}
-     * @param builderInstance an instance of {@link Http2FrameCodecBuilder} where the flush behavior should be disabled
-     * @return {@link Http2FrameCodecBuilder} or {@code null} if {@code flushPrefaceMethod == null}
-     * @see <a href="https://github.com/netty/netty/pull/12349">Netty PR#12349</a>
-     */
-    private static Http2FrameCodecBuilder disableFlushPreface(@Nullable final MethodHandle flushPrefaceMethod,
-                                                              final Http2FrameCodecBuilder builderInstance) {
-        if (flushPrefaceMethod == null) {
-            return builderInstance;
-        }
-        try {
-            // invokeExact requires return type cast to match the type signature
-            return (Http2FrameCodecBuilder) flushPrefaceMethod.invokeExact(builderInstance, false);
-        } catch (Throwable t) {
-            throwException(t);
-            return builderInstance;
-        }
-    }
-
-    // To avoid a strict dependency on Netty 4.1.100.Final in the classpath, we use {@link MethodHandle} to check if
-    // the new method is available or not.
-    private static Http2FrameCodecBuilder decoderEnforceMaxRstFramesPerWindow(
-            @Nullable final MethodHandle methodHandle, final Http2FrameCodecBuilder builderInstance,
-            final boolean isServer) {
-        if (methodHandle == null) {
-            return builderInstance;
-        }
-        try {
-            // invokeExact requires return type cast to match the type signature
-            return (Http2FrameCodecBuilder) methodHandle.invokeExact(builderInstance,
-                    maxRstFramesPerWindow(isServer), rstSecondsPerWindow(isServer));
-        } catch (Throwable t) {
-            throwException(t);
-            return builderInstance;
-        }
     }
 
     // RST_STREAM rate-limiting is only enabled on the server; the client doesn't need this protection.
