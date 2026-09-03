@@ -73,6 +73,12 @@ public class DelegatingGrpcServerBuilder implements GrpcServerBuilder {
     }
 
     @Override
+    public GrpcServerBuilder interruptBlockingServiceOnCancel(final boolean interrupt) {
+        delegate = delegate.interruptBlockingServiceOnCancel(interrupt);
+        return this;
+    }
+
+    @Override
     public GrpcServerBuilder lifecycleObserver(final GrpcLifecycleObserver lifecycleObserver) {
         delegate = delegate.lifecycleObserver(lifecycleObserver);
         return this;

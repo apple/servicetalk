@@ -69,6 +69,7 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
     private Duration defaultTimeout;
     private boolean appendTimeoutFilter = true;
     private int maxInboundMessageSize = GrpcMessageSizeUtils.DEFAULT_SERVER_MAX_INBOUND_MESSAGE_SIZE;
+    private boolean interruptBlockingServiceOnCancel = true;
 
     // Do not use this ctor directly, GrpcServers is the entry point for creating a new builder.
     DefaultGrpcServerBuilder(final Supplier<HttpServerBuilder> httpServerBuilderSupplier) {
@@ -106,6 +107,12 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
     @Override
     public GrpcServerBuilder maxInboundMessageSize(final int maxInboundMessageSize) {
         this.maxInboundMessageSize = maxInboundMessageSize;
+        return this;
+    }
+
+    @Override
+    public GrpcServerBuilder interruptBlockingServiceOnCancel(final boolean interrupt) {
+        this.interruptBlockingServiceOnCancel = interrupt;
         return this;
     }
 
@@ -156,6 +163,7 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
         final GrpcServiceConfig serviceConfig = new GrpcServiceConfig.Builder()
                 .executionContext(interceptorBuilder.contextBuilder.build())
                 .maxInboundMessageSize(maxInboundMessageSize)
+                .interruptBlockingServiceOnCancel(interruptBlockingServiceOnCancel)
                 .build();
         return serviceFactory.bind(this, serviceConfig);
     }

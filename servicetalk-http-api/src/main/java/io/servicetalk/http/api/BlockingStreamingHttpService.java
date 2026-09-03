@@ -26,6 +26,10 @@ import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEI
 public interface BlockingStreamingHttpService extends HttpServiceBase, GracefulAutoCloseable {
     /**
      * Handles a single HTTP request.
+     * <p>
+     * By default, if the client cancels the response (e.g. disconnects mid-response), the handling thread is
+     * {@link Thread#interrupt() interrupted}. See {@link HttpServerBuilder#interruptBlockingServiceOnCancel(boolean)}
+     * to opt out of this behavior.
      *
      * @param ctx Context of the service.
      * @param request to handle.

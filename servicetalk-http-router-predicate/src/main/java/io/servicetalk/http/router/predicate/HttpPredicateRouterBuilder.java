@@ -21,6 +21,7 @@ import io.servicetalk.http.api.HttpCookiePair;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpRequestMethod;
+import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
@@ -71,6 +72,25 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
     private final RouteContinuationImpl continuation = new RouteContinuationImpl();
     @Nullable
     private BiPredicate<ConnectionContext, StreamingHttpRequest> predicate;
+    private boolean interruptBlockingServiceOnCancel = true;
+
+    /**
+     * Configures whether the handling thread of a route registered via
+     * {@link RouteContinuation#thenRouteTo(BlockingHttpService)} or
+     * {@link RouteContinuation#thenRouteTo(BlockingStreamingHttpService)} is {@link Thread#interrupt() interrupted}
+     * when the client cancels the response. This is the same toggle, and has the same semantics, as
+     * {@link HttpServerBuilder#interruptBlockingServiceOnCancel(boolean)} &mdash; it is duplicated here because
+     * routes built by this router are converted to {@link StreamingHttpService} before being handed to an
+     * {@link HttpServerBuilder}, at which point the builder-level setting can no longer apply to them.
+     *
+     * @param interrupt {@code true} (the default) to interrupt the handling thread on cancellation, {@code false}
+     * to only observe cancellation cooperatively (where applicable).
+     * @return {@code this}.
+     */
+    public HttpPredicateRouterBuilder interruptBlockingServiceOnCancel(final boolean interrupt) {
+        this.interruptBlockingServiceOnCancel = interrupt;
+        return this;
+    }
 
     @Override
     public RouteContinuation whenMethod(final HttpRequestMethod method) {
@@ -264,13 +284,15 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
 
         @Override
         public RouteStarter thenRouteTo(final BlockingHttpService service) {
-            final StreamingHttpService streamingService = toStreamingHttpService(serviceOffloads(service), service);
+            final StreamingHttpService streamingService = toStreamingHttpService(serviceOffloads(service), service,
+                    interruptBlockingServiceOnCancel);
             return thenRouteTo0(streamingService, streamingService.requiredOffloads());
         }
 
         @Override
         public RouteStarter thenRouteTo(final BlockingStreamingHttpService service) {
-            final StreamingHttpService streamingService = toStreamingHttpService(serviceOffloads(service), service);
+            final StreamingHttpService streamingService = toStreamingHttpService(serviceOffloads(service), service,
+                    interruptBlockingServiceOnCancel);
             return thenRouteTo0(streamingService, streamingService.requiredOffloads());
         }
 

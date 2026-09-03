@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.TestPublisher;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -70,6 +72,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.lenient;
@@ -260,27 +263,46 @@ class BlockingStreamingToStreamingServiceTest {
         assertThat(closedCalled.get(), is(true));
     }
 
-    @Test
-    void cancelBeforeSendMetaDataPropagated() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] interruptOnCancel={0}")
+    @ValueSource(booleans = {true, false})
+    void cancelBeforeSendMetaData(boolean interruptOnCancel) throws Exception {
         CountDownLatch handleLatch = new CountDownLatch(1);
         AtomicReference<Cancellable> cancellableRef = new AtomicReference<>();
-        CountDownLatch onErrorLatch = new CountDownLatch(1);
-        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+        CountDownLatch doneLatch = new CountDownLatch(1);
+        AtomicBoolean interrupted = new AtomicBoolean();
+        AtomicReference<StreamingHttpResponse> responseRef = new AtomicReference<>();
 
         BlockingStreamingHttpService syncService = (ctx, request, response) -> {
             handleLatch.countDown();
-            try {
-                Thread.sleep(Long.MAX_VALUE);
-            } catch (Throwable t) {
-                throwableRef.set(t);
-                onErrorLatch.countDown();
-            }
-        };
-        StreamingHttpService asyncService = toStreamingHttpService(offloadNone(), syncService);
-        toSource(asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
+            if (interruptOnCancel) {
                 // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
-                // Publisher<Object> to verify that cancellation of Single<StreamingHttpResponse> interrupts the thread
-                // of handle method
+                // Publisher<Object> to verify that cancellation of Single<StreamingHttpResponse> interrupts the
+                // thread of handle method.
+                try {
+                    Thread.sleep(Long.MAX_VALUE);
+                } catch (Throwable t) {
+                    interrupted.set(true);
+                } finally {
+                    doneLatch.countDown();
+                }
+                return;
+            }
+            // Unrelated blocking work that has nothing to do with the (to-be-)cancelled response, mirroring the
+            // CountDownLatch#await() from the downstream bug report.
+            for (int i = 0; i < 5; i++) {
+                try {
+                    Thread.sleep(20);
+                } catch (InterruptedException e) {
+                    interrupted.set(true);
+                }
+                if (Thread.interrupted()) {
+                    interrupted.set(true);
+                }
+            }
+            response.sendMetaData().close();
+        };
+        StreamingHttpService asyncService = toStreamingHttpService(offloadNone(), syncService, interruptOnCancel);
+        toSource(asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 .subscribeOn(executorExtension.executor()))
                 .subscribe(new SingleSource.Subscriber<StreamingHttpResponse>() {
 
@@ -291,43 +313,80 @@ class BlockingStreamingToStreamingServiceTest {
 
                     @Override
                     public void onSuccess(@Nullable final StreamingHttpResponse result) {
+                        responseRef.set(result);
+                        doneLatch.countDown();
                     }
 
                     @Override
                     public void onError(final Throwable t) {
+                        doneLatch.countDown();
                     }
                 });
         handleLatch.await();
         Cancellable cancellable = cancellableRef.get();
         assertThat(cancellable, is(notNullValue()));
         cancellable.cancel();
-        onErrorLatch.await();
-        assertThat(throwableRef.get(), instanceOf(InterruptedException.class));
+        doneLatch.await();
+
+        if (interruptOnCancel) {
+            assertThat(interrupted.get(), is(true));
+        } else {
+            assertThat("cancellation must not interrupt the handling thread when disabled",
+                    interrupted.get(), is(false));
+            // Since the handler was never notified of the cancellation (it wasn't blocked on a ServiceTalk
+            // construct), it runs to completion and the response still completes normally -- the documented
+            // trade-off.
+            assertMetaData(OK, responseRef.get());
+        }
     }
 
-    @Test
-    void cancelAfterSendMetaDataPropagated() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] interruptOnCancel={0}")
+    @ValueSource(booleans = {true, false})
+    void cancelAfterSendMetaData(boolean interruptOnCancel) throws Exception {
         CountDownLatch cancelLatch = new CountDownLatch(1);
-        CountDownLatch serviceTerminationLatch = new CountDownLatch(1);
-        CountDownLatch onErrorLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(1);
+        AtomicBoolean interrupted = new AtomicBoolean();
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
 
         BlockingStreamingHttpService syncService = (ctx, request, response) -> {
-            response.sendMetaData();
+            HttpPayloadWriter<Buffer> writer = response.sendMetaData();
+            if (interruptOnCancel) {
+                // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
+                // Publisher<Object> to verify that cancellation of Publisher<Buffer> interrupts the thread of
+                // handle method.
+                try {
+                    Thread.sleep(Long.MAX_VALUE);
+                } catch (Throwable t) {
+                    interrupted.set(true);
+                    throwableRef.set(t);
+                } finally {
+                    doneLatch.countDown();
+                }
+                return;
+            }
+            // Give the test time to cancel before we attempt the next blocking ServiceTalk call, without ever
+            // parking inside a construct that the cancellation itself could wake up.
+            for (int i = 0; i < 5; i++) {
+                try {
+                    Thread.sleep(20);
+                } catch (InterruptedException e) {
+                    interrupted.set(true);
+                }
+                if (Thread.interrupted()) {
+                    interrupted.set(true);
+                }
+            }
             try {
-                Thread.sleep(Long.MAX_VALUE);
+                writer.write(ctx.executionContext().bufferAllocator().fromAscii("x"));
+                fail("Expected write() to fail after the response was cancelled");
             } catch (Throwable t) {
                 throwableRef.set(t);
-                onErrorLatch.countDown();
             } finally {
-                serviceTerminationLatch.countDown();
+                doneLatch.countDown();
             }
         };
-        StreamingHttpService asyncService = toStreamingHttpService(offloadNone(), syncService);
+        StreamingHttpService asyncService = toStreamingHttpService(offloadNone(), syncService, interruptOnCancel);
         StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
-                // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
-                // Publisher<Object> to verify that cancellation of Publisher<Buffer> interrupts the thread of handle
-                // method
                 .subscribeOn(executorExtension.executor()).toFuture().get();
         assertMetaData(OK, asyncResponse);
         toSource(asyncResponse.payloadBody()).subscribe(new Subscriber<Buffer>() {
@@ -350,9 +409,140 @@ class BlockingStreamingToStreamingServiceTest {
             }
         });
         cancelLatch.await();
-        onErrorLatch.await();
-        assertThat(throwableRef.get(), instanceOf(InterruptedException.class));
-        serviceTerminationLatch.await();
+        doneLatch.await();
+
+        if (interruptOnCancel) {
+            assertThat(interrupted.get(), is(true));
+            assertThat(throwableRef.get(), instanceOf(InterruptedException.class));
+        } else {
+            assertThat("cancellation must not interrupt the handling thread when disabled",
+                    interrupted.get(), is(false));
+            // Cooperative wakeup: the next blocking ServiceTalk call (the payload writer) observes the cancellation
+            // as a plain IOException, the same way a disconnect is surfaced on the non-blocking API.
+            assertThat(throwableRef.get(), instanceOf(IOException.class));
+        }
+    }
+
+    @Test
+    void onSubscribeReceivesNonNullNoOpCancellableWhenDisabled() throws Exception {
+        AtomicReference<Cancellable> cancellableRef = new AtomicReference<>();
+        BlockingStreamingHttpService syncService = (ctx, request, response) -> response.sendMetaData().close();
+        StreamingHttpService asyncService = toStreamingHttpService(offloadNone(), syncService, false);
+
+        toSource(asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory))
+                .subscribe(new SingleSource.Subscriber<StreamingHttpResponse>() {
+                    @Override
+                    public void onSubscribe(final Cancellable cancellable) {
+                        cancellableRef.set(cancellable);
+                    }
+
+                    @Override
+                    public void onSuccess(@Nullable final StreamingHttpResponse result) {
+                    }
+
+                    @Override
+                    public void onError(final Throwable t) {
+                    }
+                });
+
+        Cancellable cancellable = cancellableRef.get();
+        assertThat(cancellable, is(notNullValue()));
+        cancellable.cancel(); // must not throw
+    }
+
+    @Test
+    void unrelatedInterruptedExceptionClearsInterruptFlagWhenDisabled() throws Exception {
+        // Simulates a thread interrupted for a reason unrelated to response cancellation (e.g. executor shutdown)
+        // while interruptOnCancel is disabled, so there is no ThreadInterruptingCancellable to defensively clear
+        // the flag the way it always would have prior to this toggle existing.
+        BlockingStreamingHttpService syncService = (ctx, request, response) -> {
+            Thread.currentThread().interrupt();
+            throw new InterruptedException("unrelated to cancellation");
+        };
+        StreamingHttpService asyncService = toStreamingHttpService(offloadNone(), syncService, false);
+        AtomicReference<Throwable> errorRef = new AtomicReference<>();
+
+        toSource(asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory))
+                .subscribe(new SingleSource.Subscriber<StreamingHttpResponse>() {
+                    @Override
+                    public void onSubscribe(final Cancellable cancellable) {
+                    }
+
+                    @Override
+                    public void onSuccess(@Nullable final StreamingHttpResponse result) {
+                    }
+
+                    @Override
+                    public void onError(final Throwable t) {
+                        errorRef.set(t);
+                    }
+                });
+
+        assertThat(errorRef.get(), instanceOf(InterruptedException.class));
+        assertThat("a stale interrupt flag must not leak back to a (likely pooled) thread just because " +
+                        "interruptOnCancel is disabled", Thread.currentThread().isInterrupted(), is(false));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] interruptOnCancel={0}")
+    @ValueSource(booleans = {true, false})
+    void cancelResponseWhileBlockedReadingRequestBody(boolean interruptOnCancel) throws Exception {
+        // Reproduces the downstream failure this feature fixes: cancelling the *response* must not leak a
+        // Thread#interrupt() into unrelated work -- here, the handler blocked reading the *request* body -- when
+        // interruptOnCancel is disabled. With it enabled (matching today's default), the interrupt does leak in,
+        // which is the bug.
+        CountDownLatch handleLatch = new CountDownLatch(1);
+        AtomicReference<Cancellable> cancellableRef = new AtomicReference<>();
+        AtomicReference<Throwable> requestReadThrowableRef = new AtomicReference<>();
+        CountDownLatch requestReadLatch = new CountDownLatch(1);
+        TestPublisher<Buffer> requestBody = new TestPublisher<>();
+
+        BlockingStreamingHttpService syncService = (ctx, request, response) -> {
+            handleLatch.countDown();
+            try {
+                request.payloadBody().forEach(chunk -> { });
+            } catch (Throwable t) {
+                requestReadThrowableRef.set(t);
+            } finally {
+                requestReadLatch.countDown();
+            }
+        };
+        StreamingHttpService asyncService = toStreamingHttpService(offloadNone(), syncService, interruptOnCancel);
+        StreamingHttpRequest request = reqRespFactory.get("/").payloadBody(requestBody);
+        toSource(asyncService.handle(mockCtx, request, reqRespFactory)
+                .subscribeOn(executorExtension.executor()))
+                .subscribe(new SingleSource.Subscriber<StreamingHttpResponse>() {
+                    @Override
+                    public void onSubscribe(final Cancellable cancellable) {
+                        cancellableRef.set(cancellable);
+                    }
+
+                    @Override
+                    public void onSuccess(@Nullable final StreamingHttpResponse result) {
+                    }
+
+                    @Override
+                    public void onError(final Throwable t) {
+                    }
+                });
+        handleLatch.await();
+        Cancellable cancellable = cancellableRef.get();
+        assertThat(cancellable, is(notNullValue()));
+        cancellable.cancel(); // cancels the response, while the handler is blocked reading the unrelated request
+
+        if (interruptOnCancel) {
+            requestReadLatch.await();
+            assertThat("response cancellation must leak into the unrelated request read when interrupt is enabled " +
+                    "(this is the bug being fixed, and is only safe to rely on being fixed once disabled)",
+                    requestReadThrowableRef.get(), instanceOf(InterruptedException.class));
+        } else {
+            assertThat("no interrupt should reach the request read when disabled",
+                    requestReadLatch.await(300, TimeUnit.MILLISECONDS), is(false));
+            assertThat(requestReadThrowableRef.get(), is(nullValue()));
+            // Let the handler thread terminate cleanly instead of leaking it blocked forever.
+            requestBody.onComplete();
+            requestReadLatch.await();
+            assertThat(requestReadThrowableRef.get(), is(nullValue()));
+        }
     }
 
     @Test

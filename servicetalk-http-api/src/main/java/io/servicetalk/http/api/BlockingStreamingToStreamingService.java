@@ -45,18 +45,23 @@ import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpProtocolVersion.h1TrailersSupported;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.api.ThreadInterruptingCancellableUtils.cancellableForSubscribe;
+import static io.servicetalk.http.api.ThreadInterruptingCancellableUtils.newCancellableIfInterrupting;
+import static io.servicetalk.http.api.ThreadInterruptingCancellableUtils.setDone;
 import static io.servicetalk.oio.api.internal.PayloadWriterUtils.safeClose;
-import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
 final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHolder {
     private static final HttpExecutionStrategy DEFAULT_STRATEGY = OFFLOAD_RECEIVE_META_STRATEGY;
     private final BlockingStreamingHttpService original;
+    private final boolean interruptOnCancel;
 
     BlockingStreamingToStreamingService(final BlockingStreamingHttpService original,
-                                        final HttpExecutionStrategy strategy) {
+                                        final HttpExecutionStrategy strategy,
+                                        final boolean interruptOnCancel) {
         super(defaultStrategy() == strategy ? DEFAULT_STRATEGY : strategy);
         this.original = requireNonNull(original);
+        this.interruptOnCancel = interruptOnCancel;
     }
 
     @Override
@@ -67,9 +72,10 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
         return new SubscribableSingle<StreamingHttpResponse>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
-                final ThreadInterruptingCancellable tiCancellable = new ThreadInterruptingCancellable(currentThread());
+                @Nullable
+                final ThreadInterruptingCancellable tiCancellable = newCancellableIfInterrupting(interruptOnCancel);
                 try {
-                    subscriber.onSubscribe(tiCancellable);
+                    subscriber.onSubscribe(cancellableForSubscribe(tiCancellable));
                 } catch (Throwable cause) {
                     handleExceptionFromOnSubscribe(subscriber, cause);
                     return;
@@ -108,16 +114,18 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                             if (addTrailers) {
                                 messageBody = messageBody.scanWithMapper(() -> new TrailersMapper(payloadWriter));
                             }
-                            messageBody = messageBody.beforeSubscription(() -> new Subscription() {
-                                @Override
-                                public void request(final long n) {
-                                }
+                            if (tiCancellable != null) {
+                                messageBody = messageBody.beforeSubscription(() -> new Subscription() {
+                                    @Override
+                                    public void request(final long n) {
+                                    }
 
-                                @Override
-                                public void cancel() {
-                                    tiCancellable.cancel();
-                                }
-                            });
+                                    @Override
+                                    public void cancel() {
+                                        tiCancellable.cancel();
+                                    }
+                                });
+                            }
                             result = new DefaultStreamingHttpResponse(metaData.status(), version, headers,
                                     metaData.context0(), ctx.executionContext().bufferAllocator(), messageBody,
                                     forTransportReceive(false, version, headers), ctx.headersFactory(),
@@ -139,7 +147,7 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                     // responsible for closing the payloadWriter.
                     exceptionProcessor.onComplete();
                 } catch (Throwable cause) {
-                    tiCancellable.setDone(cause);
+                    setDone(tiCancellable, cause);
                     if (response == null || response.markMetaSent()) {
                         safeOnError(subscriber, cause);
                     } else {
@@ -151,7 +159,7 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                     }
                     return;
                 }
-                tiCancellable.setDone();
+                setDone(tiCancellable);
             }
         };
     }

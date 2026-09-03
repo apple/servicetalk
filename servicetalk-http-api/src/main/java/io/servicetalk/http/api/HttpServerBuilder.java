@@ -213,6 +213,37 @@ public interface HttpServerBuilder {
     HttpServerBuilder allowDropRequestTrailers(boolean allowDrop);
 
     /**
+     * Configures whether the handling thread of a {@link #listenBlocking(BlockingHttpService)} or
+     * {@link #listenBlockingStreaming(BlockingStreamingHttpService)} service (or their {@code *AndAwait} variants)
+     * is {@link Thread#interrupt() interrupted} when the client cancels the response (e.g. disconnects
+     * mid-response).
+     * <p>
+     * Defaults to {@code true} (interrupting), matching prior behavior. When set to {@code false}, the handling
+     * thread is never interrupted on cancellation. For {@link #listenBlockingStreaming(BlockingStreamingHttpService)},
+     * a cancelled response is instead only observed the next time the thread calls back into the response
+     * {@link HttpPayloadWriter}, which then fails with a normal {@link java.io.IOException} &mdash; the same way a
+     * disconnect is already surfaced to any consumer of the non-blocking {@link StreamingHttpService} API. A
+     * handling thread that is blocked elsewhere at the time of cancellation (e.g. still reading the request body)
+     * will <strong>not</strong> observe that cancellation through this mechanism; the request body iterator only
+     * terminates independently, via its own upstream completion/error (for example when the underlying connection
+     * is actually closed, which is a separate signal from this response-level cancellation). For
+     * {@link #listenBlocking(BlockingHttpService)}, there is no equivalent construct to observe cancellation
+     * cooperatively at all &mdash; the handler simply runs its single {@code handle(...)} call to completion,
+     * unaffected by the cancellation.
+     * <p>
+     * This avoids the handling thread being interrupted while it is blocked on unrelated work that has nothing to do
+     * with the cancelled response, at the cost of that unrelated work no longer being proactively interrupted when
+     * the response is cancelled; it will instead run to completion.
+     *
+     * @param interrupt {@code true} (the default) to interrupt the handling thread on cancellation, {@code false}
+     * to only observe cancellation cooperatively (where applicable).
+     * @return {@code this}.
+     */
+    default HttpServerBuilder interruptBlockingServiceOnCancel(boolean interrupt) {
+        return this;
+    }
+
+    /**
      * Sets the maximum size, in bytes, of an aggregated request payload body this server buffers in memory.
      * <p>
      * Applies only when a request is <strong>aggregated</strong> (an {@link HttpRequest aggregated paradigm} or a
@@ -527,6 +558,7 @@ public interface HttpServerBuilder {
      * @return A {@link HttpServerContext} by blocking the calling thread until the server is successfully started or
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
+     * @see #interruptBlockingServiceOnCancel(boolean)
      */
     default HttpServerContext listenBlockingAndAwait(BlockingHttpService service) throws Exception {
         return blockingInvocation(listenBlocking(service));
@@ -542,6 +574,7 @@ public interface HttpServerBuilder {
      * @return A {@link HttpServerContext} by blocking the calling thread until the server is successfully started or
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
+     * @see #interruptBlockingServiceOnCancel(boolean)
      */
     default HttpServerContext listenBlockingStreamingAndAwait(BlockingStreamingHttpService service) throws Exception {
         return blockingInvocation(listenBlockingStreaming(service));
@@ -610,6 +643,7 @@ public interface HttpServerBuilder {
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link HttpServerContext} is closed.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
+     * @see #interruptBlockingServiceOnCancel(boolean)
      */
     Single<HttpServerContext> listenBlocking(BlockingHttpService service);
 
@@ -622,6 +656,7 @@ public interface HttpServerBuilder {
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link HttpServerContext} is closed.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
+     * @see #interruptBlockingServiceOnCancel(boolean)
      */
     Single<HttpServerContext> listenBlockingStreaming(BlockingStreamingHttpService service);
 }

@@ -356,7 +356,7 @@ public final class HttpApiConversions {
     @Deprecated // FIXME: 0.43 - remove deprecated method
     public static ServiceAdapterHolder toStreamingHttpService(BlockingStreamingHttpService service,
                                                               HttpExecutionStrategy strategy) {
-        return new BlockingStreamingToStreamingService(service, strategy);
+        return new BlockingStreamingToStreamingService(service, strategy, true);
     }
 
     /**
@@ -368,7 +368,22 @@ public final class HttpApiConversions {
      */
     public static StreamingHttpService toStreamingHttpService(HttpExecutionStrategy strategy,
                                                               BlockingStreamingHttpService service) {
-        return new BlockingStreamingToStreamingService(service, strategy);
+        return toStreamingHttpService(strategy, service, true);
+    }
+
+    /**
+     * Convert from a {@link BlockingStreamingHttpService} to a {@link StreamingHttpService}.
+     *
+     * @param strategy required strategy for the service when invoking the resulting {@link StreamingHttpService}.
+     * @param service The {@link BlockingStreamingHttpService} to convert.
+     * @param interruptOnCancel whether the handling thread should be {@link Thread#interrupt() interrupted} when the
+     * client cancels the response. See {@link HttpServerBuilder#interruptBlockingServiceOnCancel(boolean)}.
+     * @return the converted {@link StreamingHttpService} to be used for the streaming programming model.
+     */
+    public static StreamingHttpService toStreamingHttpService(HttpExecutionStrategy strategy,
+                                                              BlockingStreamingHttpService service,
+                                                              boolean interruptOnCancel) {
+        return new BlockingStreamingToStreamingService(service, strategy, interruptOnCancel);
     }
 
     /**
@@ -398,7 +413,7 @@ public final class HttpApiConversions {
     @Deprecated // FIXME: 0.43 - Remove deprecation
     public static ServiceAdapterHolder toStreamingHttpService(BlockingHttpService service,
                                                               HttpExecutionStrategy strategy) {
-        return new BlockingToStreamingService(service, strategy);
+        return new BlockingToStreamingService(service, strategy, true);
     }
 
     /**
@@ -410,7 +425,22 @@ public final class HttpApiConversions {
      */
     public static StreamingHttpService toStreamingHttpService(HttpExecutionStrategy strategy,
                                                               BlockingHttpService service) {
-        return new BlockingToStreamingService(service, strategy);
+        return toStreamingHttpService(strategy, service, true);
+    }
+
+    /**
+     * Convert from a {@link BlockingHttpService} to a {@link StreamingHttpService}.
+     *
+     * @param strategy required strategy for the service when invoking the resulting {@link StreamingHttpService}.
+     * @param service The {@link BlockingHttpService} to convert.
+     * @param interruptOnCancel whether the handling thread should be {@link Thread#interrupt() interrupted} when the
+     * client cancels the response. See {@link HttpServerBuilder#interruptBlockingServiceOnCancel(boolean)}.
+     * @return the converted {@link StreamingHttpService} to be used for the streaming programming model.
+     */
+    public static StreamingHttpService toStreamingHttpService(HttpExecutionStrategy strategy,
+                                                              BlockingHttpService service,
+                                                              boolean interruptOnCancel) {
+        return new BlockingToStreamingService(service, strategy, interruptOnCancel);
     }
 
     /**

@@ -31,10 +31,13 @@ import static java.util.Objects.requireNonNull;
 public final class GrpcServiceConfig extends GrpcConfig {
 
     private final GrpcExecutionContext executionContext;
+    private final boolean interruptBlockingServiceOnCancel;
 
-    private GrpcServiceConfig(final int maxInboundMessageSize, final GrpcExecutionContext executionContext) {
+    private GrpcServiceConfig(final int maxInboundMessageSize, final GrpcExecutionContext executionContext,
+                              final boolean interruptBlockingServiceOnCancel) {
         super(maxInboundMessageSize);
         this.executionContext = executionContext;
+        this.interruptBlockingServiceOnCancel = interruptBlockingServiceOnCancel;
     }
 
     /**
@@ -44,6 +47,19 @@ public final class GrpcServiceConfig extends GrpcConfig {
      */
     public GrpcExecutionContext executionContext() {
         return executionContext;
+    }
+
+    /**
+     * Returns whether the handling thread of a blocking or blocking-streaming route is
+     * {@link Thread#interrupt() interrupted} when the client cancels the response. See
+     * {@link io.servicetalk.http.api.HttpServerBuilder#interruptBlockingServiceOnCancel(boolean)} for full
+     * semantics.
+     *
+     * @return {@code true} (the default) if the handling thread is interrupted on cancellation, {@code false} if
+     * cancellation is only observed cooperatively (where applicable).
+     */
+    public boolean interruptBlockingServiceOnCancel() {
+        return interruptBlockingServiceOnCancel;
     }
 
     @Override
@@ -56,18 +72,20 @@ public final class GrpcServiceConfig extends GrpcConfig {
         }
         final GrpcServiceConfig that = (GrpcServiceConfig) o;
         return maxInboundMessageSize() == that.maxInboundMessageSize() &&
+                interruptBlockingServiceOnCancel == that.interruptBlockingServiceOnCancel &&
                 executionContext.equals(that.executionContext);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(maxInboundMessageSize(), executionContext);
+        return Objects.hash(maxInboundMessageSize(), executionContext, interruptBlockingServiceOnCancel);
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{maxInboundMessageSize=" + maxInboundMessageSize() +
-                ", executionContext=" + executionContext + '}';
+                ", executionContext=" + executionContext +
+                ", interruptBlockingServiceOnCancel=" + interruptBlockingServiceOnCancel + '}';
     }
 
     /**
@@ -77,6 +95,7 @@ public final class GrpcServiceConfig extends GrpcConfig {
 
         @Nullable
         private ExecutionContext<?> executionContext;
+        private boolean interruptBlockingServiceOnCancel = true;
 
         /**
          * Creates a new builder seeded with the server's built-in default inbound message-size limit.
@@ -97,13 +116,29 @@ public final class GrpcServiceConfig extends GrpcConfig {
         }
 
         /**
+         * Set whether the handling thread of a blocking or blocking-streaming route is
+         * {@link Thread#interrupt() interrupted} when the client cancels the response. See
+         * {@link io.servicetalk.http.api.HttpServerBuilder#interruptBlockingServiceOnCancel(boolean)} for full
+         * semantics.
+         *
+         * @param interrupt {@code true} (the default) to interrupt the handling thread on cancellation, {@code
+         * false} to only observe cancellation cooperatively (where applicable).
+         * @return {@code this}.
+         */
+        public Builder interruptBlockingServiceOnCancel(final boolean interrupt) {
+            this.interruptBlockingServiceOnCancel = interrupt;
+            return this;
+        }
+
+        /**
          * Builds a new {@link GrpcServiceConfig}.
          *
          * @return a new {@link GrpcServiceConfig}.
          */
         public GrpcServiceConfig build() {
             return new GrpcServiceConfig(maxInboundMessageSize(),
-                    DefaultGrpcExecutionContext.from(requireNonNull(executionContext, "executionContext")));
+                    DefaultGrpcExecutionContext.from(requireNonNull(executionContext, "executionContext")),
+                    interruptBlockingServiceOnCancel);
         }
 
         @Override

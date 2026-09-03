@@ -116,14 +116,16 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      *
      * @param binder {@link ServerBinder} to bind <a href="https://www.grpc.io">gRPC</a> service to the server.
      * @param serviceConfig {@link GrpcServiceConfig} controlling the bound service, including the
-     * {@link GrpcExecutionContext} it runs on and the maximum inbound (request) message size.
+     * {@link GrpcExecutionContext} it runs on, the maximum inbound (request) message size, and whether blocking
+     * routes are interrupted on cancellation.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
     final Single<GrpcServerContext> bind(final ServerBinder binder, final GrpcServiceConfig serviceConfig) {
-        // Configure the inbound message-size limit before applying deferred routes, so it is baked into the request
-        // deserializers they build.
+        // Configure the inbound message-size limit and interrupt-on-cancel setting before applying deferred
+        // routes, so both are baked into the request deserializers / StreamingHttpService they build.
         routeBuilder.maxInboundMessageSize(serviceConfig.maxInboundMessageSize());
+        routeBuilder.interruptBlockingServiceOnCancel(serviceConfig.interruptBlockingServiceOnCancel());
         deferredRoutes.values().forEach(deferredRoute -> deferredRoute.accept(routeBuilder));
 
         if (!errors.isEmpty()) {

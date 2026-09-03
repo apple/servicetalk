@@ -146,6 +146,12 @@ public class DelegatingHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
+    public HttpServerBuilder interruptBlockingServiceOnCancel(final boolean interrupt) {
+        delegate = delegate.interruptBlockingServiceOnCancel(interrupt);
+        return this;
+    }
+
+    @Override
     public HttpServerBuilder maxAggregatedPayloadSize(final int maxAggregatedPayloadSize) {
         delegate = delegate.maxAggregatedPayloadSize(maxAggregatedPayloadSize);
         return this;

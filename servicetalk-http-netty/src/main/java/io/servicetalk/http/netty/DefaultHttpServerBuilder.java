@@ -96,6 +96,7 @@ class DefaultHttpServerBuilder implements HttpServerBuilder {
     private final List<LateConnectionAcceptor> lateConnectionAcceptors = new ArrayList<>();
     private HttpExecutionStrategy strategy = defaultStrategy();
     private boolean drainRequestPayloadBody = true;
+    private boolean interruptBlockingServiceOnCancel = true;
     private final HttpServerConfig config = new HttpServerConfig();
     private final HttpExecutionContextBuilder executionContextBuilder = new HttpExecutionContextBuilder();
     private final SocketAddress address;
@@ -287,6 +288,12 @@ class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
+    public final HttpServerBuilder interruptBlockingServiceOnCancel(final boolean interrupt) {
+        this.interruptBlockingServiceOnCancel = interrupt;
+        return this;
+    }
+
+    @Override
     public final HttpServerBuilder maxAggregatedPayloadSize(final int maxAggregatedPayloadSize) {
         config.httpConfig().maxAggregatedPayloadSize(maxAggregatedPayloadSize);
         return this;
@@ -335,7 +342,8 @@ class DefaultHttpServerBuilder implements HttpServerBuilder {
     public final Single<HttpServerContext> listenBlocking(final BlockingHttpService service) {
         final List<StreamingHttpServiceFilterFactory> serviceFilters = initServiceFilters();
         final StreamingHttpService streamingService = toStreamingHttpService(computeServiceStrategy(
-                BlockingHttpService.class, service, this.strategy, serviceFilters), service);
+                BlockingHttpService.class, service, this.strategy, serviceFilters), service,
+                interruptBlockingServiceOnCancel);
         return listenForService(streamingService, serviceFilters, streamingService.requiredOffloads());
     }
 
@@ -343,7 +351,8 @@ class DefaultHttpServerBuilder implements HttpServerBuilder {
     public final Single<HttpServerContext> listenBlockingStreaming(final BlockingStreamingHttpService service) {
         final List<StreamingHttpServiceFilterFactory> serviceFilters = initServiceFilters();
         final StreamingHttpService streamingService = toStreamingHttpService(computeServiceStrategy(
-                BlockingStreamingHttpService.class, service, this.strategy, serviceFilters), service);
+                BlockingStreamingHttpService.class, service, this.strategy, serviceFilters), service,
+                interruptBlockingServiceOnCancel);
         return listenForService(streamingService, serviceFilters, streamingService.requiredOffloads());
     }
 

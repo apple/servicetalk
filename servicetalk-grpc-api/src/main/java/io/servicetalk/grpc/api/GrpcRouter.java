@@ -289,6 +289,7 @@ final class GrpcRouter {
         private final Map<String, RouteProvider> blockingStreamingRoutes;
         private final Map<String, GrpcExecutionStrategy> executionStrategies;
         private GrpcMessageSizeLimiter sizeLimiter = NONE;
+        private boolean interruptBlockingServiceOnCancel = true;
 
         Builder() {
             routes = new HashMap<>();
@@ -325,6 +326,20 @@ final class GrpcRouter {
         void maxInboundMessageSize(final int maxInboundMessageSize) {
             this.sizeLimiter = GrpcMessageSizeLimiter.forMaxInboundMessageSize(maxInboundMessageSize,
                     GrpcMessageSizeLimiter.Role.SERVER);
+        }
+
+        /**
+         * Configure whether the handling thread of a blocking or blocking-streaming route is
+         * {@link Thread#interrupt() interrupted} when the client cancels the response. Must be called before routes
+         * are added so the setting is baked into the {@link StreamingHttpService} built for them. See
+         * {@link io.servicetalk.http.api.HttpServerBuilder#interruptBlockingServiceOnCancel(boolean)} for full
+         * semantics.
+         *
+         * @param interrupt {@code true} (the default) to interrupt the handling thread on cancellation, {@code
+         * false} to only observe cancellation cooperatively (where applicable).
+         */
+        void interruptBlockingServiceOnCancel(final boolean interrupt) {
+            this.interruptBlockingServiceOnCancel = interrupt;
         }
 
         static GrpcRouter.Builder merge(final GrpcRouter.Builder... builders) {
@@ -678,7 +693,7 @@ final class GrpcRouter {
                         public void closeGracefully() throws Exception {
                             route.closeGracefully();
                         }
-                    }), route)),
+                    }, interruptBlockingServiceOnCancel), route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
                     // aggregated and streaming. Therefore, verify that there is no async-aggregated route registered
                     // for the same path:
@@ -754,7 +769,7 @@ final class GrpcRouter {
                         public void closeGracefully() throws Exception {
                             route.closeGracefully();
                         }
-                    }), route)),
+                    }, interruptBlockingServiceOnCancel), route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
                     // aggregated and streaming. Therefore, verify that there is no async-streaming route registered
                     // for the same path:
