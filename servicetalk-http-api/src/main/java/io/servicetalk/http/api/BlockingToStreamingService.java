@@ -18,17 +18,13 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
-import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 
-import javax.annotation.Nullable;
-
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.api.Single.fromCallable;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_DATA_STRATEGY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.ThreadInterruptingCancellableUtils.cancellableForSubscribe;
-import static io.servicetalk.http.api.ThreadInterruptingCancellableUtils.newCancellableIfInterrupting;
-import static io.servicetalk.http.api.ThreadInterruptingCancellableUtils.setDone;
 import static java.util.Objects.requireNonNull;
 
 final class BlockingToStreamingService extends AbstractServiceAdapterHolder {
@@ -47,13 +43,22 @@ final class BlockingToStreamingService extends AbstractServiceAdapterHolder {
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                 final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory responseFactory) {
-        return request.toRequest().flatMap(req -> new SubscribableSingle<StreamingHttpResponse>() {
+        return request.toRequest().flatMap(req -> (interruptOnCancel ?
+                fromCallable(() -> original.handle(ctx, req, ctx.responseFactory()).toStreamingResponse()) :
+                uninterruptible(ctx, req)).shareContextOnSubscribe());
+    }
+
+    /**
+     * Same as the {@code interruptOnCancel} branch of {@link #handle}, except the handling thread is never
+     * {@link Thread#interrupt() interrupted} on cancellation.
+     */
+    private Single<StreamingHttpResponse> uninterruptible(final HttpServiceContext ctx,
+                                                          final HttpRequest req) {
+        return new SubscribableSingle<StreamingHttpResponse>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
-                @Nullable
-                final ThreadInterruptingCancellable tiCancellable = newCancellableIfInterrupting(interruptOnCancel);
                 try {
-                    subscriber.onSubscribe(cancellableForSubscribe(tiCancellable));
+                    subscriber.onSubscribe(IGNORE_CANCEL);
                 } catch (Throwable cause) {
                     handleExceptionFromOnSubscribe(subscriber, cause);
                     return;
@@ -63,17 +68,18 @@ final class BlockingToStreamingService extends AbstractServiceAdapterHolder {
                 try {
                     result = original.handle(ctx, req, ctx.responseFactory()).toStreamingResponse();
                 } catch (Throwable cause) {
-                    setDone(tiCancellable, cause);
+                    if (cause instanceof InterruptedException) {
+                        // Mirrors ThreadInterruptingCancellable#setDone(Throwable): clear a stale interrupt flag
+                        // before the (likely pooled) thread is reused, in case something other than
+                        // cancellation (e.g. executor shutdown) interrupted it during handling.
+                        Thread.interrupted();
+                    }
                     safeOnError(subscriber, cause);
                     return;
                 }
-                // It is safe to set this outside the scope of the try/catch above because we don't do any blocking
-                // operations which may be interrupted between the completion of the blockingHttpService call and
-                // here.
-                setDone(tiCancellable);
                 subscriber.onSuccess(result);
             }
-        }.shareContextOnSubscribe());
+        };
     }
 
     @Override

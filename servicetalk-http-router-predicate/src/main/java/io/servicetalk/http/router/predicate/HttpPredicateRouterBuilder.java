@@ -78,10 +78,8 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
      * Configures whether the handling thread of a route registered via
      * {@link RouteContinuation#thenRouteTo(BlockingHttpService)} or
      * {@link RouteContinuation#thenRouteTo(BlockingStreamingHttpService)} is {@link Thread#interrupt() interrupted}
-     * when the client cancels the response. This is the same toggle, and has the same semantics, as
-     * {@link HttpServerBuilder#interruptBlockingServiceOnCancel(boolean)} &mdash; it is duplicated here because
-     * routes built by this router are converted to {@link StreamingHttpService} before being handed to an
-     * {@link HttpServerBuilder}, at which point the builder-level setting can no longer apply to them.
+     * when the client cancels the response. See {@link HttpServerBuilder#interruptBlockingServiceOnCancel(boolean)}
+     * for full semantics.
      *
      * @param interrupt {@code true} (the default) to interrupt the handling thread on cancellation, {@code false}
      * to only observe cancellation cooperatively (where applicable).

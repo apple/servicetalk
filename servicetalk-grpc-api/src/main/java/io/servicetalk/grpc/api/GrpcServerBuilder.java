@@ -113,11 +113,8 @@ public interface GrpcServerBuilder {
 
     /**
      * Configures whether the handling thread of a blocking or blocking-streaming gRPC route is
-     * {@link Thread#interrupt() interrupted} when the client cancels the response (e.g. disconnects
-     * mid-response). See {@link HttpServerBuilder#interruptBlockingServiceOnCancel(boolean)} for full semantics
-     * &mdash; this is the same toggle, applied to gRPC routes specifically since they are converted to a
-     * {@link io.servicetalk.http.api.StreamingHttpService} internally, before the underlying
-     * {@link HttpServerBuilder} ever sees them.
+     * {@link Thread#interrupt() interrupted} when the client cancels the response. See
+     * {@link HttpServerBuilder#interruptBlockingServiceOnCancel(boolean)} for full semantics.
      *
      * @param interrupt {@code true} (the default) to interrupt the handling thread on cancellation, {@code false}
      * to only observe cancellation cooperatively (where applicable).

@@ -47,7 +47,6 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Mockito.lenient;
@@ -88,19 +87,8 @@ class HttpPredicateRouterBuilderInterruptOnCancelTest {
 
         BlockingStreamingHttpService blockingService = (ctx, request, response) -> {
             handleLatch.countDown();
-            if (interruptOnCancel) {
-                try {
-                    Thread.sleep(Long.MAX_VALUE);
-                } catch (InterruptedException e) {
-                    interrupted.set(true);
-                } finally {
-                    doneLatch.countDown();
-                }
-                return;
-            }
-            // Unrelated blocking work that has nothing to do with the (to-be-)cancelled response -- there is no
-            // ServiceTalk construct here for cancellation to cooperatively wake this up through, so use a bounded
-            // wait instead of sleeping forever.
+            // Unrelated blocking work that has nothing to do with the (to-be-)cancelled response. Bounded so the
+            // handler still finishes quickly when interruptOnCancel is disabled and cancellation is a no-op.
             sleepLoopUnrelatedToCancellation(interrupted);
             doneLatch.countDown();
         };
@@ -145,17 +133,10 @@ class HttpPredicateRouterBuilderInterruptOnCancelTest {
         AtomicReference<Cancellable> cancellableRef = new AtomicReference<>();
         CountDownLatch doneLatch = new CountDownLatch(1);
         AtomicBoolean interrupted = new AtomicBoolean();
-        AtomicReference<Throwable> errorRef = new AtomicReference<>();
 
         BlockingHttpService blockingService = (ctx, request, responseFactory) -> {
             handleLatch.countDown();
-            if (interruptOnCancel) {
-                Thread.sleep(Long.MAX_VALUE);
-                return responseFactory.ok();
-            }
-            // BlockingHttpService (aggregated) has no cooperative construct at all to observe cancellation
-            // through, so with the toggle disabled the handler simply runs to completion -- the documented
-            // trade-off.
+            // Unrelated blocking work that has nothing to do with the (to-be-)cancelled response.
             sleepLoopUnrelatedToCancellation(interrupted);
             return responseFactory.ok();
         };
@@ -181,7 +162,6 @@ class HttpPredicateRouterBuilderInterruptOnCancelTest {
 
                     @Override
                     public void onError(final Throwable t) {
-                        errorRef.set(t);
                         doneLatch.countDown();
                     }
                 });
@@ -191,12 +171,9 @@ class HttpPredicateRouterBuilderInterruptOnCancelTest {
         cancellable.cancel();
         doneLatch.await();
 
-        if (interruptOnCancel) {
-            assertThat(errorRef.get(), instanceOf(InterruptedException.class));
-        } else {
-            assertThat("interruptBlockingServiceOnCancel(false) must not interrupt a route registered via " +
-                    "thenRouteTo(BlockingHttpService)", interrupted.get(), is(false));
-        }
+        assertThat("interruptBlockingServiceOnCancel(" + interruptOnCancel + ") must control whether a route " +
+                "registered via thenRouteTo(BlockingHttpService) is interrupted on cancel",
+                interrupted.get(), is(interruptOnCancel));
     }
 
     private static void sleepLoopUnrelatedToCancellation(AtomicBoolean interrupted) {
