@@ -55,6 +55,7 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
+import static io.servicetalk.http.api.HttpContextKeys.INTERRUPT_BLOCKING_SERVICE_ON_CANCEL;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderNames.TRAILER;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
@@ -353,6 +354,95 @@ class BlockingStreamingToStreamingServiceTest {
         onErrorLatch.await();
         assertThat(throwableRef.get(), instanceOf(InterruptedException.class));
         serviceTerminationLatch.await();
+    }
+
+    @Test
+    void cancelAfterSendMetaDataNotInterruptedWhenContextDisablesIt() throws Exception {
+        CountDownLatch cancelLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(1);
+        AtomicBoolean interrupted = new AtomicBoolean();
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+
+        BlockingStreamingHttpService syncService = (ctx, request, response) -> {
+            HttpPayloadWriter<Buffer> writer = response.sendMetaData();
+            for (int i = 0; i < 5; i++) {
+                try {
+                    Thread.sleep(20);
+                } catch (InterruptedException e) {
+                    interrupted.set(true);
+                }
+                if (Thread.interrupted()) {
+                    interrupted.set(true);
+                }
+            }
+            try {
+                writer.write(ctx.executionContext().bufferAllocator().fromAscii("x"));
+            } catch (IOException e) {
+                throwableRef.set(e);
+            } finally {
+                doneLatch.countDown();
+            }
+        };
+        StreamingHttpService asyncService = toStreamingHttpService(offloadNone(), syncService);
+        StreamingHttpRequest request = reqRespFactory.get("/");
+        request.context().put(INTERRUPT_BLOCKING_SERVICE_ON_CANCEL, false);
+        StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, request, reqRespFactory)
+                .subscribeOn(executorExtension.executor()).toFuture().get();
+        assertMetaData(OK, asyncResponse);
+        toSource(asyncResponse.payloadBody()).subscribe(new Subscriber<Buffer>() {
+            @Override
+            public void onSubscribe(final Subscription s) {
+                s.cancel();
+                cancelLatch.countDown();
+            }
+
+            @Override
+            public void onNext(final Buffer s) {
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+            }
+
+            @Override
+            public void onComplete() {
+            }
+        });
+        cancelLatch.await();
+        doneLatch.await();
+
+        assertThat("a context-disabled interrupt must not fire", interrupted.get(), is(false));
+        assertThat("cancelling the payload body must terminate the payload writer so the next write() observes it",
+                throwableRef.get(), instanceOf(IOException.class));
+    }
+
+    @Test
+    void onSubscribeReceivesNonNullNoOpCancellableWhenContextDisablesIt() {
+        AtomicReference<Cancellable> cancellableRef = new AtomicReference<>();
+        BlockingStreamingHttpService syncService = (ctx, request, response) -> response.sendMetaData().close();
+        StreamingHttpService asyncService = toStreamingHttpService(offloadNone(), syncService);
+        StreamingHttpRequest request = reqRespFactory.get("/");
+        request.context().put(INTERRUPT_BLOCKING_SERVICE_ON_CANCEL, false);
+
+        toSource(asyncService.handle(mockCtx, request, reqRespFactory))
+                .subscribe(new SingleSource.Subscriber<StreamingHttpResponse>() {
+                    @Override
+                    public void onSubscribe(final Cancellable cancellable) {
+                        cancellableRef.set(cancellable);
+                    }
+
+                    @Override
+                    public void onSuccess(@Nullable final StreamingHttpResponse result) {
+                    }
+
+                    @Override
+                    public void onError(final Throwable t) {
+                    }
+                });
+
+        Cancellable cancellable = cancellableRef.get();
+        assertThat(cancellable, is(notNullValue()));
+        cancellable.cancel(); // must not throw
     }
 
     @Test

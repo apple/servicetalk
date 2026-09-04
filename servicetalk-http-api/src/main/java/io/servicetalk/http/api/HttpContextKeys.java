@@ -94,6 +94,26 @@ public final class HttpContextKeys {
      */
     public static final Key<Long> STREAM_ID = newKey("STREAM_ID", Long.class);
 
+    /**
+     * If present and {@code false}, the thread running a blocking service is never
+     * {@link Thread#interrupt() interrupted} when the response is cancelled, for example because the client
+     * disconnected or a timeout fired. Absent or {@code true} keeps the default behavior of an interrupt.
+     * <p>
+     * Server-side only, and limited to services registered via
+     * {@link HttpServerBuilder#listenBlocking(BlockingHttpService)} or
+     * {@link HttpServerBuilder#listenBlockingStreaming(BlockingStreamingHttpService)}, which includes routers and
+     * gRPC services built on them. The value is read before the service is invoked, so it must be set by a filter
+     * that runs ahead of it.
+     * <p>
+     * With {@code false} a {@link BlockingStreamingHttpService} still observes cancellation cooperatively, because
+     * its payload writer is terminated and the next {@link HttpPayloadWriter#write(Object) write} throws
+     * {@link java.io.IOException}. A {@link BlockingHttpService} has no such signal and always runs to completion.
+     * Set {@code false} only if the service cannot block indefinitely: nothing else will release a thread that waits
+     * on something the cancellation does not release.
+     */
+    public static final Key<Boolean> INTERRUPT_BLOCKING_SERVICE_ON_CANCEL =
+            newKey("INTERRUPT_BLOCKING_SERVICE_ON_CANCEL", Boolean.class);
+
     private HttpContextKeys() {
         // No instances
     }
