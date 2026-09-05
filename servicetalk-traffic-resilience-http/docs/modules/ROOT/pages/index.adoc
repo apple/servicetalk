@@ -1,7 +1,6 @@
 = Traffic Resiliency Concepts
 :toc:
 :toclevels: 4
-:imagesdir: resources
 
 > The ability to maintain an acceptable level of service in the face of faults and challenges to normal operation.
 
