@@ -29,7 +29,7 @@ import static java.util.Objects.requireNonNull;
  * It is important that {@link #setDone()} (or {@link #setDone(Throwable)}) is called after the associated blocking
  * operation completes to avoid "spurious" thread interrupts.
  */
-public final class ThreadInterruptingCancellable implements Cancellable {
+public class ThreadInterruptingCancellable implements Cancellable {
     private static final AtomicReferenceFieldUpdater<ThreadInterruptingCancellable, Object> threadUpdater =
             AtomicReferenceFieldUpdater.newUpdater(ThreadInterruptingCancellable.class, Object.class, "thread");
     private static final Object CANCELLED = new Object();
@@ -61,8 +61,17 @@ public final class ThreadInterruptingCancellable implements Cancellable {
         final Object currThread = threadUpdater.getAndAccumulate(this, CANCELLED,
                 (prev, x) -> prev == DONE ? DONE : CANCELLED);
         if (currThread instanceof Thread) {
+            beforeInterrupt();
             ((Thread) currThread).interrupt();
         }
+    }
+
+    /**
+     * Test checkpoint invoked in {@link #cancel()} after the bound thread has been observed but before it is
+     * {@link Thread#interrupt() interrupted}. Overridable so tests can deterministically interpose completion into the
+     * interrupt window and reproduce the leaked-interrupt race.
+     */
+    void beforeInterrupt() {
     }
 
     /**
