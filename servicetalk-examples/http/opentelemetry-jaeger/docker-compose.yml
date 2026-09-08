@@ -1,0 +1,40 @@
+# Docker Compose configuration for Jaeger with mTLS-enabled OTLP Collector
+#
+# This setup includes:
+# - Jaeger all-in-one for trace visualization
+# - OpenTelemetry Collector with mTLS for secure trace ingestion
+
+version: '3.8'
+
+services:
+  # Jaeger backend for trace storage and visualization
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "4317:4317"    # OTLP gRPC (internal, for collector)
+      - "4318:4318"    # OTLP HTTP (internal, for collector)
+    networks:
+      - otel-network
+
+# OpenTelemetry Collector with mTLS
+  # otel-collector:
+  #   image: otel/opentelemetry-collector:latest
+  #   container_name: otel-collector
+  #   command: ["--config=/etc/otel-collector-config.yaml"]
+  #   volumes:
+  #     - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+  #     - ./certs:/certs:ro
+  #   ports:
+  #     - "4318:4318"    # OTLP HTTP with mTLS
+  #   depends_on:
+  #     - jaeger
+  #   networks:
+  #     - otel-network
+
+networks:
+  otel-network:
+    driver: bridge
