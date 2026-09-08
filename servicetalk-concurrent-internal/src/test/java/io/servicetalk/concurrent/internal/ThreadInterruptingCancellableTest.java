@@ -17,14 +17,12 @@ package io.servicetalk.concurrent.internal;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -37,107 +35,81 @@ class ThreadInterruptingCancellableTest {
     }
 
     @Test
-    void cancelRacingWithSuccessfulCompletionLeaksNoInterrupt() throws Exception {
+    void cancelBeforeSetDoneClearsInterrupt() {
         final Thread boundThread = Thread.currentThread();
-        final CountDownLatch atCheckpoint = new CountDownLatch(1);
-        final CountDownLatch completionDone = new CountDownLatch(1);
+        final ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(boundThread);
 
-        // The checkpoint forces cancel() to observe the bound thread, then pause until the operation has already
-        // completed via setDone(), so the interrupt is delivered strictly inside the completion window.
-        final ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(boundThread) {
-            @Override
-            void beforeInterrupt() {
-                atCheckpoint.countDown();
-                try {
-                    completionDone.await();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-        };
+        cancellable.cancel();
+        assertThat("cancel() did not interrupt the bound thread", boundThread.isInterrupted(), is(true));
 
-        final Thread canceller = new Thread(cancellable::cancel);
-        canceller.start();
-
-        atCheckpoint.await();
         cancellable.setDone();
-        completionDone.countDown();
-
-        // The interrupt lands on this (bound) thread; spin rather than join() so an interruptible wait does not
-        // consume the very flag under test.
-        while (canceller.isAlive()) {
-            Thread.yield();
-        }
-
-        assertThat("cancel() leaked an interrupt after successful completion",
+        assertThat("setDone() did not clear the interrupt delivered by cancel()",
                 boundThread.isInterrupted(), is(false));
     }
 
     @Test
-    void cancelLeaksInterruptOntoNextPooledTask() throws Exception {
-        // A single-threaded pool stands in for a ServiceTalk offload pool: tasks run FIFO on one reused thread.
-        // cancel() claims the interrupt but stalls (via the checkpoint) until after the operation completes and the
-        // pool thread has picked up an unrelated follow-up task; the late interrupt() then lands on that task.
-        final ExecutorService pool = Executors.newSingleThreadExecutor();
-        try {
-            final AtomicReference<ThreadInterruptingCancellable> ref = new AtomicReference<>();
-            final CountDownLatch ticReady = new CountDownLatch(1);
-            final CountDownLatch atCheckpoint = new CountDownLatch(1);
-            final CountDownLatch releaseInterrupt = new CountDownLatch(1);
-            final CountDownLatch nextTaskRunning = new CountDownLatch(1);
-            final CountDownLatch nextTaskDone = new CountDownLatch(1);
-            final CountDownLatch neverSignaled = new CountDownLatch(1);
-            final AtomicBoolean nextTaskInterrupted = new AtomicBoolean();
+    void cancelBeforeSetDoneWithCauseClearsInterrupt() {
+        final Thread boundThread = Thread.currentThread();
+        final ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(boundThread);
 
-            // The cancelled operation, running on the pool thread.
-            pool.execute(() -> {
-                final ThreadInterruptingCancellable tic =
-                        new ThreadInterruptingCancellable(Thread.currentThread()) {
-                            @Override
-                            void beforeInterrupt() {
-                                atCheckpoint.countDown();
-                                await(releaseInterrupt);
-                            }
-                        };
-                ref.set(tic);
-                ticReady.countDown();
-                await(atCheckpoint);   // cancel() has claimed the bound thread and is stalled before interrupt()
-                tic.setDone();         // operation completes normally
-            });
-
-            // The next, unrelated task on the same pool thread.
-            pool.execute(() -> {
-                nextTaskRunning.countDown();
-                try {
-                    neverSignaled.await(10, SECONDS);
-                } catch (InterruptedException e) {
-                    nextTaskInterrupted.set(true);
-                }
-                nextTaskDone.countDown();
-            });
-
-            ticReady.await();
-            final Thread canceller = new Thread(() -> ref.get().cancel());
-            canceller.start();
-
-            nextTaskRunning.await();       // the follow-up task now owns the pool thread
-            releaseInterrupt.countDown();  // let the stalled cancel() deliver its interrupt
-            canceller.join();
-            nextTaskDone.await();
-
-            assertThat("cancel() leaked an interrupt onto an unrelated pooled task",
-                    nextTaskInterrupted.get(), is(false));
-        } finally {
-            pool.shutdownNow();
-        }
+        cancellable.cancel();
+        cancellable.setDone(new IllegalStateException());
+        assertThat(boundThread.isInterrupted(), is(false));
     }
 
-    private static void await(CountDownLatch latch) {
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException(e);
+    @Test
+    void setDoneLatchesOutLaterCancel() {
+        final Thread boundThread = Thread.currentThread();
+        final ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(boundThread);
+
+        cancellable.setDone();
+        cancellable.cancel();
+        assertThat("cancel() interrupted the bound thread after setDone()", boundThread.isInterrupted(), is(false));
+    }
+
+    @Test
+    void setDoneWithInterruptedExceptionClearsInterrupt() {
+        final Thread boundThread = Thread.currentThread();
+        final ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(boundThread);
+
+        boundThread.interrupt();
+        cancellable.setDone(new InterruptedException());
+        assertThat(boundThread.isInterrupted(), is(false));
+    }
+
+    @Test
+    @Timeout(30)
+    void concurrentCancelAndSetDoneNeverLeakInterrupt() throws InterruptedException {
+        for (int i = 0; i < 1000; i++) {
+            final AtomicReference<ThreadInterruptingCancellable> ref = new AtomicReference<>();
+            final CountDownLatch ready = new CountDownLatch(1);
+            final AtomicBoolean go = new AtomicBoolean();
+            final CountDownLatch done = new CountDownLatch(1);
+            final AtomicBoolean leaked = new AtomicBoolean();
+
+            final Thread bound = new Thread(() -> {
+                final ThreadInterruptingCancellable tic =
+                        new ThreadInterruptingCancellable(Thread.currentThread());
+                ref.set(tic);
+                ready.countDown();
+                // Non-interruptible spin so the start barrier can't consume the interrupt under test.
+                while (!go.get()) {
+                    Thread.yield();
+                }
+                tic.setDone();
+                leaked.set(Thread.currentThread().isInterrupted());
+                done.countDown();
+            });
+            bound.start();
+
+            ready.await();
+            go.set(true);
+            ref.get().cancel();   // races setDone() on the bound thread
+            done.await();
+            bound.join();
+
+            assertThat("iteration " + i + ": setDone() left a leaked interrupt after a racing cancel()",
+                    leaked.get(), is(false));
         }
     }
 }
