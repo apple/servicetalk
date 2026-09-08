@@ -227,7 +227,7 @@ public interface DnsServiceDiscovererBuilder {
      * Sets the list of the protocol families of the address resolved.
      *
      * @param dnsResolverAddressTypes the address types or {@code null} to use the default value, based on "java.net"
-     * system properties: {@code java.net.preferIPv4Stack} and {@code java.net.preferIPv6Stack}.
+     * system properties: {@code java.net.preferIPv4Stack} and {@code java.net.preferIPv6Addresses}.
      * @return {@code this}.
      */
     DnsServiceDiscovererBuilder dnsResolverAddressTypes(
