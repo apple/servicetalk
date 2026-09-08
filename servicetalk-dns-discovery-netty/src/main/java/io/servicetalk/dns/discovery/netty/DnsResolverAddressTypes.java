@@ -58,7 +58,7 @@ public enum DnsResolverAddressTypes {
 
     /**
      * The default value, based on "java.net" system properties: {@code java.net.preferIPv4Stack} and
-     * {@code java.net.preferIPv6Stack}.
+     * {@code java.net.preferIPv6Addresses}.
      *
      * @return the system default value.
      */
