@@ -31,12 +31,14 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_META_STRATEGY;
 import static io.servicetalk.http.api.DefaultPayloadInfo.forTransportReceive;
+import static io.servicetalk.http.api.DisableInterruptOnCancelHttpServiceFilter.interruptOnCancel;
 import static io.servicetalk.http.api.HeaderUtils.hasContentLength;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
@@ -64,12 +66,13 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                 final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory responseFactory) {
+        final boolean interruptOnCancel = interruptOnCancel(request);
         return new SubscribableSingle<StreamingHttpResponse>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
                 final ThreadInterruptingCancellable tiCancellable = new ThreadInterruptingCancellable(currentThread());
                 try {
-                    subscriber.onSubscribe(tiCancellable);
+                    subscriber.onSubscribe(interruptOnCancel ? tiCancellable : IGNORE_CANCEL);
                 } catch (Throwable cause) {
                     handleExceptionFromOnSubscribe(subscriber, cause);
                     return;
@@ -108,16 +111,18 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                             if (addTrailers) {
                                 messageBody = messageBody.scanWithMapper(() -> new TrailersMapper(payloadWriter));
                             }
-                            messageBody = messageBody.beforeSubscription(() -> new Subscription() {
-                                @Override
-                                public void request(final long n) {
-                                }
+                            if (interruptOnCancel) {
+                                messageBody = messageBody.beforeSubscription(() -> new Subscription() {
+                                    @Override
+                                    public void request(final long n) {
+                                    }
 
-                                @Override
-                                public void cancel() {
-                                    tiCancellable.cancel();
-                                }
-                            });
+                                    @Override
+                                    public void cancel() {
+                                        tiCancellable.cancel();
+                                    }
+                                });
+                            }
                             result = new DefaultStreamingHttpResponse(metaData.status(), version, headers,
                                     metaData.context0(), ctx.executionContext().bufferAllocator(), messageBody,
                                     forTransportReceive(false, version, headers), ctx.headersFactory(),
