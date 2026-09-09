@@ -20,6 +20,8 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcStatusCode;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.HttpExecutionStrategies;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.ProxyConfigBuilder;
@@ -34,6 +36,7 @@ import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpProtocolConfigs;
 import io.servicetalk.http.netty.RetryingHttpRequesterFilter;
 import io.servicetalk.http.netty.RetryingHttpRequesterFilter.HttpResponseException;
+import io.servicetalk.http.utils.JavaNetSoTimeoutHttpConnectionFilter;
 import io.servicetalk.http.utils.TimeoutHttpRequesterFilter;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
@@ -41,6 +44,8 @@ import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 
 import io.opentelemetry.sdk.common.export.ProxyOptions;
 import io.opentelemetry.sdk.common.export.RetryPolicy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -58,6 +63,13 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
 
 final class ServiceTalkHttpClientFactory {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServiceTalkHttpClientFactory.class);
+
+    // Always-on read-stall guard, the analog of OkHttp's default readTimeout: SO_TIMEOUT-style, so it
+    // resets on read progress and only trips on a silent peer. Bounds an export the overall timeout
+    // can't — e.g. an OTel timeout of 0 (unlimited) — so a black-holed collector can't hang forever.
+    private static final Duration READ_STALL_TIMEOUT = Duration.ofSeconds(10);
 
     // Retryable gRPC status codes per the OTLP spec.
     private static final Set<Integer> RETRYABLE_GRPC_STATUSES;
@@ -174,12 +186,8 @@ final class ServiceTalkHttpClientFactory {
 
         int port = endpoint.getPort();
         if (port <= 0) {
-            String scheme = endpoint.getScheme();
-            if ("https".equalsIgnoreCase(scheme) || "grpcs".equalsIgnoreCase(scheme)) {
-                port = 443;
-            } else {
-                port = 80;
-            }
+            // Default to the scheme's port: cleartext http -> 80, otherwise (https) -> 443.
+            port = "http".equalsIgnoreCase(endpoint.getScheme()) ? 80 : 443;
         }
 
         return HttpClients.forSingleAddress(host, port);
@@ -189,7 +197,8 @@ final class ServiceTalkHttpClientFactory {
             SingleAddressHttpClientBuilder<?, ?> builder,
             @Nullable Duration connectTimeout) {
 
-        if (connectTimeout == null) {
+        if (connectTimeout == null || connectTimeout.isZero() || connectTimeout.isNegative()) {
+            // Zero/negative disables the connect timeout (Netty reads a zero CONNECT_TIMEOUT the same way).
             return;
         }
         builder.socketOption(ServiceTalkSocketOptions.CONNECT_TIMEOUT, (int) connectTimeout.toMillis());
@@ -199,10 +208,16 @@ final class ServiceTalkHttpClientFactory {
             SingleAddressHttpClientBuilder<?, ?> builder,
             @Nullable Duration timeout) {
 
-        if (timeout == null) {
-            return;
+        // Read-stall guard, always on: the analog of OkHttp's readTimeout. Independent of the overall
+        // budget, so it protects the unlimited case too.
+        builder.appendConnectionFilter(new JavaNetSoTimeoutHttpConnectionFilter(READ_STALL_TIMEOUT));
+
+        // Overall per-export budget, the analog of OkHttp's callTimeout: honor a positive value; a
+        // non-positive value is OTel's "unlimited", so install no overall deadline (the read-stall guard
+        // above still prevents a hang).
+        if (timeout != null && !timeout.isZero() && !timeout.isNegative()) {
+            builder.appendClientFilter(new TimeoutHttpRequesterFilter(timeout, true));
         }
-        builder.appendClientFilter(new TimeoutHttpRequesterFilter(timeout, true));
     }
 
     private static void applySslConfiguration(
@@ -210,31 +225,23 @@ final class ServiceTalkHttpClientFactory {
             URI endpoint,
             @Nullable SSLContext sslContext) {
 
-        String scheme = endpoint.getScheme();
-        if (!"https".equalsIgnoreCase(scheme) && !"grpcs".equalsIgnoreCase(scheme)) {
+        // Encrypt unless the endpoint is explicitly cleartext http:// (OTLP only permits http/https
+        // schemes). Anything else gets TLS.
+        if ("http".equalsIgnoreCase(endpoint.getScheme())) {
+            if (sslContext != null) {
+                LOGGER.warn("Ignoring configured SSLContext for cleartext http endpoint {}; " +
+                        "telemetry will be sent unencrypted", endpoint);
+            }
             return;
         }
 
-        try {
-            ClientSslConfigBuilder sslConfigBuilder = sslContext != null ?
-                    new ClientSslConfigBuilder(sslContext)
-                    : new ClientSslConfigBuilder();
+        ClientSslConfigBuilder sslConfigBuilder = sslContext != null ?
+                new ClientSslConfigBuilder(sslContext)
+                : new ClientSslConfigBuilder();
 
-            String host = endpoint.getHost();
-            if (host != null && !host.isEmpty()) {
-                sslConfigBuilder.sniHostname(host);
-                sslConfigBuilder.peerHost(host);
-
-                int port = endpoint.getPort();
-                if (port > 0) {
-                    sslConfigBuilder.peerPort(port);
-                }
-            }
-
-            builder.sslConfig(sslConfigBuilder.build());
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to configure SSL", e);
-        }
+        // SNI and peer host/port are left unset: ServiceTalk infers them from the
+        // forSingleAddress(host, port) target by default.
+        builder.sslConfig(sslConfigBuilder.build());
     }
 
     private static void applyProxyConfiguration(
@@ -275,6 +282,14 @@ final class ServiceTalkHttpClientFactory {
             Function<HttpResponseMetaData, HttpResponseException> responseMapper) {
 
         if (retryPolicy == null || retryPolicy.getMaxAttempts() <= 1) {
+            // Retries opted out (OTel defaults to 5 attempts, so reaching here is deliberate). Disable
+            // ServiceTalk's default retrying of failed attempts so an export isn't re-sent, matching OTel's
+            // OkHttp sender — but keep the default load-balancer-readiness wait, which only delays the first
+            // attempt until a host is resolved (it never re-sends a delivered request).
+            builder.appendClientFilter(new RetryingHttpRequesterFilter.Builder()
+                    .retryRetryableExceptions((metadata, throwable) ->
+                            RetryingHttpRequesterFilter.BackOffPolicy.ofNoRetries())
+                    .build());
             return;
         }
 
@@ -286,34 +301,30 @@ final class ServiceTalkHttpClientFactory {
         final double backoffMultiplier = retryPolicy.getBackoffMultiplier();
         final Predicate<IOException> userPredicate = retryPolicy.getRetryExceptionPredicate();
 
+        // One policy instance, reused by every hook below; nothing here is per-attempt.
+        final RetryingHttpRequesterFilter.BackOffPolicy backOffPolicy =
+                backOff(backoffMultiplier, initialBackoff, maxBackoff, maxRetries);
+
         RetryingHttpRequesterFilter.Builder retryBuilder = new RetryingHttpRequesterFilter.Builder()
                 .maxTotalRetries(maxRetries)
                 .responseMapper(responseMapper);
 
-        // Invoked only for ServiceTalk-classified RetryableExceptions (RetryableConnectException,
-        // RetryableClosedChannelException, etc.); the user predicate may narrow within that set.
-        retryBuilder.retryRetryableExceptions((metadata, throwable) -> {
-            final boolean retry = userPredicate == null
-                    || (throwable instanceof IOException && userPredicate.test((IOException) throwable));
-            return retry ? backOff(backoffMultiplier, initialBackoff, maxBackoff, maxRetries)
-                    : RetryingHttpRequesterFilter.BackOffPolicy.ofNoRetries();
-        });
+        // ServiceTalk-classified RetryableExceptions are already known to be retryable, so retry them
+        // unconditionally; the user predicate only broadens (via retryOther), never narrows this set.
+        retryBuilder.retryRetryableExceptions((metadata, throwable) -> backOffPolicy);
 
         // retryOther catches anything not matched by the typed hooks above, letting a user predicate
         // broaden retries to plain IOExceptions ServiceTalk did not classify as retryable.
         if (userPredicate != null) {
-            retryBuilder.retryOther((metadata, throwable) -> {
-                if (throwable instanceof IOException && userPredicate.test((IOException) throwable)) {
-                    return backOff(backoffMultiplier, initialBackoff, maxBackoff, maxRetries);
-                }
-                return RetryingHttpRequesterFilter.BackOffPolicy.ofNoRetries();
-            });
+            retryBuilder.retryOther((metadata, throwable) ->
+                    throwable instanceof IOException && userPredicate.test((IOException) throwable) ?
+                            backOffPolicy : RetryingHttpRequesterFilter.BackOffPolicy.ofNoRetries());
         }
 
         // returnOriginalResponses=true: after retries are exhausted, the original response (with
         // its retryable status) is returned to the caller rather than the synthetic exception.
         retryBuilder.retryResponses(
-                (metadata, exception) -> backOff(backoffMultiplier, initialBackoff, maxBackoff, maxRetries),
+                (metadata, exception) -> backOffPolicy,
                 /* returnOriginalResponses */ true);
 
         builder.appendClientFilter(retryBuilder.build());
@@ -334,6 +345,12 @@ final class ServiceTalkHttpClientFactory {
 
         HeadersSupplierFilterFactory(Supplier<Map<String, List<String>>> headersSupplier) {
             this.headersSupplier = headersSupplier;
+        }
+
+        @Override
+        public HttpExecutionStrategy requiredOffloads() {
+            // Adding headers is non-blocking; the default would otherwise request offloadAll.
+            return HttpExecutionStrategies.offloadNone();
         }
 
         @Override

@@ -39,7 +39,6 @@ import io.opentelemetry.sdk.common.export.MessageWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
@@ -92,27 +91,26 @@ final class ServiceTalkGrpcSender implements GrpcSender {
             onError.accept(new IllegalStateException("Sender is shut down"));
             return;
         }
-        byte[] body;
         try {
-            body = ServiceTalkHttpSender.readMessage(messageWriter, null);
-        } catch (IOException e) {
+            call.request(newMetadata(), ServiceTalkHttpSender.readMessage(messageWriter, null)).subscribe(
+                    respBytes -> onResponse.accept(new GrpcResponseImpl(GrpcStatusCode.OK, "", respBytes)),
+                    err -> {
+                        if (err instanceof GrpcStatusException) {
+                            GrpcStatus st = ((GrpcStatusException) err).status();
+                            String desc = st.description();
+                            onResponse.accept(new GrpcResponseImpl(
+                                    GrpcStatusCode.fromValue(st.code().value()),
+                                    desc != null ? desc : "",
+                                    new byte[0]));
+                        } else {
+                            onError.accept(err);
+                        }
+                    });
+        } catch (Exception e) {
+            // Contract: report failures through onError, never by throwing at the exporter. Marshalling
+            // and eager gRPC serialization can throw synchronously here.
             onError.accept(e);
-            return;
         }
-        call.request(newMetadata(), body).subscribe(
-                respBytes -> onResponse.accept(new GrpcResponseImpl(GrpcStatusCode.OK, "", respBytes)),
-                err -> {
-                    if (err instanceof GrpcStatusException) {
-                        GrpcStatus st = ((GrpcStatusException) err).status();
-                        String desc = st.description();
-                        onResponse.accept(new GrpcResponseImpl(
-                                GrpcStatusCode.fromValue(st.code().value()),
-                                desc != null ? desc : "",
-                                new byte[0]));
-                    } else {
-                        onError.accept(err);
-                    }
-                });
     }
 
     @Override
@@ -125,12 +123,12 @@ final class ServiceTalkGrpcSender implements GrpcSender {
             // Use closeAsync (not graceful) so JVM-shutdown paths don't hang on an unreachable collector.
             httpClient.closeAsync().subscribe(result::succeed,
                     t -> {
-                        LOGGER.debug("gRPC sender shutdown failed", t);
-                        result.fail();
+                        LOGGER.warn("gRPC sender shutdown failed", t);
+                        result.failExceptionally(t);
                     });
         } catch (Exception e) {
-            LOGGER.debug("gRPC sender shutdown threw", e);
-            result.fail();
+            LOGGER.warn("gRPC sender shutdown threw", e);
+            result.failExceptionally(e);
         }
         return result;
     }

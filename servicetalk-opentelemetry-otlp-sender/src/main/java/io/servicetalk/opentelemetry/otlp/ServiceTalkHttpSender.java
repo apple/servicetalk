@@ -113,12 +113,12 @@ final class ServiceTalkHttpSender implements HttpSender {
             // Use closeAsync (not graceful) so JVM-shutdown paths don't hang on an unreachable collector.
             httpClient.closeAsync().subscribe(result::succeed,
                     throwable -> {
-                        LOGGER.debug("HTTP sender shutdown failed", throwable);
-                        result.fail();
+                        LOGGER.warn("HTTP sender shutdown failed", throwable);
+                        result.failExceptionally(throwable);
                     });
         } catch (Exception e) {
-            LOGGER.debug("HTTP sender shutdown threw", e);
-            result.fail();
+            LOGGER.warn("HTTP sender shutdown threw", e);
+            result.failExceptionally(e);
         }
         return result;
     }

@@ -41,17 +41,23 @@ public final class ServiceTalkHttpSenderProvider implements HttpSenderProvider {
                 config.getHeadersSupplier()
         );
 
-        URI endpoint = config.getEndpoint();
-        String requestTarget = endpoint.getPath();
-        if (requestTarget == null || requestTarget.isEmpty()) {
-            requestTarget = "/";
-        }
+        try {
+            URI endpoint = config.getEndpoint();
+            String requestTarget = endpoint.getPath();
+            if (requestTarget == null || requestTarget.isEmpty()) {
+                requestTarget = "/";
+            }
 
-        return new ServiceTalkHttpSender(
-                httpClient,
-                config.getCompressor(),
-                config.getContentType(),
-                requestTarget
-        );
+            return new ServiceTalkHttpSender(
+                    httpClient,
+                    config.getCompressor(),
+                    config.getContentType(),
+                    requestTarget
+            );
+        } catch (Exception e) {
+            // Don't leak the client if the sender fails to wrap it.
+            httpClient.closeAsync().subscribe();
+            throw e;
+        }
     }
 }

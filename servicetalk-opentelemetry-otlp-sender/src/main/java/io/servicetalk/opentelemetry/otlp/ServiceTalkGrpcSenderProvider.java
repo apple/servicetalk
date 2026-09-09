@@ -38,10 +38,16 @@ public final class ServiceTalkGrpcSenderProvider implements GrpcSenderProvider {
                 config.getHeadersSupplier()
         );
 
-        return new ServiceTalkGrpcSender(
-                httpClient,
-                config.getCompressor(),
-                config.getFullMethodName()
-        );
+        try {
+            return new ServiceTalkGrpcSender(
+                    httpClient,
+                    config.getCompressor(),
+                    config.getFullMethodName()
+            );
+        } catch (Exception e) {
+            // Don't leak the client if the sender fails to wrap it.
+            httpClient.closeAsync().subscribe();
+            throw e;
+        }
     }
 }

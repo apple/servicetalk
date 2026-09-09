@@ -80,7 +80,9 @@ final class OtelCompressorBufferEncoder implements BufferEncoder {
                 } else {
                     // Bound the intermediate allocation regardless of payload size.
                     try (InputStream is = Buffer.asInputStream(in)) {
-                        byte[] tmp = new byte[Math.min(TRANSFER_CHUNK, in.readableBytes())];
+                        // Math.max(1, ...) guards an empty payload: a zero-length buffer would spin
+                        // (InputStream.read of a 0-length array returns 0, never -1).
+                        byte[] tmp = new byte[Math.max(1, Math.min(TRANSFER_CHUNK, in.readableBytes()))];
                         int n;
                         while ((n = is.read(tmp)) != -1) {
                             cos.write(tmp, 0, n);
