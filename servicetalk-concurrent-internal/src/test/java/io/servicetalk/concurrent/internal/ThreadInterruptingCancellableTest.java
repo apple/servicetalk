@@ -112,4 +112,20 @@ class ThreadInterruptingCancellableTest {
                     leaked.get(), is(false));
         }
     }
+
+    @Test
+    void repeatSetDoneAfterCancelPreservesForeignInterrupt() {
+        final Thread boundThread = Thread.currentThread();
+        final ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(boundThread);
+
+        cancellable.cancel();
+        cancellable.setDone();
+        assertThat("setDone() did not clear the interrupt delivered by cancel()",
+                boundThread.isInterrupted(), is(false));
+
+        boundThread.interrupt();
+        cancellable.setDone();
+        assertThat("repeat setDone() swallowed an interrupt this Cancellable did not deliver",
+                Thread.interrupted(), is(true));
+    }
 }

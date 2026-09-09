@@ -98,7 +98,7 @@ public final class ThreadInterruptingCancellable implements Cancellable {
         while (thread.get() == INTERRUPTING) {
             Thread.yield();
         }
-        if (thread.get() == INTERRUPTED) {
+        if (thread.compareAndSet(INTERRUPTED, DONE)) {
             interrupted();
         }
     }
