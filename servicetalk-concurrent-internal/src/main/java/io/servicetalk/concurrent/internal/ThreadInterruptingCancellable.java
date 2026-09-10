@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,7 @@ package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.Cancellable;
 
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import javax.annotation.Nullable;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static java.lang.Thread.interrupted;
 import static java.util.Objects.requireNonNull;
@@ -26,42 +25,38 @@ import static java.util.Objects.requireNonNull;
 /**
  * A {@link Cancellable} that will {@link Thread#interrupt() interrupt a thread}.
  * <p>
- * It is important that {@link #setDone()} (or {@link #setDone(Throwable)}) is called after the associated blocking
- * operation completes to avoid "spurious" thread interrupts.
+ * It is important that {@link #setDone()} (or {@link #setDone(Throwable)}) is called on the interrupted
+ * thread after the associated blocking operation completes to avoid "spurious" thread interrupts.
  */
 public final class ThreadInterruptingCancellable implements Cancellable {
-    private static final AtomicReferenceFieldUpdater<ThreadInterruptingCancellable, Object> threadUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(ThreadInterruptingCancellable.class, Object.class, "thread");
-    private static final Object CANCELLED = new Object();
+    // cancel() moves the live Thread through INTERRUPTING (interrupt() in progress) to INTERRUPTED so a concurrent
+    // setDone() can wait for the interrupt to actually fire before clearing it.
+    private static final Object INTERRUPTING = new Object();
+    private static final Object INTERRUPTED = new Object();
     private static final Object DONE = new Object();
-    @Nullable
-    private volatile Object thread;
+
+    // final field: safely published, so the bound thread is visible even under unsafe publication.
+    private final AtomicReference<Object> thread;
 
     /**
      * Create a new instance.
      * @param threadToInterrupt The thread {@link Thread#interrupt() interrupt} in {@link #cancel()}.
      */
     public ThreadInterruptingCancellable(Thread threadToInterrupt) {
-        // thread is not final, so it is possible for the constructor to exit and this object to be used before
-        // thread state is initialized. To make this code safe we atomically set only if null.
-        // https://docs.oracle.com/javase/specs/jls/se8/html/jls-17.html#jls-17.5
-        if (!threadUpdater.compareAndSet(this, null, requireNonNull(threadToInterrupt))) {
-            handleInitFail(threadToInterrupt);
-        }
-    }
-
-    private void handleInitFail(Thread threadToInterrupt) {
-        if (thread == CANCELLED) {
-            threadToInterrupt.interrupt();
-        }
+        thread = new AtomicReference<>(requireNonNull(threadToInterrupt));
     }
 
     @Override
     public void cancel() {
-        final Object currThread = threadUpdater.getAndAccumulate(this, CANCELLED,
-                (prev, x) -> prev == DONE ? DONE : CANCELLED);
-        if (currThread instanceof Thread) {
-            ((Thread) currThread).interrupt();
+        final Object current = thread.get();
+        // If current is not a Thread the state is already INTERRUPTING/INTERRUPTED/DONE; if the CAS loses, a concurrent
+        // cancel()/setDone() won and there is nothing left to do. Either way cancel() is a NOOP.
+        if (current instanceof Thread && thread.compareAndSet(current, INTERRUPTING)) {
+            try {
+                ((Thread) current).interrupt();
+            } finally {
+                thread.set(INTERRUPTED);
+            }
         }
     }
 
@@ -70,7 +65,11 @@ public final class ThreadInterruptingCancellable implements Cancellable {
      * should be NOOPs.
      */
     public void setDone() {
-        thread = DONE;
+        final Object current = thread.get();
+        if (current instanceof Thread && thread.compareAndSet(current, DONE)) {
+            return;
+        }
+        clearRacingInterrupt();
     }
 
     /**
@@ -82,8 +81,24 @@ public final class ThreadInterruptingCancellable implements Cancellable {
      * the interrupt status.
      */
     public void setDone(Throwable cause) {
-        setDone();
-        if (cause instanceof InterruptedException) {
+        final Object current = thread.get();
+        if (current instanceof Thread && thread.compareAndSet(current, DONE)) {
+            if (cause instanceof InterruptedException) {
+                interrupted();
+            }
+            return;
+        }
+        clearRacingInterrupt();
+    }
+
+    private void clearRacingInterrupt() {
+        // A concurrent cancel() delivered (or is delivering) an interrupt. Busy-wait until interrupt() has been called
+        // (INTERRUPTED) so it is captured, then clear it to avoid a spurious interrupt on this (bound) thread. A DONE
+        // state means a prior setDone() already handled completion, so there is no cancel interrupt to clear.
+        while (thread.get() == INTERRUPTING) {
+            Thread.yield();
+        }
+        if (thread.compareAndSet(INTERRUPTED, DONE)) {
             interrupted();
         }
     }
