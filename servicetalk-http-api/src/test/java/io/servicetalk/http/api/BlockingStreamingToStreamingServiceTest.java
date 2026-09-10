@@ -54,6 +54,7 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.http.api.DisableInterruptOnCancelHttpServiceFilter.INTERRUPT_ON_CANCEL;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderNames.TRAILER;
@@ -63,6 +64,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.function.Function.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -353,6 +355,136 @@ class BlockingStreamingToStreamingServiceTest {
         onErrorLatch.await();
         assertThat(throwableRef.get(), instanceOf(InterruptedException.class));
         serviceTerminationLatch.await();
+    }
+
+    @Test
+    void cancelAfterSendMetaDataNotInterruptedWhenDisabled() throws Exception {
+        CountDownLatch cancelObserved = new CountDownLatch(1);
+        CountDownLatch releaseLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(1);
+        AtomicBoolean interrupted = new AtomicBoolean();
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+
+        BlockingStreamingHttpService syncService = (ctx, request, response) -> {
+            HttpPayloadWriter<Buffer> writer = response.sendMetaData();
+            try {
+                releaseLatch.await();
+            } catch (InterruptedException e) {
+                interrupted.set(true);
+            }
+            if (Thread.interrupted()) {
+                interrupted.set(true);
+            }
+            try {
+                writer.write(ctx.executionContext().bufferAllocator().fromAscii("x"));
+            } catch (IOException e) {
+                throwableRef.set(e);
+            } finally {
+                doneLatch.countDown();
+            }
+        };
+        StreamingHttpService asyncService = toStreamingHttpService(offloadNone(), syncService);
+        StreamingHttpRequest request = reqRespFactory.get("/");
+        request.context().put(INTERRUPT_ON_CANCEL, false);
+        StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, request, reqRespFactory)
+                .subscribeOn(executorExtension.executor()).toFuture().get();
+        assertMetaData(OK, asyncResponse);
+        toSource(asyncResponse.payloadBody().afterCancel(cancelObserved::countDown))
+                .subscribe(new Subscriber<Buffer>() {
+                    @Override
+                    public void onSubscribe(final Subscription s) {
+                        s.cancel();
+                    }
+
+                    @Override
+                    public void onNext(final Buffer s) {
+                    }
+
+                    @Override
+                    public void onError(final Throwable t) {
+                    }
+
+                    @Override
+                    public void onComplete() {
+                    }
+                });
+        assertThat("cancellation must reach the adapter before the service thread is released, otherwise a missing "
+                + "interrupt is indistinguishable from a late one", cancelObserved.await(30, SECONDS), is(true));
+        releaseLatch.countDown();
+        assertThat(doneLatch.await(30, SECONDS), is(true));
+
+        assertThat("a disabled interrupt must not fire", interrupted.get(), is(false));
+        assertThat("cancelling the payload body must still terminate the payload writer, so the next write() "
+                + "observes the cancellation", throwableRef.get(), instanceOf(IOException.class));
+    }
+
+    @Test
+    void cancelBeforeSendMetaDataNotInterruptedWhenDisabled() throws Exception {
+        CountDownLatch handleLatch = new CountDownLatch(1);
+        CountDownLatch cancelObserved = new CountDownLatch(1);
+        CountDownLatch releaseLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(1);
+        AtomicBoolean interrupted = new AtomicBoolean();
+        AtomicReference<Subscription> subscriptionRef = new AtomicReference<>();
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+
+        BlockingStreamingHttpService syncService = (ctx, request, response) -> {
+            handleLatch.countDown();
+            try {
+                releaseLatch.await();
+            } catch (InterruptedException e) {
+                interrupted.set(true);
+            }
+            if (Thread.interrupted()) {
+                interrupted.set(true);
+            }
+            HttpPayloadWriter<Buffer> writer = response.sendMetaData();
+            try {
+                writer.write(ctx.executionContext().bufferAllocator().fromAscii("x"));
+            } catch (IOException e) {
+                throwableRef.set(e);
+            } finally {
+                doneLatch.countDown();
+            }
+        };
+        StreamingHttpService asyncService = toStreamingHttpService(offloadNone(), syncService);
+        StreamingHttpRequest request = reqRespFactory.get("/");
+        request.context().put(INTERRUPT_ON_CANCEL, false);
+        toSource(asyncService.handle(mockCtx, request, reqRespFactory)
+                .afterCancel(cancelObserved::countDown)
+                .flatMapPublisher(StreamingHttpResponse::messageBody)
+                .subscribeOn(executorExtension.executor()))
+                .subscribe(new Subscriber<Object>() {
+                    @Override
+                    public void onSubscribe(final Subscription s) {
+                        subscriptionRef.set(s);
+                    }
+
+                    @Override
+                    public void onNext(final Object o) {
+                    }
+
+                    @Override
+                    public void onError(final Throwable t) {
+                    }
+
+                    @Override
+                    public void onComplete() {
+                    }
+                });
+        handleLatch.await();
+        Subscription subscription = subscriptionRef.get();
+        assertThat(subscription, is(notNullValue()));
+        subscription.cancel();
+        assertThat("cancellation must reach the adapter before the service thread is released, otherwise a missing "
+                + "interrupt is indistinguishable from a late one", cancelObserved.await(30, SECONDS), is(true));
+        releaseLatch.countDown();
+        assertThat(doneLatch.await(30, SECONDS), is(true));
+
+        assertThat("a disabled interrupt must not fire", interrupted.get(), is(false));
+        assertThat("a cancel delivered before sendMetaData() must still terminate the payload writer, otherwise the "
+                + "service parks in write() forever and never releases its offload thread",
+                throwableRef.get(), instanceOf(IOException.class));
     }
 
     @Test
