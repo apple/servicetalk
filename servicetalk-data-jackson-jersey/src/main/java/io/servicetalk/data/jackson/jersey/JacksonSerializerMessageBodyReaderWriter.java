@@ -110,21 +110,22 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
             final int contentLength = requestCtxProvider.get().getLength();
 
             if (Single.class.isAssignableFrom(type)) {
-                return handleEntityStream(entityStream, allocator,
+                return handleEntityStream(entityStream, allocator, true,
                         (p, a) -> deserialize(p, serializerFactory.serializerDeserializer(getSourceClass(genericType)),
                                 contentLength, a),
                         (is, a) -> new SingleSource<>(deserialize(toBufferPublisher(is, a),
                                 serializerFactory.serializerDeserializer(
                                         getSourceClass(genericType)), contentLength, a)));
             } else if (Publisher.class.isAssignableFrom(type)) {
-                return handleEntityStream(entityStream, allocator,
+                // Streaming deserialization must not be bounded by the aggregation size limit.
+                return handleEntityStream(entityStream, allocator, false,
                         (p, a) -> serializerFactory.streamingSerializerDeserializer(
                                 getSourceClass(genericType)).deserialize(p, a),
                         (is, a) -> new PublisherSource<>(serializerFactory.streamingSerializerDeserializer(
                                 getSourceClass(genericType)).deserialize(toBufferPublisher(is, a), a)));
             }
 
-            return handleEntityStream(entityStream, allocator,
+            return handleEntityStream(entityStream, allocator, true,
                     (p, a) -> deserializeObject(p, serializerFactory.serializerDeserializer(type), contentLength, a),
                     (is, a) -> deserializeObject(toBufferPublisher(is, a),
                             serializerFactory.serializerDeserializer(type), contentLength, a));
@@ -142,18 +143,18 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
         final int contentLength = requestCtxProvider.get().getLength();
 
         if (Single.class.isAssignableFrom(type)) {
-            return handleEntityStream(entityStream, allocator,
+            return handleEntityStream(entityStream, allocator, true,
                     (p, a) -> deserializeOld(p, serializer, getSourceClass(genericType), contentLength, a),
                     (is, a) -> new SingleSource<>(deserializeOld(toBufferPublisher(is, a), serializer,
                             getSourceClass(genericType), contentLength, a)));
         } else if (Publisher.class.isAssignableFrom(type)) {
-            return handleEntityStream(entityStream, allocator,
+            return handleEntityStream(entityStream, allocator, false,
                     (p, a) -> serializer.deserialize(p, getSourceClass(genericType)),
                     (is, a) -> new PublisherSource<>(serializer.deserialize(toBufferPublisher(is, a),
                             getSourceClass(genericType))));
         }
 
-        return handleEntityStream(entityStream, allocator,
+        return handleEntityStream(entityStream, allocator, true,
                 (p, a) -> deserializeObjectOld(p, serializer, type, contentLength, a),
                 (is, a) -> deserializeObjectOld(toBufferPublisher(is, a), serializer, type, contentLength, a));
     }

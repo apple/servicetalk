@@ -42,6 +42,7 @@ public final class ServiceTalkFeature implements Feature {
             context.register(BufferPublisherMessageBodyReaderWriter.class);
             context.register(BufferSingleMessageBodyReaderWriter.class);
             context.register(EndpointEnhancingRequestFilter.class);
+            context.register(PayloadSizeLimitingReaderInterceptor.class);
 
             context.register(new AbstractBinder() {
                 @Override

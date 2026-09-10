@@ -33,6 +33,7 @@ import org.junit.platform.suite.api.SuiteDisplayName;
         InputConsumingGlobalFiltersTest.class,
         InterceptorsTest.class,
         SecurityFilterTest.class,
+        MaxAggregatedPayloadSizeTest.class,
 
         // RS features
         CancellationTest.class,

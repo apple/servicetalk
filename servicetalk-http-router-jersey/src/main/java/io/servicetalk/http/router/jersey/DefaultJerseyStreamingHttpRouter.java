@@ -68,6 +68,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
+import static io.servicetalk.http.api.StreamingHttpRequests.applyAggregationSizeLimit;
 import static io.servicetalk.http.router.jersey.Context.CONNECTION_CONTEXT_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.HTTP_REQUEST_REF_TYPE;
 import static io.servicetalk.http.router.jersey.JerseyRouteExecutionStrategyUtils.validateRouteStrategies;
@@ -253,8 +254,11 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
         req.headers().forEach(h ->
                 containerRequest.getHeaders().add(h.getKey().toString(), h.getValue().toString()));
 
+        // Streaming router paradigms reach the readers with an un-aggregated body, so re-apply the limit that
+        // toRequest() would have enforced; aggregated paradigms already rejected at the server boundary.
         final BufferPublisherInputStream entityStream = new BufferPublisherInputStream(
-                req.payloadBody().shareContextOnSubscribe(), publisherInputStreamQueueCapacity);
+                req.payloadBody().shareContextOnSubscribe(), publisherInputStreamQueueCapacity,
+                payloadBody -> applyAggregationSizeLimit(req, payloadBody));
         containerRequest.setEntityStream(entityStream);
         initRequestProperties(entityStream, containerRequest);
 

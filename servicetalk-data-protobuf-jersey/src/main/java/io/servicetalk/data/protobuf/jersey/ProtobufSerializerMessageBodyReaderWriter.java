@@ -104,21 +104,21 @@ final class ProtobufSerializerMessageBodyReaderWriter implements MessageBodyRead
         final int contentLength = requestCtxProvider.get().getLength();
 
         if (Single.class.isAssignableFrom(type)) {
-            return handleEntityStream(entityStream, allocator,
+            return handleEntityStream(entityStream, allocator, true,
                     (p, a) -> deserialize(p, serializerFactory.serializerDeserializer(getSourceClass(genericType)),
                             contentLength, a),
                     (is, a) -> new SingleSource<>(deserialize(toBufferPublisher(is, a),
                             serializerFactory.serializerDeserializer(
                                     getSourceClass(genericType)), contentLength, a)));
         } else if (Publisher.class.isAssignableFrom(type)) {
-            return handleEntityStream(entityStream, allocator,
+            return handleEntityStream(entityStream, allocator, false,
                     (p, a) -> serializerFactory.streamingSerializerDeserializer(
                             getSourceClass(genericType)).deserialize(p, a),
                     (is, a) -> new PublisherSource<>(serializerFactory.streamingSerializerDeserializer(
                             getSourceClass(genericType)).deserialize(toBufferPublisher(is, a), a)));
         }
 
-        return handleEntityStream(entityStream, allocator,
+        return handleEntityStream(entityStream, allocator, true,
                 (p, a) -> deserializeObject(p, serializerFactory.serializerDeserializer(castClass(type)),
                         contentLength, a),
                 (is, a) -> deserializeObject(toBufferPublisher(is, a),
