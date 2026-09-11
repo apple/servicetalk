@@ -21,6 +21,8 @@ import io.servicetalk.concurrent.api.Single;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -28,9 +30,12 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -120,17 +125,33 @@ class CallableSingleTest {
         latch.await();
     }
 
-    @Test
-    void onSubscribeThrows() {
+    @ParameterizedTest(name = "{displayName} [{index}] cancel={0}")
+    @ValueSource(booleans = {false, true})
+    void onSubscribeThrows(boolean cancel) throws Exception {
         final Single<Integer> source = Single.fromCallable(factory);
 
         @SuppressWarnings("unchecked")
         final SingleSource.Subscriber<Integer> subscriber = mock(SingleSource.Subscriber.class);
-        doThrow(DELIBERATE_EXCEPTION).when(subscriber).onSubscribe(any());
+        // Cancelling from onSubscribe is legal. Throwing afterwards violates the Reactive Streams spec, but the
+        // interrupt delivered by cancel() must still not be left behind on this (typically pooled) thread.
+        doAnswer(invocation -> {
+            if (cancel) {
+                invocation.<Cancellable>getArgument(0).cancel();
+            }
+            throw DELIBERATE_EXCEPTION;
+        }).when(subscriber).onSubscribe(any());
 
-        toSource(source).subscribe(subscriber);
-        verify(subscriber).onSubscribe(any());
-        verify(subscriber).onError(DELIBERATE_EXCEPTION);
-        verifyNoMoreInteractions(subscriber);
+        try {
+            toSource(source).subscribe(subscriber);
+
+            verify(subscriber).onSubscribe(any());
+            verify(subscriber).onError(DELIBERATE_EXCEPTION);
+            verifyNoMoreInteractions(subscriber);
+            verify(factory, never()).call();
+            assertThat("a throwing onSubscribe left an interrupt behind", Thread.interrupted(), is(false));
+        } finally {
+            // A leaked interrupt would otherwise bleed into the next test sharing this thread.
+            Thread.interrupted();
+        }
     }
 }

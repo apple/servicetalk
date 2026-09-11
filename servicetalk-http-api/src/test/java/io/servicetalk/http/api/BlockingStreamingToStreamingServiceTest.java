@@ -72,7 +72,12 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -303,6 +308,37 @@ class BlockingStreamingToStreamingServiceTest {
         cancellable.cancel();
         onErrorLatch.await();
         assertThat(throwableRef.get(), instanceOf(InterruptedException.class));
+    }
+
+    @Test
+    void onSubscribeCancelsThenThrowsDoesNotLeakInterrupt() {
+        // handle() is never invoked because onSubscribe throws, so the allocator stub from setup() is never consumed.
+        lenient().when(mockExecutionCtx.bufferAllocator()).thenReturn(DEFAULT_ALLOCATOR);
+        AtomicBoolean handleCalled = new AtomicBoolean();
+        BlockingStreamingHttpService syncService = (ctx, request, response) -> handleCalled.set(true);
+        StreamingHttpService asyncService = toStreamingHttpService(offloadNone(), syncService);
+
+        @SuppressWarnings("unchecked")
+        final SingleSource.Subscriber<StreamingHttpResponse> subscriber = mock(SingleSource.Subscriber.class);
+        // Cancelling from onSubscribe is legal. Throwing afterwards violates the Reactive Streams spec, but the
+        // interrupt delivered by cancel() must still not be left behind on this (typically pooled) thread.
+        doAnswer(invocation -> {
+            invocation.<Cancellable>getArgument(0).cancel();
+            throw DELIBERATE_EXCEPTION;
+        }).when(subscriber).onSubscribe(any());
+
+        try {
+            toSource(asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)).subscribe(subscriber);
+
+            verify(subscriber).onSubscribe(any());
+            verify(subscriber).onError(DELIBERATE_EXCEPTION);
+            verifyNoMoreInteractions(subscriber);
+            assertThat("handle() should not be invoked when onSubscribe throws", handleCalled.get(), is(false));
+            assertThat("cancel() from a throwing onSubscribe leaked an interrupt", Thread.interrupted(), is(false));
+        } finally {
+            // A leaked interrupt would otherwise bleed into the next test sharing this thread.
+            Thread.interrupted();
+        }
     }
 
     @Test
