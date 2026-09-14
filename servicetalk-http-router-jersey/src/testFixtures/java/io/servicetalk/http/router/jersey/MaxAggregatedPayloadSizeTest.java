@@ -23,6 +23,7 @@ import io.servicetalk.http.api.HttpServerBuilder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -33,7 +34,12 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Application;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.ext.Provider;
+import javax.ws.rs.ext.ReaderInterceptor;
+import javax.ws.rs.ext.ReaderInterceptorContext;
 
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.PAYLOAD_TOO_LARGE;
@@ -97,12 +103,44 @@ class MaxAggregatedPayloadSizeTest extends AbstractJerseyStreamingHttpServiceTes
         public String echoForm(final MultivaluedMap<String, String> form) {
             return form.getFirst("k");
         }
+
+        // The entity stream for this path is replaced by EntityStreamReplacingInterceptor, so this reactive reader
+        // can't unwrap the Publisher fast path and falls back to the InputStream branch of handleEntityStream, where
+        // the aggregation limit must still be enforced.
+        @POST
+        @Path("/wrapped")
+        public Single<Buffer> echoWrapped(final Single<Buffer> body) {
+            return body;
+        }
+    }
+
+    // Replaces the entity stream for the /echo/wrapped path with a pass-through wrapper, defeating the zero-copy
+    // Publisher unwrap so the reactive reader is served via the InputStream fallback. Scoped by path to leave the
+    // other endpoints' fast path (and its coverage) intact.
+    @Provider
+    @SuppressWarnings("PMD.PublicMemberInNonPublicType") // JAX-RS provider must be public
+    public static class EntityStreamReplacingInterceptor implements ReaderInterceptor {
+        @Context
+        private UriInfo uriInfo;
+
+        @Override
+        public Object aroundReadFrom(final ReaderInterceptorContext context) throws IOException {
+            if (uriInfo.getPath().endsWith("/wrapped")) {
+                context.setInputStream(new FilterInputStream(context.getInputStream()) { });
+            }
+            return context.proceed();
+        }
     }
 
     static class EchoApplication extends Application {
         @Override
         public Set<Object> getSingletons() {
             return singleton(new EchoResource());
+        }
+
+        @Override
+        public Set<Class<?>> getClasses() {
+            return singleton(EntityStreamReplacingInterceptor.class);
         }
     }
 
@@ -147,6 +185,23 @@ class MaxAggregatedPayloadSizeTest extends AbstractJerseyStreamingHttpServiceTes
         // The built-in form reader aggregates the whole entity; the interceptor bounds it.
         setUp(api);
         assertOverLimitRejected("/echo/form", "k=" + repeat('x', MAX_PAYLOAD), APPLICATION_FORM_URLENCODED);
+    }
+
+    @ParameterizedTest(name = "{displayName} [{0}]")
+    @EnumSource(RouterApi.class)
+    void overLimitRejectedWhenEntityStreamReplaced(final RouterApi api) throws Exception {
+        // An earlier interceptor replaced the entity stream, so the reactive reader hits the InputStream fallback;
+        // the limit must still be enforced there.
+        setUp(api);
+        assertOverLimitRejected("/echo/wrapped");
+    }
+
+    @ParameterizedTest(name = "{displayName} [{0}]")
+    @EnumSource(RouterApi.class)
+    void withinLimitSucceedsWhenEntityStreamReplaced(final RouterApi api) throws Exception {
+        setUp(api);
+        final String body = repeat('x', MAX_PAYLOAD);
+        sendAndAssertResponse(post("/echo/wrapped", body, TEXT_PLAIN), OK, TEXT_PLAIN, body);
     }
 
     private void assertOverLimitRejected(final String path) {

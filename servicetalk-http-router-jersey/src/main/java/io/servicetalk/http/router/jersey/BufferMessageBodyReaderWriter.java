@@ -17,6 +17,7 @@ package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.internal.util.collection.Ref;
@@ -62,6 +63,9 @@ final class BufferMessageBodyReaderWriter implements MessageBodyReader<Buffer>, 
     private Provider<Ref<ConnectionContext>> ctxRefProvider;
 
     @Context
+    private Provider<Ref<StreamingHttpRequest>> requestRefProvider;
+
+    @Context
     private Provider<ContainerRequestContext> requestCtxProvider;
 
     @Override
@@ -80,7 +84,8 @@ final class BufferMessageBodyReaderWriter implements MessageBodyReader<Buffer>, 
                            final MultivaluedMap<String, String> httpHeaders,
                            final InputStream entityStream) throws WebApplicationException {
 
-        return handleEntityStream(entityStream, ctxRefProvider.get().get().executionContext().bufferAllocator(), true,
+        return handleEntityStream(entityStream, ctxRefProvider.get().get().executionContext().bufferAllocator(),
+                requestRefProvider.get().get(),
                 (p, a) -> {
                     final Buffer buf = newBufferForRequestContent(getRequestContentLength(requestCtxProvider), a);
                     p.toIterable().forEach(buf::writeBytes);

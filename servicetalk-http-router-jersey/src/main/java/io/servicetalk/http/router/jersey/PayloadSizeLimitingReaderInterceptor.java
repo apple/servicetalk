@@ -30,7 +30,7 @@ import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.ReaderInterceptorContext;
 
 import static io.servicetalk.http.api.StreamingHttpRequests.applyAggregationSizeLimit;
-import static javax.ws.rs.Priorities.ENTITY_CODER;
+import static javax.ws.rs.Priorities.USER;
 
 /**
  * Bounds the entity read by the aggregating {@link javax.ws.rs.ext.MessageBodyReader}s that consume the request as a
@@ -44,10 +44,11 @@ import static javax.ws.rs.Priorities.ENTITY_CODER;
  * {@link javax.ws.rs.ext.MessageBodyReader} that aggregates from the blocking {@code InputStream} is not bounded here;
  * bound those at the wire level with a payload-size-limiting HTTP service filter instead.
  */
-// ENTITY_CODER priority: ServiceTalk decodes content at the transport layer (not via a JAX-RS interceptor), so the
-// bytes counted here are already decoded, matching the reactive path. Ordering vs. an app-registered decoding
-// interceptor at the same priority would be undefined.
-@Priority(ENTITY_CODER)
+// Priority USER-1 orders the byte count deterministically: reader interceptors run lowest-priority-first
+// (outermost), so this runs after any lower-priority decoder (e.g. ENTITY_CODER) — counting the bytes that
+// decoder produces — and before default-priority (USER) app interceptors. A decoder at USER-1 or higher would
+// run inside this and its output go uncounted, but ServiceTalk decodes content-encoding at the transport layer.
+@Priority(USER - 1)
 final class PayloadSizeLimitingReaderInterceptor implements ReaderInterceptor {
 
     private final Provider<Ref<StreamingHttpRequest>> requestRefProvider;

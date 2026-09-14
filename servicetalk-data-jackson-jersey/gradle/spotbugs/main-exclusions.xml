@@ -24,6 +24,7 @@
       <Field name="headers"/>
       <Field name="providers"/>
       <Field name="requestCtxProvider"/>
+      <Field name="requestRefProvider"/>
     </Or>
   </Match>
 </FindBugsFilter>

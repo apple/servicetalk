@@ -35,6 +35,7 @@ dependencies {
   implementation project(":servicetalk-buffer-api")
   implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-concurrent-internal")
+  implementation project(":servicetalk-http-api")
   implementation project(":servicetalk-http-router-jersey-internal")
   implementation project(":servicetalk-serialization-api")
   implementation project(":servicetalk-serializer-api")
@@ -50,7 +51,6 @@ dependencies {
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-http-router-jersey"))
   testImplementation project(":servicetalk-buffer-netty")
-  testImplementation project(":servicetalk-http-api")
   testImplementation project(":servicetalk-test-resources")
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.junit.jupiter:junit-jupiter-params"

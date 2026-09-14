@@ -21,6 +21,7 @@
     <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
     <Or>
       <Field name="ctxRefProvider"/>
+      <Field name="requestRefProvider"/>
       <Field name="requestCtxProvider"/>
     </Or>
   </Match>
@@ -29,6 +30,7 @@
     <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
     <Or>
       <Field name="ctxRefProvider"/>
+      <Field name="requestRefProvider"/>
       <Field name="requestCtxProvider"/>
     </Or>
   </Match>
