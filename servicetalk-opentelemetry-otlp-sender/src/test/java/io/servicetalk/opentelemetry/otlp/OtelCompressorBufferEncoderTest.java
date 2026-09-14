@@ -22,6 +22,7 @@ import io.servicetalk.encoding.netty.NettyBufferEncoders;
 
 import io.opentelemetry.sdk.common.export.Compressor;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -75,6 +76,20 @@ final class OtelCompressorBufferEncoderTest {
         roundTripped.readBytes(result);
 
         assertThat(result, equalTo(payload));
+    }
+
+    @Test
+    @Timeout(10)
+    void compressEmptyNonArrayBackedBuffer() {
+        // Regression: an empty non-array-backed buffer used to spin forever — a zero-length transfer
+        // array makes InputStream.read return 0, never -1. Must complete and round-trip to empty.
+        OtelCompressorBufferEncoder encoder = new OtelCompressorBufferEncoder(GzipCompressor.INSTANCE);
+
+        Buffer in = ALLOCATOR.newBuffer(0, true); // direct (non-array), empty
+        Buffer compressed = encoder.encoder().serialize(in, ALLOCATOR);
+
+        Buffer roundTripped = NettyBufferEncoders.gzipDefault().decoder().deserialize(compressed, ALLOCATOR);
+        assertThat(roundTripped.readableBytes(), equalTo(0));
     }
 
     @Test

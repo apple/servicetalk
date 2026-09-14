@@ -161,6 +161,29 @@ final class GrpcSenderIntegrationTest {
     }
 
     @Test
+    void cleartextEndpointIgnoresSuppliedSslContext() throws Exception {
+        // Security-relevant: an SSLContext supplied for an http:// endpoint must be ignored (warn +
+        // cleartext), not applied — a TLS handshake against this cleartext collector would fail, so a
+        // received span proves the downgrade happened rather than erroring.
+        collector = new MockOtlpCollector.Builder()
+                .protocolMode(MockOtlpCollector.ProtocolMode.GRPC)
+                .build();
+
+        TrustManagerFactory tmf = TestUtils.createTrustManagerFactory(DefaultTestCerts::loadServerCAPem);
+        SSLContext sslContext = TestUtils.createTlsSslContext(tmf);
+        X509TrustManager trustManager = TestUtils.extractTrustManager(tmf);
+
+        OtlpGrpcSpanExporter spanExporter = OtlpGrpcSpanExporter.builder()
+                .setEndpoint("http://localhost:" + collector.getPort())
+                .setSslContext(sslContext, trustManager)
+                .build();
+
+        exportSpan(spanExporter, "cleartext-downgrade-span");
+
+        assertGrpcSpanReceived();
+    }
+
+    @Test
     void grpcMessageIsProperlyFramedAndDecoded() throws Exception {
         collector = new MockOtlpCollector.Builder()
                 .protocolMode(MockOtlpCollector.ProtocolMode.GRPC)
@@ -311,6 +334,32 @@ final class GrpcSenderIntegrationTest {
                             + "result.isSuccess=" + result.isSuccess(),
                     collector.getRequestCount(), greaterThan(1));
             assertThat("Export should succeed after retry", result.isSuccess(), is(true));
+        }
+    }
+
+    @Test
+    void grpcDisabledRetryPolicyMakesSingleAttempt() throws Exception {
+        // A retryable status on every request. With retries disabled (null policy) the export must not
+        // retry — ServiceTalk's default auto-retries are suppressed, so exactly one attempt reaches the
+        // collector, matching OTel's OkHttp sender.
+        collector = new MockOtlpCollector.Builder()
+                .protocolMode(MockOtlpCollector.ProtocolMode.GRPC)
+                .respondWithGrpcStatus(14, "always unavailable") // 14 = UNAVAILABLE
+                .build();
+
+        try (OtlpGrpcSpanExporter spanExporter = OtlpGrpcSpanExporter.builder()
+                .setEndpoint("http://localhost:" + collector.getPort())
+                .setRetryPolicy(null)
+                .build()) {
+
+            io.opentelemetry.sdk.common.CompletableResultCode result = spanExporter.export(
+                    Collections.singletonList(TestUtils.fakeSpanData("no-retry-span")));
+            result.join(10, TimeUnit.SECONDS);
+
+            assertThat("Export should fail on a retryable status when retries are disabled",
+                    result.isSuccess(), is(false));
+            assertThat("Retries are disabled, so exactly one attempt should reach the collector",
+                    collector.getRequestCount(), is(1));
         }
     }
 
