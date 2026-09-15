@@ -38,6 +38,9 @@ final class CallableSingle<T> extends AbstractSynchronousSingle<T> {
         try {
             subscriber.onSubscribe(cancellable);
         } catch (Throwable cause) {
+            // The Subscriber may have cancelled before throwing, which interrupts this thread. Complete the
+            // Cancellable so the interrupt is not left behind for unrelated work on this (typically pooled) thread.
+            cancellable.setDone(cause);
             handleExceptionFromOnSubscribe(subscriber, cause);
             return;
         }

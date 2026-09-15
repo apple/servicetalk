@@ -71,6 +71,10 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                 try {
                     subscriber.onSubscribe(tiCancellable);
                 } catch (Throwable cause) {
+                    // The Subscriber may have cancelled before throwing, which interrupts this thread. Complete the
+                    // Cancellable so the interrupt is not left behind for unrelated work on this (typically pooled)
+                    // thread.
+                    tiCancellable.setDone(cause);
                     handleExceptionFromOnSubscribe(subscriber, cause);
                     return;
                 }
