@@ -154,23 +154,17 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     }
 
     private ConnState closeConnState() {
-        for (;;) {
-            // We need to keep the oldState.connections around even if we are closed because the user may do
-            // closeGracefully with a timeout, which fails, and then force close. If we discard connections when
-            // closeGracefully is started we may leak connections.
-            final ConnState oldState = connState;
-            if (oldState.state == State.CLOSED) {
-                // already closed.
-                return oldState;
-            }
-            // Try to close. If we succeed we can also clean up the healthIndicator.
-            if (connStateUpdater.compareAndSet(this, oldState, oldState.toClosed())) {
-                if (healthIndicator != null) {
-                    healthIndicator.cancel();
-                }
-                return oldState;
-            }
+        // We need to keep the oldState.connections around even if we are closed because the user may do
+        // closeGracefully with a timeout, which fails, and then force close. If we discard connections when
+        // closeGracefully is started we may leak connections.
+        final ConnState oldState = connStateUpdater.getAndUpdate(this,
+                oldConnState -> oldConnState.state == State.CLOSED ? oldConnState : oldConnState.toClosed());
+        // `removeConnection` publishes CLOSED itself before closing the host, so the indicator has to be cleaned up
+        // whether we observe that state or perform the transition ourselves.
+        if (healthIndicator != null) {
+            healthIndicator.cancel();
         }
+        return oldState;
     }
 
     @Override
