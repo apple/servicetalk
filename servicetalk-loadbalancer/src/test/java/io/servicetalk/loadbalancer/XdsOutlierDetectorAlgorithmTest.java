@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
-import static java.lang.Math.max;
 import static java.time.Duration.ZERO;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -239,7 +238,7 @@ class XdsOutlierDetectorAlgorithmTest {
             eject(indicator);
         }
 
-        int expectedFailed = max(1, maxEjectPercentage * healthIndicators.size() / 100);
+        int expectedFailed = maxEjectPercentage * healthIndicators.size() / 100;
         assertThat(healthIndicators.stream()
                 .filter(indicator -> !indicator.isHealthy()).collect(Collectors.toList()), hasSize(expectedFailed));
     }

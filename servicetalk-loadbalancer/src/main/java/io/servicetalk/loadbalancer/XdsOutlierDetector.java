@@ -34,11 +34,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessorDropHeadOnOverflow;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
-import static java.lang.Math.max;
+import static java.lang.Math.min;
 
 /**
  * A {@link OutlierDetector} implementation that supports xDS outlier detector configuration.
@@ -74,7 +73,6 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
     private final PublisherSource.Processor<Void, Void> healthStatusChangeProcessor =
             newPublisherProcessorDropHeadOnOverflow(1);
     private final Kernel kernel;
-    private final AtomicInteger indicatorCount = new AtomicInteger();
     // Protected by `sequentialExecutor`.
     private final Set<XdsHealthIndicatorImpl> indicators = new HashSet<>();
     // reads and writes are protected by `sequentialExecutor`.
@@ -99,7 +97,6 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
         XdsHealthIndicatorImpl result = new XdsHealthIndicatorImpl(
                 address, kernel.config, hostObserver);
         sequentialExecutor.execute(() -> indicators.add(result));
-        indicatorCount.incrementAndGet();
         return result;
     }
 
@@ -112,7 +109,6 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
                 indicator.sequentialCancel();
             }
             assert indicators.isEmpty();
-            assert indicatorCount.get() == 0;
             healthStatusChangeProcessor.onComplete();
         });
     }
@@ -157,8 +153,12 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
         @Override
         public boolean tryEjectHost() {
             assert sequentialExecutor.isCurrentThreadDraining();
-            final int maxEjected = max(1, indicatorCount.get() * currentConfig().maxEjectionPercentage() / 100);
-            if (ejectedHostCount >= maxEjected) {
+            final OutlierDetectorConfig config = currentConfig();
+            // Mirrors Envoy's DetectorImpl::ejectHost: the candidate counts toward the ejected share, so a host set
+            // smaller than 100/maxEjectionPercentage never ejects unless alwaysEjectOneHost is set.
+            final long maxPercentage = min(100, config.maxEjectionPercentage());
+            final boolean withinPercentage = 100L * (ejectedHostCount + 1) <= indicators.size() * maxPercentage;
+            if (!withinPercentage && !(config.alwaysEjectOneHost() && ejectedHostCount == 0)) {
                 return false;
             } else {
                 ejectedHostCount++;
@@ -175,9 +175,7 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
         @Override
         public void doCancel() {
             assert sequentialExecutor.isCurrentThreadDraining();
-            if (indicators.remove(this)) {
-                indicatorCount.decrementAndGet();
-            }
+            indicators.remove(this);
         }
     }
 

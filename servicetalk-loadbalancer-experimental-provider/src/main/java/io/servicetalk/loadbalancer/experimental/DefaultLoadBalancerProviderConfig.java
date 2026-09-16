@@ -55,6 +55,7 @@ final class DefaultLoadBalancerProviderConfig {
     private static final String PROP_INTERVAL_MS = "intervalMs";
     private static final String PROP_BASE_EJECTION_TIME_MS = "baseEjectionTimeMs";
     private static final String PROP_MAX_EJECTION_PERCENT = "maxEjectionPercent";
+    private static final String PROP_ALWAYS_EJECT_ONE_HOST = "alwaysEjectOneHost";
     private static final String PROP_ENFORCING_CONSECUTIVE_5XX = "enforcingConsecutive5xx";
     private static final String PROP_ENFORCING_SUCCESS_RATE = "enforcingSuccessRate";
     private static final String PROP_SUCCESS_RATE_MIN_HOSTS = "successRateMinimumHosts";
@@ -79,6 +80,7 @@ final class DefaultLoadBalancerProviderConfig {
     private final Duration interval;
     private final Duration baseEjectionTime;
     private final int maxEjectionPercentage;
+    private final boolean alwaysEjectOneHost;
     private final int enforcingConsecutive5xx;
     private final int enforcingSuccessRate;
     private final int successRateMinimumHosts;
@@ -104,6 +106,7 @@ final class DefaultLoadBalancerProviderConfig {
         interval = ofMillis(getLong(PROP_INTERVAL_MS, ofSeconds(10).toMillis()));
         baseEjectionTime = ofMillis(getLong(PROP_BASE_EJECTION_TIME_MS, ofSeconds(30).toMillis()));
         maxEjectionPercentage = getInt(PROP_MAX_EJECTION_PERCENT, 20);
+        alwaysEjectOneHost = getBool(PROP_ALWAYS_EJECT_ONE_HOST, false);
         enforcingConsecutive5xx = getInt(PROP_ENFORCING_CONSECUTIVE_5XX, 100);
         enforcingSuccessRate = getInt(PROP_ENFORCING_SUCCESS_RATE, 100);
         successRateMinimumHosts = getInt(PROP_SUCCESS_RATE_MIN_HOSTS, 5);
@@ -150,6 +153,7 @@ final class DefaultLoadBalancerProviderConfig {
                 .baseEjectionTime(baseEjectionTime)
                 .ejectionTimeJitter(ejectionTimeJitter)
                 .maxEjectionPercentage(maxEjectionPercentage)
+                .alwaysEjectOneHost(alwaysEjectOneHost)
                 .enforcingConsecutive5xx(enforcingConsecutive5xx)
                 .enforcingSuccessRate(enforcingSuccessRate)
                 .successRateMinimumHosts(successRateMinimumHosts)
@@ -178,6 +182,7 @@ final class DefaultLoadBalancerProviderConfig {
                 ", baseEjectionTime=" + baseEjectionTime +
                 ", ejectionTimeJitter=" + ejectionTimeJitter +
                 ", maxEjectionPercentage=" + maxEjectionPercentage +
+                ", alwaysEjectOneHost=" + alwaysEjectOneHost +
                 ", enforcingConsecutive5xx=" + enforcingConsecutive5xx +
                 ", enforcingSuccessRate=" + enforcingSuccessRate +
                 ", successRateMinimumHosts=" + successRateMinimumHosts +
