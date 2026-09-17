@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright © 2026 Apple Inc. and the ServiceTalk project authors
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<FindBugsFilter>
+  <!-- Response body arrays are freshly produced per response (copied out of the buffer, or an unpooled
+       exactly-sized array from the byte[] deserializer) and handed straight to the OTel SDK, which reads
+       but never mutates or retains them. Returning them directly avoids a redundant copy on every export. -->
+  <Match>
+    <Class name="io.servicetalk.opentelemetry.otlp.ServiceTalkGrpcSender$GrpcResponseImpl"/>
+    <Method name="getResponseMessage"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.opentelemetry.otlp.ServiceTalkHttpSender$HttpResponseImpl"/>
+    <Method name="getResponseBody"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+</FindBugsFilter>
