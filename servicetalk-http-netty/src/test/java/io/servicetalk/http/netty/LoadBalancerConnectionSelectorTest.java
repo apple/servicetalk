@@ -24,6 +24,7 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.loadbalancer.ConnectionSelectorPolicies;
+import io.servicetalk.loadbalancer.LoadBalancerBuilder;
 import io.servicetalk.loadbalancer.LoadBalancers;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
@@ -31,18 +32,23 @@ import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.BuilderUtils.newClientBuilder;
 import static io.servicetalk.http.netty.BuilderUtils.newServerBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 class LoadBalancerConnectionSelectorTest {
@@ -60,7 +66,7 @@ class LoadBalancerConnectionSelectorTest {
             ExecutionContextExtension.cached("client-io", "client-executor")
                     .setClassLevel(true);
 
-    private static List<Arguments> arguments() {
+    private static List<Arguments> corePoolArguments() {
         List<Arguments> arguments = new ArrayList<>();
         for (HttpProtocol protocol : HttpProtocol.values()) {
             // Requests are sequential, so a selector that accepts the existing connection never needs a second one.
@@ -75,12 +81,32 @@ class LoadBalancerConnectionSelectorTest {
     }
 
     @ParameterizedTest(name = "protocol={0} corePoolSize={1} forceCorePool={2}")
-    @MethodSource("arguments")
+    @MethodSource("corePoolArguments")
     void corePoolServesRequests(HttpProtocol protocol, int corePoolSize, boolean forceCorePool,
                                 int expectedConnections) throws Exception {
+        assertPoolSize(protocol, expectedConnections, lb -> lb.connectionSelectorPolicy(
+                ConnectionSelectorPolicies.corePool(corePoolSize, forceCorePool)));
+    }
+
+    // A minimum above one is expected to behave like the forced core pool of the same size configured above.
+    @ParameterizedTest(name = "protocol={0} minConnectionsPerHost={1}")
+    @CsvSource({"HTTP_1, 0, 1", "HTTP_1, 2, 2", "HTTP_2, 0, 1", "HTTP_2, 2, 2"})
+    void minConnectionsPerHostInfersACorePool(HttpProtocol protocol, int minConnectionsPerHost,
+                                              int expectedConnections) throws Exception {
+        assertPoolSize(protocol, expectedConnections, lb -> lb.minConnectionsPerHost(minConnectionsPerHost));
+    }
+
+    private void assertPoolSize(HttpProtocol protocol, int expectedConnections,
+            UnaryOperator<LoadBalancerBuilder<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection>>
+                    configureLoadBalancer) throws Exception {
         AtomicInteger connectionsOpened = new AtomicInteger();
+        // Each client connection has its own source port, so this counts the connections that carried a request.
+        Set<String> connectionsUsed = ConcurrentHashMap.newKeySet();
         try (HttpServerContext serverContext = newServerBuilder(SERVER_CTX, protocol)
-                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> {
+                    connectionsUsed.add(ctx.remoteAddress().toString());
+                    return responseFactory.ok();
+                });
              BlockingHttpClient client = newClientBuilder(serverContext, CLIENT_CTX, protocol)
                      .appendConnectionFactoryFilter(original -> new DelegatingConnectionFactory<InetSocketAddress,
                              FilterableStreamingHttpConnection>(original) {
@@ -91,18 +117,18 @@ class LoadBalancerConnectionSelectorTest {
                              return delegate().newConnection(address, context, observer);
                          }
                      })
-                     .loadBalancerFactory(new DefaultHttpLoadBalancerFactory<>(
+                     .loadBalancerFactory(new DefaultHttpLoadBalancerFactory<>(configureLoadBalancer.apply(
                              LoadBalancers.<InetSocketAddress,
-                                     FilterableStreamingHttpLoadBalancedConnection>builder(getClass().getSimpleName())
-                                     .connectionSelectorPolicy(
-                                             ConnectionSelectorPolicies.corePool(corePoolSize, forceCorePool))
-                                     .build()))
+                                     FilterableStreamingHttpLoadBalancedConnection>builder(getClass().getSimpleName()))
+                             .build()))
                      .buildBlocking()) {
             // The pool starts empty, so the first selection has to fall through to opening a connection.
             for (int i = 0; i < REQUESTS; i++) {
                 assertThat(client.request(client.get("/")).status(), is(OK));
             }
             assertThat(connectionsOpened.get(), is(expectedConnections));
+            // Counting connects alone would pass even if a single connection served every request.
+            assertThat(connectionsUsed, hasSize(expectedConnections));
         }
     }
 }

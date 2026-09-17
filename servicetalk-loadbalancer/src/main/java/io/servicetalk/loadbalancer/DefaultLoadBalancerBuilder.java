@@ -60,7 +60,8 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     @Nullable
     private LoadBalancerObserverFactory loadBalancerObserverFactory;
     private LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy = defaultLoadBalancingPolicy();
-    private ConnectionSelectorPolicy<C> connectionSelectorPolicy = defaultConnectionSelectorPolicy();
+    @Nullable
+    private ConnectionSelectorPolicy<C> connectionSelectorPolicy;
     private OutlierDetectorConfig outlierDetectorConfig = OutlierDetectorConfig.DEFAULT_CONFIG;
     private Subsetter.SubsetterFactory subsetterFactory = new RandomSubsetter.RandomSubsetterFactory(Integer.MAX_VALUE);
     private int minConnectionsPerHost;
@@ -140,7 +141,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
             this.outlierDetectorConfig = loadBalancerBuilder.outlierDetectorConfig;
             this.subsetterFactory = loadBalancerBuilder.subsetterFactory;
             this.minConnectionsPerHost = loadBalancerBuilder.minConnectionsPerHost;
-            this.connectionSelectorPolicy = loadBalancerBuilder.connectionSelectorPolicy;
+            this.connectionSelectorPolicy = loadBalancerBuilder.resolveConnectionSelectorPolicy();
             Executor builderExecutor = loadBalancerBuilder.backgroundExecutor;
             this.executor = builderExecutor ==
                     null ? RoundRobinLoadBalancerFactory.SharedExecutor.getInstance() : builderExecutor;
@@ -237,8 +238,14 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         return fallbackPolicyName;
     }
 
-    private static <C extends LoadBalancedConnection>
-    ConnectionSelectorPolicy<C> defaultConnectionSelectorPolicy() {
-        return ConnectionSelectorPolicies.linearSearch();
+    private ConnectionSelectorPolicy<C> resolveConnectionSelectorPolicy() {
+        if (connectionSelectorPolicy != null) {
+            return connectionSelectorPolicy;
+        }
+        // A core pool of one selects the same connection as a linear search, so only a larger minimum is worth
+        // inferring a core pool for.
+        return minConnectionsPerHost > 1 ?
+                ConnectionSelectorPolicies.corePool(minConnectionsPerHost, true) :
+                ConnectionSelectorPolicies.linearSearch();
     }
 }
