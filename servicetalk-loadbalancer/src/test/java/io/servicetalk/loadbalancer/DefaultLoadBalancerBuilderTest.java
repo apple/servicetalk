@@ -16,8 +16,11 @@
 package io.servicetalk.loadbalancer;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
 
@@ -37,5 +40,34 @@ final class DefaultLoadBalancerBuilderTest {
         assertThat(builder.build().toString(), startsWith(
         "DefaultLoadBalancerFactory{" +
                 "id='builder_id', "));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] minConnectionsPerHost={0}")
+    @ValueSource(ints = {0, 1})
+    void smallMinConnectionsPerHostKeepsLinearSearch(int minConnectionsPerHost) {
+        assertThat(builder().minConnectionsPerHost(minConnectionsPerHost).build().toString(),
+                containsString("LinearSearchConnectionSelectorFactory{"));
+    }
+
+    @Test
+    void minConnectionsPerHostGreaterThanOneInfersForcedCorePool() {
+        assertThat(builder().minConnectionsPerHost(3).build().toString(),
+                containsString("CorePoolConnectionSelectorFactory{corePoolSize=3, forceCorePool=true}"));
+    }
+
+    @Test
+    void explicitConnectionSelectorPolicyWinsRegardlessOfOrder() {
+        assertThat(builder().minConnectionsPerHost(3)
+                        .connectionSelectorPolicy(ConnectionSelectorPolicies.p2c(2, false))
+                        .build().toString(),
+                containsString("P2CConnectionSelectorFactory{"));
+        assertThat(builder().connectionSelectorPolicy(ConnectionSelectorPolicies.p2c(2, false))
+                        .minConnectionsPerHost(3)
+                        .build().toString(),
+                containsString("P2CConnectionSelectorFactory{"));
+    }
+
+    private static LoadBalancerBuilder<String, TestLoadBalancedConnection> builder() {
+        return new DefaultLoadBalancerBuilder<>("builder_id");
     }
 }

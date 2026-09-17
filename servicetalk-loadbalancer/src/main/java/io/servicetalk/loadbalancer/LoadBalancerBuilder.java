@@ -98,6 +98,9 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
 
     /**
      * Set the {@link ConnectionSelectorPolicy} to use with this load balancer.
+     * <p>
+     * Defaults to {@link ConnectionSelectorPolicies#linearSearch()} except as described by
+     * {@link #minConnectionsPerHost(int)}; setting a policy here takes precedence over that.
      *
      * @param connectionSelectorPolicy the factory of connection selection strategies to use.
      * @return {@code this}
@@ -111,6 +114,10 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
      * Setting a minimum number of connections can help reduce the occurrences where connection establishment happens
      * on the request path, thereby reducing tail latencies, particularly for links which are prone idle-connection
      * closure. The tradeoff is that it may require tuning and will create more connection overhead overall.
+     * <p>
+     * When this is greater than one and no {@link ConnectionSelectorPolicy} is set, selection defaults to a forced
+     * {@link ConnectionSelectorPolicies#corePool(int, boolean) core pool} of this size. Without it multiplexed
+     * connections would rarely be selected beyond the first, leaving the extra connections idle.
      * <p>
      * Note: this is a best-effort setting. There are inherent uncertainties, race conditions, and assumptions that
      * will cause the number of connections to transiently fall below the specified minimum. Currently, these include:

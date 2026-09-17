@@ -179,8 +179,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         // we already have all the fields initialized.
         subscribeToEvents(false);
 
-        LOGGER.info("{}: starting load balancer. Load balancing policy: {}, outlier detection: {}", this,
-                loadBalancingPolicy, outlierDetector);
+        LOGGER.info("{}: starting load balancer. Load balancing policy: {}, connection selector policy: {}, " +
+                        "outlier detection: {}", this, loadBalancingPolicy, connectionSelectorPolicy, outlierDetector);
     }
 
     private void subscribeToEvents(boolean resubscribe) {
