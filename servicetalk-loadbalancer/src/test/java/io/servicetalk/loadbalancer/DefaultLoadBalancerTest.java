@@ -159,6 +159,31 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
     }
 
     @Test
+    void healthIndicatorIsReleasedAfterAnExpiredHostDrains() throws Exception {
+        serviceDiscoveryPublisher.onComplete();
+        final TestOutlierDetectorFactory factory = new TestOutlierDetectorFactory();
+        outlierDetectorFactory = factory;
+        lb = newTestLoadBalancer();
+
+        TestOutlierDetector outlierDetector = factory.currentOutlierDetector.get();
+        assertNotNull(outlierDetector);
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        sendServiceDiscoveryEvents(upEvent("address-2"));
+        assertThat(outlierDetector.getIndicators(), hasSize(2));
+
+        // A host that still has connections when it expires is closed by `removeConnection` draining the last
+        // one rather than by the service discovery event.
+        TestLoadBalancedConnection cxn = lb.selectConnection(any(), null).toFuture().get();
+        sendServiceDiscoveryEvents(downEvent(cxn.address()));
+        assertThat(outlierDetector.getIndicators(), hasSize(2));
+
+        cxn.closeAsync().toFuture().get();
+        assertThat(lb.usedAddresses(), hasSize(1));
+        assertThat(outlierDetector.getIndicators(), hasSize(1));
+        assertThat(outlierDetector.getIndicators().get(0).address, not(equalTo(cxn.address())));
+    }
+
+    @Test
     void hostsConsiderHealthIndicatorEjectionStatus() throws Exception {
         serviceDiscoveryPublisher.onComplete();
         final TestOutlierDetectorFactory factory = new TestOutlierDetectorFactory();
@@ -390,7 +415,8 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         @Override
         public void cancel() {
             synchronized (indicatorSet) {
-                assert indicatorSet.remove(this);
+                boolean removed = indicatorSet.remove(this);
+                assert removed : "Indicator didn't exist";
             }
         }
 

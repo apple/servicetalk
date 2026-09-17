@@ -1,5 +1,5 @@
 /*
- * Copyright © 2024 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2024-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,15 @@ import io.servicetalk.concurrent.Cancellable;
  */
 interface HealthIndicator<ResolvedAddress, C extends LoadBalancedConnection> extends
         RequestTracker, ConnectTracker, ScoreSupplier, Cancellable {
+
+    /**
+     * Release this indicator from the {@link OutlierDetector} monitoring the host.
+     * <p>
+     * Must be idempotent and safe to call concurrently: a {@link Host} can be closed more than once, and an
+     * {@link OutlierDetector} cancellation releases the same indicator as the host close.
+     */
+    @Override
+    void cancel();
 
     /**
      * Whether the host is considered healthy by the HealthIndicator.
