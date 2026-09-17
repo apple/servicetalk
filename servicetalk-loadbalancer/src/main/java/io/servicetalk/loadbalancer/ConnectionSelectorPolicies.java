@@ -45,7 +45,7 @@ public final class ConnectionSelectorPolicies {
      * @param corePoolSize the size of the core pool. A size of 0 disables the core pool: all connections are selected
      *                     in-order and {@code forceCorePool} has no effect.
      * @param forceCorePool whether to avoid selecting connections from the core pool until it has reached the
-     *                      configured core pool size.
+     *                      configured core pool size. Only honored while the host can add a connection.
      * @param <C> the concrete type of the {@link LoadBalancedConnection}
      * @return the configured {@link ConnectionSelectorPolicy}.
      */
@@ -105,7 +105,7 @@ public final class ConnectionSelectorPolicies {
      * @param corePoolSize the size of the core pool. A size of 0 disables the core pool: all connections are selected
      *                     in-order and {@code forceCorePool} has no effect.
      * @param forceCorePool whether to avoid selecting connections from the core pool until it has reached the
-     *                      configured core pool size.
+     *                      configured core pool size. Only honored while the host can add a connection.
      * @param <C> the concrete type of the {@link LoadBalancedConnection}
      * @return the configured {@link ConnectionSelectorPolicy}.
      */
@@ -133,7 +133,7 @@ public final class ConnectionSelectorPolicies {
      * @param corePoolSize the size of the core pool. A size of 0 disables the core pool: all connections are selected
      *                     in-order and {@code forceCorePool} has no effect.
      * @param forceCorePool whether to avoid selecting connections from the core pool until it has reached the
-     *                      configured core pool size.
+     *                      configured core pool size. Only honored while the host can add a connection.
      * @param <C> the concrete type of the {@link LoadBalancedConnection}
      * @return the configured {@link ConnectionSelectorPolicy}.
      */

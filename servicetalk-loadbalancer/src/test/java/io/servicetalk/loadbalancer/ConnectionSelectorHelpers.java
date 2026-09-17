@@ -17,8 +17,13 @@ package io.servicetalk.loadbalancer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 
 final class ConnectionSelectorHelpers {
+
+    static final BooleanSupplier FAIL_IF_CONSULTED = () -> {
+        throw new AssertionError("canGrowPool was consulted when it could not change the outcome");
+    };
 
     private ConnectionSelectorHelpers() {
         // no instances

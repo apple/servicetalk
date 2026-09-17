@@ -19,6 +19,7 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -62,7 +63,7 @@ final class LinearSearchConnectionSelector<C extends LoadBalancedConnection> imp
 
     @Nullable
     @Override
-    public C select(List<C> connections, Predicate<C> selector) {
+    public C select(List<C> connections, Predicate<C> selector, BooleanSupplier canGrowPool) {
         // Exhaust the linear search space first:
         final int linearAttempts = min(connections.size(), linearSearchSpace);
         for (int j = 0; j < linearAttempts; ++j) {
