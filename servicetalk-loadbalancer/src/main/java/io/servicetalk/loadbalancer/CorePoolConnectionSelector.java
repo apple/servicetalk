@@ -22,7 +22,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.lang.Math.min;
 
 /**
@@ -47,7 +47,7 @@ final class CorePoolConnectionSelector<C extends LoadBalancedConnection>
     private final boolean forceCorePool;
 
     private CorePoolConnectionSelector(final int corePoolSize, final boolean forceCorePool) {
-        this.corePoolSize = ensurePositive(corePoolSize, "corePoolSize");
+        this.corePoolSize = ensureNonNegative(corePoolSize, "corePoolSize");
         this.forceCorePool = forceCorePool;
     }
 
@@ -59,17 +59,18 @@ final class CorePoolConnectionSelector<C extends LoadBalancedConnection>
             // return null so the Host will create a new connection and thus populate the connection pool.
             return null;
         }
-        final ThreadLocalRandom rnd = ThreadLocalRandom.current();
         final int randomSearchSpace = min(connectionCount, corePoolSize);
-        final int offset = rnd.nextInt(randomSearchSpace);
-        for (int i = 0; i < randomSearchSpace; i++) {
-            int ii = offset + i;
-            if (ii >= randomSearchSpace) {
-                ii -= randomSearchSpace;
-            }
-            final C connection = connections.get(ii);
-            if (selector.test(connection)) {
-                return connection;
+        if (randomSearchSpace > 0) {
+            final int offset = ThreadLocalRandom.current().nextInt(randomSearchSpace);
+            for (int i = 0; i < randomSearchSpace; i++) {
+                int ii = offset + i;
+                if (ii >= randomSearchSpace) {
+                    ii -= randomSearchSpace;
+                }
+                final C connection = connections.get(ii);
+                if (selector.test(connection)) {
+                    return connection;
+                }
             }
         }
         // Didn't succeed in the core pool. Linear search through the overflow pool (if it exists).
@@ -95,7 +96,7 @@ final class CorePoolConnectionSelector<C extends LoadBalancedConnection>
         private final boolean forceCorePool;
 
         CorePoolConnectionSelectorFactory(int corePoolSize, boolean forceCorePool) {
-            this.corePoolSize = ensurePositive(corePoolSize, "corePoolSize");
+            this.corePoolSize = ensureNonNegative(corePoolSize, "corePoolSize");
             this.forceCorePool = forceCorePool;
         }
 
