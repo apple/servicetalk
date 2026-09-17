@@ -92,7 +92,7 @@ public final class CustomLoadBalancerClient {
                                 .consecutive5xx(3)
                                 // enabled failure percentage detection (default: 0)
                                 .enforcingFailurePercentage(100)
-                                // only allow 20% of hosts to be marked unhealthy at any one time
+                                // only allow 80% of hosts to be marked unhealthy at any one time (default: 10%)
                                 .maxEjectionPercentage(80)
                                 .build()
                     ).build();

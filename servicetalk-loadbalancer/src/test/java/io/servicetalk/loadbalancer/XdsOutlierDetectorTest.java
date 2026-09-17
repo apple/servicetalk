@@ -37,6 +37,8 @@ final class XdsOutlierDetectorTest {
             .failureDetectorInterval(Duration.ofSeconds(5), Duration.ZERO)
             .ejectionTimeJitter(Duration.ZERO)
             .baseEjectionTime(Duration.ofSeconds(2))
+            // Most tests here use a single indicator, which the default percentage would never allow to be ejected.
+            .maxEjectionPercentage(100)
             .build();
 
     @Nullable
@@ -69,6 +71,105 @@ final class XdsOutlierDetectorTest {
         assertThat(xdsOutlierDetector.ejectedHostCount(), equalTo(1));
         healthIndicator.cancel();
         assertThat(xdsOutlierDetector.ejectedHostCount(), equalTo(0));
+    }
+
+    @Test
+    void singleHostIsNotEjectedBelowOneHundredPercentMaxEjection() {
+        config = new OutlierDetectorConfig.Builder(config)
+                .maxEjectionPercentage(99)
+                .build();
+        init();
+
+        HealthIndicator<String, TestLoadBalancedConnection> indicator = xdsOutlierDetector.newHealthIndicator(
+                "addr-1", NoopLoadBalancerObserver.instance().hostObserver("addr-1"));
+        consecutiveFailureEject(indicator);
+        assertThat(xdsOutlierDetector.ejectedHostCount(), equalTo(0));
+        assertThat(indicator.isHealthy(), equalTo(true));
+    }
+
+    @Test
+    void alwaysEjectOneHostPermitsEjectingASingleHost() {
+        config = new OutlierDetectorConfig.Builder(config)
+                .maxEjectionPercentage(10)
+                .alwaysEjectOneHost(true)
+                .build();
+        init();
+
+        HealthIndicator<String, TestLoadBalancedConnection> indicator = xdsOutlierDetector.newHealthIndicator(
+                "addr-1", NoopLoadBalancerObserver.instance().hostObserver("addr-1"));
+        consecutiveFailureEject(indicator);
+        assertThat(xdsOutlierDetector.ejectedHostCount(), equalTo(1));
+        assertThat(indicator.isHealthy(), equalTo(false));
+    }
+
+    @Test
+    void alwaysEjectOneHostDoesntPermitASecondEjection() {
+        config = new OutlierDetectorConfig.Builder(config)
+                .maxEjectionPercentage(10)
+                .alwaysEjectOneHost(true)
+                .build();
+        init();
+
+        HealthIndicator<String, TestLoadBalancedConnection> indicator1 = xdsOutlierDetector.newHealthIndicator(
+                "addr-1", NoopLoadBalancerObserver.instance().hostObserver("addr-1"));
+        HealthIndicator<String, TestLoadBalancedConnection> indicator2 = xdsOutlierDetector.newHealthIndicator(
+                "addr-2", NoopLoadBalancerObserver.instance().hostObserver("addr-2"));
+        consecutiveFailureEject(indicator1);
+        consecutiveFailureEject(indicator2);
+        assertThat(xdsOutlierDetector.ejectedHostCount(), equalTo(1));
+        assertThat(indicator1.isHealthy(), equalTo(false));
+        assertThat(indicator2.isHealthy(), equalTo(true));
+    }
+
+    @Test
+    void alwaysEjectOneHostRearmsAfterRevival() {
+        config = new OutlierDetectorConfig.Builder(config)
+                .maxEjectionPercentage(10)
+                .alwaysEjectOneHost(true)
+                .build();
+        init();
+
+        HealthIndicator<String, TestLoadBalancedConnection> indicator = xdsOutlierDetector.newHealthIndicator(
+                "addr-1", NoopLoadBalancerObserver.instance().hostObserver("addr-1"));
+        consecutiveFailureEject(indicator);
+        assertThat(xdsOutlierDetector.ejectedHostCount(), equalTo(1));
+        executor.advanceTimeBy(config.baseEjectionTime().toNanos(), TimeUnit.NANOSECONDS);
+        assertThat(indicator.isHealthy(), equalTo(true));
+        assertThat(xdsOutlierDetector.ejectedHostCount(), equalTo(0));
+
+        consecutiveFailureEject(indicator);
+        assertThat(xdsOutlierDetector.ejectedHostCount(), equalTo(1));
+        assertThat(indicator.isHealthy(), equalTo(false));
+    }
+
+    @Test
+    void ejectionIsPermittedExactlyAtTheMaxEjectionPercentage() {
+        config = new OutlierDetectorConfig.Builder(config)
+                .maxEjectionPercentage(10)
+                .build();
+        init();
+
+        // 10 hosts at 10% permits exactly one; an 11th host would put the second ejection at 18%.
+        List<HealthIndicator<String, TestLoadBalancedConnection>> indicators = newIndicators("addr-", 10);
+        consecutiveFailureEject(indicators.get(0));
+        assertThat(xdsOutlierDetector.ejectedHostCount(), equalTo(1));
+        consecutiveFailureEject(indicators.get(1));
+        assertThat(xdsOutlierDetector.ejectedHostCount(), equalTo(1));
+        assertThat(indicators.get(1).isHealthy(), equalTo(true));
+    }
+
+    @Test
+    void ejectionIsRefusedJustBelowTheMaxEjectionPercentage() {
+        config = new OutlierDetectorConfig.Builder(config)
+                .maxEjectionPercentage(10)
+                .build();
+        init();
+
+        // 9 hosts at 10% puts even the first ejection at 11.1%, so nothing is ejected.
+        List<HealthIndicator<String, TestLoadBalancedConnection>> indicators = newIndicators("addr-", 9);
+        consecutiveFailureEject(indicators.get(0));
+        assertThat(xdsOutlierDetector.ejectedHostCount(), equalTo(0));
+        assertThat(indicators.get(0).isHealthy(), equalTo(true));
     }
 
     @Test
@@ -152,7 +253,6 @@ final class XdsOutlierDetectorTest {
                 .enforcingSuccessRate(100)
                 .successRateMinimumHosts(3)
                 .successRateRequestVolume(10)
-                .maxEjectionPercentage(100)
                 .build();
         init();
 
@@ -190,7 +290,6 @@ final class XdsOutlierDetectorTest {
                 .enforcingSuccessRate(100)
                 .successRateMinimumHosts(3)
                 .successRateRequestVolume(10)
-                .maxEjectionPercentage(100)
                 .build();
         init();
 
@@ -218,7 +317,6 @@ final class XdsOutlierDetectorTest {
                 .enforcingSuccessRate(100)
                 .successRateMinimumHosts(3)
                 .successRateRequestVolume(10)
-                .maxEjectionPercentage(100)
                 .build();
         init();
 
@@ -260,7 +358,6 @@ final class XdsOutlierDetectorTest {
                 .enforcingFailurePercentage(100)
                 .failurePercentageMinimumHosts(3)
                 .failurePercentageRequestVolume(10)
-                .maxEjectionPercentage(100)
                 .build();
         init();
 

@@ -59,6 +59,7 @@ public final class OutlierDetectorConfig {
     private final Duration baseEjectionTime;
     private final Duration ejectionTimeJitter;
     private final int maxEjectionPercentage;
+    private final boolean alwaysEjectOneHost;
     private final int enforcingConsecutive5xx;
     private final int enforcingSuccessRate;
     private final int successRateMinimumHosts;
@@ -76,7 +77,8 @@ public final class OutlierDetectorConfig {
                           final Duration serviceDiscoveryResubscribeInterval, final Duration serviceDiscoveryResubscribeJitter,
                           // true xDS settings
                           final int consecutive5xx, final Duration failureDetectorInterval, final Duration baseEjectionTime,
-                          final int maxEjectionPercentage, final int enforcingConsecutive5xx,
+                          final int maxEjectionPercentage, final boolean alwaysEjectOneHost,
+                          final int enforcingConsecutive5xx,
                           final int enforcingSuccessRate, final int successRateMinimumHosts,
                           final int successRateRequestVolume, final int successRateStdevFactor,
                           final int failurePercentageThreshold, final int enforcingFailurePercentage,
@@ -97,6 +99,7 @@ public final class OutlierDetectorConfig {
         this.baseEjectionTime = baseEjectionTime;
         this.ejectionTimeJitter = ejectionTimeJitter;
         this.maxEjectionPercentage = maxEjectionPercentage;
+        this.alwaysEjectOneHost = alwaysEjectOneHost;
         this.enforcingConsecutive5xx = enforcingConsecutive5xx;
         this.enforcingSuccessRate = enforcingSuccessRate;
         this.successRateMinimumHosts = successRateMinimumHosts;
@@ -244,11 +247,23 @@ public final class OutlierDetectorConfig {
 
     /**
      * The maximum percentage of hosts that can be ejected due to outlier detection.
+     * <p>
+     * An ejection is only permitted if it leaves the ejected share of hosts at or below this percentage, so with a
+     * small enough host set no host can be ejected at all unless {@link #alwaysEjectOneHost()} is set.
      *
      * @return the maximum percentage of hosts that can be ejected due to outlier detection.
      */
     public int maxEjectionPercentage() {
         return maxEjectionPercentage;
+    }
+
+    /**
+     * Whether a single host may be ejected even when that exceeds {@link #maxEjectionPercentage()}.
+     *
+     * @return whether a single host may always be ejected.
+     */
+    public boolean alwaysEjectOneHost() {
+        return alwaysEjectOneHost;
     }
 
     /**
@@ -376,6 +391,7 @@ public final class OutlierDetectorConfig {
                 ", baseEjectionTime=" + baseEjectionTime +
                 ", ejectionTimeJitter=" + ejectionTimeJitter +
                 ", maxEjectionPercentage=" + maxEjectionPercentage +
+                ", alwaysEjectOneHost=" + alwaysEjectOneHost +
                 ", enforcingConsecutive5xx=" + enforcingConsecutive5xx +
                 ", enforcingSuccessRate=" + enforcingSuccessRate +
                 ", successRateMinimumHosts=" + successRateMinimumHosts +
@@ -407,6 +423,7 @@ public final class OutlierDetectorConfig {
         private static final Duration DEFAULT_FAILURE_DETECTOR_INTERVAL = ofSeconds(10);
         private static final Duration DEFAULT_BASE_EJECTION_TIME = ofSeconds(30);
         private static final int DEFAULT_MAX_EJECTION_PERCENTAGE = 10;
+        private static final boolean DEFAULT_ALWAYS_EJECT_ONE_HOST = false;
         private static final int DEFAULT_ENFORCING_CONSECUTIVE_5XX = 100;
         private static final int DEFAULT_ENFORCING_SUCCESS_RATE = 100;
         private static final int DEFAULT_SUCCESS_RATE_MINIMUM_HOSTS = 5;
@@ -439,6 +456,7 @@ public final class OutlierDetectorConfig {
 
         private Duration baseEjectionTime = DEFAULT_BASE_EJECTION_TIME;
         private int maxEjectionPercentage = DEFAULT_MAX_EJECTION_PERCENTAGE;
+        private boolean alwaysEjectOneHost = DEFAULT_ALWAYS_EJECT_ONE_HOST;
         private int enforcingConsecutive5xx = DEFAULT_ENFORCING_CONSECUTIVE_5XX;
         private int enforcingSuccessRate = DEFAULT_ENFORCING_SUCCESS_RATE;
         private int successRateMinimumHosts = DEFAULT_SUCCESS_RATE_MINIMUM_HOSTS;
@@ -473,6 +491,7 @@ public final class OutlierDetectorConfig {
             this.failureDetectorInterval = outlierDetectorConfig.failureDetectorInterval;
             this.baseEjectionTime = outlierDetectorConfig.baseEjectionTime;
             this.maxEjectionPercentage = outlierDetectorConfig.maxEjectionPercentage;
+            this.alwaysEjectOneHost = outlierDetectorConfig.alwaysEjectOneHost;
             this.enforcingConsecutive5xx = outlierDetectorConfig.enforcingConsecutive5xx;
             this.enforcingSuccessRate = outlierDetectorConfig.enforcingSuccessRate;
             this.successRateMinimumHosts = outlierDetectorConfig.successRateMinimumHosts;
@@ -504,7 +523,7 @@ public final class OutlierDetectorConfig {
                     serviceDiscoveryResubscribeInterval, serviceDiscoveryResubscribeJitter,
                     // xDS settings
                     consecutive5xx, failureDetectorInterval, baseEjectionTime,
-                    maxEjectionPercentage, enforcingConsecutive5xx,
+                    maxEjectionPercentage, alwaysEjectOneHost, enforcingConsecutive5xx,
                     enforcingSuccessRate, successRateMinimumHosts,
                     successRateRequestVolume, successRateStdevFactor,
                     failurePercentageThreshold, enforcingFailurePercentage,
@@ -720,8 +739,10 @@ public final class OutlierDetectorConfig {
         /**
          * Set the maximum percentage of hosts that can be ejected due to outlier detection.
          * <p>
-         * Defaults to {@value DEFAULT_MAX_EJECTION_PERCENTAGE} percent but at least one host will be allowed to be
-         * ejected regardless of value.
+         * An ejection is only permitted if it leaves the ejected share of hosts at or below this percentage. With a
+         * small enough host set that means no host can be ejected at all: at the default of
+         * {@value DEFAULT_MAX_EJECTION_PERCENTAGE} percent a host set smaller than ten is never ejected. Use
+         * {@link #alwaysEjectOneHost(boolean)} to permit one ejection regardless.
          *
          * @param maxEjectionPercentage the maximum percentage of hosts that can be ejected due to outlier detection.
          * @return {@code this}.
@@ -729,6 +750,22 @@ public final class OutlierDetectorConfig {
         public Builder maxEjectionPercentage(final int maxEjectionPercentage) {
             ensureNonNegative(maxEjectionPercentage, "maxEjectionPercentage");
             this.maxEjectionPercentage = maxEjectionPercentage;
+            return this;
+        }
+
+        /**
+         * Set whether a single host may be ejected even when that exceeds {@link #maxEjectionPercentage(int)}.
+         * <p>
+         * Enabling this lets outlier detection eject the only host of a single-host load balancer, which fails the
+         * load balancer closed for the duration of the ejection.
+         * <p>
+         * Defaults to {@value DEFAULT_ALWAYS_EJECT_ONE_HOST}.
+         *
+         * @param alwaysEjectOneHost whether a single host may always be ejected.
+         * @return {@code this}.
+         */
+        public Builder alwaysEjectOneHost(final boolean alwaysEjectOneHost) {
+            this.alwaysEjectOneHost = alwaysEjectOneHost;
             return this;
         }
 
