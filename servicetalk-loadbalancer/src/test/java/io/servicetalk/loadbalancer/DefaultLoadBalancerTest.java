@@ -415,7 +415,8 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         @Override
         public void cancel() {
             synchronized (indicatorSet) {
-                indicatorSet.remove(this);
+                boolean removed = indicatorSet.remove(this);
+                assert removed : "Indicator didn't exist";
             }
         }
 
