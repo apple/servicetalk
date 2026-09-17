@@ -49,6 +49,23 @@ class CorePoolConnectionSelectorTest {
     }
 
     @Test
+    void selectsFromEmptyPool() {
+        assertNull(strategy(5, false).select(makeConnections(0), c -> true));
+        assertNull(strategy(5, true).select(makeConnections(0), c -> true));
+    }
+
+    @Test
+    void zeroCorePoolSelectsInOrder() {
+        List<TestLoadBalancedConnection> connections = makeConnections(5);
+        for (boolean forceCorePool : new boolean[] {false, true}) {
+            ConnectionSelector<TestLoadBalancedConnection> strategy = strategy(0, forceCorePool);
+            assertEquals(connections.get(0), strategy.select(connections, c -> true));
+            assertEquals(connections.get(3), strategy.select(connections, c -> connections.indexOf(c) >= 3));
+            assertNull(strategy.select(connections, c -> false));
+        }
+    }
+
+    @Test
     void prefersCorePool() {
         List<TestLoadBalancedConnection> connections = makeConnections(10);
         ConnectionSelector<TestLoadBalancedConnection> strategy = strategy(5, false);

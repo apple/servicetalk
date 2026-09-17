@@ -42,7 +42,8 @@ public final class ConnectionSelectorPolicies {
      * This has the property of minimizing traffic to the latest elements added outside the core pool size, thus let
      * them idle out of the pool once they're no longer necessary.
      *
-     * @param corePoolSize the size of the core pool.
+     * @param corePoolSize the size of the core pool. A size of 0 disables the core pool: all connections are selected
+     *                     in-order and {@code forceCorePool} has no effect.
      * @param forceCorePool whether to avoid selecting connections from the core pool until it has reached the
      *                      configured core pool size.
      * @param <C> the concrete type of the {@link LoadBalancedConnection}
@@ -101,7 +102,8 @@ public final class ConnectionSelectorPolicies {
      *     iteration through the remaining connections searching for an acceptable connection.</li>
      * </ol>
      *
-     * @param corePoolSize the size of the core pool.
+     * @param corePoolSize the size of the core pool. A size of 0 disables the core pool: all connections are selected
+     *                     in-order and {@code forceCorePool} has no effect.
      * @param forceCorePool whether to avoid selecting connections from the core pool until it has reached the
      *                      configured core pool size.
      * @param <C> the concrete type of the {@link LoadBalancedConnection}
@@ -128,7 +130,8 @@ public final class ConnectionSelectorPolicies {
      * </ol>
      *
      * @param maxEffort the maximum number of attempts to pick a healthy connection from the core pool.
-     * @param corePoolSize the size of the core pool.
+     * @param corePoolSize the size of the core pool. A size of 0 disables the core pool: all connections are selected
+     *                     in-order and {@code forceCorePool} has no effect.
      * @param forceCorePool whether to avoid selecting connections from the core pool until it has reached the
      *                      configured core pool size.
      * @param <C> the concrete type of the {@link LoadBalancedConnection}
