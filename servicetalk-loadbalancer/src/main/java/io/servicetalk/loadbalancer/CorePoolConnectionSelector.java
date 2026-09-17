@@ -19,6 +19,7 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -53,9 +54,9 @@ final class CorePoolConnectionSelector<C extends LoadBalancedConnection>
 
     @Nullable
     @Override
-    public C select(List<C> connections, Predicate<C> selector) {
+    public C select(List<C> connections, Predicate<C> selector, BooleanSupplier canGrowPool) {
         final int connectionCount = connections.size();
-        if (forceCorePool && connectionCount < corePoolSize) {
+        if (forceCorePool && connectionCount < corePoolSize && canGrowPool.getAsBoolean()) {
             // return null so the Host will create a new connection and thus populate the connection pool.
             return null;
         }

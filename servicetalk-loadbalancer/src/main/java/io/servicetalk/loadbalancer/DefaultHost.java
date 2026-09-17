@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -92,6 +93,8 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     private final ConnectionFactory<Addr, ? extends C> connectionFactory;
     private final int minConnections;
     private final ListenableAsyncCloseable closeable;
+    // Held as a field so that handing it to the connection selector on every selection doesn't allocate.
+    private final BooleanSupplier canGrowPool = this::isActiveAndHealthy;
     private volatile boolean isWithinSubset = true;
     private volatile ConnState connState = new ConnState(emptyList(), State.ACTIVE, 0, null);
 
@@ -195,7 +198,15 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     @Nullable
     public C pickConnection(Predicate<C> selector, @Nullable final ContextMap context) {
         final List<C> connections = connState.connections;
-        return connectionSelector.select(connections, selector);
+        // Declining an existing connection to grow the pool only pays off if this host would actually serve the
+        // resulting connection attempt: an expired host can't make one, and an unhealthy host likely won't succeed.
+        return connectionSelector.select(connections, selector, canGrowPool);
+    }
+
+    // ACTIVE is precisely the intersection of canMakeNewConnections() and isHealthy() as far as lifecycle state goes,
+    // so both questions are answered by a single read.
+    private boolean isActiveAndHealthy() {
+        return connState.state == State.ACTIVE && (healthIndicator == null || healthIndicator.isHealthy());
     }
 
     @Override

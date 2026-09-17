@@ -62,6 +62,9 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
 
     private Function<String, HostPriorityStrategy> hostPriorityStrategyFactory = DefaultHostPriorityStrategy::new;
 
+    private ConnectionSelectorPolicy<TestLoadBalancedConnection> connectionSelectorPolicy =
+            ConnectionSelectorPolicies.linearSearch();
+
     @Nullable
     private Supplier<OutlierDetector<String, TestLoadBalancedConnection>> outlierDetectorFactory;
 
@@ -336,6 +339,43 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         assertWithinSubset(selectedAddresses4);
     }
 
+    @ParameterizedTest(name = "{displayName} [{index}] forceCorePool={0}")
+    @ValueSource(booleans = {false, true})
+    void expiredHostBelowCorePoolStillServesItsConnections(boolean forceCorePool) throws Exception {
+        // necessary because we're making a new lb.
+        serviceDiscoveryPublisher.onComplete();
+        connectionSelectorPolicy = ConnectionSelectorPolicies.corePool(2, forceCorePool);
+        lb = newTestLoadBalancer();
+
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        TestLoadBalancedConnection cxn = lb.selectConnection(any(), null).toFuture().get();
+        // Expiring the host leaves its one connection in place, which is below the core pool size. The host can no
+        // longer create connections, so that connection is the only way to serve a request.
+        sendServiceDiscoveryEvents(downEvent("address-1"));
+
+        assertThat(lb.selectConnection(any(), null).toFuture().get(), equalTo(cxn));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] forceCorePool={0}")
+    @ValueSource(booleans = {false, true})
+    void unhealthyHostBelowCorePoolStillServesItsConnections(boolean forceCorePool) throws Exception {
+        // necessary because we're making a new lb.
+        serviceDiscoveryPublisher.onComplete();
+        final TestOutlierDetectorFactory factory = new TestOutlierDetectorFactory();
+        outlierDetectorFactory = factory;
+        loadBalancingPolicy = LoadBalancingPolicies.p2c().failOpen(true).build();
+        connectionSelectorPolicy = ConnectionSelectorPolicies.corePool(2, forceCorePool);
+        lb = newTestLoadBalancer();
+
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        TestLoadBalancedConnection cxn = lb.selectConnection(any(), null).toFuture().get();
+        // Ejected by the outlier detector, so the host is only reachable via failOpen. Spending the request on
+        // growing the pool is a worse bet than the connection we already have.
+        factory.currentOutlierDetector.get().getIndicators().get(0).isHealthy = false;
+
+        assertThat(lb.selectConnection(any(), null).toFuture().get(), equalTo(cxn));
+    }
+
     private Set<String> selectConnections(final int iterations) throws Exception {
         Set<String> result = new HashSet<>();
         for (int i = 0; i < iterations; i++) {
@@ -359,7 +399,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
                 hostPriorityStrategyFactory,
                 loadBalancingPolicy,
                 subsetterFactory,
-                ConnectionSelectorPolicies.linearSearch(),
+                connectionSelectorPolicy,
                 connectionFactory,
                 0,
                 NoopLoadBalancerObserver.factory(),

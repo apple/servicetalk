@@ -18,6 +18,7 @@ package io.servicetalk.loadbalancer;
 import io.servicetalk.client.api.LoadBalancedConnection;
 
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -32,8 +33,10 @@ interface ConnectionSelector<C extends LoadBalancedConnection> {
      * Select a connection from the ordered list of connections.
      * @param connections the list of connections to pick from.
      * @param selector a predicate used to test a connection.
+     * @param canGrowPool whether declining an existing connection is likely to result in a new connection being
+     * added to the pool.
      * @return the selected connection, or {@code null} if no existing connection was selected.
      */
     @Nullable
-    C select(List<C> connections, Predicate<C> selector);
+    C select(List<C> connections, Predicate<C> selector, BooleanSupplier canGrowPool);
 }
