@@ -238,11 +238,6 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         return fallbackPolicyName;
     }
 
-    private static <C extends LoadBalancedConnection>
-    ConnectionSelectorPolicy<C> defaultConnectionSelectorPolicy() {
-        return ConnectionSelectorPolicies.linearSearch();
-    }
-
     private ConnectionSelectorPolicy<C> resolveConnectionSelectorPolicy() {
         if (connectionSelectorPolicy != null) {
             return connectionSelectorPolicy;
@@ -250,6 +245,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         // A core pool of one selects the same connection as a linear search, so only a larger minimum is worth
         // inferring a core pool for.
         return minConnectionsPerHost > 1 ?
-                ConnectionSelectorPolicies.corePool(minConnectionsPerHost, true) : defaultConnectionSelectorPolicy();
+                ConnectionSelectorPolicies.corePool(minConnectionsPerHost, true) :
+                ConnectionSelectorPolicies.linearSearch();
     }
 }
