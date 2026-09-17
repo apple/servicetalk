@@ -125,6 +125,20 @@ public final class GrpcStatus {
     }
 
     /**
+     * Obtains the status given an integer code value and a description String.
+     * @param codeValue integer code value.
+     * @param description description for the given status.
+     * @return status associated with the code value, or {@link GrpcStatusCode#UNKNOWN}.
+     */
+    public static GrpcStatus fromCodeValueAndDescription(int codeValue, String description) {
+        if (codeValue < 0 || codeValue >= INT_TO_GRPC_STATUS_MAP.length) {
+            return new GrpcStatus(UNKNOWN, "Unknown code: " + codeValue);
+        } else {
+            return new GrpcStatus(GrpcStatusCode.fromCodeValue(codeValue), description);
+        }
+    }
+
+    /**
      * Translates a throwable into a status.
      *
      * @param t the throwable.
@@ -156,10 +170,8 @@ public final class GrpcStatus {
      * Returns the current status wrapped in a {@link GrpcStatusException}.
      *
      * @return the current status wrapped in a {@link GrpcStatusException}.
-     * @deprecated Use {@link GrpcStatusException#GrpcStatusException(GrpcStatus)}.
      */
-    @Deprecated
-    public GrpcStatusException asException() { // FIXME: 0.43 - remove deprecated method
+    public GrpcStatusException asException() {
         return new GrpcStatusException(this, () -> null);
     }
 
