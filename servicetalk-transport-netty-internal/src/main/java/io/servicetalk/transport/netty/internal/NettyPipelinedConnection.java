@@ -16,11 +16,13 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 import io.servicetalk.concurrent.internal.ConcurrentUtils;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -37,6 +39,9 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
+import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseLock;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireLock;
@@ -51,6 +56,13 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  * <p>
  * Pipelining allows to have concurrent requests processed on the server but still deliver responses in order.
  * This eliminates the need for request-response correlation, at the cost of head-of-line blocking.
+ * <p>
+ * The write lock is a token rather than a synchronous critical section: it is claimed when a request is dequeued and
+ * released only once that request's write terminates, so it spans threads and outlives the call that claimed it.
+ * <p>
+ * Each queued request is started from the completion of the one before it, so exchanges that complete synchronously
+ * recurse rather than iterate and can exhaust the stack. Depth is whatever a caller keeps in flight, which this class
+ * does not limit: {@code maxPipelinedRequests} only sizes the queue.
  * @param <Req> Type of requests sent on this connection.
  * @param <Resp> Type of responses read from this connection.
  */
@@ -58,28 +70,40 @@ public final class NettyPipelinedConnection<Req, Resp> implements NettyConnectio
     @SuppressWarnings("rawtypes")
     private static final AtomicIntegerFieldUpdater<NettyPipelinedConnection> writeQueueLockUpdater =
             newUpdater(NettyPipelinedConnection.class, "writeQueueLock");
-    @SuppressWarnings("rawtypes")
-    private static final AtomicIntegerFieldUpdater<NettyPipelinedConnection> readQueueLockUpdater =
-            newUpdater(NettyPipelinedConnection.class, "readQueueLock");
     private static final int MAX_INIT_QUEUE_SIZE = 8;
     private final NettyConnection<Resp, Req> connection;
     private final Queue<WriteTask> writeQueue;
-    private final Queue<Subscriber<? super Resp>> readQueue;
+    /** One instance serves every request: {@link Publisher#defer(Supplier)} re-invokes the supplier per subscribe. */
+    private final Publisher<Resp> deferredRead;
     @SuppressWarnings("unused")
     private volatile int writeQueueLock;
-    @SuppressWarnings("unused")
-    private volatile int readQueueLock;
+    /**
+     * Completes when the previously queued request's response terminated, which is what orders reads. Written and read
+     * only from {@link WriteTask#run()}, which {@code writeQueueLock} serializes. The ordering that makes the value
+     * visible across a hand-off comes from the transport publishing the subscribe rather than from anything here, so
+     * this is {@code volatile} instead. A link must only ever be completed, never failed:
+     * {@link Completable#concat(Publisher)} skips its {@link Publisher} on error, leaving that request's response
+     * unread.
+     */
+    private volatile Completable previousResponseTerminated = completed();
 
     /**
      * New instance.
      *
      * @param connection {@link NettyConnection} requests to which are to be pipelined.
-     * @param maxPipelinedRequests The maximum number of pipelined requests.
+     * @param maxPipelinedRequests initial size hint for the pipelining queue; not enforced.
      */
     public NettyPipelinedConnection(final NettyConnection<Resp, Req> connection, int maxPipelinedRequests) {
         this.connection = requireNonNull(connection);
         writeQueue = newUnboundedMpscQueue(min(maxPipelinedRequests, MAX_INIT_QUEUE_SIZE));
-        readQueue = newUnboundedMpscQueue(min(maxPipelinedRequests, MAX_INIT_QUEUE_SIZE));
+        // Deferred so that a read which fails to set up cannot leave the composed request Publisher unsubscribed.
+        deferredRead = Publisher.defer(() -> {
+            try {
+                return connection.read();
+            } catch (Throwable cause) {
+                return connection.closeAsync().concat(Publisher.<Resp>failed(cause));
+            }
+        });
     }
 
     /**
@@ -239,6 +263,13 @@ public final class NettyPipelinedConnection<Req, Resp> implements NettyConnectio
         }
 
         void run() {
+            // Chain this response behind the previous one here, where writeQueueLock still serializes write tasks.
+            // Ordering must not depend on when the merge below subscribes each read: a write that completes
+            // synchronously re-enters run() for the next request first.
+            final Completable responseTurn = previousResponseTerminated;
+            final CompletableSource.Processor responseTerminated = newCompletableProcessor();
+            previousResponseTerminated = fromSource(responseTerminated);
+
             final PublisherSource<Resp> src;
             try {
                 src = toSource(connection.write(requestPublisher, flushStrategySupplier,
@@ -254,45 +285,59 @@ public final class NettyPipelinedConnection<Req, Resp> implements NettyConnectio
                         // the most straightforward way to propagate an error through the APIs is through the read async
                         // source. This has a side effect that the read async source isn't strictly full-duplex (data
                         // will be full-duplex, but completion will be delayed until the write completes).
-                        .mergeDelayError(new SubscribablePublisher<Resp>() {
-                            @Override
-                            protected void handleSubscribe(final Subscriber<? super Resp> rSubscriber) {
-                                final Subscriber<? super Resp> nextReadSubscriber;
-                                try {
-                                    nextReadSubscriber =
-                                            addAndTryPoll(readQueue, readQueueLockUpdater, rSubscriber);
-                                } catch (Throwable cause) {
-                                    closeConnection(rSubscriber, cause);
-                                    return;
-                                }
-
-                                tryStartRead(nextReadSubscriber);
-                            }
-                        }));
+                        // The merge is only for error propagation; response ordering comes from responseTurn.
+                        .mergeDelayError(responseTurn.concat(deferredRead)
+                                .afterFinally(new ResponseTerminated(responseTurn, responseTerminated))));
             } catch (Throwable cause) {
+                // Nothing will subscribe to the read above, so release the successor here, but only once this
+                // exchange's turn arrives or it would read over a response that is still reading. Release before
+                // failing: handleWriteSetupError subscribes the caller's Subscriber, and a throw from its onSubscribe
+                // would skip the drain below.
+                responseTurn.afterFinally(responseTerminated::onComplete).subscribe();
                 handleWriteSetupError(subscriber, cause);
-                return;
-            }
-            src.subscribe(subscriber);
-        }
-
-        private void tryStartRead(@Nullable Subscriber<? super Resp> subscriber) {
-            if (subscriber == null) {
-                return;
-            }
-            final PublisherSource<Resp> src;
-            try {
-                src = toSource(connection.read().afterFinally(() ->
-                        tryStartRead(pollWithLockAcquired(readQueue, readQueueLockUpdater)))
-                );
-            } catch (Throwable cause) {
-                handleReadSetupError(subscriber, cause);
                 return;
             }
             src.subscribe(subscriber);
         }
     }
 
+    /**
+     * Releases the next queued response once this one is done with the connection. Cancellation is not a completion:
+     * the response may never have been read, so the connection is closed and the successor waits for that close.
+     */
+    private final class ResponseTerminated implements TerminalSignalConsumer {
+        private final Completable responseTurn;
+        private final CompletableSource.Processor responseTerminated;
+
+        private ResponseTerminated(final Completable responseTurn,
+                                   final CompletableSource.Processor responseTerminated) {
+            this.responseTurn = responseTurn;
+            this.responseTerminated = responseTerminated;
+        }
+
+        @Override
+        public void onComplete() {
+            responseTerminated.onComplete();
+        }
+
+        @Override
+        public void onError(final Throwable throwable) {
+            responseTerminated.onComplete();
+        }
+
+        @Override
+        public void cancel() {
+            // Wait for this turn before closing, so an earlier response that is still reading finishes rather than
+            // being torn down, then close before releasing the successor, or it would read the bytes this exchange
+            // abandoned.
+            responseTurn.concat(connection.closeAsync())
+                    .afterFinally(responseTerminated::onComplete)
+                    .subscribe();
+        }
+    }
+
+    // Must own the write lock, which here holds because the write was never subscribed, so its afterFinally cannot
+    // be competing for it.
     private void handleWriteSetupError(Subscriber<? super Resp> subscriber, Throwable cause) {
         closeConnection(subscriber, cause);
 
@@ -303,18 +348,6 @@ public final class NettyPipelinedConnection<Req, Resp> implements NettyConnectio
                 deliverErrorFromSource(nextWriteTask.subscriber, cause);
             }
         } while (!releaseLock(writeQueueLockUpdater, this) && tryAcquireLock(writeQueueLockUpdater, this));
-    }
-
-    private void handleReadSetupError(Subscriber<? super Resp> subscriber, Throwable cause) {
-        closeConnection(subscriber, cause);
-
-        // the lock has been acquired!
-        do {
-            Subscriber<? super Resp> nextSubscriber;
-            while ((nextSubscriber = readQueue.poll()) != null) {
-                deliverErrorFromSource(nextSubscriber, cause);
-            }
-        } while (!releaseLock(readQueueLockUpdater, this) && tryAcquireLock(readQueueLockUpdater, this));
     }
 
     /**
