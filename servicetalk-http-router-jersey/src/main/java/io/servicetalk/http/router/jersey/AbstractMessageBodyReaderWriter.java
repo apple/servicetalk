@@ -18,6 +18,7 @@ package io.servicetalk.http.router.jersey;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.internal.util.collection.Ref;
@@ -63,6 +64,9 @@ abstract class AbstractMessageBodyReaderWriter<Source, T, SourceOfT, WrappedSour
     protected Provider<Ref<ConnectionContext>> ctxRefProvider;
 
     @Context
+    protected Provider<Ref<StreamingHttpRequest>> requestRefProvider;
+
+    @Context
     protected Provider<ContainerRequestContext> requestCtxProvider;
 
     protected AbstractMessageBodyReaderWriter(final Class<Source> sourceClass, final Class<T> contentClass) {
@@ -79,6 +83,7 @@ abstract class AbstractMessageBodyReaderWriter<Source, T, SourceOfT, WrappedSour
     }
 
     final SourceOfT readFrom(final InputStream entityStream,
+                             final boolean applyPayloadSizeLimit,
                              final BiFunction<Publisher<Buffer>, BufferAllocator, SourceOfT> bodyFunction,
                              final Function<SourceOfT, WrappedSourceOfT> sourceFunction)
             throws WebApplicationException {
@@ -86,7 +91,8 @@ abstract class AbstractMessageBodyReaderWriter<Source, T, SourceOfT, WrappedSour
         // The original BufferPublisherInputStream has been replaced via a filter/interceptor so we need to build
         // a new RS source from the actual input stream
         final BufferAllocator allocator = ctxRefProvider.get().get().executionContext().bufferAllocator();
-        return handleEntityStream(entityStream, allocator, bodyFunction,
+        final StreamingHttpRequest limitRequest = applyPayloadSizeLimit ? requestRefProvider.get().get() : null;
+        return handleEntityStream(entityStream, allocator, limitRequest, bodyFunction,
                 (is, a) -> bodyFunction
                         .andThen(sourceFunction)
                         .apply(fromInputStream(is, a::wrap), a));

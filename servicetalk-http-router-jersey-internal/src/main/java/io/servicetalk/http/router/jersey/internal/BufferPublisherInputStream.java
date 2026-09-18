@@ -20,6 +20,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.IoThreadFactory;
 
 import org.glassfish.jersey.message.internal.EntityInputStream;
@@ -27,7 +28,9 @@ import org.glassfish.jersey.message.internal.EntityInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.function.BiFunction;
+import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.StreamingHttpRequests.applyAggregationSizeLimit;
 import static java.util.Objects.requireNonNull;
 import static org.glassfish.jersey.message.internal.ReaderInterceptorExecutor.closeableInputStream;
 
@@ -112,6 +115,8 @@ public final class BufferPublisherInputStream extends InputStream {
 
     private void publisherToInputStream() {
         if (inputStream == EMPTY_INPUT_STREAM) {
+            // Any aggregation size limit is applied by the caller (see handleEntityStream); this raw conversion is
+            // left unbounded so streaming InputStream/Reader reads are not capped.
             inputStream = publisher.toInputStream(BufferPublisherInputStream::getBytes, queueCapacity);
         }
     }
@@ -128,9 +133,38 @@ public final class BufferPublisherInputStream extends InputStream {
      * a {@link BufferPublisherInputStream}
      * @param <T> the type of data returned by the {@link BiFunction}s.
      * @return the data returned by one of the {@link BiFunction}.
+     * @deprecated Use {@link #handleEntityStream(InputStream, BufferAllocator, StreamingHttpRequest, BiFunction,
+     * BiFunction)} to enforce an aggregation size limit; this overload applies none.
+     */
+    @Deprecated
+    public static <T> T handleEntityStream(final InputStream entityStream,
+                                           final BufferAllocator allocator,
+                                           final BiFunction<Publisher<Buffer>,
+                                                   BufferAllocator, T> bufferPublisherHandler,
+                                           final BiFunction<InputStream, BufferAllocator, T> inputStreamHandler) {
+        return handleEntityStream(entityStream, allocator, null, bufferPublisherHandler, inputStreamHandler);
+    }
+
+    /**
+     * Helper method for dealing with a request entity {@link InputStream} that is potentially
+     * a {@link BufferPublisherInputStream}.
+     *
+     * @param entityStream the request entity {@link InputStream}
+     * @param allocator the {@link BufferAllocator} to use
+     * @param limitRequest when non-{@code null}, the entity is bounded by this request's aggregation size limit as it
+     * is consumed (for readers that buffer the whole body in memory); pass {@code null} for streaming readers that must
+     * not be bounded. The limit is applied whether the entity arrives as a {@link Publisher} or a raw
+     * {@link InputStream}, so it holds even if an earlier interceptor replaced the entity stream.
+     * @param bufferPublisherHandler a {@link BiFunction} that is called in case the entity {@link InputStream} is
+     * a {@link BufferPublisherInputStream}
+     * @param inputStreamHandler a {@link BiFunction} that is called in case the entity {@link InputStream} is not
+     * a {@link BufferPublisherInputStream}
+     * @param <T> the type of data returned by the {@link BiFunction}s.
+     * @return the data returned by one of the {@link BiFunction}.
      */
     public static <T> T handleEntityStream(final InputStream entityStream,
                                            final BufferAllocator allocator,
+                                           @Nullable final StreamingHttpRequest limitRequest,
                                            final BiFunction<Publisher<Buffer>,
                                                    BufferAllocator, T> bufferPublisherHandler,
                                            final BiFunction<InputStream, BufferAllocator, T> inputStreamHandler) {
@@ -144,11 +178,14 @@ public final class BufferPublisherInputStream extends InputStream {
 
         if (wrappedStream instanceof BufferPublisherInputStream) {
             // If the wrapped stream is built around a Publisher, provide it to the resource as-is
-            return bufferPublisherHandler.apply(((BufferPublisherInputStream) wrappedStream).bufferPublisher(),
-                    allocator);
+            final Publisher<Buffer> publisher = ((BufferPublisherInputStream) wrappedStream).bufferPublisher();
+            return bufferPublisherHandler.apply(
+                    limitRequest == null ? publisher : applyAggregationSizeLimit(limitRequest, publisher), allocator);
         }
 
-        return inputStreamHandler.apply(wrappedStream, allocator);
+        return inputStreamHandler.apply(
+                limitRequest == null ? wrappedStream : applyAggregationSizeLimit(limitRequest, wrappedStream),
+                allocator);
     }
 
     private static byte[] getBytes(final Buffer content) {

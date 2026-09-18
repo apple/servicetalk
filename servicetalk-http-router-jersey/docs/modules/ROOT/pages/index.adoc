@@ -116,6 +116,14 @@ CAUTION: Using `Buffer` and async payloads will prevent off-the-shelf
 payload-aware <<filter-inter>> from working properly.
 Moreover, such payloads can not currently be used with Server-Sent Events (SSE).
 
+NOTE: The server's `maxAggregatedPayloadSize` limit applies to readers that
+aggregate the whole body in memory -- `Buffer`, `Single<Buffer>`, and Jersey's
+built-in `String`, `byte[]`, and form (`MultivaluedMap`/`Form`) readers -- which
+respond `413 Payload Too Large` when exceeded. Genuinely streaming readers
+(`Publisher<Buffer>`, and raw `InputStream`/`Reader`) are not bounded. See
+xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc[the payload
+aggregation note].
+
 Let's look at some examples.
 The first one is a rewrite of the previous `hello` example but,
 this time, returning `Buffer` instead of `String`:

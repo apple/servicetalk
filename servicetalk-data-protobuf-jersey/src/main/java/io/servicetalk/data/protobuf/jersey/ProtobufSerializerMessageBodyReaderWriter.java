@@ -20,6 +20,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.data.protobuf.ProtobufSerializerFactory;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.router.jersey.internal.SourceWrappers.PublisherSource;
 import io.servicetalk.http.router.jersey.internal.SourceWrappers.SingleSource;
 import io.servicetalk.serializer.api.Deserializer;
@@ -80,6 +81,9 @@ final class ProtobufSerializerMessageBodyReaderWriter implements MessageBodyRead
     private Provider<Ref<ConnectionContext>> ctxRefProvider;
 
     @Context
+    private Provider<Ref<StreamingHttpRequest>> requestRefProvider;
+
+    @Context
     private Provider<ContainerRequestContext> requestCtxProvider;
 
     @Context
@@ -104,21 +108,21 @@ final class ProtobufSerializerMessageBodyReaderWriter implements MessageBodyRead
         final int contentLength = requestCtxProvider.get().getLength();
 
         if (Single.class.isAssignableFrom(type)) {
-            return handleEntityStream(entityStream, allocator,
+            return handleEntityStream(entityStream, allocator, requestRefProvider.get().get(),
                     (p, a) -> deserialize(p, serializerFactory.serializerDeserializer(getSourceClass(genericType)),
                             contentLength, a),
                     (is, a) -> new SingleSource<>(deserialize(toBufferPublisher(is, a),
                             serializerFactory.serializerDeserializer(
                                     getSourceClass(genericType)), contentLength, a)));
         } else if (Publisher.class.isAssignableFrom(type)) {
-            return handleEntityStream(entityStream, allocator,
+            return handleEntityStream(entityStream, allocator, null,
                     (p, a) -> serializerFactory.streamingSerializerDeserializer(
                             getSourceClass(genericType)).deserialize(p, a),
                     (is, a) -> new PublisherSource<>(serializerFactory.streamingSerializerDeserializer(
                             getSourceClass(genericType)).deserialize(toBufferPublisher(is, a), a)));
         }
 
-        return handleEntityStream(entityStream, allocator,
+        return handleEntityStream(entityStream, allocator, requestRefProvider.get().get(),
                 (p, a) -> deserializeObject(p, serializerFactory.serializerDeserializer(castClass(type)),
                         contentLength, a),
                 (is, a) -> deserializeObject(toBufferPublisher(is, a),

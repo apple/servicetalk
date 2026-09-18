@@ -220,6 +220,10 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         return headersFactory;
     }
 
+    LongConsumer payloadSizeLimiter() {
+        return payloadSizeLimiter;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (this == o) {

@@ -166,7 +166,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
         return httpServerBuilder.listenBlockingStreamingAndAwait(router);
     }
 
-    void configureBuilders(final HttpServerBuilder serverBuilder,
+    protected void configureBuilders(final HttpServerBuilder serverBuilder,
                            final HttpJerseyRouterBuilder jerseyRouterBuilder) {
         serverBuilder.executor(serverCtx.executor()).executionStrategy(defaultStrategy());
     }

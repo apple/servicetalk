@@ -57,7 +57,7 @@ class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTest {
     }
 
     @Override
-    void configureBuilders(final HttpServerBuilder serverBuilder,
+    protected void configureBuilders(final HttpServerBuilder serverBuilder,
                            final HttpJerseyRouterBuilder jerseyRouterBuilder) {
         super.configureBuilders(serverBuilder, jerseyRouterBuilder);
         serverBuilder.executionStrategy(offloadNone());
