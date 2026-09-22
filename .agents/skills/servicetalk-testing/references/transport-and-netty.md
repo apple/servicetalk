@@ -1,11 +1,24 @@
 # Testing transport, codecs, and end-to-end behavior
 
 How to test anything that touches Netty — a codec, a `ChannelHandler`, a
-filter, or a full client-to-server round trip. Read [../SKILL.md](../SKILL.md)
-first for the rules that apply to every test.
+filter, or a full client-to-server round trip. Read `SKILL.md` in the parent
+directory first for the rules that apply to every test.
 
 Everything here lives in the same `src/test/java` as the plain unit tests.
 There is no separate integration-test source set.
+
+## Contents
+
+- [Where the helpers live](#where-the-helpers-live)
+- [Decide first: do you need a socket?](#decide-first-do-you-need-a-socket)
+- [Binding a server: `AddressUtils`](#binding-a-server-addressutils)
+- [The canonical end-to-end test](#the-canonical-end-to-end-test)
+- [Teardown: order matters](#teardown-order-matters)
+- [Sharing an `ExecutionContext`](#sharing-an-executioncontext)
+- [TLS](#tls)
+- [Protocol and strategy matrices](#protocol-and-strategy-matrices)
+- [Base class, or standalone?](#base-class-or-standalone)
+- [Reference examples](#reference-examples)
 
 ## Where the helpers live
 
@@ -73,6 +86,15 @@ with a composite closeable.
 
 ## Teardown: order matters
 
+Close **client-side handles first, then the `ServerContext`, then executors.**
+Closing an executor while a client built on it is still open can hang the close
+or throw `RejectedExecutionException` during teardown.
+
+Nested try-with-resources already gives you this for free: it closes in reverse
+order of opening, so a block that opens the server first and the client second
+closes the client first. The example above is correct as written — you only
+need to order things by hand when the resources are fields rather than locals:
+
 ```java
 @AfterEach
 void tearDown() throws Exception {
@@ -84,10 +106,6 @@ void tearDown() throws Exception {
 ```java
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 ```
-
-Close **client-side handles first, then the `ServerContext`, then executors.**
-Closing an executor while a client built on it is still open can hang the close
-or throw `RejectedExecutionException` during teardown.
 
 Failing to close is worse than it looks. An orphaned `ServerContext` or
 `IoExecutor` does not fail your test — it leaks a socket or a thread pool into

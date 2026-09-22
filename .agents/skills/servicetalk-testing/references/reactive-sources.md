@@ -1,7 +1,21 @@
 # Testing reactive sources
 
-How to test a `Publisher`, `Single`, or `Completable` operator. Read
-[../SKILL.md](../SKILL.md) first for the rules that apply to every test.
+How to test a `Publisher`, `Single`, or `Completable` operator. Read `SKILL.md`
+in the parent directory first for the rules that apply to every test.
+
+## Contents
+
+- [Where the helpers live](#where-the-helpers-live)
+- [The shape](#the-shape)
+- [`TestPublisherSubscriber` methods](#testpublishersubscriber-methods)
+- [Deterministic time: never sleep](#deterministic-time-never-sleep)
+- [Worked example: an operator with a timer](#worked-example-an-operator-with-a-timer)
+- [Worked example: counting signals with a mock](#worked-example-counting-signals-with-a-mock)
+- [Expected failures](#expected-failures)
+- [Interrupts](#interrupts)
+- [AsyncContext propagation](#asynccontext-propagation)
+- [`StepVerifiers`](#stepverifiers)
+- [Reference examples](#reference-examples)
 
 ## Where the helpers live
 

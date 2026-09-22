@@ -39,7 +39,7 @@ does not catch.
 
 | Constraint | Where it is enforced |
 |---|---|
-| Java 8 bytecode, **including test code** (`options.release = 8`). No `var`, `List.of`, `Map.of`, text blocks, or other Java 9+ APIs. | `servicetalk-gradle-plugin-internal/src/main/groovy/io/servicetalk/gradle/plugin/internal/ServiceTalkLibraryPlugin.groovy` |
+| Java 8 bytecode by default, **including test code** (`options.release = 8`): no `var`, `List.of`, `Map.of`, text blocks, or other Java 9+ APIs. A minority of modules opt into a higher level — the `jersey3-*`, `jersey4-*` and `*jakarta*` variants, `servicetalk-concurrent-jdkflow`, and `servicetalk-data-jackson3`. Check the module's `build.gradle` for `sourceCompatibility`. | `servicetalk-gradle-plugin-internal/src/main/groovy/io/servicetalk/gradle/plugin/internal/ServiceTalkLibraryPlugin.groovy` |
 | Every new file needs the Apache 2.0 header (see below). | Checkstyle `RegexpHeader` |
 | Lines wrap at 120 characters. | Checkstyle `LineLength` |
 | Imports ordered: `io.servicetalk` → third-party → `java.*` → static, alphabetical within each group. | Checkstyle `CustomImportOrder` |

@@ -1,10 +1,6 @@
 ---
 name: servicetalk-testing
-description: >-
-  How tests are written in the ServiceTalk repository. Read before adding or
-  changing any test, or when diagnosing a failing, flaky, or hanging test.
-  Covers assertion style, naming, the reactive and transport test harnesses,
-  test doubles, and what to verify before claiming a change is done.
+description: "How tests are written in the ServiceTalk repository: assertion style, naming, the reactive and transport test harnesses, test doubles, and what to verify before claiming a change is done. Use when adding or changing any test, or when diagnosing a failing, flaky, or hanging test."
 ---
 
 # Writing tests in ServiceTalk
@@ -21,9 +17,13 @@ is which harness you need. See "Pick your harness" below.
 
 ## 1. Rules for every test
 
-1. **Java 8 only.** Test code compiles with `--release 8`. No `var`, no
-   `List.of`/`Map.of`/`Set.of`, no text blocks, no `Optional.isEmpty()`. Use
-   `Arrays.asList(...)`, `Collections.singletonList(...)`, and explicit types.
+1. **Java 8 by default.** Most modules compile test code with `--release 8`, so
+   no `var`, no `List.of`/`Map.of`/`Set.of`, no text blocks, no
+   `Optional.isEmpty()`. Use `Arrays.asList(...)`,
+   `Collections.singletonList(...)`, and explicit types. Some modules opt into
+   a higher level — the `jersey3-*`, `jersey4-*` and `*jakarta*` variants,
+   `servicetalk-concurrent-jdkflow`, and `servicetalk-data-jackson3`. Check the
+   module's `build.gradle` for `sourceCompatibility` before you use a newer API.
 2. **Apache 2.0 header** at the top of every new file, with the current year.
    See `AGENTS.md` for the exact block.
 3. **Name the class `<ClassUnderTest>Test`**, package-private, in the same
@@ -38,7 +38,8 @@ is which harness you need. See "Pick your harness" below.
 7. **Do not add `@Timeout`.** A global default already applies to every test:
    10s locally, 30s in CI
    (`ServiceTalkLibraryPlugin.groovy`, `junit.jupiter.execution.timeout.default`).
-   Add one only for a deliberately long stress loop.
+   Add one only for a test that deliberately runs long, such as a race-detection
+   loop of hundreds of iterations.
 8. **Do not use `@Nested` or `@DisplayName`.** Tests here are flat. There are
    zero `@DisplayName` uses in the repo.
 9. **Never delete or disable a test to make a build pass.** Fix it.
@@ -99,11 +100,19 @@ assertThat(e.getCause(), instanceOf(MaxMessageSizeExceededException.class));
 Each test must end on a real assertion — `assertThat`, `assertThrows`,
 `verify`, or an `await*` that throws on the wrong signal.
 
-**Never call a `boolean`-returning helper and discard the result.** This is a
-live bug in the repo: `DefaultHttpSetCookiesTest:765` calls
-`areSetCookiesEqual(...)` bare while every other call site in the same file
-wraps it in `assertTrue(...)`. That test passes no matter what the cookies
-contain. Write helpers that assert internally and return `void`.
+**Never call a `boolean`-returning helper and discard the result.** It is an
+easy mistake to make, and the test then passes whatever the code does:
+
+```java
+// Wrong: the result is thrown away, so the test cannot fail.
+areSetCookiesEqual(expected, actual);
+
+// Right, if the helper must return a boolean.
+assertTrue(areSetCookiesEqual(expected, actual));
+```
+
+Better still, write the helper to assert internally and return `void`, so no
+call site can forget.
 
 If a test's only contract really is "this does not throw", say so in the name
 (`...DoesNotThrow`) so the next reader knows it is deliberate.
@@ -168,9 +177,17 @@ assertTrue(spanLatch.await(DEFAULT_TIMEOUT_SECONDS, SECONDS));
 assertThat(exporter.spans(), hasSize(1));
 ```
 
+`DEFAULT_TIMEOUT_SECONDS` comes from `TestTimeoutConstants` and already tracks
+the global timeout, so a bounded wait never outlives the test:
+
+```java
+import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
+```
+
 A `CountDownLatch`, a `BlockingQueue`, or an observer callback all work. When
 the signal is inherently untimed — a weak reference being enqueued, for
-instance — poll it in a bounded retry loop rather than sleeping once.
+instance — poll it in a retry loop bounded by `DEFAULT_TIMEOUT_SECONDS` rather
+than sleeping once.
 
 For errors raised on a thread other than the test thread, collect them and
 assert at the end:
@@ -202,8 +219,8 @@ static `mock()` for a one-off, `@Mock` when several tests share the field.
 
 ## 8. Parameterized tests
 
-Always pass an explicit `name`. A sizable minority of existing tests omit it,
-so copy the majority rather than the file next to you:
+Always pass an explicit `name`. Without one the test report shows only an
+index, so a CI failure tells you a case failed but not which one:
 
 ```java
 @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
@@ -226,7 +243,8 @@ assumeFalse(api.isAggregated(), "This test asserts behavior only for streaming u
 assumeTrue(protocol == HTTP_1);
 ```
 
-Do **not** use an assumption to gate on a system property. A failed assumption
+Do **not** use an assumption to gate on a system property — that is the one
+case to avoid, and pruning a matrix as above stays fine. A failed assumption
 aborts the test and reports as skipped, so the coverage silently disappears
 when the property flips.
 
@@ -237,10 +255,8 @@ null-input branches in packages annotated `@ElementsAreNonnullByDefault`
 (which Checkstyle requires in every `package-info.java`, so it always holds).
 
 **Do test every validation throw.** Grep the class under test for `throw new`
-and make sure each site has a matching `assertThrows`. Gaps found this way in
-the current repo include `RetryStrategiesTest` and `CacheSingleTest` — zero
-`assertThrows` between them, though both classes validate their arguments — and
-`OutlierDetectorConfig`, which has no test class at all.
+and make sure each site has a matching `assertThrows`. Builder setters that
+validate their arguments are the most commonly missed case.
 
 Prefer deriving expected values from the production source of truth. Iterate
 the real enum rather than hardcoding a list that will drift.
