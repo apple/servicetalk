@@ -26,14 +26,15 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
+import javax.annotation.Nullable;
 
-import static java.time.Duration.ZERO;
 import static java.time.Duration.ofMillis;
-import static java.time.Duration.ofSeconds;
 
 final class DefaultLoadBalancerProviderConfig {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultHttpLoadBalancerProvider.class);
+
+    private static final OutlierDetectorConfig DEFAULTS = new OutlierDetectorConfig.Builder().build();
 
     private enum LBPolicy {
         P2C,
@@ -65,6 +66,7 @@ final class DefaultLoadBalancerProviderConfig {
     private static final String PROP_ENFORCING_FAILURE_PERCENTAGE = "enforcingFailurePercentage";
     private static final String PROP_FAILURE_PERCENTAGE_MIN_HOSTS = "failurePercentageMinimumHosts";
     private static final String PROP_FAILURE_PERCENTAGE_REQUEST_VOL = "failurePercentageRequestVolume";
+    // Must be at least baseEjectionTimeMs, otherwise the DefaultLoadBalancer is not enabled.
     private static final String PROP_MAX_EJECTION_TIME_MS = "maxEjectionTimeMs";
     private static final String PROP_EJECTION_TIME_JITTER_MS = "ejectionTimeJitterMs";
 
@@ -90,34 +92,38 @@ final class DefaultLoadBalancerProviderConfig {
     private final int enforcingFailurePercentage;
     private final int failurePercentageMinimumHosts;
     private final int failurePercentageRequestVolume;
+    @Nullable
     private final Duration maxEjectionTime;
     private final Duration ejectionTimeJitter;
 
     private DefaultLoadBalancerProviderConfig() {
         rawClientsEnabledFor = getString(PROP_CLIENTS_ENABLED_FOR, "").trim();
         clientsEnabledFor = getClientsEnabledFor(rawClientsEnabledFor);
-        failedConnectionsThreshold = getInt(PROP_FAILED_CONNECTIONS_THRESHOLD, 5 /*ST default*/);
+        failedConnectionsThreshold = getInt(PROP_FAILED_CONNECTIONS_THRESHOLD, DEFAULTS.failedConnectionsThreshold());
         lbPolicy = getLBPolicy();
-        ewmaHalfLife = ofMillis(getLong(PROP_EWMA_HALF_LIFE_MS, ofSeconds(10).toMillis()));
-        ewmaErrorPenalty = getInt(PROP_EWMA_ERROR_PENALTY, 10);
-        ewmaCancellationPenalty = getInt(PROP_EWMA_CANCELLATION_PENALTY, 5);
-        cancellationIsError = getBool(PROP_CANCELLATION_IS_ERROR, true);
-        consecutive5xx = getInt(PROP_CONSECUTIVE_5XX, 5);
-        interval = ofMillis(getLong(PROP_INTERVAL_MS, ofSeconds(10).toMillis()));
-        baseEjectionTime = ofMillis(getLong(PROP_BASE_EJECTION_TIME_MS, ofSeconds(30).toMillis()));
-        maxEjectionPercentage = getInt(PROP_MAX_EJECTION_PERCENT, 20);
-        alwaysEjectOneHost = getBool(PROP_ALWAYS_EJECT_ONE_HOST, false);
-        enforcingConsecutive5xx = getInt(PROP_ENFORCING_CONSECUTIVE_5XX, 100);
-        enforcingSuccessRate = getInt(PROP_ENFORCING_SUCCESS_RATE, 100);
-        successRateMinimumHosts = getInt(PROP_SUCCESS_RATE_MIN_HOSTS, 5);
-        successRateRequestVolume = getInt(PROP_SUCCESS_RATE_REQUEST_VOL, 100);
-        successRateStdevFactor = getInt(PROP_SUCCESS_RATE_STDEV_FACTOR, 1900);
-        failurePercentageThreshold = getInt(PROP_FAILURE_PERCENTAGE_THRESHOLD, 85);
-        enforcingFailurePercentage = getInt(PROP_ENFORCING_FAILURE_PERCENTAGE, 0);
-        failurePercentageMinimumHosts = getInt(PROP_FAILURE_PERCENTAGE_MIN_HOSTS, 5);
-        failurePercentageRequestVolume = getInt(PROP_FAILURE_PERCENTAGE_REQUEST_VOL, 50);
-        maxEjectionTime = ofMillis(getLong(PROP_MAX_EJECTION_TIME_MS, ofSeconds(90).toMillis()));
-        ejectionTimeJitter = ofMillis(getLong(PROP_EJECTION_TIME_JITTER_MS, ZERO.toMillis()));
+        ewmaHalfLife = getDuration(PROP_EWMA_HALF_LIFE_MS, DEFAULTS.ewmaHalfLife());
+        ewmaErrorPenalty = getInt(PROP_EWMA_ERROR_PENALTY, DEFAULTS.ewmaErrorPenalty());
+        ewmaCancellationPenalty = getInt(PROP_EWMA_CANCELLATION_PENALTY, DEFAULTS.ewmaCancellationPenalty());
+        cancellationIsError = getBool(PROP_CANCELLATION_IS_ERROR, DEFAULTS.cancellationIsError());
+        consecutive5xx = getInt(PROP_CONSECUTIVE_5XX, DEFAULTS.consecutive5xx());
+        interval = getDuration(PROP_INTERVAL_MS, DEFAULTS.failureDetectorInterval());
+        baseEjectionTime = getDuration(PROP_BASE_EJECTION_TIME_MS, DEFAULTS.baseEjectionTime());
+        maxEjectionPercentage = getInt(PROP_MAX_EJECTION_PERCENT, DEFAULTS.maxEjectionPercentage());
+        alwaysEjectOneHost = getBool(PROP_ALWAYS_EJECT_ONE_HOST, DEFAULTS.alwaysEjectOneHost());
+        enforcingConsecutive5xx = getInt(PROP_ENFORCING_CONSECUTIVE_5XX, DEFAULTS.enforcingConsecutive5xx());
+        enforcingSuccessRate = getInt(PROP_ENFORCING_SUCCESS_RATE, DEFAULTS.enforcingSuccessRate());
+        successRateMinimumHosts = getInt(PROP_SUCCESS_RATE_MIN_HOSTS, DEFAULTS.successRateMinimumHosts());
+        successRateRequestVolume = getInt(PROP_SUCCESS_RATE_REQUEST_VOL, DEFAULTS.successRateRequestVolume());
+        successRateStdevFactor = getInt(PROP_SUCCESS_RATE_STDEV_FACTOR, DEFAULTS.successRateStdevFactor());
+        failurePercentageThreshold = getInt(PROP_FAILURE_PERCENTAGE_THRESHOLD, DEFAULTS.failurePercentageThreshold());
+        enforcingFailurePercentage = getInt(PROP_ENFORCING_FAILURE_PERCENTAGE, DEFAULTS.enforcingFailurePercentage());
+        failurePercentageMinimumHosts = getInt(PROP_FAILURE_PERCENTAGE_MIN_HOSTS,
+                DEFAULTS.failurePercentageMinimumHosts());
+        failurePercentageRequestVolume = getInt(PROP_FAILURE_PERCENTAGE_REQUEST_VOL,
+                DEFAULTS.failurePercentageRequestVolume());
+        // Left unset by default so the builder derives it from the base ejection time.
+        maxEjectionTime = getDuration(PROP_MAX_EJECTION_TIME_MS, null);
+        ejectionTimeJitter = getDuration(PROP_EJECTION_TIME_JITTER_MS, DEFAULTS.ejectionTimeJitter());
     }
 
     private LBPolicy getLBPolicy() {
@@ -142,7 +148,7 @@ final class DefaultLoadBalancerProviderConfig {
     }
 
     OutlierDetectorConfig outlierDetectorConfig() {
-        return new OutlierDetectorConfig.Builder()
+        OutlierDetectorConfig.Builder builder = new OutlierDetectorConfig.Builder()
                 .failedConnectionsThreshold(failedConnectionsThreshold)
                 .ewmaHalfLife(ewmaHalfLife)
                 .ewmaErrorPenalty(ewmaErrorPenalty)
@@ -162,38 +168,29 @@ final class DefaultLoadBalancerProviderConfig {
                 .failurePercentageThreshold(failurePercentageThreshold)
                 .enforcingFailurePercentage(enforcingFailurePercentage)
                 .failurePercentageMinimumHosts(failurePercentageMinimumHosts)
-                .failurePercentageRequestVolume(failurePercentageRequestVolume)
-                .maxEjectionTime(maxEjectionTime)
-                .build();
+                .failurePercentageRequestVolume(failurePercentageRequestVolume);
+        if (maxEjectionTime != null) {
+            builder.maxEjectionTime(maxEjectionTime);
+        }
+        return builder.build();
     }
 
     @Override
     public String toString() {
-        return "ExperimentalOutlierDetectorConfig{" +
+        return "DefaultLoadBalancerProviderConfig{" +
                 "clientsEnabledFor=" + rawClientsEnabledFor +
-                ", failedConnectionsThreshold=" + failedConnectionsThreshold +
                 ", lbPolicy=" + lbPolicy +
-                ", ewmaHalfLife=" + ewmaHalfLife +
-                ", ewmaErrorPenalty=" + ewmaErrorPenalty +
-                ", ewmaCancellationPenalty=" + ewmaCancellationPenalty +
-                ", cancellationIsError=" + cancellationIsError +
-                ", consecutive5xx=" + consecutive5xx +
-                ", interval=" + interval +
-                ", baseEjectionTime=" + baseEjectionTime +
-                ", ejectionTimeJitter=" + ejectionTimeJitter +
-                ", maxEjectionPercentage=" + maxEjectionPercentage +
-                ", alwaysEjectOneHost=" + alwaysEjectOneHost +
-                ", enforcingConsecutive5xx=" + enforcingConsecutive5xx +
-                ", enforcingSuccessRate=" + enforcingSuccessRate +
-                ", successRateMinimumHosts=" + successRateMinimumHosts +
-                ", successRateRequestVolume=" + successRateRequestVolume +
-                ", successRateStdevFactor=" + successRateStdevFactor +
-                ", failurePercentageThreshold=" + failurePercentageThreshold +
-                ", enforcingFailurePercentage=" + enforcingFailurePercentage +
-                ", failurePercentageMinimumHosts=" + failurePercentageMinimumHosts +
-                ", failurePercentageRequestVolume=" + failurePercentageRequestVolume +
-                ", maxEjectionTime=" + maxEjectionTime +
+                ", outlierDetectorConfig=" + outlierDetectorConfigString() +
                 '}';
+    }
+
+    private String outlierDetectorConfigString() {
+        try {
+            return outlierDetectorConfig().toString();
+        } catch (IllegalArgumentException invalidConfig) {
+            // toString() must not throw; the invalid config is reported when the load balancer is built.
+            return "invalid: " + invalidConfig.getMessage();
+        }
     }
 
     static DefaultLoadBalancerProviderConfig instance() {
@@ -211,6 +208,21 @@ final class DefaultLoadBalancerProviderConfig {
         }
         try {
             return Long.parseLong(propertyValue.trim());
+        } catch (Exception ex) {
+            LOGGER.warn("Exception parsing property {} with value {} to an integral value. Using the default of {}.",
+                    name, propertyValue, defaultValue, ex);
+            return defaultValue;
+        }
+    }
+
+    @Nullable
+    private static Duration getDuration(String name, @Nullable Duration defaultValue) {
+        String propertyValue = System.getProperty(PROPERTY_PREFIX + name);
+        if (propertyValue == null) {
+            return defaultValue;
+        }
+        try {
+            return ofMillis(Long.parseLong(propertyValue.trim()));
         } catch (Exception ex) {
             LOGGER.warn("Exception parsing property {} with value {} to an integral value. Using the default of {}.",
                     name, propertyValue, defaultValue, ex);

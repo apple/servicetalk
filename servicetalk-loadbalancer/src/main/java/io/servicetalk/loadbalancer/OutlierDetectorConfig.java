@@ -21,6 +21,7 @@ import io.servicetalk.utils.internal.DurationUtils;
 
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
 import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_INTERVAL;
@@ -69,6 +70,7 @@ public final class OutlierDetectorConfig {
     private final int enforcingFailurePercentage;
     private final int failurePercentageMinimumHosts;
     private final int failurePercentageRequestVolume;
+    @Nullable
     private final Duration maxEjectionTime;
 
     private OutlierDetectorConfig(final Duration ewmaHalfLife, final int ewmaCancellationPenalty, final int ewmaErrorPenalty,
@@ -83,7 +85,7 @@ public final class OutlierDetectorConfig {
                           final int successRateRequestVolume, final int successRateStdevFactor,
                           final int failurePercentageThreshold, final int enforcingFailurePercentage,
                           final int failurePercentageMinimumHosts, final int failurePercentageRequestVolume,
-                          final Duration maxEjectionTime, final Duration ejectionTimeJitter) {
+                          @Nullable final Duration maxEjectionTime, final Duration ejectionTimeJitter) {
         this.ewmaHalfLife = ewmaHalfLife;
         this.ewmaCancellationPenalty = ensureNonNegative(ewmaCancellationPenalty, "ewmaCancellationPenalty");
         this.ewmaErrorPenalty = ensureNonNegative(ewmaErrorPenalty, "ewmaErrorPenalty");
@@ -357,9 +359,14 @@ public final class OutlierDetectorConfig {
      * The maximum amount of time a host can be ejected regardless of the number of consecutive ejections.
      *
      * @return the maximum amount of time a host can be ejected.
+     * @see Builder#maxEjectionTime(Duration)
      */
     public Duration maxEjectionTime() {
-        return maxEjectionTime;
+        if (maxEjectionTime != null) {
+            return maxEjectionTime;
+        }
+        return baseEjectionTime.compareTo(Builder.DEFAULT_MAX_EJECTION_TIME) > 0 ?
+                baseEjectionTime : Builder.DEFAULT_MAX_EJECTION_TIME;
     }
 
     /**
@@ -401,7 +408,7 @@ public final class OutlierDetectorConfig {
                 ", enforcingFailurePercentage=" + enforcingFailurePercentage +
                 ", failurePercentageMinimumHosts=" + failurePercentageMinimumHosts +
                 ", failurePercentageRequestVolume=" + failurePercentageRequestVolume +
-                ", maxEjectionTime=" + maxEjectionTime +
+                ", maxEjectionTime=" + maxEjectionTime() +
                 '}';
     }
 
@@ -466,11 +473,13 @@ public final class OutlierDetectorConfig {
         private int enforcingFailurePercentage = DEFAULT_ENFORCING_FAILURE_PERCENTAGE;
         private int failurePercentageMinimumHosts = DEFAULT_FAILURE_PERCENTAGE_MINIMUM_HOSTS;
         private int failurePercentageRequestVolume = DEFAULT_FAILURE_PERCENTAGE_REQUEST_VOLUME;
-        private Duration maxEjectionTime = DEFAULT_MAX_EJECTION_TIME;
+        // Unset means it's derived from the base ejection time, as in xDS.
+        @Nullable
+        private Duration maxEjectionTime;
 
-        // Note that xDS defines its default jitter as 0 seconds, but we intentionally add a small amount of jitter to
-        // desynchronize revival of correlated ejections (e.g. rolling deploys, dependency blips) and avoid a
-        // thundering herd back onto freshly-revived hosts.
+        // xDS defaults this to 0, but Envoy only unejects on its interval tick, which already staggers revival across
+        // proxies. We revive as soon as the ejection expires, so without jitter, clients that ejected a host together
+        // (e.g. consecutive 5xx after a crash) would all reconnect to it and re-eject it in lockstep.
         private Duration ejectionTimeJitter = DEFAULT_HEALTH_CHECK_JITTER;
 
         /**
@@ -516,8 +525,13 @@ public final class OutlierDetectorConfig {
          * Build the OutlierDetectorConfig.
          *
          * @return the OutlierDetectorConfig.
+         * @throws IllegalArgumentException if the max ejection time is less than the base ejection time.
          */
         public OutlierDetectorConfig build() {
+            if (maxEjectionTime != null && maxEjectionTime.compareTo(baseEjectionTime) < 0) {
+                throw new IllegalArgumentException("maxEjectionTime: " + maxEjectionTime +
+                        " (expected >= baseEjectionTime: " + baseEjectionTime + ')');
+            }
             return new OutlierDetectorConfig(ewmaHalfLife, ewmaCancellationPenalty, ewmaErrorPenalty,
                     concurrentRequestPenalty, cancellationIsError, failedConnectionsThreshold, intervalJitter,
                     serviceDiscoveryResubscribeInterval, serviceDiscoveryResubscribeJitter,
@@ -910,7 +924,8 @@ public final class OutlierDetectorConfig {
         /**
          * Set the maximum amount of time a host can be ejected regardless of the number of consecutive ejections.
          * <p>
-         * Defaults to a max ejection time of 300 seconds.
+         * Must be at least the {@link #baseEjectionTime(Duration) base ejection time}. Defaults to the greater of 300
+         * seconds and the base ejection time.
          *
          * @param maxEjectionTime the maximum amount of time a host can be ejected regardless of the number of
          *                        consecutive ejections.
