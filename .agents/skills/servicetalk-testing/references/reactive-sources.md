@@ -19,9 +19,8 @@ How to test a `Publisher`, `Single`, or `Completable` operator. Read
 3. Drive signals by hand: `publisher.onNext(...)`, `onComplete()`, `onError(...)`.
 4. Assert with the subscriber's blocking helpers.
 
-`toSource(...).subscribe(...)` appears in 186 files. It is the entry point,
-because `subscribe` on the public `Publisher` type does not take a raw
-`Subscriber`.
+`toSource(...).subscribe(...)` is the entry point, because `subscribe` on the
+public `Publisher` type does not take a raw `Subscriber`.
 
 ```java
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -173,7 +172,7 @@ remember that test classes run concurrently.
 
 `servicetalk-concurrent-api-test` offers a Reactor-style fluent verifier
 (`StepVerifiers.create(publisher).expectNext(...).expectComplete().verify()`).
-It is used in only 8 files outside its own module. Prefer
+It is used in only a handful of files outside its own module. Prefer
 `TestPublisherSubscriber` unless you are editing one of those files.
 
 ## Reference examples

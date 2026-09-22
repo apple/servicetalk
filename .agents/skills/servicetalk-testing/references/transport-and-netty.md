@@ -96,8 +96,8 @@ a test class running at the same time, which then looks flaky for no reason.
 ## Sharing an `ExecutionContext`
 
 Building Netty event loops per test method is slow. `ExecutionContextExtension`
-owns an `IoExecutor` plus an `Executor` and closes them for you. Used in ~56
-files.
+owns an `IoExecutor` plus an `Executor` and closes them for you. It is the
+standard way to share them across a test class.
 
 ```java
 @RegisterExtension
@@ -157,7 +157,7 @@ assumeFalse(!h2PriorKnowledge && addTrailers,
 
 ## Base class, or standalone?
 
-`AbstractNettyHttpServerTest` (20 subclasses) owns the whole server and client
+`AbstractNettyHttpServerTest` owns the whole server and client
 wiring — TLS toggle, observers, filters, protocol config, executor
 combinations. Extend it when you want many parameterized variants against one
 standard echo-style server and client pair.

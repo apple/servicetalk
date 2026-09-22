@@ -32,8 +32,8 @@ is which harness you need. See "Pick your harness" below.
    No `should` prefix, no underscores. Real examples from the repo:
    `decodeThrowsIfMoreThanMaxBytes`, `cancelBeforeSetDoneClearsInterrupt`,
    `timeoutExceptionDeliveredBeforeUpstreamException`.
-5. **Assert with Hamcrest** — `assertThat(actual, matcher)`. 538 files use
-   Hamcrest; 4 use AssertJ. Do not add AssertJ.
+5. **Assert with Hamcrest** — `assertThat(actual, matcher)`. This is the
+   overwhelming majority style. Do not add AssertJ.
 6. **Test exceptions with `assertThrows`**, never try/catch plus `fail()`.
 7. **Do not add `@Timeout`.** A global default already applies to every test:
    10s locally, 30s in CI
@@ -77,7 +77,7 @@ checks. Reach for Hamcrest whenever a matcher would produce a better failure
 message.
 
 **For an expected failure, use `DELIBERATE_EXCEPTION`**, not
-`new RuntimeException("boom")`. It is used in 250 test files and stubs out
+`new RuntimeException("boom")`. It is the repo-wide convention and stubs out
 `fillInStackTrace()`, so it is cheap and produces stable output:
 
 ```java
@@ -111,7 +111,7 @@ If a test's only contract really is "this does not throw", say so in the name
 ## 4. Test classes run concurrently
 
 `junit-platform.properties` (shipped in `servicetalk-test-resources`, which is
-on the test classpath of 56 modules) sets:
+on the test classpath of most modules) sets:
 
 ```
 junit.jupiter.execution.parallel.enabled = true
@@ -129,15 +129,10 @@ the same time**. Therefore:
 - **Close everything you open.** An unclosed `ServerContext` or `IoExecutor`
   does not fail your test — it leaks a socket or a thread pool into a test
   class running beside yours, which then looks flaky for no reason.
-- **Clear a thread interrupt flag in `finally`.** Pooled threads carry it into
-  unrelated tests:
 
-```java
-} finally {
-    // A leaked interrupt would otherwise bleed into the next test on this thread.
-    Thread.interrupted();
-}
-```
+The same applies to any thread state you set deliberately. If your test
+interrupts a thread, clear the flag before you return — see "Interrupts" in
+[references/reactive-sources.md](references/reactive-sources.md).
 
 ## 5. Pick your harness
 
@@ -153,17 +148,29 @@ Do that before writing.
 
 ## 6. Waiting for asynchronous results
 
-`.toFuture().get()` with **no** timeout is the norm — 804 of 817 call sites.
-That is deliberate: the global test timeout fires, and
+`.toFuture().get()` with **no** timeout is the norm here. That is deliberate:
+the global test timeout fires, and
 `TimeoutTracingInfoExtension` (registered automatically for every test) dumps
 every thread's stack just before JUnit interrupts the test. Do not add timed
 overloads to match a different codebase's style.
 
-**Never sleep and then assert** on an asynchronous side effect. Poll a real
-signal instead — a `CountDownLatch`, a `BlockingQueue`, or an observer. Several
-recent commits exist only to make this change, for example
-"opentelemetry-http: await span export in filter tests instead of sleeping" and
-"Deflake processor GC tests".
+**Never sleep and then assert** on an asynchronous side effect. A sleep encodes
+a guess about timing, and the guess fails on a loaded CI machine. Wait for the
+signal itself:
+
+```java
+// Wrong: passes or fails depending on machine load.
+Thread.sleep(100);
+assertThat(exporter.spans(), hasSize(1));
+
+// Right: waits for the thing you actually care about.
+assertTrue(spanLatch.await(DEFAULT_TIMEOUT_SECONDS, SECONDS));
+assertThat(exporter.spans(), hasSize(1));
+```
+
+A `CountDownLatch`, a `BlockingQueue`, or an observer callback all work. When
+the signal is inherently untimed — a weak reference being enqueued, for
+instance — poll it in a bounded retry loop rather than sleeping once.
 
 For errors raised on a thread other than the test thread, collect them and
 assert at the end:
@@ -178,27 +185,25 @@ assertNoAsyncErrors(errors);
 
 ## 7. Test doubles
 
-Both Mockito styles are in active use — static `mock(Foo.class)` alone in 176
-files, `@Mock` with `@ExtendWith(MockitoExtension.class)` in 26. Either is
-acceptable. Use static `mock()` for a one-off, `@Mock` when several tests share
-the field.
+Both Mockito styles are in active use — static `mock(Foo.class)` alone, and
+`@Mock` with `@ExtendWith(MockitoExtension.class)`. Either is acceptable. Use
+static `mock()` for a one-off, `@Mock` when several tests share the field.
 
 - **Mock `Subscriber` and `Subscription` interfaces** when you only need to
-  assert which callbacks fired: `mock(SingleSource.Subscriber.class)` and
-  friends appear ~30 times and are idiomatic.
+  assert which callbacks fired. `mock(SingleSource.Subscriber.class)` and
+  friends are idiomatic here.
 - **Use `TestPublisher`/`TestSingle`/`TestCompletable`** when you need to
   *drive* signals rather than count them.
 - **Write a shared fake** when several tests need the same double. See
   `TestLoadBalancedConnection` in `servicetalk-loadbalancer` — a small
   interface with a static factory that pre-stubs the common methods.
-- `Mockito.spy` is rare — 3 uses in the whole repo. Prefer a mock or a fake,
-  and reach for a spy only to observe calls on a real collaborator you cannot
-  otherwise inject.
+- `Mockito.spy` is rare. Prefer a mock or a fake, and reach for a spy only to
+  observe calls on a real collaborator you cannot otherwise inject.
 
 ## 8. Parameterized tests
 
-Always pass an explicit `name`. About a fifth of existing tests omit it, so
-copy the majority rather than the file next to you:
+Always pass an explicit `name`. A sizable minority of existing tests omit it,
+so copy the majority rather than the file next to you:
 
 ```java
 @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
@@ -214,7 +219,7 @@ Use `@MethodSource` with `Named.of(...)` when the arguments are objects whose
 `toString()` would be unreadable.
 
 **Prune invalid combinations with an assumption and a message.** This is
-idiomatic here — 129 uses across 43 files:
+idiomatic here, and common across the protocol-matrix tests:
 
 ```java
 assumeFalse(api.isAggregated(), "This test asserts behavior only for streaming use-cases");

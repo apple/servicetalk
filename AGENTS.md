@@ -82,6 +82,10 @@ Detailed, task-specific guidance lives in `.agents/skills/`. Read the relevant
 |---|---|
 | `.agents/skills/servicetalk-testing/SKILL.md` | Adding or changing any test, or diagnosing a failing or hanging test. |
 
+Some modules also carry their own `AGENTS.md` with guidance specific to that
+module. When one exists next to the code you are editing, it applies in
+addition to this file.
+
 ## Testing
 
 All tests live in `src/test/java` and end in `Test.java`. There is no separate
