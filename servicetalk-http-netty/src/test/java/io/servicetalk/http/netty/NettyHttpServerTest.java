@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,7 +96,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -631,14 +630,12 @@ class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         // If the socket closure is delayed slightly (for example, by delaying the Publisher.error(...) on the server)
         // then the client throws ClosedChannelException. However if the socket closure happens quickly enough,
         // the client throws NativeIoException (KQueue) or IOException (NIO).
-        try {
+        IOException cause = assertThrows(IOException.class, () -> {
             while (httpPayloadChunks.hasNext()) {
                 sb.append(httpPayloadChunks.next().toString(US_ASCII));
             }
-            fail("Server should close upon receiving the request");
-        } catch (Throwable cause) {
-            assertClientTransportInboundClosed(cause);
-        }
+        });
+        assertClientTransportInboundClosed(cause);
         assertEquals("Goodbyecruelworld!", sb.toString());
         assertConnectionClosed();
         // Client inbound channel closed - should be same exception as above

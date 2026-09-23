@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FutureToSingleTest extends AbstractFutureToSingleTest {
 
@@ -61,15 +61,11 @@ class FutureToSingleTest extends AbstractFutureToSingleTest {
         CompletableFuture<String> future = new CompletableFuture<>();
         Single<String> single = from(future);
         EXEC.executor().execute(() -> future.completeExceptionally(DELIBERATE_EXCEPTION));
-        try {
-            single.toFuture().get();
-            fail("Single expected to fail.");
-        } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-            assertThat("Unexpected cause.", cause, instanceOf(ExecutionException.class));
-            Throwable nestedCause = cause.getCause();
-            assertThat("Unexpected nested cause.", nestedCause, is(DELIBERATE_EXCEPTION));
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, () -> single.toFuture().get());
+        Throwable cause = e.getCause();
+        assertThat("Unexpected cause.", cause, instanceOf(ExecutionException.class));
+        Throwable nestedCause = cause.getCause();
+        assertThat("Unexpected nested cause.", nestedCause, is(DELIBERATE_EXCEPTION));
     }
 
     @Test

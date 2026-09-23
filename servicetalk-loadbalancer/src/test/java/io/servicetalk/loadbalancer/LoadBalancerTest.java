@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,7 +101,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -374,12 +373,9 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
     @Test
     void newConnectionIsNotClosedWhenSelectorRejects() throws Exception {
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        try {
-            awaitIndefinitely(lb.selectConnection(__ -> false, null));
-            fail();
-        } catch (ExecutionException e) {
-            assertThat(e.getCause(), is(instanceOf(ConnectionRejectedException.class)));
-        }
+        ExecutionException e = assertThrows(ExecutionException.class,
+                () -> awaitIndefinitely(lb.selectConnection(__ -> false, null)));
+        assertThat(e.getCause(), is(instanceOf(ConnectionRejectedException.class)));
         assertThat(connectionsCreated, hasSize(1));
         TestLoadBalancedConnection connection = connectionsCreated.get(0);
         assertThat(connection, is(notNullValue()));
@@ -407,12 +403,9 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
         // We need to catch `DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD` exceptions before the bad host
         // will be taken out of rotation.
         for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD; i++) {
-            try {
-                lb.selectConnection(any(), null).toFuture().get();
-                fail("Shouldn't have gotten a live connection.");
-            } catch (Exception e) {
-                assertThat(e.getCause(), is(UNHEALTHY_HOST_EXCEPTION));
-            }
+            ExecutionException e = assertThrows(ExecutionException.class,
+                    () -> lb.selectConnection(any(), null).toFuture().get());
+            assertThat(e.getCause(), is(UNHEALTHY_HOST_EXCEPTION));
         }
 
         // Now add another healthy host which should be the host to get selected.

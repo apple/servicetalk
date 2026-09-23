@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,6 +119,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
@@ -818,12 +819,7 @@ class RequestResponseCloseHandlerTest {
             if (cChannel instanceof EpollSocketChannel || (!KQueue.isAvailable() && !Epoll.isAvailable())) {
                 call.run();
             } else {
-                try {
-                    call.run();
-                    fail("Should fail");
-                } catch (ChannelException e) {
-                    // Expected
-                }
+                assertThrows(ChannelException.class, call::run);
             }
         }
 

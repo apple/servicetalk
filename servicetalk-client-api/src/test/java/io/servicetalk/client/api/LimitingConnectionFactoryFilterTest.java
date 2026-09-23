@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2020-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020-2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -109,12 +108,9 @@ class LimitingConnectionFactoryFilterTest {
 
     private static void connectAndVerifyFailed(final ConnectionFactory<String, ? extends ListenableAsyncCloseable> cf)
             throws Exception {
-        try {
-            cf.newConnection("c-fail", null, null).toFuture().get();
-            fail("Connect expected to fail.");
-        } catch (ExecutionException e) {
-            assertThat("Unexpected exception.", e.getCause(), instanceOf(ConnectException.class));
-        }
+        ExecutionException e = assertThrows(ExecutionException.class,
+                () -> cf.newConnection("c-fail", null, null).toFuture().get());
+        assertThat("Unexpected exception.", e.getCause(), instanceOf(ConnectException.class));
     }
 
     @SuppressWarnings("unchecked")

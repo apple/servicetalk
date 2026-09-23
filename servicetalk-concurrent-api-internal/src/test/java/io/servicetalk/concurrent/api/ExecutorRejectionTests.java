@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -224,14 +224,10 @@ final class ExecutorRejectionTests {
     }
 
     private void expectFailureAndVerify(final Future<?> result) throws InterruptedException {
-        try {
-            result.get();
-            fail();
-        } catch (ExecutionException e) {
-            assertThat("Unexpected rejection cause.", e.getCause(), is(notNullValue()));
-            assertThat("Unexpected rejection cause.", e.getCause().getCause(),
-                    sameInstance(DELIBERATE_EXCEPTION));
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, result::get);
+        assertThat("Unexpected rejection cause.", e.getCause(), is(notNullValue()));
+        assertThat("Unexpected rejection cause.", e.getCause().getCause(),
+                sameInstance(DELIBERATE_EXCEPTION));
         verifyRejectedTasks(1, 1);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2023, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import io.servicetalk.serializer.api.SerializationException;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -30,6 +29,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class JacksonSerializationExceptionMapperTest {
 
@@ -39,22 +39,16 @@ class JacksonSerializationExceptionMapperTest {
 
     @Test
     void mapsInvalidJsonExceptionsToUnsupportedMediaType() throws Exception {
-        try {
-            new ObjectMapper().readValue("{bad json}".getBytes(StandardCharsets.UTF_8), Object.class);
-            Assertions.fail("shouldn't get here.");
-        } catch (JsonParseException ex) {
-            assertUnderlyingException(UNSUPPORTED_MEDIA_TYPE, ex);
-        }
+        JsonParseException ex = assertThrows(JsonParseException.class,
+                () -> new ObjectMapper().readValue("{bad json}".getBytes(StandardCharsets.UTF_8), Object.class));
+        assertUnderlyingException(UNSUPPORTED_MEDIA_TYPE, ex);
     }
 
     @Test
     void mapsParsingStructureExceptionsToUnsupportedMediaType() throws Exception {
-        try {
-            new ObjectMapper().readValue("{\"i\": \"foo\"}".getBytes(StandardCharsets.UTF_8), Pojo.class);
-            Assertions.fail("shouldn't get here.");
-        } catch (JsonMappingException ex) {
-            assertUnderlyingException(UNSUPPORTED_MEDIA_TYPE, ex);
-        }
+        JsonMappingException ex = assertThrows(JsonMappingException.class,
+                () -> new ObjectMapper().readValue("{\"i\": \"foo\"}".getBytes(StandardCharsets.UTF_8), Pojo.class));
+        assertUnderlyingException(UNSUPPORTED_MEDIA_TYPE, ex);
     }
 
     @Test
@@ -66,12 +60,9 @@ class JacksonSerializationExceptionMapperTest {
 
     @Test
     void mapsSerializationExceptionsToInternalServerError() {
-        try {
-            new ObjectMapper().writeValueAsString(new Object());
-            Assertions.fail("shouldn't get here.");
-        } catch (Exception ex) {
-            assertUnderlyingException(INTERNAL_SERVER_ERROR, ex);
-        }
+        JsonMappingException ex = assertThrows(JsonMappingException.class,
+                () -> new ObjectMapper().writeValueAsString(new Object()));
+        assertUnderlyingException(INTERNAL_SERVER_ERROR, ex);
     }
 
     void assertUnderlyingException(HttpResponseStatus status, Throwable ex) {

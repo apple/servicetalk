@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.net.SocketAddress;
@@ -41,6 +40,7 @@ import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -283,13 +283,9 @@ class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuilderTest 
                 .when((ctx, req) -> true).thenRouteTo(serviceC)
                 .buildStreaming();
 
-        try {
-            final Completable completable = service.closeAsync();
-            completable.toFuture().get();
-            Assertions.fail("Expected an exception from `await`");
-        } catch (final ExecutionException e) {
-            assertSame(DELIBERATE_EXCEPTION, e.getCause());
-        }
+        final Completable completable = service.closeAsync();
+        final ExecutionException e = assertThrows(ExecutionException.class, () -> completable.toFuture().get());
+        assertSame(DELIBERATE_EXCEPTION, e.getCause());
 
         verify(serviceA).closeAsync();
         verify(serviceB).closeAsync();

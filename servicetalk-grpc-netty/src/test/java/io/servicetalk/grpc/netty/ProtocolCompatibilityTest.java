@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2024 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2024, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -166,6 +166,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class ProtocolCompatibilityTest {
@@ -1203,21 +1204,17 @@ class ProtocolCompatibilityTest {
                                                     final GrpcStatusCode expectCode,
                                                     @Nullable final String expectMessage)
             throws InvalidProtocolBufferException {
-        try {
-            future.get();
-            fail("No error received");
-        } catch (final Exception e) {
-            final Throwable t = e.getCause();
-            if (t instanceof StatusRuntimeException) {
-                // underlying client is gRPC
-                Status.Code codeExpected = Enum.valueOf(Status.Code.class, expectCode.toString());
-                assertStatusRuntimeException((StatusRuntimeException) t, withStatus, codeExpected, expectMessage);
-            } else if (t instanceof GrpcStatusException) {
-                // underlying client is ServiceTalk
-                assertGrpcStatusException((GrpcStatusException) t, withStatus, expectCode, expectMessage);
-            } else {
-                fail("Unexpected exception", t);
-            }
+        final ExecutionException e = assertThrows(ExecutionException.class, future::get);
+        final Throwable t = e.getCause();
+        if (t instanceof StatusRuntimeException) {
+            // underlying client is gRPC
+            Status.Code codeExpected = Enum.valueOf(Status.Code.class, expectCode.toString());
+            assertStatusRuntimeException((StatusRuntimeException) t, withStatus, codeExpected, expectMessage);
+        } else if (t instanceof GrpcStatusException) {
+            // underlying client is ServiceTalk
+            assertGrpcStatusException((GrpcStatusException) t, withStatus, expectCode, expectMessage);
+        } else {
+            fail("Unexpected exception", t);
         }
     }
 
