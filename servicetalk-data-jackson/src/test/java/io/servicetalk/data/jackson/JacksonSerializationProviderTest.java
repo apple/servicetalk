@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 @Deprecated
 class JacksonSerializationProviderTest {
@@ -83,12 +82,9 @@ class JacksonSerializationProviderTest {
         serialized.setByte(serialized.writerIndex() - 1, serialized.getByte(serialized.writerIndex() - 1) + 1);
 
         final StreamingDeserializer<TestPojo> deserializer = serializationProvider.getDeserializer(TestPojo.class);
-        try {
-            deserializer.deserialize(serialized);
-            fail();
-        } catch (SerializationException e) {
-            assertThat("Unexpected exception", e.getCause(), instanceOf(JsonParseException.class));
-        }
+        SerializationException e = assertThrows(SerializationException.class,
+                () -> deserializer.deserialize(serialized));
+        assertThat("Unexpected exception", e.getCause(), instanceOf(JsonParseException.class));
         assertThat("Unexpected data remaining in deserializer", deserializer.hasData(), is(true));
     }
 

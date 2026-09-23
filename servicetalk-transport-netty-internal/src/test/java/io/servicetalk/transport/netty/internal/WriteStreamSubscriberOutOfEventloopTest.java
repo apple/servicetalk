@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventloopTest {
@@ -109,12 +109,8 @@ class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventloopTest
         this.subscriber.onNext(1);
         this.subscriber.onError(DELIBERATE_EXCEPTION);
 
-        try {
-            fromSource(subject).toFuture().get();
-            fail();
-        } catch (ExecutionException cause) {
-            assertSame(DELIBERATE_EXCEPTION, cause.getCause());
-        }
+        ExecutionException cause = assertThrows(ExecutionException.class, () -> fromSource(subject).toFuture().get());
+        assertSame(DELIBERATE_EXCEPTION, cause.getCause());
     }
 
     private void testWriteFromDifferentEventLoops(EventLoop first, EventLoop second) throws InterruptedException {

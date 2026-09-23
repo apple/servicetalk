@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CollectTest {
 
@@ -52,12 +52,8 @@ class CollectTest {
     void collectVarArgFailure() throws Exception {
         Future<? extends Collection<Integer>> future =
                 collectUnordered(failed(DELIBERATE_EXCEPTION), succeeded(2)).toFuture();
-        try {
-            future.get();
-            fail();
-        } catch (ExecutionException e) {
-            assertThat("Unexpected exception.", e.getCause(), is(DELIBERATE_EXCEPTION));
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, future::get);
+        assertThat("Unexpected exception.", e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -65,13 +61,9 @@ class CollectTest {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
         Future<? extends Collection<Integer>> future = collectUnorderedDelayError(failed(DELIBERATE_EXCEPTION),
                 succeeded(2).beforeOnSubscribe(__ -> secondSubscribed.set(true))).toFuture();
-        try {
-            future.get();
-            fail();
-        } catch (ExecutionException e) {
-            assertThat("Second source not subscribed.", secondSubscribed.get(), is(true));
-            assertThat("Unexpected exception.", e.getCause(), is(DELIBERATE_EXCEPTION));
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, future::get);
+        assertThat("Second source not subscribed.", secondSubscribed.get(), is(true));
+        assertThat("Unexpected exception.", e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -79,13 +71,9 @@ class CollectTest {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
         Future<? extends Collection<Integer>> future = collectUnorderedDelayError(1, failed(DELIBERATE_EXCEPTION),
                 succeeded(2).beforeOnSubscribe(__ -> secondSubscribed.set(true))).toFuture();
-        try {
-            future.get();
-            fail();
-        } catch (ExecutionException e) {
-            assertThat("Second source not subscribed.", secondSubscribed.get(), is(true));
-            assertThat("Unexpected exception.", e.getCause(), is(DELIBERATE_EXCEPTION));
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, future::get);
+        assertThat("Second source not subscribed.", secondSubscribed.get(), is(true));
+        assertThat("Unexpected exception.", e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -105,12 +93,8 @@ class CollectTest {
     void collectIterableFailure() throws Exception {
         Future<? extends Collection<Integer>> future =
                 collectUnordered(asList(failed(DELIBERATE_EXCEPTION), succeeded(2))).toFuture();
-        try {
-            future.get();
-            fail();
-        } catch (ExecutionException e) {
-            assertThat("Unexpected exception.", e.getCause(), is(DELIBERATE_EXCEPTION));
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, future::get);
+        assertThat("Unexpected exception.", e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -118,13 +102,9 @@ class CollectTest {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
         Future<? extends Collection<Integer>> future = collectUnorderedDelayError(asList(failed(DELIBERATE_EXCEPTION),
                 succeeded(2).beforeOnSubscribe(__ -> secondSubscribed.set(true)))).toFuture();
-        try {
-            future.get();
-            fail();
-        } catch (ExecutionException e) {
-            assertThat("Second source not subscribed.", secondSubscribed.get(), is(true));
-            assertThat("Unexpected exception.", e.getCause(), is(DELIBERATE_EXCEPTION));
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, future::get);
+        assertThat("Second source not subscribed.", secondSubscribed.get(), is(true));
+        assertThat("Unexpected exception.", e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -132,12 +112,8 @@ class CollectTest {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
         Future<? extends Collection<Integer>> future = collectUnorderedDelayError(asList(failed(DELIBERATE_EXCEPTION),
                 succeeded(2).beforeOnSubscribe(__ -> secondSubscribed.set(true))), 1).toFuture();
-        try {
-            future.get();
-            fail();
-        } catch (ExecutionException e) {
-            assertThat("Second source not subscribed.", secondSubscribed.get(), is(true));
-            assertThat("Unexpected exception.", e.getCause(), is(DELIBERATE_EXCEPTION));
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, future::get);
+        assertThat("Second source not subscribed.", secondSubscribed.get(), is(true));
+        assertThat("Unexpected exception.", e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 }

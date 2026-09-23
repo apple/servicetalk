@@ -168,6 +168,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class ProtocolCompatibilityTest {
@@ -1205,21 +1206,17 @@ class ProtocolCompatibilityTest {
                                                     final GrpcStatusCode expectCode,
                                                     @Nullable final String expectMessage)
             throws InvalidProtocolBufferException {
-        try {
-            future.get();
-            fail("No error received");
-        } catch (final Exception e) {
-            final Throwable t = e.getCause();
-            if (t instanceof StatusRuntimeException) {
-                // underlying client is gRPC
-                Status.Code codeExpected = Enum.valueOf(Status.Code.class, expectCode.toString());
-                assertStatusRuntimeException((StatusRuntimeException) t, withStatus, codeExpected, expectMessage);
-            } else if (t instanceof GrpcStatusException) {
-                // underlying client is ServiceTalk
-                assertGrpcStatusException((GrpcStatusException) t, withStatus, expectCode, expectMessage);
-            } else {
-                fail("Unexpected exception", t);
-            }
+        final ExecutionException e = assertThrows(ExecutionException.class, future::get);
+        final Throwable t = e.getCause();
+        if (t instanceof StatusRuntimeException) {
+            // underlying client is gRPC
+            Status.Code codeExpected = Enum.valueOf(Status.Code.class, expectCode.toString());
+            assertStatusRuntimeException((StatusRuntimeException) t, withStatus, codeExpected, expectMessage);
+        } else if (t instanceof GrpcStatusException) {
+            // underlying client is ServiceTalk
+            assertGrpcStatusException((GrpcStatusException) t, withStatus, expectCode, expectMessage);
+        } else {
+            fail("Unexpected exception", t);
         }
     }
 

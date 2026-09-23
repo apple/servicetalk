@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class DefaultPartitionAttributesBuilderTest {
     private static final Key<String> SHARD_KEY = Key.newKey("shard");
@@ -56,12 +56,9 @@ class DefaultPartitionAttributesBuilderTest {
         builder.add(OTHER_KEY, 2);
         builder.add(MAIN_KEY, true);
         builder.add(SHARD_KEY, DEFAULT_SHARD);
-        try {
-            builder.add(OTHER_KEY, 3);
-            fail();
-        } catch (DuplicateAttributeException e) {
-            assertSame(OTHER_KEY, e.getKey());
-        }
+        DuplicateAttributeException e = assertThrows(DuplicateAttributeException.class,
+                () -> builder.add(OTHER_KEY, 3));
+        assertSame(OTHER_KEY, e.getKey());
     }
 
     @Test
@@ -73,12 +70,8 @@ class DefaultPartitionAttributesBuilderTest {
         builder.add(SHARD_KEY, DEFAULT_SHARD);
         builder.add(OTHER_KEY2, 10);
         builder.add(OTHER_KEY, 3);
-        try {
-            builder.build();
-            fail();
-        } catch (DuplicateAttributeException e) {
-            assertSame(OTHER_KEY, e.getKey());
-        }
+        DuplicateAttributeException e = assertThrows(DuplicateAttributeException.class, builder::build);
+        assertSame(OTHER_KEY, e.getKey());
     }
 
     @Test
@@ -90,12 +83,8 @@ class DefaultPartitionAttributesBuilderTest {
         builder.add(SHARD_KEY, DEFAULT_SHARD);
         builder.add(OTHER_KEY2, 10);
         builder.add(OTHER_KEY, 2);
-        try {
-            builder.build();
-            fail();
-        } catch (DuplicateAttributeException e) {
-            assertSame(OTHER_KEY, e.getKey());
-        }
+        DuplicateAttributeException e = assertThrows(DuplicateAttributeException.class, builder::build);
+        assertSame(OTHER_KEY, e.getKey());
     }
 
     @Test

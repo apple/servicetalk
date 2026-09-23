@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
 
 class ConnectablePayloadWriterTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectablePayloadWriterTest.class);
@@ -155,12 +154,8 @@ class ConnectablePayloadWriterTest {
 
         toSource(cpw.connect()).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
-        try {
-            f.get();
-            fail();
-        } catch (ExecutionException e) {
-            verifyCheckedRunnableException(e, IOException.class);
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, f::get);
+        verifyCheckedRunnableException(e, IOException.class);
 
         assertThat(subscriber.takeOnNext(), is("foo"));
         subscriber.awaitOnComplete();
@@ -182,12 +177,8 @@ class ConnectablePayloadWriterTest {
             cpw.flush();
         }));
 
-        try {
-            f.get();
-            fail();
-        } catch (ExecutionException e) {
-            verifyCheckedRunnableException(e, IOException.class);
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, f::get);
+        verifyCheckedRunnableException(e, IOException.class);
 
         assertThat(subscriber.takeOnNext(), is("foo"));
         subscriber.awaitOnComplete();
@@ -212,12 +203,8 @@ class ConnectablePayloadWriterTest {
         subscriber.awaitSubscription().request(1);
         afterFlushBarrier.await();
         subscriber.awaitSubscription().cancel();
-        try {
-            f.get();
-            fail();
-        } catch (ExecutionException e) {
-            verifyCheckedRunnableException(e, IOException.class);
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, f::get);
+        verifyCheckedRunnableException(e, IOException.class);
 
         assertThat(subscriber.takeOnNext(), is("foo"));
         assertNoTerminal(subscriber);
@@ -234,12 +221,8 @@ class ConnectablePayloadWriterTest {
         subscriber.awaitSubscription().cancel();
         Future<?> f = executorService.submit(toRunnable(() -> cpw.write("foo")));
 
-        try {
-            f.get();
-            fail();
-        } catch (ExecutionException e) {
-            verifyCheckedRunnableException(e, IOException.class);
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, f::get);
+        verifyCheckedRunnableException(e, IOException.class);
 
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
         assertNoTerminal(subscriber);
@@ -401,12 +384,8 @@ class ConnectablePayloadWriterTest {
                 onComplete.countDown();
             }
         });
-        try {
-            cpw.write("foo");
-            fail();
-        } catch (RuntimeException cause) {
-            assertSame(DELIBERATE_EXCEPTION, cause);
-        }
+        RuntimeException cause = assertThrows(RuntimeException.class, () -> cpw.write("foo"));
+        assertSame(DELIBERATE_EXCEPTION, cause);
         assertThrows(IOException.class, cpw::flush);
         cpw.close();
         onError.await();
@@ -564,12 +543,8 @@ class ConnectablePayloadWriterTest {
                 failure.set(new AssertionError("onComplete received when onNext threw."));
             }
         });
-        try {
-            cpw.write("foo");
-            fail();
-        } catch (RuntimeException cause) {
-            assertSame(DELIBERATE_EXCEPTION, cause);
-        }
+        RuntimeException cause = assertThrows(RuntimeException.class, () -> cpw.write("foo"));
+        assertSame(DELIBERATE_EXCEPTION, cause);
         cpw.close();
         assertThat("Unexpected failure", failure.get(), is(DELIBERATE_EXCEPTION));
     }
@@ -609,12 +584,8 @@ class ConnectablePayloadWriterTest {
             cpw.write("foo");
             cpw.flush();
         }));
-        try {
-            f.get();
-            fail();
-        } catch (ExecutionException e) {
-            verifyCheckedRunnableException(e, IOException.class);
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, f::get);
+        verifyCheckedRunnableException(e, IOException.class);
         assertThat(subscriber.awaitOnError(), is(instanceOf(IllegalArgumentException.class)));
     }
 
@@ -630,12 +601,8 @@ class ConnectablePayloadWriterTest {
         }));
         cb.await();
         subscriber.awaitSubscription().request(-1);
-        try {
-            f.get();
-            fail();
-        } catch (ExecutionException e) {
-            verifyCheckedRunnableException(e, IOException.class);
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, f::get);
+        verifyCheckedRunnableException(e, IOException.class);
         assertThat(subscriber.awaitOnError(), is(instanceOf(IllegalArgumentException.class)));
     }
 
