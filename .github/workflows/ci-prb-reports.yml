@@ -8,7 +8,12 @@ on:
       - completed
 jobs:
   tests:
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure' }}
+    # A fork PR controls the artifacts its run uploads, and this job republishes them verbatim
+    # with checks: write. Only consume artifacts produced by a run on this repository.
+    if: >-
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      (github.event.workflow_run.conclusion == 'success' ||
+      github.event.workflow_run.conclusion == 'failure')
     permissions:
       actions: read
       checks: write
