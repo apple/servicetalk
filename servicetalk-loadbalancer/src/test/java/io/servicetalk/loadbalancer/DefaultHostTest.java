@@ -42,6 +42,8 @@ import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK
 import static io.servicetalk.loadbalancer.UnhealthyHostConnectionFactory.UNHEALTHY_HOST_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -291,32 +293,32 @@ class DefaultHostTest {
                 ConnectionSelectorPolicies.<TestLoadBalancedConnection>linearSearch()
                         .buildConnectionSelector("resource"),
                 connectionFactory, 2, mockHostObserver, healthCheckConfig, null);
-        assertEquals(0, createdConnections.size());
+        assertThat(createdConnections, is(empty()));
 
         host.newConnection(unused -> true, false, null).toFuture().get();
         ListenableAsyncCloseable cxn = createdConnections.pop();
         cxn.closeAsync().toFuture().get();
 
         // Closing the connection should trigger warming, and now we should see 2 connections.
-        assertEquals(2, createdConnections.size());
+        assertThat(createdConnections, hasSize(2));
 
         assertFalse(host.markExpired());
         verify(mockHostObserver).onHostMarkedExpired(2);
         cxn = createdConnections.pop();
         cxn.closeAsync().toFuture().get();
 
-        assertEquals(1, createdConnections.size());
+        assertThat(createdConnections, hasSize(1));
         assertTrue(host.markActiveIfNotClosed());
         verify(mockHostObserver).onExpiredHostRevived(1);
 
         // We should add one more connection (for a total of two) after revival.
-        assertEquals(2, createdConnections.size());
+        assertThat(createdConnections, hasSize(2));
 
         host.closeAsync().toFuture().get();
         verify(mockHostObserver).onActiveHostRemoved(2);
         createdConnections.pop().closeAsync().toFuture().get();
         createdConnections.pop().closeAsync().toFuture().get();
-        assertTrue(createdConnections.isEmpty());
+        assertThat(createdConnections, is(empty()));
     }
 
     @Test
@@ -337,12 +339,12 @@ class DefaultHostTest {
         host.isWithinSubset(false);
         TestLoadBalancedConnection cxn = host.newConnection(unused -> true,
                 false, null).toFuture().get();
-        assertEquals(1, createdConnections.size(), "Host outside subset should not warm connections");
+        assertThat("Host outside subset should not warm connections", createdConnections, hasSize(1));
 
         // Test host inside subset - should warm connections
         host.isWithinSubset(true);
         cxn.closeAsync().subscribe();
-        assertEquals(3, createdConnections.size());
+        assertThat(createdConnections, hasSize(3));
 
         // Transition back outside the subset and close all connections. This should not trigger new connections.
         host.isWithinSubset(false);
@@ -350,6 +352,6 @@ class DefaultHostTest {
             closeable.closeAsync().subscribe();
         }
 
-        assertEquals(3, createdConnections.size());
+        assertThat(createdConnections, hasSize(3));
     }
 }

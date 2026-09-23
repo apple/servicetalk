@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.Map;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasKey;
 
 class StringUtilsTest {
     @Test
@@ -149,7 +150,7 @@ class StringUtilsTest {
     }
 
     private static void assertContainsNullValue(Map<String, String> options, String key) {
-        assertThat(options.containsKey(key), is(true));
+        assertThat(options, hasKey(key));
         assertThat(options.get(key), is(nullValue()));
     }
 }

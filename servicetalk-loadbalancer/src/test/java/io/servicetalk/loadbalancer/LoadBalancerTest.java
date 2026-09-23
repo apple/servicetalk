@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,7 +96,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -825,11 +824,11 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
         sendServiceDiscoveryEvents(upEvent("address-1"));
         assertAddresses(lb.usedAddresses(), "address-1");
 
-        assertTrue(connectionsCreated.isEmpty());
+        assertThat(connectionsCreated, is(empty()));
         TestLoadBalancedConnection conn1 = lb.newConnection(null).toFuture().get();
-        assertEquals(1, connectionsCreated.size());
+        assertThat(connectionsCreated, hasSize(1));
         TestLoadBalancedConnection conn2 = lb.newConnection(null).toFuture().get();
-        assertEquals(2, connectionsCreated.size());
+        assertThat(connectionsCreated, hasSize(2));
 
         verify(conn1, times(1)).tryReserve();
         verify(conn2, times(1)).tryReserve();

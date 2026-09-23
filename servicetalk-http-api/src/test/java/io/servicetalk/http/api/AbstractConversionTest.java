@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,11 +28,12 @@ import java.util.function.Supplier;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.hamcrest.Matchers.lessThan;
 
 abstract class AbstractConversionTest {
     private static final String TRAILER_NAME = "foo";
@@ -72,8 +73,8 @@ abstract class AbstractConversionTest {
         if (payloadInfo.mayHaveTrailers()) {
             assertThat("Unexpected payload and trailers.", payloadAndTrailers, hasSize(2));
         } else {
-            assertFalse(payloadAndTrailers.isEmpty());
-            assertTrue(payloadAndTrailers.size() < 3);
+            assertThat("Unexpected payload and trailers.", payloadAndTrailers,
+                    hasSize(allOf(greaterThan(0), lessThan(3))));
         }
 
         Iterator<Object> iter = payloadAndTrailers.iterator();

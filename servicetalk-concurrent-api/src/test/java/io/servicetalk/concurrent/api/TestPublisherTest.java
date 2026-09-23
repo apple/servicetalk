@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.hasToString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -171,7 +172,7 @@ class TestPublisherTest {
 
         FanOut fanOut = new FanOut(2);
         fanOut.consume(source);
-        assertEquals(2, concurrentPublisherSubscriberFunction.subscribers().size());
+        assertThat(concurrentPublisherSubscriberFunction.subscribers(), hasSize(2));
 
         List<Subscriber<? super Integer>> subscribers = concurrentPublisherSubscriberFunction.subscribers();
         TestSubscription subscription1 = new TestSubscription();
