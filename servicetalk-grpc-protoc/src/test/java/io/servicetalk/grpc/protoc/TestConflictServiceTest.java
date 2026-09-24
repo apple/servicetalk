@@ -39,7 +39,7 @@ import java.util.concurrent.ExecutionException;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.grpc.protoc.test.conflict.service.TestConflictService.TestReply;
 
-class TestConflictService {
+class TestConflictServiceTest {
     @Test
     void conflictServiceGenerated() throws ExecutionException, InterruptedException {
         TestConflictService0 service = (ctx, request) -> succeeded(TestReply.newBuilder().build());

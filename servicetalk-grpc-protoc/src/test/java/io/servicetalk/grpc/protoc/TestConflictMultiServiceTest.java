@@ -16,22 +16,17 @@
 package io.servicetalk.grpc.protoc;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.grpc.protoc.test.conflict.rpc.TestConflictRpc.Test.TestService;
-import io.servicetalk.grpc.protoc.test.conflict.rpc.TestConflictRpc.TestRpc.TestRpcService;
+import io.servicetalk.grpc.protoc.test.conflict.multi.service.TestConflictMultiService.TestConflictMultiServiceService;
+import io.servicetalk.grpc.protoc.test.conflict.multi.service.TestReply;
 
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
 
-import static io.servicetalk.grpc.protoc.test.conflict.rpc.TestConflictRpc.TestReply;
-
-class TestConflictRpc {
+class TestConflictMultiServiceTest {
     @Test
-    void conflictRpcServiceGenerated() throws ExecutionException, InterruptedException {
-        TestService service = (ctx, request) -> Single.succeeded(TestReply.newBuilder().build());
-        TestRpcService rpcService = (ctx, request) -> Single.succeeded(TestReply.newBuilder().build());
-
+    void conflictMultiServiceGenerated() throws ExecutionException, InterruptedException {
+        TestConflictMultiServiceService service = (ctx, request) -> Single.succeeded(TestReply.newBuilder().build());
         service.closeAsync().toFuture().get();
-        rpcService.closeAsync().toFuture().get();
     }
 }
