@@ -21,7 +21,7 @@ import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflo
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithUnderOverflowProtection;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class FlowControlUtilsTests {
+class FlowControlUtilsTest {
     @Test
     void addWithOverflowIfPositiveRespectsZero() {
         assertEquals(0, addWithOverflowProtectionIfPositive(0, -1));
