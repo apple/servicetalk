@@ -24,7 +24,6 @@ import io.servicetalk.http.api.DisableInterruptOnCancelHttpServiceFilter;
 import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
-import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -35,12 +34,14 @@ import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
@@ -59,9 +60,14 @@ class DisableInterruptOnCancelHttpServiceFilterTest {
         verifyServerFilterAsyncContextVisibility(DisableInterruptOnCancelHttpServiceFilter.INSTANCE);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] withFilter={0}")
-    @ValueSource(booleans = {false, true})
-    void clientCancelMidStreamFailsWrite(boolean withFilter) throws Exception {
+    static Stream<Arguments> protocolsAndFilter() {
+        return Stream.of(HttpProtocol.values())
+                .flatMap(protocol -> Stream.of(Arguments.of(protocol, false), Arguments.of(protocol, true)));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} withFilter={1}")
+    @MethodSource("protocolsAndFilter")
+    void clientCancelMidStreamFailsWrite(HttpProtocol protocol, boolean withFilter) throws Exception {
         CountDownLatch releaseLatch = new CountDownLatch(1);
         CountDownLatch doneLatch = new CountDownLatch(1);
         AtomicBoolean interrupted = new AtomicBoolean();
@@ -77,7 +83,7 @@ class DisableInterruptOnCancelHttpServiceFilterTest {
                 } catch (InterruptedException e) {
                     interrupted.set(true);
                 }
-                // The server notices the disconnect only when a write fails.
+                // Write until the cancel fails a write.
                 for (;;) {
                     writer.write(ctx.executionContext().bufferAllocator().fromAscii("x"));
                     writer.flush();
@@ -93,24 +99,22 @@ class DisableInterruptOnCancelHttpServiceFilterTest {
             }
         };
 
-        HttpServerBuilder builder = forAddress(localAddress(0));
+        HttpServerBuilder builder = forAddress(localAddress(0)).protocols(protocol.config);
         if (withFilter) {
             builder.appendServiceFilter(DisableInterruptOnCancelHttpServiceFilter.INSTANCE);
         }
         try (ServerContext serverContext = builder.listenBlockingStreamingAndAwait(service)) {
-            try (StreamingHttpClient client = forSingleAddress(serverHostAndPort(serverContext)).buildStreaming()) {
-                ReservedStreamingHttpConnection connection = client.reserveConnection(client.get("/"))
-                        .toFuture().get();
-                StreamingHttpResponse response = connection.request(connection.get("/")).toFuture().get();
+            try (StreamingHttpClient client = forSingleAddress(serverHostAndPort(serverContext))
+                    .protocols(protocol.config).buildStreaming()) {
+                StreamingHttpResponse response = client.request(client.get("/")).toFuture().get();
                 CountDownLatch firstChunk = new CountDownLatch(1);
                 Cancellable cancellable = response.payloadBody()
                         .afterOnNext(__ -> firstChunk.countDown())
                         .ignoreElements()
                         .subscribe();
                 firstChunk.await();
-                // The client is still reading, so it resets the HTTP/1.1 connection. That fails the next server write.
+                // Resets the HTTP/2 stream, or the HTTP/1.1 connection because the client is still reading.
                 cancellable.cancel();
-                connection.onClose().toFuture().get();
             } finally {
                 releaseLatch.countDown();
             }
@@ -122,9 +126,9 @@ class DisableInterruptOnCancelHttpServiceFilterTest {
         assertThat(writeFailure.get(), instanceOf(IOException.class));
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] withFilter={0}")
-    @ValueSource(booleans = {false, true})
-    void timeoutBeforeSendMetaDataFailsWrite(boolean withFilter) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} withFilter={1}")
+    @MethodSource("protocolsAndFilter")
+    void timeoutBeforeSendMetaDataFailsWrite(HttpProtocol protocol, boolean withFilter) throws Exception {
         CountDownLatch responseCancelled = new CountDownLatch(1);
         CountDownLatch releaseLatch = new CountDownLatch(1);
         CountDownLatch doneLatch = new CountDownLatch(1);
@@ -148,7 +152,7 @@ class DisableInterruptOnCancelHttpServiceFilterTest {
             }
         };
 
-        HttpServerBuilder builder = forAddress(localAddress(0))
+        HttpServerBuilder builder = forAddress(localAddress(0)).protocols(protocol.config)
                 .appendServiceFilter(new TimeoutHttpServiceFilter(ofMillis(100)))
                 .appendServiceFilter(delegate -> new StreamingHttpServiceFilter(delegate) {
                     @Override
@@ -163,7 +167,8 @@ class DisableInterruptOnCancelHttpServiceFilterTest {
             builder.appendServiceFilter(DisableInterruptOnCancelHttpServiceFilter.INSTANCE);
         }
         try (ServerContext serverContext = builder.listenBlockingStreamingAndAwait(service)) {
-            try (BlockingHttpClient client = forSingleAddress(serverHostAndPort(serverContext)).buildBlocking()) {
+            try (BlockingHttpClient client = forSingleAddress(serverHostAndPort(serverContext))
+                    .protocols(protocol.config).buildBlocking()) {
                 // Fails with the timeout; only the resulting cancel matters.
                 client.request(client.get("/"));
                 // Release only after the cancel landed, or a missing interrupt looks like a late one.
