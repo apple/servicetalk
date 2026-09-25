@@ -69,9 +69,9 @@ CI compiles and runs tests on JDK 8, 11, 17, 21, and 25.
  */
 ```
 
-Use the current year for a new file. When editing an existing file, extend its
-existing year list — `2019` becomes `2019, 2026`, and `2019-2025` becomes
-`2019-2026`.
+Use the current year for a new file. When editing an existing file, replace its
+years with a single range from its first year to the current year. In 2026,
+`2019` becomes `2019-2026`, and `2018-2019, 2021` becomes `2018-2026`.
 
 ## Skills
 
