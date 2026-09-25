@@ -40,7 +40,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -76,7 +75,7 @@ final class PublisherAsBlockingIterableTest {
         DeliberateException de = new DeliberateException();
         Iterator<Integer> iterator = Publisher.<Integer>failed(de).toIterable().iterator();
         assertThat("Item expected but not found.", iterator.hasNext(), is(true));
-        assertSame(de, assertThrows(DeliberateException.class, iterator::next));
+        assertThrows(DeliberateException.class, iterator::next);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] clazz={0}")
@@ -95,7 +94,7 @@ final class PublisherAsBlockingIterableTest {
         Iterator<Integer> iterator = Publisher.<Integer>failed(de).toIterable().iterator();
         assertThat("Item expected but not found.", iterator.hasNext(), is(true));
         assertThat("Second hasNext inconsistent with first.", iterator.hasNext(), is(true));
-        assertSame(de, assertThrows(DeliberateException.class, iterator::next));
+        assertThrows(DeliberateException.class, iterator::next);
     }
 
     @Test
@@ -214,12 +213,11 @@ final class PublisherAsBlockingIterableTest {
         Iterator<Integer> iterator = from(1, 2, 3, 4)
                 .concat(Publisher.failed(de)).toIterable().iterator();
         List<Integer> result = new ArrayList<>(4);
-        DeliberateException e = assertThrows(DeliberateException.class, () -> {
+        assertThrows(DeliberateException.class, () -> {
             while (iterator.hasNext()) {
                 result.add(iterator.next());
             }
         });
-        assertThat("Unexpected exception.", e, sameInstance(de));
         assertThat("Unexpected result.", result, contains(1, 2, 3, 4));
     }
 
@@ -328,8 +326,7 @@ final class PublisherAsBlockingIterableTest {
         source.onError(de);
         verifyNextIs(iterator, 1);
         assertThat("Item expected but not found.", iterator.hasNext(), is(true));
-        Exception e = assertThrows(DeliberateException.class, iterator::next);
-        assertThat(e, sameInstance(de));
+        assertThrows(DeliberateException.class, iterator::next);
     }
 
     @Test

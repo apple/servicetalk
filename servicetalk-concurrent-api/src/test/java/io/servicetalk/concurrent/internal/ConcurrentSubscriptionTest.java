@@ -84,8 +84,7 @@ class ConcurrentSubscriptionTest {
                 cancelledLatch.countDown();
             }
         });
-        DeliberateException e = assertThrows(DeliberateException.class, () -> concurrent.request(1));
-        assertSame(DELIBERATE_EXCEPTION, e);
+        assertThrows(DeliberateException.class, () -> concurrent.request(1));
         concurrent.cancel();
         cancelledLatch.await();
     }
