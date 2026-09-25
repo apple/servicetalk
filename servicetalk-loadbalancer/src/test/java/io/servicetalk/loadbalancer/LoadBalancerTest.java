@@ -300,7 +300,7 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
         assertNotNull(connection);
         List<Map.Entry<String, List<TestLoadBalancedConnection>>> activeAddresses = lb.usedAddresses();
 
-        assertThat(activeAddresses.size(), is(1));
+        assertThat(activeAddresses, hasSize(1));
         assertConnectionCount(activeAddresses, connectionsCount("address-1", 1));
         assertThat(activeAddresses.get(0).getValue().get(0), is(connection));
         awaitIndefinitely(connection.closeAsync());

@@ -34,6 +34,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.anEmptyMap;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyString;
@@ -152,7 +153,7 @@ class FormUrlEncodedHttpDeserializerTest {
         final String formParameters = String.format("key1%s&key2%s&key2%s", separator, separator, separator);
 
         final Map<String, List<String>> deserialized = deserializer.deserialize(FE_HEADERS, toBuffer(formParameters));
-        assertThat(deserialized.size(), is(2));
+        assertThat(deserialized, aMapWithSize(2));
 
         assertThat(deserialized.get("key1"), hasSize(1));
         assertThat(deserialized.get("key2"), hasSize(2));

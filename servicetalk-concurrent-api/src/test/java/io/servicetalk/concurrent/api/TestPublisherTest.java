@@ -172,9 +172,9 @@ class TestPublisherTest {
 
         FanOut fanOut = new FanOut(2);
         fanOut.consume(source);
-        assertThat(concurrentPublisherSubscriberFunction.subscribers(), hasSize(2));
-
         List<Subscriber<? super Integer>> subscribers = concurrentPublisherSubscriberFunction.subscribers();
+        assertThat(subscribers, hasSize(2));
+
         TestSubscription subscription1 = new TestSubscription();
         TestSubscription subscription2 = new TestSubscription();
         subscribers.get(0).onSubscribe(subscription1);
