@@ -18,10 +18,14 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.client.api.RequestConcurrencyController;
 import io.servicetalk.client.api.ReservableRequestConcurrencyController;
+import io.servicetalk.client.api.ScoreSupplier;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
+import io.servicetalk.http.api.HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.IgnoreConsumedEvent;
 
 import org.junit.jupiter.api.Test;
@@ -137,6 +141,72 @@ class ReservableRequestConcurrencyControllersTest {
                 newController(newConnection(from(new IgnoreConsumedEvent<>(10)), never()), 10);
         assertThat(controller.tryRequest(), is(Accepted));
         assertFalse(controller.tryReserve());
+    }
+
+    @Test
+    void scoreTracksPendingRequests() {
+        final int maxRequestCount = 10;
+        ReservableRequestConcurrencyController controller = newController(
+                newConnection(from(new IgnoreConsumedEvent<>(maxRequestCount)), never()), maxRequestCount);
+        assertThat(score(controller), is(0));
+        for (int i = 1; i <= maxRequestCount; ++i) {
+            assertThat(controller.tryRequest(), is(Accepted));
+            assertThat(score(controller), is(-i));
+        }
+        for (int i = maxRequestCount - 1; i >= 0; --i) {
+            controller.requestFinished();
+            assertThat(score(controller), is(-i));
+        }
+    }
+
+    @Test
+    void reservedConnectionScoresLowest() {
+        ReservableRequestConcurrencyController controller =
+                newController(newConnection(from(new IgnoreConsumedEvent<>(10)), never()), 10);
+        assertTrue(controller.tryReserve());
+        assertThat(score(controller), is(Integer.MIN_VALUE));
+    }
+
+    @Test
+    void closedConnectionScoresLowest() {
+        ReservableRequestConcurrencyController controller =
+                newController(newConnection(from(new IgnoreConsumedEvent<>(10)), completed()), 10);
+        assertThat(score(controller), is(Integer.MIN_VALUE));
+    }
+
+    @Test
+    void closedConnectionScoresLowestWhileInFlightRequestsComplete() {
+        TestCompletable onClosing = new TestCompletable();
+        ReservableRequestConcurrencyController controller =
+                newController(newConnection(from(new IgnoreConsumedEvent<>(10)), onClosing), 10);
+        assertThat(controller.tryRequest(), is(Accepted));
+        onClosing.onComplete();
+        controller.requestFinished();
+        assertThat(score(controller), is(Integer.MIN_VALUE));
+    }
+
+    @Test
+    void drainingConnectionScoresLowest() {
+        ReservableRequestConcurrencyController controller = newController(newConnection(limitPublisher, never()), 10);
+        limitPublisher.onNext(new IgnoreConsumedEvent<>(0));
+        assertThat(controller.tryRequest(), is(RejectedTemporary));
+        assertThat(score(controller), is(Integer.MIN_VALUE));
+    }
+
+    @Test
+    void loadBalancedConnectionScoresUsingTheController() {
+        ReservableRequestConcurrencyController controller =
+                newController(newConnection(from(new IgnoreConsumedEvent<>(10)), never()), 10);
+        FilterableStreamingHttpLoadBalancedConnection connection =
+                new DefaultFilterableStreamingHttpLoadBalancedConnection(
+                        mock(FilterableStreamingHttpConnection.class), controller);
+        assertThat(connection.score(), is(0));
+        assertThat(controller.tryRequest(), is(Accepted));
+        assertThat(connection.score(), is(-1));
+    }
+
+    private static int score(ReservableRequestConcurrencyController controller) {
+        return ((ScoreSupplier) controller).score();
     }
 
     private static FilterableStreamingHttpConnection newConnection(

@@ -89,8 +89,9 @@ public final class ConnectionSelectorPolicies {
 
     /**
      * A {@link ConnectionSelectorPolicy} that attempts to discern between the health of individual connections.
-     * If individual connections have health data the P2C policy can be used to bias traffic toward the best
-     * connections. This has the following algorithm:
+     * Connections are ranked by their {@link LoadBalancedConnection#score() score}: the built-in HTTP connections
+     * score by outstanding request count, while custom connections must implement scoring for this policy to bias
+     * traffic at all. This has the following algorithm:
      * <ol>
      *     <li>Randomly select two connections from the 'core pool' (pick-two).
      *         <ol>
@@ -116,8 +117,9 @@ public final class ConnectionSelectorPolicies {
 
     /**
      * A {@link ConnectionSelectorPolicy} that attempts to discern between the health of individual connections.
-     * If individual connections have health data the P2C policy can be used to bias traffic toward the best
-     * connections. This has the following algorithm:
+     * Connections are ranked by their {@link LoadBalancedConnection#score() score}: the built-in HTTP connections
+     * score by outstanding request count, while custom connections must implement scoring for this policy to bias
+     * traffic at all. This has the following algorithm:
      * <ol>
      *     <li>Randomly select two connections from the 'core pool' (pick-two).
      *         <ol>

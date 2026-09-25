@@ -19,7 +19,6 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ReservableRequestConcurrencyController;
-import io.servicetalk.client.api.ScoreSupplier;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -101,11 +100,8 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
 
         @Override
         public int score() {
-            throw new UnsupportedOperationException(
-                    DefaultFilterableStreamingHttpLoadBalancedConnection.class.getName() +
-                            " doesn't support scoring. " + ScoreSupplier.class.getName() +
-                            " is only available through " + HttpLoadBalancerFactory.class.getSimpleName() +
-                            " implementations that support scoring.");
+            // No concurrency controller is available on this deprecated path, so all connections score equally.
+            return 0;
         }
 
         @Override

@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.client.api.ReservableRequestConcurrencyController;
+import io.servicetalk.client.api.ScoreSupplier;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
@@ -112,7 +113,7 @@ final class ReservableRequestConcurrencyControllers {
     }
 
     private abstract static class AbstractReservableRequestConcurrencyController
-            implements ReservableRequestConcurrencyController {
+            implements ReservableRequestConcurrencyController, ScoreSupplier {
         private static final HttpEventKey<ConsumableEvent<Integer>> MAX_CONCURRENCY_KEY = MAX_CONCURRENCY_NO_OFFLOADING;
         private static final AtomicIntegerFieldUpdater<AbstractReservableRequestConcurrencyController>
                 pendingRequestsUpdater = newUpdater(AbstractReservableRequestConcurrencyController.class,
@@ -224,6 +225,16 @@ final class ReservableRequestConcurrencyControllers {
         @Override
         public final void requestFinished() {
             pendingRequestsUpdater.decrementAndGet(this);
+        }
+
+        // All connections to a host are expected to be the same protocol, most likely HTTP/1.1 or HTTP/2, so their
+        // concurrency limits match and the count of pending requests is enough to rank them.
+        @Override
+        public final int score() {
+            final int pendingRequests = this.pendingRequests;
+            // Negative values are the reserved and closed sentinels, and a zero concurrency limit means the peer is
+            // draining. None of them can serve a request, so they must lose to any connection that can.
+            return pendingRequests < 0 || lastMaxConcurrency() == 0 ? Integer.MIN_VALUE : -pendingRequests;
         }
 
         @Override

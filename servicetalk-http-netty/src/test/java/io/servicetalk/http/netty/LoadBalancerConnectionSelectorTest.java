@@ -88,6 +88,15 @@ class LoadBalancerConnectionSelectorTest {
                 ConnectionSelectorPolicies.corePool(corePoolSize, forceCorePool)));
     }
 
+    // p2c ranks the core pool by connection score, which the corePool policy never asks for.
+    @ParameterizedTest(name = "protocol={0} corePoolSize={1} forceCorePool={2}")
+    @MethodSource("corePoolArguments")
+    void p2cServesRequests(HttpProtocol protocol, int corePoolSize, boolean forceCorePool,
+                           int expectedConnections) throws Exception {
+        assertPoolSize(protocol, expectedConnections, lb -> lb.connectionSelectorPolicy(
+                ConnectionSelectorPolicies.p2c(corePoolSize, forceCorePool)));
+    }
+
     // A minimum above one is expected to behave like the forced core pool of the same size configured above.
     @ParameterizedTest(name = "protocol={0} minConnectionsPerHost={1}")
     @CsvSource({"HTTP_1, 0, 1", "HTTP_1, 2, 2", "HTTP_2, 0, 1", "HTTP_2, 2, 2"})

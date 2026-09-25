@@ -105,12 +105,15 @@ public interface HttpLoadBalancerFactory<ResolvedAddress>
     final class DefaultFilterableStreamingHttpLoadBalancedConnection
             implements FilterableStreamingHttpLoadBalancedConnection {
 
+        private static final ScoreSupplier UNSCORED = () -> 0;
+
         private final FilterableStreamingHttpConnection delegate;
         private final ReservableRequestConcurrencyController controller;
         private final ScoreSupplier scoreSupplier;
 
         /**
-         * Create a new instance without support for {@link #score()}.
+         * Create a new instance. If {@code controller} implements {@link ScoreSupplier} its score is used for
+         * {@link #score()}, otherwise all connections score equally.
          *
          * @param delegate {@link FilterableStreamingHttpConnection} to delegate to
          * @param controller {@link ReservableRequestConcurrencyController} to control concurrent access to the delegate
@@ -118,13 +121,9 @@ public interface HttpLoadBalancerFactory<ResolvedAddress>
         public DefaultFilterableStreamingHttpLoadBalancedConnection(
                 final FilterableStreamingHttpConnection delegate,
                 final ReservableRequestConcurrencyController controller) {
-            this(delegate, controller, () -> {
-                throw new UnsupportedOperationException(
-                        DefaultFilterableStreamingHttpLoadBalancedConnection.class.getName() +
-                                " doesn't support scoring. " + ScoreSupplier.class.getName() +
-                                " is only available through " + HttpLoadBalancerFactory.class.getSimpleName() +
-                                " implementations that support scoring.");
-            });
+            // Detected rather than required so that scoring stays out of the controller's public contract.
+            this(delegate, controller,
+                    controller instanceof ScoreSupplier ? (ScoreSupplier) controller : UNSCORED);
         }
 
         /**
