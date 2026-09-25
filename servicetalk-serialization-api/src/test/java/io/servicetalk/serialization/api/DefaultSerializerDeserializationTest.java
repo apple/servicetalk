@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.CloseableIterator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
@@ -46,6 +45,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -253,12 +253,8 @@ class DefaultSerializerDeserializationTest {
         assertThat("Iterator does not contain data.", iterator.hasNext(), is(true));
         assertThat("Unexpected data received from iterator.", iterator.next(), is("Hello1"));
 
-        try {
-            iterator.hasNext();
-            Assertions.fail();
-        } catch (SerializationException se) {
-            assertThat(se, sameInstance(e));
-        }
+        SerializationException se = assertThrows(SerializationException.class, iterator::hasNext);
+        assertThat(se, sameInstance(e));
         verify(deSerializer).close();
     }
 
@@ -305,12 +301,8 @@ class DefaultSerializerDeserializationTest {
         verify(deSerializer).deserialize(buffer);
         verify(deSerializer, times(0)).close();
 
-        try {
-            deserialized.iterator().hasNext();
-            Assertions.fail();
-        } catch (SerializationException se) {
-            assertThat(se, sameInstance(e));
-        }
+        SerializationException se = assertThrows(SerializationException.class, () -> deserialized.iterator().hasNext());
+        assertThat(se, sameInstance(e));
         verify(deSerializer).close();
     }
 
@@ -328,12 +320,8 @@ class DefaultSerializerDeserializationTest {
         verify(listDeSerializer).deserialize(buffer);
         verify(listDeSerializer, times(0)).close();
 
-        try {
-            deserialized.iterator().hasNext();
-            Assertions.fail();
-        } catch (SerializationException se) {
-            assertThat(se, sameInstance(e));
-        }
+        SerializationException se = assertThrows(SerializationException.class, () -> deserialized.iterator().hasNext());
+        assertThat(se, sameInstance(e));
         verify(listDeSerializer).close();
     }
 }

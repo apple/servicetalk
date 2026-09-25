@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,9 +45,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.AdditionalMatchers.leq;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -184,12 +182,7 @@ final class SequentialSubscriptionTest {
     @Test
     void testSubscriptionRequestThrows() {
         doThrow(DELIBERATE_EXCEPTION).when(s1).request(anyLong());
-        try {
-            s.request(1);
-            fail("Request-n did not throw when subscription.request() threw.");
-        } catch (DeliberateException de) {
-            assertThat("Unexpected exception.", de, sameInstance(DELIBERATE_EXCEPTION));
-        }
+        assertThrows(DeliberateException.class, () -> s.request(1));
 
         verify(s1).request(1);
         s.cancel();

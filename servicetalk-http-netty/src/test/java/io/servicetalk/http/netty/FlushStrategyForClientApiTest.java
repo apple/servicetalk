@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FlushStrategyForClientApiTest extends AbstractNettyHttpServerTest {
 
@@ -88,13 +88,9 @@ class FlushStrategyForClientApiTest extends AbstractNettyHttpServerTest {
                         .addHeader(TRANSFER_ENCODING, CHUNKED)
                         .toStreamingRequest().payloadBody(Publisher.never()));
 
-        try {
-            responseSingle.toFuture().get(CI ? 900 : 100, MILLISECONDS);
-            fail("Expected timeout");
-        } catch (TimeoutException e) {
-            // After the timeout, we've given the client some time to write and send the metadata, if it was going to.
-            assertNull(request);
-        }
+        assertThrows(TimeoutException.class, () -> responseSingle.toFuture().get(CI ? 900 : 100, MILLISECONDS));
+        // After the timeout, we've given the client some time to write and send the metadata, if it was going to.
+        assertNull(request);
     }
 
     @Test

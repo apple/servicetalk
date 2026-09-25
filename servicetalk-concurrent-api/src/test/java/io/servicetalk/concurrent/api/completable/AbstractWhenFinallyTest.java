@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2020, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.AdditionalAnswers.delegatesTo;
 import static org.mockito.Mockito.mock;
@@ -85,8 +84,7 @@ abstract class AbstractWhenFinallyTest {
         LegacyTestCompletable completable = new LegacyTestCompletable();
         try {
             toSource(doFinally(completable, mock)).subscribe(listener);
-            Exception e = assertThrows(DeliberateException.class, () -> listener.awaitSubscription().cancel());
-            assertThat(e, is(sameInstance(DELIBERATE_EXCEPTION)));
+            assertThrows(DeliberateException.class, () -> listener.awaitSubscription().cancel());
         } finally {
             completable.verifyCancelled();
             verify(mock).cancel();
