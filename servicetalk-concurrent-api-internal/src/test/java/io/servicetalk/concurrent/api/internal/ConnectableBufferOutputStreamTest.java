@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021, 2026 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.AfterEach;
@@ -380,7 +381,7 @@ class ConnectableBufferOutputStreamTest {
                 onComplete.countDown();
             }
         });
-        RuntimeException cause = assertThrows(RuntimeException.class, () -> cbos.write(1));
+        DeliberateException cause = assertThrows(DeliberateException.class, () -> cbos.write(1));
         assertSame(DELIBERATE_EXCEPTION, cause);
         assertThrows(IOException.class, cbos::flush);
         cbos.close();
@@ -539,7 +540,7 @@ class ConnectableBufferOutputStreamTest {
                 failure.set(new AssertionError("onComplete received when onNext threw."));
             }
         });
-        RuntimeException cause = assertThrows(RuntimeException.class, () -> cbos.write(1));
+        DeliberateException cause = assertThrows(DeliberateException.class, () -> cbos.write(1));
         assertSame(DELIBERATE_EXCEPTION, cause);
         cbos.close();
         assertThat("Unexpected failure", failure.get(), is(DELIBERATE_EXCEPTION));
