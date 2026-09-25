@@ -380,7 +380,7 @@ its feature would have to be registered too:
 Whether the server's
 xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc[`maxAggregatedPayloadSize`]
 bounds a request body depends on how the router is built, because it only bounds
-aggregation performed by the ServiceTalk transport:
+aggregation performed by ServiceTalk:
 
 * `build(..)` / `buildBlocking(..)` -- ServiceTalk aggregates the request before the
 router sees it, so an enforcing (positive) limit applies to every resource and entity
@@ -395,9 +395,9 @@ For a streaming router -- or to express one policy whichever way the router is b
 -- add `PayloadSizeLimitingHttpServiceFilter` (from `servicetalk-http-utils`) to the
 server. It applies to every resource and entity type, streaming reads included. An
 oversized body is rejected as soon as it is detected, either with
-`413 Payload Too Large` or by tearing down the connection. Make the filter the single
-place the limit is expressed by disabling `maxAggregatedPayloadSize`, so there is only
-one number to reason about.
+`413 Payload Too Large` or by tearing down the connection. Appended after any
+content-decoding filter it bounds everything held in memory and can be the only limit,
+so the example disables `maxAggregatedPayloadSize`.
 
 [source,java]
 ----
@@ -410,11 +410,9 @@ HttpServers.forPort(8080)
     .awaitShutdown()
 ----
 
-CAUTION: The filter counts bytes where it sits in the chain, so one appended before a
-content-decoding filter bounds the encoded body and leaves whatever it expands to
-unbounded. Append it after decoding to bound what is held in memory, or append one
-instance on each side to reject oversized wire bodies early and still bound the
-expansion. See
+CAUTION: The filter counts bytes where it sits in the chain, so an instance appended
+before a content-decoding filter bounds only the encoded body. To also reject oversized
+wire bodies early, append one instance on each side of the decoder. See
 xref:{page-version}@servicetalk-http-api::index.adoc#service-filters[Service Filters]
 for how the filter chain is ordered.
 

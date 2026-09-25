@@ -22,7 +22,7 @@ by filters earlier in the pipeline -- not the bytes received from the network no
 small compressed body that expands beyond the limit once decoded is therefore still subject to it. Bodies consumed
 purely as a stream are not affected.
 
-This limit covers aggregation performed by the ServiceTalk transport. Application or framework code that consumes the
+This limit covers aggregation performed by ServiceTalk. Application or framework code that consumes the
 streaming body and buffers it itself is not covered -- for example the JAX-RS entity readers of a
 xref:{page-version}@servicetalk-http-router-jersey::index.adoc#payload-size-limits[streaming Jersey router], which
 buffer inside Jersey (an aggregated router is covered, because ServiceTalk aggregates before it runs). To bound
