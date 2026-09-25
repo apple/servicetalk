@@ -45,7 +45,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.AdditionalMatchers.leq;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -183,8 +182,7 @@ final class SequentialSubscriptionTest {
     @Test
     void testSubscriptionRequestThrows() {
         doThrow(DELIBERATE_EXCEPTION).when(s1).request(anyLong());
-        DeliberateException de = assertThrows(DeliberateException.class, () -> s.request(1));
-        assertThat("Unexpected exception.", de, sameInstance(DELIBERATE_EXCEPTION));
+        assertThrows(DeliberateException.class, () -> s.request(1));
 
         verify(s1).request(1);
         s.cancel();

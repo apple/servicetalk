@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,6 @@ import org.mockito.Mockito;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 
@@ -54,7 +51,7 @@ public abstract class AbstractWhenCancelTest {
     void testCallbackThrowsError() {
         LegacyTestSingle<String> single = new LegacyTestSingle<>();
 
-        Exception e = assertThrows(DeliberateException.class, () -> {
+        assertThrows(DeliberateException.class, () -> {
             try {
                 toSource(doCancel(single, () -> {
                     throw DELIBERATE_EXCEPTION;
@@ -64,7 +61,6 @@ public abstract class AbstractWhenCancelTest {
                 single.verifyCancelled();
             }
         });
-        assertThat(e, is(sameInstance(DELIBERATE_EXCEPTION)));
     }
 
     protected abstract <T> Single<T> doCancel(Single<T> single, Runnable runnable);

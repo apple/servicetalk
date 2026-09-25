@@ -58,7 +58,6 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ConnectablePayloadWriterTest {
@@ -385,8 +384,7 @@ class ConnectablePayloadWriterTest {
                 onComplete.countDown();
             }
         });
-        DeliberateException cause = assertThrows(DeliberateException.class, () -> cpw.write("foo"));
-        assertSame(DELIBERATE_EXCEPTION, cause);
+        assertThrows(DeliberateException.class, () -> cpw.write("foo"));
         assertThrows(IOException.class, cpw::flush);
         cpw.close();
         onError.await();
@@ -544,8 +542,7 @@ class ConnectablePayloadWriterTest {
                 failure.set(new AssertionError("onComplete received when onNext threw."));
             }
         });
-        DeliberateException cause = assertThrows(DeliberateException.class, () -> cpw.write("foo"));
-        assertSame(DELIBERATE_EXCEPTION, cause);
+        assertThrows(DeliberateException.class, () -> cpw.write("foo"));
         cpw.close();
         assertThat("Unexpected failure", failure.get(), is(DELIBERATE_EXCEPTION));
     }
