@@ -22,6 +22,15 @@ by filters earlier in the pipeline -- not the bytes received from the network no
 small compressed body that expands beyond the limit once decoded is therefore still subject to it. Bodies consumed
 purely as a stream are not affected.
 
+This limit covers aggregation performed by ServiceTalk. Application or framework code that consumes the
+streaming body and buffers it itself is not covered -- for example the JAX-RS entity readers of a
+xref:{page-version}@servicetalk-http-router-jersey::index.adoc#payload-size-limits[streaming Jersey router], which
+buffer inside Jersey (an aggregated router is covered, because ServiceTalk aggregates before it runs). To bound
+request payloads regardless of who performs the buffering, add `PayloadSizeLimitingHttpServiceFilter` (from
+`servicetalk-http-utils`) to the server. That filter counts bytes where it sits in the filter chain, so it bounds the
+decoded payload only when appended after any content-decoding filter; where it does, this limit can be disabled with
+`0` to leave a single effective bound.
+
 Configure this per client/server via `HttpServerBuilder#maxAggregatedPayloadSize(int)` /
 `SingleAddressHttpClientBuilder#maxAggregatedPayloadSize(int)`, where the sign selects the mode and the magnitude
 selects the threshold: a *positive* value enforces the limit (the server responds `413 Payload Too Large`; the

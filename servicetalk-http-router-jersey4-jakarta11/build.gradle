@@ -155,6 +155,7 @@ dependencies {
   testFixturesImplementation project(":servicetalk-data-jackson3")
   testFixturesImplementation project(":servicetalk-http-netty")
   testFixturesImplementation project(":servicetalk-http-router-predicate")
+  testFixturesImplementation project(":servicetalk-http-utils")
   testFixturesImplementation project(":servicetalk-router-utils-internal")
   testFixturesImplementation project(":servicetalk-serializer-api")
   testFixturesImplementation project(":servicetalk-test-resources")

@@ -25,7 +25,7 @@ router amounts to:
 [source,java]
 ----
 HttpServers.forPort(8080)
-    .listenStreamingAndAwait(new HttpJerseyRouterBuilder().build(jaxrsApplication))
+    .listenStreamingAndAwait(new HttpJerseyRouterBuilder().buildStreaming(jaxrsApplication))
     .awaitShutdown()
 ----
 
@@ -86,6 +86,9 @@ public CompletionStage<Map<String, String>> hello(final Map<String, String> salu
 ----
 
 NOTE: Server-Sent Events are also fully supported.
+
+NOTE: Entity parameters such as the `Map` above are read in full before the resource
+method runs; see <<payload-size-limits>>.
 
 === ServiceTalk Aware Resources
 
@@ -370,6 +373,56 @@ been disabled, users must manually register
 `FeatureContext`. Note that if the ServiceTalk JSON provider is used,
 its feature would have to be registered too:
 `io.servicetalk.data.jackson.jersey.ServiceTalkJacksonSerializerFeature`
+
+[#payload-size-limits]
+== Limiting Request Payload Sizes
+
+Whether the server's
+xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc[`maxAggregatedPayloadSize`]
+bounds a request body depends on how the router is built, because it only bounds
+aggregation performed by ServiceTalk:
+
+* `build(..)` / `buildBlocking(..)` -- ServiceTalk aggregates the request before the
+router sees it, so an enforcing (positive) limit applies to every resource and entity
+type.
+* `buildStreaming(..)` / `buildBlockingStreaming(..)` -- the body reaches the router
+un-aggregated, and any entity reader -- built in or provided by the application -- that
+consumes it in full before the resource method runs does so inside Jersey, where the
+limit never applies. For example, JAX-RS's `String`, `byte[]`, form and `DataSource`
+readers, object mappers such as Jersey's Jackson and JAXB providers, and ServiceTalk's
+`Buffer`, `Single<Buffer>` and single-object JSON/Protobuf readers hold the whole body
+in memory, and the `File` reader spools it to a temporary file.
+
+For a streaming router -- or to express one policy whichever way the router is built
+-- add `PayloadSizeLimitingHttpServiceFilter` (from `servicetalk-http-utils`) to the
+server. It applies to every resource and entity type, streaming reads included. An
+oversized body is rejected as soon as it is detected, either with
+`413 Payload Too Large` or by tearing down the connection. Appended after any
+content-decoding filter it bounds everything held in memory and can be the only limit,
+so the example disables `maxAggregatedPayloadSize`.
+
+[source,java]
+----
+HttpServers.forPort(8080)
+    // Filters run in the order they are appended, which decides whether this one
+    // counts bytes as received or after a decoding filter has expanded them.
+    .appendServiceFilter(new PayloadSizeLimitingHttpServiceFilter(1024 * 1024))
+    .maxAggregatedPayloadSize(0)
+    .listenStreamingAndAwait(new HttpJerseyRouterBuilder().buildStreaming(jaxrsApplication))
+    .awaitShutdown()
+----
+
+CAUTION: The filter counts bytes where it sits in the chain, so an instance appended
+before a content-decoding filter bounds only the encoded body. To also reject oversized
+wire bodies early, append one instance on each side of the decoder. See
+xref:{page-version}@servicetalk-http-api::index.adoc#service-filters[Service Filters]
+for how the filter chain is ordered.
+
+NOTE: For a streaming router, resources that consume a `Publisher<Buffer>`,
+`InputStream` or `Reader` stream the body instead of buffering it, so this filter is
+the only thing that bounds them -- which is what makes it the right place to express a
+payload size policy for the whole server. In an aggregated router even these resources
+receive a body that ServiceTalk has already buffered in full.
 
 == Advanced Features
 
