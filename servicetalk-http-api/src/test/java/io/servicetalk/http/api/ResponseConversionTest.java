@@ -32,7 +32,7 @@ import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 
-class ResponseConversionTests extends AbstractConversionTest {
+class ResponseConversionTest extends AbstractConversionTest {
 
     @Nullable
     private StreamingHttpResponse original;

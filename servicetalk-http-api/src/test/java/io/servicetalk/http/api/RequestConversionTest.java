@@ -33,7 +33,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 
-class RequestConversionTests extends AbstractConversionTest {
+class RequestConversionTest extends AbstractConversionTest {
 
     @Nullable
     private StreamingHttpRequest original;

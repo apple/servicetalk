@@ -33,7 +33,7 @@ import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 
-class TestConflictEnum {
+class TestConflictEnumTest {
     @Test
     void enumConflict() throws ExecutionException, InterruptedException {
         new TestConflictEnumServiceService() {

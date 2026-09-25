@@ -46,13 +46,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-final class ExecutorRejectionTests {
+final class ExecutorRejectionTest {
 
     private final AtomicBoolean rejectNextTask = new AtomicBoolean();
     private final AtomicInteger rejectTaskCount = new AtomicInteger();
     private final Executor executor;
 
-    ExecutorRejectionTests() {
+    ExecutorRejectionTest() {
         executor = mock(Executor.class);
         when(executor.execute(any())).then(invocation -> {
             if (rejectNextTask.get()) {

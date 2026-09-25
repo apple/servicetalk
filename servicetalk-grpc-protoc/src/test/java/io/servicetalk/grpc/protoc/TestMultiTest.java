@@ -30,7 +30,7 @@ import test.shared.TestShared.Untils;
 
 import java.util.concurrent.ExecutionException;
 
-class TestMulti {
+class TestMultiTest {
     @Test
     void multiGenerated() throws ExecutionException, InterruptedException {
         TesterService service = new TesterService() {

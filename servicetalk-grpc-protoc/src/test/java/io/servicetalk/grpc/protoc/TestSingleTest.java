@@ -30,7 +30,7 @@ import test.shared.TestShared.Untils;
 
 import java.util.concurrent.ExecutionException;
 
-class TestSingle {
+class TestSingleTest {
     @Test
     void singleGenerated() throws ExecutionException, InterruptedException {
         GreeterService service = new GreeterService() {

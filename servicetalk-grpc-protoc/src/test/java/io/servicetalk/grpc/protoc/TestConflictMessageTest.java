@@ -28,7 +28,7 @@ import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 
-class TestConflictMessage {
+class TestConflictMessageTest {
     @Test
     void messageConflict() throws ExecutionException, InterruptedException {
         ((TestConflictMessageServiceService) (ctx, request) -> succeeded(TestConflictResp.newBuilder().build()))
