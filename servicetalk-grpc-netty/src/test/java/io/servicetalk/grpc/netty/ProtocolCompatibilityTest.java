@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2024, 2026 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1058,8 +1058,8 @@ class ProtocolCompatibilityTest {
                     CompatRequest.newBuilder().setId(4).build(),
                     CompatRequest.newBuilder().setId(5).build()
             ));
-            streamingResponse.toFuture().get();
-        } catch (ExecutionException e) {
+            final ExecutionException e = assertThrows(ExecutionException.class,
+                    () -> streamingResponse.toFuture().get());
             final Throwable cause = e.getCause();
             if (cause instanceof StatusRuntimeException) {
                 final StatusRuntimeException sre = (StatusRuntimeException) cause;

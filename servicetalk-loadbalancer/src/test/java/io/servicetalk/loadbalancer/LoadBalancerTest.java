@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2021, 2026 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -403,9 +403,7 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
         // We need to catch `DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD` exceptions before the bad host
         // will be taken out of rotation.
         for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD; i++) {
-            ExecutionException e = assertThrows(ExecutionException.class,
-                    () -> lb.selectConnection(any(), null).toFuture().get());
-            assertThat(e.getCause(), is(UNHEALTHY_HOST_EXCEPTION));
+            assertSelectThrows(is(UNHEALTHY_HOST_EXCEPTION));
         }
 
         // Now add another healthy host which should be the host to get selected.

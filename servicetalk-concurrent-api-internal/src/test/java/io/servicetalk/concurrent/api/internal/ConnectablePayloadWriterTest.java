@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021, 2026 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api.internal;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.AfterEach;
@@ -384,7 +385,7 @@ class ConnectablePayloadWriterTest {
                 onComplete.countDown();
             }
         });
-        RuntimeException cause = assertThrows(RuntimeException.class, () -> cpw.write("foo"));
+        DeliberateException cause = assertThrows(DeliberateException.class, () -> cpw.write("foo"));
         assertSame(DELIBERATE_EXCEPTION, cause);
         assertThrows(IOException.class, cpw::flush);
         cpw.close();
@@ -543,7 +544,7 @@ class ConnectablePayloadWriterTest {
                 failure.set(new AssertionError("onComplete received when onNext threw."));
             }
         });
-        RuntimeException cause = assertThrows(RuntimeException.class, () -> cpw.write("foo"));
+        DeliberateException cause = assertThrows(DeliberateException.class, () -> cpw.write("foo"));
         assertSame(DELIBERATE_EXCEPTION, cause);
         cpw.close();
         assertThat("Unexpected failure", failure.get(), is(DELIBERATE_EXCEPTION));
