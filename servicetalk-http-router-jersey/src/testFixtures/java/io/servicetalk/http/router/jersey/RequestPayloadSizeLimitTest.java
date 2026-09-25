@@ -139,6 +139,14 @@ class RequestPayloadSizeLimitTest extends AbstractJerseyStreamingHttpServiceTest
     }
 
     @ParameterizedTest(name = "{displayName} [{0}]")
+    @EnumSource(value = RouterApi.class, names = {"ASYNC_AGGREGATED", "BLOCKING_AGGREGATED"})
+    void filterBoundsAggregatedRouter(final RouterApi api) throws Exception {
+        // maxAggregatedPayloadSize is disabled, so the filter is the only bound even when ServiceTalk aggregates.
+        setUp(api);
+        assertOverLimitRejected(chunked(oversizedRequest("/echo/string")));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{0}]")
     @EnumSource(value = RouterApi.class, names = {"ASYNC_STREAMING", "BLOCKING_STREAMING"})
     void withoutFilterStreamingReaderIsUnbounded(final RouterApi api) throws Exception {
         // The counterpart to the test above: nothing bounds a streamed body when the filter is absent.

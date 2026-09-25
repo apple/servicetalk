@@ -386,10 +386,12 @@ aggregation performed by ServiceTalk:
 router sees it, so an enforcing (positive) limit applies to every resource and entity
 type.
 * `buildStreaming(..)` / `buildBlockingStreaming(..)` -- the body reaches the router
-un-aggregated. Entity readers that buffer it in memory -- JAX-RS's own `String`,
-`byte[]` and form readers, and the `Buffer`, `Single<Buffer>` and single-object
-JSON/Protobuf readers -- do that buffering inside Jersey, where the limit never
-applies, so a large request body is buffered in memory in full.
+un-aggregated, and any entity reader -- built in or provided by the application -- that
+consumes it in full before the resource method runs does so inside Jersey, where the
+limit never applies. For example, JAX-RS's `String`, `byte[]`, form and `DataSource`
+readers, object mappers such as Jersey's Jackson and JAXB providers, and ServiceTalk's
+`Buffer`, `Single<Buffer>` and single-object JSON/Protobuf readers hold the whole body
+in memory, and the `File` reader spools it to a temporary file.
 
 For a streaming router -- or to express one policy whichever way the router is built
 -- add `PayloadSizeLimitingHttpServiceFilter` (from `servicetalk-http-utils`) to the
