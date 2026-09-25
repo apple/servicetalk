@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -389,6 +391,132 @@ class BlockingStreamingToStreamingServiceTest {
         onErrorLatch.await();
         assertThat(throwableRef.get(), instanceOf(InterruptedException.class));
         serviceTerminationLatch.await();
+    }
+
+    @Test
+    void cancelBeforeSendMetaDataWithFilterFailsWriteWithoutInterrupt() throws Exception {
+        CountDownLatch handleLatch = new CountDownLatch(1);
+        CountDownLatch cancelObserved = new CountDownLatch(1);
+        CountDownLatch releaseLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(1);
+        AtomicBoolean interrupted = new AtomicBoolean();
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+
+        BlockingStreamingHttpService syncService = (ctx, request, response) -> {
+            handleLatch.countDown();
+            try {
+                releaseLatch.await();
+            } catch (InterruptedException e) {
+                interrupted.set(true);
+                doneLatch.countDown();
+                return;
+            }
+            HttpPayloadWriter<Buffer> writer = response.sendMetaData();
+            try {
+                writer.write(ctx.executionContext().bufferAllocator().fromAscii("x"));
+            } catch (IOException e) {
+                throwableRef.set(e);
+            } finally {
+                doneLatch.countDown();
+            }
+        };
+        StreamingHttpService asyncService = DisableInterruptOnCancelHttpServiceFilter.INSTANCE.create(
+                toStreamingHttpService(offloadNone(), syncService));
+        try {
+            // Never subscribe to the body, so only the cancel can terminate the writer.
+            Cancellable cancellable = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
+                    .afterCancel(cancelObserved::countDown)
+                    .subscribeOn(executorExtension.executor())
+                    .subscribe(__ -> { });
+            handleLatch.await();
+            cancellable.cancel();
+            // Release only after the offloaded cancel landed, or a missing interrupt looks like a late one.
+            cancelObserved.await();
+        } finally {
+            releaseLatch.countDown();
+        }
+        doneLatch.await();
+
+        assertThat("the service thread must not be interrupted", interrupted.get(), is(false));
+        assertThat(throwableRef.get(), instanceOf(IOException.class));
+    }
+
+    @Test
+    void cancelAfterSendMetaDataWithFilterFailsWriteWithoutInterrupt() throws Exception {
+        CountDownLatch cancelObserved = new CountDownLatch(1);
+        CountDownLatch releaseLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(1);
+        AtomicBoolean interrupted = new AtomicBoolean();
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+
+        BlockingStreamingHttpService syncService = (ctx, request, response) -> {
+            HttpPayloadWriter<Buffer> writer = response.sendMetaData();
+            try {
+                releaseLatch.await();
+            } catch (InterruptedException e) {
+                interrupted.set(true);
+                doneLatch.countDown();
+                return;
+            }
+            try {
+                writer.write(ctx.executionContext().bufferAllocator().fromAscii("x"));
+            } catch (IOException e) {
+                throwableRef.set(e);
+            } finally {
+                doneLatch.countDown();
+            }
+        };
+        StreamingHttpService asyncService = DisableInterruptOnCancelHttpServiceFilter.INSTANCE.create(
+                toStreamingHttpService(offloadNone(), syncService));
+        try {
+            StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"),
+                    reqRespFactory).subscribeOn(executorExtension.executor()).toFuture().get();
+            assertMetaData(OK, asyncResponse);
+            asyncResponse.payloadBody().afterCancel(cancelObserved::countDown).ignoreElements().subscribe().cancel();
+            cancelObserved.await();
+        } finally {
+            releaseLatch.countDown();
+        }
+        doneLatch.await();
+
+        assertThat("the service thread must not be interrupted", interrupted.get(), is(false));
+        assertThat(throwableRef.get(), instanceOf(IOException.class));
+    }
+
+    @Test
+    void cancelAfterOnSuccessWithFilterFailsResponseBody() throws Exception {
+        CountDownLatch cancelObserved = new CountDownLatch(1);
+        CountDownLatch releaseLatch = new CountDownLatch(1);
+        BlockingStreamingHttpService syncService = (ctx, request, response) -> {
+            try (HttpPayloadWriter<Buffer> writer = response.sendMetaData()) {
+                releaseLatch.await();
+                writer.write(ctx.executionContext().bufferAllocator().fromAscii("x"));
+            } catch (IOException ignored) {
+                // Swallowed: the body must terminate anyway.
+            }
+        };
+        StreamingHttpService asyncService = DisableInterruptOnCancelHttpServiceFilter.INSTANCE.create(
+                toStreamingHttpService(offloadNone(), syncService));
+        TestSingleSubscriber<StreamingHttpResponse> responseSubscriber = new TestSingleSubscriber<>();
+        TestPublisherSubscriber<Object> bodySubscriber = new TestPublisherSubscriber<>();
+        try {
+            toSource(asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
+                    .afterCancel(cancelObserved::countDown)
+                    .subscribeOn(executorExtension.executor())).subscribe(responseSubscriber);
+            Cancellable cancellable = responseSubscriber.awaitSubscription();
+            StreamingHttpResponse response = responseSubscriber.awaitOnSuccess();
+            assertThat(response, is(notNullValue()));
+            toSource(response.messageBody()).subscribe(bodySubscriber);
+            bodySubscriber.awaitSubscription().request(Long.MAX_VALUE);
+            // A late cancel, as AbstractWhenFinallyHttpOperator forwards it. The body Subscriber must still terminate.
+            cancellable.cancel();
+            // The cancel is offloaded; release only after it landed.
+            cancelObserved.await();
+        } finally {
+            releaseLatch.countDown();
+        }
+
+        assertThat(bodySubscriber.awaitOnError(), instanceOf(IOException.class));
     }
 
     @Test

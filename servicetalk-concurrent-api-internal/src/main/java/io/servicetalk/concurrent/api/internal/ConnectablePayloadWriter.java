@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,6 +131,40 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
     @Override
     public void close(final Throwable cause) throws IOException {
         close0(requireNonNull(cause));
+    }
+
+    /**
+     * Terminates this writer from any thread: the next {@link #write(Object)} or {@link #flush()} throws an
+     * {@link IOException}. Unlike a cancel by the {@link Subscriber}, a connected {@link Subscriber} is terminated with
+     * an error too. A NOOP if already terminated.
+     */
+    public void cancelWrites() {
+        terminateWrites(StacklessWritesCancelledIOException.newWritesCancelledException());
+    }
+
+    /**
+     * A connected {@link Subscriber} is later terminated with {@code cause}, unless it is a
+     * {@link StacklessCancelledIOException}.
+     */
+    private void terminateWrites(final IOException cause) {
+        if (closed != null) {
+            return;
+        }
+        if (closedUpdater.compareAndSet(this, null, error(cause))) {
+            terminateRequestN();
+        }
+    }
+
+    private void terminateRequestN() {
+        requested = REQUESTN_TERMINATED;
+        tryWakeupWriterThread();
+    }
+
+    private void tryWakeupWriterThread() {
+        final Thread writerThread = this.writerThread;
+        if (writerThread != null) {
+            LockSupport.unpark(writerThread);
+        }
     }
 
     private void close0(@Nullable Throwable cause) {
@@ -309,7 +343,7 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
                                     // atomically decrement the demand. So we should do a CaS here to be sure we don't
                                     // overwrite this value and lose demand.
                                     if (requestedUpdater.compareAndSet(outer, REQUESTN_ABOUT_TO_PARK, n)) {
-                                        tryWakeupWriterThread();
+                                        outer.tryWakeupWriterThread();
                                         break;
                                     }
                                 } else {
@@ -318,7 +352,7 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
                             }
                         } else if (closedUpdater.compareAndSet(outer, null,
                                 error(newExceptionForInvalidRequestN(n)))) {
-                            terminateRequestN();
+                            outer.terminateRequestN();
                         } else {
                             LOGGER.warn("invalid request({}), but already closed.", n);
                         }
@@ -326,13 +360,7 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
 
                     @Override
                     public void cancel() {
-                        if (outer.closed != null) {
-                            return;
-                        }
-                        if (closedUpdater.compareAndSet(outer, null,
-                                error(StacklessCancelledIOException.newCancelledException()))) {
-                            terminateRequestN();
-                        }
+                        outer.terminateWrites(StacklessCancelledIOException.newCancelledException());
                     }
                 });
             } catch (Throwable cause) {
@@ -362,18 +390,6 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
                 }
             }
         }
-
-        private void terminateRequestN() {
-            outer.requested = REQUESTN_TERMINATED;
-            tryWakeupWriterThread();
-        }
-
-        private void tryWakeupWriterThread() {
-            final Thread writerThread = outer.writerThread;
-            if (writerThread != null) {
-                LockSupport.unpark(writerThread);
-            }
-        }
     }
 
     private enum State {
@@ -396,6 +412,29 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
         static StacklessCancelledIOException newCancelledException() {
             return ThrowableUtils.unknownStackTrace(new StacklessCancelledIOException("Connected Publisher cancel()"),
                     ConnectedPublisher.class, "cancel()");
+        }
+    }
+
+    /**
+     * Not a {@link StacklessCancelledIOException}, so it terminates a connected {@link Subscriber}.
+     */
+    private static final class StacklessWritesCancelledIOException extends IOException {
+        private static final long serialVersionUID = -2417836413437915112L;
+
+        private StacklessWritesCancelledIOException(final String message) {
+            super(message);
+        }
+
+        @Override
+        public Throwable fillInStackTrace() {
+            // Don't fill in the stacktrace to reduce performance overhead
+            return this;
+        }
+
+        static StacklessWritesCancelledIOException newWritesCancelledException() {
+            return ThrowableUtils.unknownStackTrace(
+                    new StacklessWritesCancelledIOException("PayloadWriter cancelWrites()"),
+                    ConnectablePayloadWriter.class, "cancelWrites()");
         }
     }
 }

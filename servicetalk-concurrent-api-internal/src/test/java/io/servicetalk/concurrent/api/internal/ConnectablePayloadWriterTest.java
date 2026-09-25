@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -248,6 +248,53 @@ class ConnectablePayloadWriterTest {
         // Make sure the Subscription thread isn't blocked.
         subscriber.awaitSubscription().request(1);
         subscriber.awaitSubscription().cancel();
+    }
+
+    @Test
+    void cancelWritesBeforeConnectFailsWrite() throws Exception {
+        Future<?> f = executorService.submit(toRunnable(() -> cpw.write("foo")));
+        cpw.cancelWrites();
+
+        ExecutionException e = assertThrows(ExecutionException.class, f::get);
+        verifyCheckedRunnableException(e, IOException.class);
+    }
+
+    @Test
+    void cancelWritesWithoutDemandFailsWriteAndSubscriber() throws Exception {
+        toSource(cpw.connect()).subscribe(subscriber);
+        subscriber.awaitSubscription();
+        Future<?> f = executorService.submit(toRunnable(() -> cpw.write("foo")));
+        cpw.cancelWrites();
+
+        ExecutionException e = assertThrows(ExecutionException.class, f::get);
+        verifyCheckedRunnableException(e, IOException.class);
+        // Unlike a Subscription cancel, the Subscriber is still there and must be terminated.
+        assertThat(subscriber.awaitOnError(), instanceOf(IOException.class));
+    }
+
+    @Test
+    void cancelWritesThenCloseFailsSubscriber() throws Exception {
+        toSource(cpw.connect()).subscribe(subscriber);
+        subscriber.awaitSubscription();
+        cpw.cancelWrites();
+        cpw.close();
+
+        assertThat(subscriber.awaitOnError(), instanceOf(IOException.class));
+    }
+
+    @Test
+    void cancelWritesAfterCloseIsNoop() {
+        // Before the Subscriber hand-off, so it gets whatever `closed` holds. An overwrite would fail the completion.
+        toSource(cpw.connect().afterOnSubscribe(subscription -> {
+            try {
+                cpw.close();
+            } catch (IOException e) {
+                throwException(e);
+            }
+            cpw.cancelWrites();
+        })).subscribe(subscriber);
+
+        subscriber.awaitOnComplete();
     }
 
     static void assertNoTerminal(TestPublisherSubscriber<?> subscriber) {
