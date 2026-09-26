@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -446,7 +448,7 @@ class DefaultHttpSetCookiesTest {
 
         final CharSequence value = headers.get("set-cookie");
         assertNotNull(value);
-        assertTrue(value.toString().toLowerCase(Locale.ENGLISH).contains("qwerty=\"12345\""));
+        assertThat(value.toString().toLowerCase(Locale.ENGLISH), containsString("qwerty=\"12345\""));
     }
 
     @Test
@@ -517,11 +519,11 @@ class DefaultHttpSetCookiesTest {
         cookieItr = headers.iterator();
         assertTrue(cookieItr.hasNext());
         cookie = cookieItr.next();
-        assertFalse(removedNameValue.contains(calculateOverallRemoveIntermediateSetValue(cookie)));
+        assertThat(removedNameValue, not(hasItem(calculateOverallRemoveIntermediateSetValue(cookie))));
 
         assertTrue(cookieItr.hasNext());
         cookie = cookieItr.next();
-        assertFalse(removedNameValue.contains(calculateOverallRemoveIntermediateSetValue(cookie)));
+        assertThat(removedNameValue, not(hasItem(calculateOverallRemoveIntermediateSetValue(cookie))));
 
         assertFalse(cookieItr.hasNext());
     }
@@ -565,11 +567,11 @@ class DefaultHttpSetCookiesTest {
         cookieItr = headers.iterator();
         assertTrue(cookieItr.hasNext());
         cookie = cookieItr.next();
-        assertFalse(removedNameValue.contains(calculateOverallRemoveIntermediateSetValue(cookie)));
+        assertThat(removedNameValue, not(hasItem(calculateOverallRemoveIntermediateSetValue(cookie))));
 
         assertTrue(cookieItr.hasNext());
         cookie = cookieItr.next();
-        assertFalse(removedNameValue.contains(calculateOverallRemoveIntermediateSetValue(cookie)));
+        assertThat(removedNameValue, not(hasItem(calculateOverallRemoveIntermediateSetValue(cookie))));
 
         assertFalse(cookieItr.hasNext());
     }

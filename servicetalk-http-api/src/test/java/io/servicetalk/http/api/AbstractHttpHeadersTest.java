@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,10 @@ import java.util.Set;
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -80,7 +83,7 @@ public abstract class AbstractHttpHeadersTest {
         for (Entry<CharSequence, CharSequence> header : headers) {
             assertTrue(entries.remove(header));
         }
-        assertTrue(entries.isEmpty());
+        assertThat(entries, is(empty()));
     }
 
     @Test
@@ -760,11 +763,11 @@ public abstract class AbstractHttpHeadersTest {
         headersItr = headers.iterator();
         assertTrue(headersItr.hasNext());
         entry = headersItr.next();
-        assertFalse(removedNameValue.contains(entry.getKey() + "=" + entry.getValue()));
+        assertThat(removedNameValue, not(hasItem(entry.getKey() + "=" + entry.getValue())));
 
         assertTrue(headersItr.hasNext());
         entry = headersItr.next();
-        assertFalse(removedNameValue.contains(entry.getKey() + "=" + entry.getValue()));
+        assertThat(removedNameValue, not(hasItem(entry.getKey() + "=" + entry.getValue())));
 
         assertFalse(headersItr.hasNext());
     }
@@ -802,11 +805,11 @@ public abstract class AbstractHttpHeadersTest {
         headersItr = headers.iterator();
         assertTrue(headersItr.hasNext());
         entry = headersItr.next();
-        assertFalse(removedNameValue.contains(entry.getKey() + "=" + entry.getValue()));
+        assertThat(removedNameValue, not(hasItem(entry.getKey() + "=" + entry.getValue())));
 
         assertTrue(headersItr.hasNext());
         entry = headersItr.next();
-        assertFalse(removedNameValue.contains(entry.getKey() + "=" + entry.getValue()));
+        assertThat(removedNameValue, not(hasItem(entry.getKey() + "=" + entry.getValue())));
 
         assertFalse(headersItr.hasNext());
     }

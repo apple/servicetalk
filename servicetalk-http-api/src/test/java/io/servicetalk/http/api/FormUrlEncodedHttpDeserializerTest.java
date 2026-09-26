@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,8 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.aMapWithSize;
+import static org.hamcrest.Matchers.anEmptyMap;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.hasSize;
@@ -59,18 +61,18 @@ class FormUrlEncodedHttpDeserializerTest {
         assertEquals(singletonList("and&this%"),
                 deserialized.get("escape&this="), "Unexpected parameter value.");
 
-        assertEquals(2, deserialized.get("param2").size(), "Unexpected parameter value count.");
+        assertThat("Unexpected parameter value count.", deserialized.get("param2"), hasSize(2));
         assertEquals("bar ", deserialized.get("param2").get(0), "Unexpected parameter value.");
         assertEquals("foo ", deserialized.get("param2").get(1), "Unexpected parameter value.");
 
-        assertEquals(1, deserialized.get("emptyParam").size(), "Unexpected parameter value count.");
+        assertThat("Unexpected parameter value count.", deserialized.get("emptyParam"), hasSize(1));
         assertEquals("", deserialized.get("emptyParam").get(0), "Unexpected parameter value.");
     }
 
     @Test
     void deserializeEmptyBuffer() {
         final Map<String, List<String>> deserialized = deserializer.deserialize(FE_HEADERS, EMPTY_BUFFER);
-        assertEquals(0, deserialized.size(), "Unexpected parameter count");
+        assertThat("Unexpected parameter count", deserialized, is(anEmptyMap()));
     }
 
     @Test
@@ -151,7 +153,7 @@ class FormUrlEncodedHttpDeserializerTest {
         final String formParameters = String.format("key1%s&key2%s&key2%s", separator, separator, separator);
 
         final Map<String, List<String>> deserialized = deserializer.deserialize(FE_HEADERS, toBuffer(formParameters));
-        assertThat(deserialized.size(), is(2));
+        assertThat(deserialized, aMapWithSize(2));
 
         assertThat(deserialized.get("key1"), hasSize(1));
         assertThat(deserialized.get("key2"), hasSize(2));
