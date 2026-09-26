@@ -81,6 +81,7 @@ Detailed, task-specific guidance lives in `.agents/skills/`. Read the relevant
 | Skill | Read it when |
 |---|---|
 | `.agents/skills/servicetalk-testing/SKILL.md` | Adding or changing any test, or diagnosing a failing or hanging test. |
+| `.agents/skills/servicetalk-commit-messages/SKILL.md` | Writing a commit message, or a pull request title and description. |
 
 Some modules also carry their own `AGENTS.md` with guidance specific to that
 module. When one exists next to the code you are editing, it applies in
@@ -98,6 +99,9 @@ the JUnit defaults, and guessing produces code that fails review.
 
 ## Contributing
 
-`CONTRIBUTING.adoc` covers the commit message template, the pull request
-template, and the project's communication standards. Follow it for anything
-you write for a human to read.
+**Before you write a commit message or a pull request description, read
+`.agents/skills/servicetalk-commit-messages/SKILL.md`.** Pull requests are
+squash-merged, so the pull request description becomes the commit message.
+
+`CONTRIBUTING.adoc` covers the project's communication standards. Follow it
+for anything you write for a human to read.
