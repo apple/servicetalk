@@ -11,7 +11,7 @@ The `DefaultHttpLoadBalancerProvider` supports enabling the load balancer either
 specific clients. Enabling the load balancer for all clients can be done by setting the following system property:
 
 ```
-io.servicetalk.loadbalancer.experimental.clientsEnabledFor=all
+io.servicetalk.loadbalancer.experimental.clientsEnabledFor=*
 ```
 
 The experimental load balancer can also be enabled for only a subset of clients. This can be done via setting the

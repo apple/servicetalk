@@ -24,11 +24,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
 
 import static java.time.Duration.ofMillis;
+import static java.util.Collections.unmodifiableMap;
 
 final class DefaultLoadBalancerProviderConfig {
 
@@ -49,13 +52,13 @@ final class DefaultLoadBalancerProviderConfig {
     private static final String PROP_EWMA_ERROR_PENALTY = "ewmaErrorPenalty";
     private static final String PROP_EWMA_CANCELLATION_PENALTY = "ewmaCancellationPenalty";
     private static final String PROP_CANCELLATION_IS_ERROR = "cancellationIsError";
-    private static final String PROP_FAILED_CONNECTIONS_THRESHOLD = "healthCheckFailedConnectionsThreshold";
+    private static final String PROP_FAILED_CONNECTIONS_THRESHOLD = "failedConnectionsThreshold";
     private static final String PROP_LOAD_BALANCING_POLICY = "policy";
     private static final String PROP_EWMA_HALF_LIFE_MS = "ewmaHalfLifeMs";
     private static final String PROP_CONSECUTIVE_5XX = "consecutive5xx";
-    private static final String PROP_INTERVAL_MS = "intervalMs";
+    private static final String PROP_FAILURE_DETECTOR_INTERVAL_MS = "failureDetectorIntervalMs";
     private static final String PROP_BASE_EJECTION_TIME_MS = "baseEjectionTimeMs";
-    private static final String PROP_MAX_EJECTION_PERCENT = "maxEjectionPercent";
+    private static final String PROP_MAX_EJECTION_PERCENTAGE = "maxEjectionPercentage";
     private static final String PROP_ALWAYS_EJECT_ONE_HOST = "alwaysEjectOneHost";
     private static final String PROP_ENFORCING_CONSECUTIVE_5XX = "enforcingConsecutive5xx";
     private static final String PROP_ENFORCING_SUCCESS_RATE = "enforcingSuccessRate";
@@ -70,6 +73,17 @@ final class DefaultLoadBalancerProviderConfig {
     private static final String PROP_MAX_EJECTION_TIME_MS = "maxEjectionTimeMs";
     private static final String PROP_EJECTION_TIME_JITTER_MS = "ejectionTimeJitterMs";
 
+    // Deprecated aliases, keyed by the property that replaces them.
+    private static final Map<String, String> DEPRECATED_NAMES;
+
+    static {
+        Map<String, String> deprecatedNames = new HashMap<>();
+        deprecatedNames.put(PROP_FAILED_CONNECTIONS_THRESHOLD, "healthCheckFailedConnectionsThreshold");
+        deprecatedNames.put(PROP_FAILURE_DETECTOR_INTERVAL_MS, "intervalMs");
+        deprecatedNames.put(PROP_MAX_EJECTION_PERCENTAGE, "maxEjectionPercent");
+        DEPRECATED_NAMES = unmodifiableMap(deprecatedNames);
+    }
+
     private final String rawClientsEnabledFor;
     private final Set<String> clientsEnabledFor;
     private final int failedConnectionsThreshold;
@@ -79,7 +93,7 @@ final class DefaultLoadBalancerProviderConfig {
     private final int ewmaCancellationPenalty;
     private final boolean cancellationIsError;
     private final int consecutive5xx;
-    private final Duration interval;
+    private final Duration failureDetectorInterval;
     private final Duration baseEjectionTime;
     private final int maxEjectionPercentage;
     private final boolean alwaysEjectOneHost;
@@ -106,9 +120,9 @@ final class DefaultLoadBalancerProviderConfig {
         ewmaCancellationPenalty = getInt(PROP_EWMA_CANCELLATION_PENALTY, DEFAULTS.ewmaCancellationPenalty());
         cancellationIsError = getBool(PROP_CANCELLATION_IS_ERROR, DEFAULTS.cancellationIsError());
         consecutive5xx = getInt(PROP_CONSECUTIVE_5XX, DEFAULTS.consecutive5xx());
-        interval = getDuration(PROP_INTERVAL_MS, DEFAULTS.failureDetectorInterval());
+        failureDetectorInterval = getDuration(PROP_FAILURE_DETECTOR_INTERVAL_MS, DEFAULTS.failureDetectorInterval());
         baseEjectionTime = getDuration(PROP_BASE_EJECTION_TIME_MS, DEFAULTS.baseEjectionTime());
-        maxEjectionPercentage = getInt(PROP_MAX_EJECTION_PERCENT, DEFAULTS.maxEjectionPercentage());
+        maxEjectionPercentage = getInt(PROP_MAX_EJECTION_PERCENTAGE, DEFAULTS.maxEjectionPercentage());
         alwaysEjectOneHost = getBool(PROP_ALWAYS_EJECT_ONE_HOST, DEFAULTS.alwaysEjectOneHost());
         enforcingConsecutive5xx = getInt(PROP_ENFORCING_CONSECUTIVE_5XX, DEFAULTS.enforcingConsecutive5xx());
         enforcingSuccessRate = getInt(PROP_ENFORCING_SUCCESS_RATE, DEFAULTS.enforcingSuccessRate());
@@ -155,7 +169,7 @@ final class DefaultLoadBalancerProviderConfig {
                 .ewmaCancellationPenalty(ewmaCancellationPenalty)
                 .cancellationIsError(cancellationIsError)
                 .consecutive5xx(consecutive5xx)
-                .failureDetectorInterval(interval)
+                .failureDetectorInterval(failureDetectorInterval)
                 .baseEjectionTime(baseEjectionTime)
                 .ejectionTimeJitter(ejectionTimeJitter)
                 .maxEjectionPercentage(maxEjectionPercentage)
@@ -197,12 +211,28 @@ final class DefaultLoadBalancerProviderConfig {
         return new DefaultLoadBalancerProviderConfig();
     }
 
+    @Nullable
+    private static String getProperty(String name) {
+        String value = System.getProperty(PROPERTY_PREFIX + name);
+        String deprecatedName = DEPRECATED_NAMES.get(name);
+        if (value != null || deprecatedName == null) {
+            return value;
+        }
+        value = System.getProperty(PROPERTY_PREFIX + deprecatedName);
+        if (value != null) {
+            LOGGER.warn("Property {}{} is deprecated, use {}{} instead.",
+                    PROPERTY_PREFIX, deprecatedName, PROPERTY_PREFIX, name);
+        }
+        return value;
+    }
+
     private static String getString(String name, String defaultValue) {
-        return System.getProperty(PROPERTY_PREFIX + name, defaultValue);
+        String value = getProperty(name);
+        return value == null ? defaultValue : value;
     }
 
     private static long getLong(String name, long defaultValue) {
-        String propertyValue = System.getProperty(PROPERTY_PREFIX + name);
+        String propertyValue = getProperty(name);
         if (propertyValue == null) {
             return defaultValue;
         }
@@ -217,7 +247,7 @@ final class DefaultLoadBalancerProviderConfig {
 
     @Nullable
     private static Duration getDuration(String name, @Nullable Duration defaultValue) {
-        String propertyValue = System.getProperty(PROPERTY_PREFIX + name);
+        String propertyValue = getProperty(name);
         if (propertyValue == null) {
             return defaultValue;
         }
@@ -231,7 +261,7 @@ final class DefaultLoadBalancerProviderConfig {
     }
 
     private static boolean getBool(String name, boolean defaultValue) {
-        String stringValue = System.getProperty(PROPERTY_PREFIX + name);
+        String stringValue = getProperty(name);
         return stringValue == null ? defaultValue : Boolean.parseBoolean(stringValue);
     }
 
