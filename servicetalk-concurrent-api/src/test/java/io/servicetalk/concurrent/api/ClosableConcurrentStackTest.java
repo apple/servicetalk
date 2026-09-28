@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import static io.servicetalk.concurrent.api.Single.collectUnordered;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,7 +57,7 @@ class ClosableConcurrentStackTest {
         List<Integer> values = new ArrayList<>(itemCount);
         stack.close(values::add);
 
-        assertEquals(itemCount, values.size());
+        assertThat(values, hasSize(itemCount));
         for (int i = itemCount - 1; i >= 0; --i) {
             assertEquals(values.get(itemCount - i - 1).intValue(), i);
         }
@@ -99,7 +100,7 @@ class ClosableConcurrentStackTest {
         barrier.await();
         stack.close(overallValues::add);
         future.get();
-        assertEquals(itemCount, overallValues.size());
+        assertThat(overallValues, hasSize(itemCount));
         for (int i = 0; i < itemCount; ++i) {
             assertThat(i, is(in(overallValues)));
         }

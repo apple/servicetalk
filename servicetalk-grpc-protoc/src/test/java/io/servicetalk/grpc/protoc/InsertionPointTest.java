@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,9 @@ import java.nio.file.Files;
 import java.util.List;
 
 import static io.servicetalk.grpc.protoc.FileDescriptor.insertionPoint;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InsertionPointTest {
@@ -39,18 +41,18 @@ class InsertionPointTest {
     @Test
     void insertionPointExistsInMultiFiles() throws IOException {
         List<CodeGeneratorResponse.File> files = generate("test_multi.proto");
-        assertEquals(2, files.size());
+        assertThat(files, hasSize(2));
 
-        assertTrue(files.get(0).getContent().contains(insertionPoint("test.multi.Tester")));
-        assertTrue(files.get(1).getContent().contains(insertionPoint("test.multi.Tester2")));
+        assertThat(files.get(0).getContent(), containsString(insertionPoint("test.multi.Tester")));
+        assertThat(files.get(1).getContent(), containsString(insertionPoint("test.multi.Tester2")));
     }
 
     @Test
     void insertionPointExistsInSingleFile() throws IOException {
         List<CodeGeneratorResponse.File> files = generate("test_single.proto");
-        assertEquals(3, files.size());
-        assertTrue(files.get(1).getContent().contains(insertionPoint("test.single.Greeter")));
-        assertTrue(files.get(2).getContent().contains(insertionPoint("test.single.Fareweller")));
+        assertThat(files, hasSize(3));
+        assertThat(files.get(1).getContent(), containsString(insertionPoint("test.single.Greeter")));
+        assertThat(files.get(2).getContent(), containsString(insertionPoint("test.single.Fareweller")));
     }
 
     private static List<CodeGeneratorResponse.File> generate(String file) throws IOException {

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,8 @@ import java.util.List;
 
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -67,7 +69,7 @@ class PowerSetPartitionMapTest {
         // Test duplicate put
         List<ListenableAsyncCloseable> result = map.add(host3Attributes());
         assertOneTwoThree(map);
-        assertEquals(15, result.size());
+        assertThat(result, hasSize(15));
         assertEquals(VALUE, map.get(host3Attributes()));
     }
 
@@ -79,7 +81,7 @@ class PowerSetPartitionMapTest {
         assertEquals(VALUE, map.get(host1Attributes()));
         assertEquals(VALUE, map.get(host2Attributes()));
         assertNull(map.get(host3Attributes()));
-        assertEquals(15, result.size());
+        assertThat(result, hasSize(15));
 
         // Test a wild card with a unique attribute to host3 removed no longer returns any results.
         PartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(1);
@@ -245,7 +247,7 @@ class PowerSetPartitionMapTest {
         assertEquals(1, map.size(), "Same partition added twice.");
 
         List<ListenableAsyncCloseable> removed = map.remove(partition);
-        assertEquals(removed.size(), added1.size(), "Unexpected size of removed partitions.");
+        assertThat("Unexpected size of removed partitions.", removed, hasSize(added1.size()));
     }
 
     private static void assertMapSize(PowerSetPartitionMap<ListenableAsyncCloseable> map, int size, int indexSize) {
@@ -262,15 +264,15 @@ class PowerSetPartitionMapTest {
         PowerSetPartitionMap<ListenableAsyncCloseable> map = new PowerSetPartitionMap<>(address -> VALUE);
         List<ListenableAsyncCloseable> result = map.add(host1Attributes());
         assertEquals(VALUE, map.get(host1Attributes()));
-        assertEquals(15, result.size());
+        assertThat(result, hasSize(15));
         assertMapSize(map, 1, 15);
         result = map.add(host2Attributes());
         assertEquals(VALUE, map.get(host2Attributes()));
-        assertEquals(15, result.size());
+        assertThat(result, hasSize(15));
         assertMapSize(map, 2, 23);
         result = map.add(host3Attributes());
         assertEquals(VALUE, map.get(host3Attributes()));
-        assertEquals(15, result.size());
+        assertThat(result, hasSize(15));
         assertOneTwoThree(map);
         return map;
     }

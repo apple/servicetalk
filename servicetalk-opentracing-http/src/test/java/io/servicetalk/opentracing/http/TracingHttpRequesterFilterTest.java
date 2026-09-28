@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,9 +72,10 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static java.lang.String.valueOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
+import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -129,7 +130,7 @@ class TracingHttpRequesterFilterTest {
                 assertEquals(GET.name(), lastFinishedSpan.tags().get(HTTP_METHOD.getKey()));
                 assertEquals(requestUrl, lastFinishedSpan.tags().get(HTTP_URL.getKey()));
                 assertEquals(OK.code(), lastFinishedSpan.tags().get(HTTP_STATUS.getKey()));
-                assertFalse(lastFinishedSpan.tags().containsKey(ERROR.getKey()));
+                assertThat(lastFinishedSpan.tags(), not(hasKey(ERROR.getKey())));
 
                 verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), requestUrl,
                         serverSpanState.traceId, serverSpanState.spanId, null, TRACING_TEST_LOG_LINE_PREFIX);
@@ -171,7 +172,7 @@ class TracingHttpRequesterFilterTest {
                         assertEquals(GET.name(), lastFinishedSpan.tags().get(HTTP_METHOD.getKey()));
                         assertEquals(requestUrl, lastFinishedSpan.tags().get(HTTP_URL.getKey()));
                         assertEquals(OK.code(), lastFinishedSpan.tags().get(HTTP_STATUS.getKey()));
-                        assertFalse(lastFinishedSpan.tags().containsKey(ERROR.getKey()));
+                        assertThat(lastFinishedSpan.tags(), not(hasKey(ERROR.getKey())));
                         verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), requestUrl,
                                 serverSpanState.traceId, serverSpanState.spanId, serverSpanState.parentSpanId,
                                 TRACING_TEST_LOG_LINE_PREFIX);

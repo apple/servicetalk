@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,9 @@ import java.util.stream.StreamSupport;
 import static java.util.Arrays.asList;
 import static java.util.Collections.addAll;
 import static java.util.Collections.singletonList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -128,8 +131,8 @@ class HttpQueryTest {
         params.put("foo", newList("bar", "baz"));
         final HttpQuery query = new HttpQuery(params);
 
-        assertTrue(query.keys().contains("foo"));
-        assertFalse(query.keys().contains("abc"));
+        assertThat(query.keys(), hasItem("foo"));
+        assertThat(query.keys(), not(hasItem("abc")));
     }
 
     @Test
@@ -146,14 +149,14 @@ class HttpQueryTest {
         params.put("foo", newList("bar", "baz"));
         final HttpQuery query = new HttpQuery(params);
         assertTrue(query.remove("foo"));
-        assertFalse(query.keys().contains("foo"));
+        assertThat(query.keys(), not(hasItem("foo")));
         assertFalse(query.remove("foo"));
 
         query.add("foo", "bar");
         assertTrue(query.remove("foo", "bar"));
         assertFalse(query.remove("foo"));
 
-        assertFalse(query.keys().contains("foo"));
+        assertThat(query.keys(), not(hasItem("foo")));
     }
 
     @Test

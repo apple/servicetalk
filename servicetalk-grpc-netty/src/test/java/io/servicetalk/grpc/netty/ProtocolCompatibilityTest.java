@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2024 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2024, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -162,6 +162,8 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -974,7 +976,7 @@ class ProtocolCompatibilityTest {
                         client.serverStreamingCall(metadata, CompatRequest.newBuilder().setId(3).build());
                 final List<CompatResponse> response3List = new ArrayList<>();
                 response3.forEach(response3List::add);
-                assertEquals(3, response3List.size());
+                assertThat(response3List, hasSize(3));
                 assertEquals(1_000_000, response3List.get(0).getSize());
                 assertEquals(1_000_001, response3List.get(1).getSize());
                 assertEquals(1_000_002, response3List.get(2).getSize());
@@ -988,7 +990,7 @@ class ProtocolCompatibilityTest {
 
                 final List<CompatResponse> response4List = new ArrayList<>();
                 response4.forEach(response4List::add);
-                assertEquals(3, response4List.size());
+                assertThat(response4List, hasSize(3));
                 assertEquals(1_000_003, response4List.get(0).getSize());
                 assertEquals(1_000_004, response4List.get(1).getSize());
                 assertEquals(1_000_005, response4List.get(2).getSize());
@@ -1025,7 +1027,7 @@ class ProtocolCompatibilityTest {
                 final Publisher<CompatResponse> response3 =
                         client.serverStreamingCall(metadata, CompatRequest.newBuilder().setId(3).build());
                 final List<CompatResponse> response3List = new ArrayList<>(response3.toFuture().get());
-                assertEquals(3, response3List.size());
+                assertThat(response3List, hasSize(3));
                 assertEquals(1_000_000, response3List.get(0).getSize());
                 assertEquals(1_000_001, response3List.get(1).getSize());
                 assertEquals(1_000_002, response3List.get(2).getSize());
@@ -1038,7 +1040,7 @@ class ProtocolCompatibilityTest {
                         ));
 
                 final List<CompatResponse> response4List = new ArrayList<>(response4.toFuture().get());
-                assertEquals(3, response4List.size());
+                assertThat(response4List, hasSize(3));
                 assertEquals(1_000_003, response4List.get(0).getSize());
                 assertEquals(1_000_004, response4List.get(1).getSize());
                 assertEquals(1_000_005, response4List.get(2).getSize());
@@ -1273,7 +1275,7 @@ class ProtocolCompatibilityTest {
         assertEquals(expectedCode, status.getCode());
         assertEquals(expectMessage, status.getMessage());
         final List<Any> anyList = status.getDetailsList();
-        assertEquals(1, anyList.size());
+        assertThat(anyList, hasSize(1));
         final CompatResponse detail = anyList.get(0).unpack(CompatResponse.class);
         assertEquals(999, detail.getId());
     }
@@ -1283,7 +1285,7 @@ class ProtocolCompatibilityTest {
         assertEquals(expectedCode, status.getCode());
         assertEquals(expectMessage, status.getMessage());
         final List<Any> anyList = status.getDetailsList();
-        assertEquals(0, anyList.size());
+        assertThat(anyList, is(empty()));
     }
 
     private static com.google.rpc.Status newStatus(final String message) {
