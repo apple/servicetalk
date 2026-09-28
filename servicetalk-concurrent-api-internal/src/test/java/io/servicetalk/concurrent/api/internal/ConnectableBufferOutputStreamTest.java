@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.AfterEach;
@@ -60,9 +61,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
 
 class ConnectableBufferOutputStreamTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectableBufferOutputStreamTest.class);
@@ -158,12 +157,8 @@ class ConnectableBufferOutputStreamTest {
 
         toSource(cbos.connect()).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
-        try {
-            f.get();
-            fail();
-        } catch (ExecutionException e) {
-            verifyCheckedRunnableException(e, IOException.class);
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, f::get);
+        verifyCheckedRunnableException(e, IOException.class);
 
         assertThat(subscriber.takeOnNext(), is(buf(1)));
         subscriber.awaitOnComplete();
@@ -185,12 +180,8 @@ class ConnectableBufferOutputStreamTest {
             cbos.flush();
         }));
 
-        try {
-            f.get();
-            fail();
-        } catch (ExecutionException e) {
-            verifyCheckedRunnableException(e, IOException.class);
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, f::get);
+        verifyCheckedRunnableException(e, IOException.class);
 
         assertThat(subscriber.takeOnNext(), is(buf(1)));
         subscriber.awaitOnComplete();
@@ -215,12 +206,8 @@ class ConnectableBufferOutputStreamTest {
         subscriber.awaitSubscription().request(1);
         afterFlushBarrier.await();
         subscriber.awaitSubscription().cancel();
-        try {
-            f.get();
-            fail();
-        } catch (ExecutionException e) {
-            verifyCheckedRunnableException(e, IOException.class);
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, f::get);
+        verifyCheckedRunnableException(e, IOException.class);
 
         assertThat(subscriber.takeOnNext(), is(buf(1)));
         assertNoTerminal(subscriber);
@@ -237,12 +224,8 @@ class ConnectableBufferOutputStreamTest {
         subscriber.awaitSubscription().cancel();
         Future<?> f = executorService.submit(toRunnable(() -> cbos.write(1)));
 
-        try {
-            f.get();
-            fail();
-        } catch (ExecutionException e) {
-            verifyCheckedRunnableException(e, IOException.class);
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, f::get);
+        verifyCheckedRunnableException(e, IOException.class);
 
         assertNoTerminal(subscriber);
         cbos.close(); // should be idempotent
@@ -397,12 +380,7 @@ class ConnectableBufferOutputStreamTest {
                 onComplete.countDown();
             }
         });
-        try {
-            cbos.write(1);
-            fail();
-        } catch (RuntimeException cause) {
-            assertSame(DELIBERATE_EXCEPTION, cause);
-        }
+        assertThrows(DeliberateException.class, () -> cbos.write(1));
         assertThrows(IOException.class, cbos::flush);
         cbos.close();
         onError.await();
@@ -560,12 +538,7 @@ class ConnectableBufferOutputStreamTest {
                 failure.set(new AssertionError("onComplete received when onNext threw."));
             }
         });
-        try {
-            cbos.write(1);
-            fail();
-        } catch (RuntimeException cause) {
-            assertSame(DELIBERATE_EXCEPTION, cause);
-        }
+        assertThrows(DeliberateException.class, () -> cbos.write(1));
         cbos.close();
         assertThat("Unexpected failure", failure.get(), is(DELIBERATE_EXCEPTION));
     }
@@ -605,12 +578,8 @@ class ConnectableBufferOutputStreamTest {
             cbos.write(1);
             cbos.flush();
         }));
-        try {
-            f.get();
-            fail();
-        } catch (ExecutionException e) {
-            verifyCheckedRunnableException(e, IOException.class);
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, f::get);
+        verifyCheckedRunnableException(e, IOException.class);
         assertThat(subscriber.awaitOnError(), is(instanceOf(IllegalArgumentException.class)));
     }
 
@@ -626,12 +595,8 @@ class ConnectableBufferOutputStreamTest {
         }));
         cb.await();
         subscriber.awaitSubscription().request(-1);
-        try {
-            f.get();
-            fail();
-        } catch (ExecutionException e) {
-            verifyCheckedRunnableException(e, IOException.class);
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, f::get);
+        verifyCheckedRunnableException(e, IOException.class);
         assertThat(subscriber.awaitOnError(), is(instanceOf(IllegalArgumentException.class)));
     }
 

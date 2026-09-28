@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,7 +71,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.lenient;
@@ -398,12 +397,9 @@ class BlockingStreamingToStreamingServiceTest {
             response.sendMetaData();
         };
 
-        try {
-            invokeService(syncService, reqRespFactory.get("/"));
-            fail("Payload body should complete with an error");
-        } catch (ExecutionException e) {
-            assertThat(e.getCause(), instanceOf(IllegalStateException.class));
-        }
+        ExecutionException e = assertThrows(ExecutionException.class,
+                () -> invokeService(syncService, reqRespFactory.get("/")));
+        assertThat(e.getCause(), instanceOf(IllegalStateException.class));
     }
 
     @Test
@@ -413,13 +409,10 @@ class BlockingStreamingToStreamingServiceTest {
             response.status(NO_CONTENT);
         };
 
-        try {
-            invokeService(syncService, reqRespFactory.get("/"));
-            fail("Payload body should complete with an error");
-        } catch (ExecutionException e) {
-            assertThat(e.getCause(), instanceOf(IllegalStateException.class));
-            assertThat(e.getCause().getMessage(), is("Response meta-data is already sent"));
-        }
+        ExecutionException e = assertThrows(ExecutionException.class,
+                () -> invokeService(syncService, reqRespFactory.get("/")));
+        assertThat(e.getCause(), instanceOf(IllegalStateException.class));
+        assertThat(e.getCause().getMessage(), is("Response meta-data is already sent"));
     }
 
     @Test

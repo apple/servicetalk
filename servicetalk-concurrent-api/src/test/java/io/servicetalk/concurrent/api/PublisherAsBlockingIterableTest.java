@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,12 +40,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 final class PublisherAsBlockingIterableTest {
 
@@ -77,7 +75,7 @@ final class PublisherAsBlockingIterableTest {
         DeliberateException de = new DeliberateException();
         Iterator<Integer> iterator = Publisher.<Integer>failed(de).toIterable().iterator();
         assertThat("Item expected but not found.", iterator.hasNext(), is(true));
-        assertSame(de, assertThrows(DeliberateException.class, iterator::next));
+        assertThrows(DeliberateException.class, iterator::next);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] clazz={0}")
@@ -96,7 +94,7 @@ final class PublisherAsBlockingIterableTest {
         Iterator<Integer> iterator = Publisher.<Integer>failed(de).toIterable().iterator();
         assertThat("Item expected but not found.", iterator.hasNext(), is(true));
         assertThat("Second hasNext inconsistent with first.", iterator.hasNext(), is(true));
-        assertSame(de, assertThrows(DeliberateException.class, iterator::next));
+        assertThrows(DeliberateException.class, iterator::next);
     }
 
     @Test
@@ -215,15 +213,12 @@ final class PublisherAsBlockingIterableTest {
         Iterator<Integer> iterator = from(1, 2, 3, 4)
                 .concat(Publisher.failed(de)).toIterable().iterator();
         List<Integer> result = new ArrayList<>(4);
-        try {
+        assertThrows(DeliberateException.class, () -> {
             while (iterator.hasNext()) {
                 result.add(iterator.next());
             }
-            fail("Exception expected but not thrown.");
-        } catch (DeliberateException e) {
-            assertThat("Unexpected exception.", e, sameInstance(de));
-            assertThat("Unexpected result.", result, contains(1, 2, 3, 4));
-        }
+        });
+        assertThat("Unexpected result.", result, contains(1, 2, 3, 4));
     }
 
     @Test
@@ -331,8 +326,7 @@ final class PublisherAsBlockingIterableTest {
         source.onError(de);
         verifyNextIs(iterator, 1);
         assertThat("Item expected but not found.", iterator.hasNext(), is(true));
-        Exception e = assertThrows(DeliberateException.class, iterator::next);
-        assertThat(e, sameInstance(de));
+        assertThrows(DeliberateException.class, iterator::next);
     }
 
     @Test

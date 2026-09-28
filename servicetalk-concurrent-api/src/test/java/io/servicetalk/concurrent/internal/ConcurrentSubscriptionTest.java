@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,8 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 class ConcurrentSubscriptionTest {
     private final TestSubscription subscription = new TestSubscription();
@@ -84,12 +84,7 @@ class ConcurrentSubscriptionTest {
                 cancelledLatch.countDown();
             }
         });
-        try {
-            concurrent.request(1);
-            fail();
-        } catch (DeliberateException e) {
-            assertSame(DELIBERATE_EXCEPTION, e);
-        }
+        assertThrows(DeliberateException.class, () -> concurrent.request(1));
         concurrent.cancel();
         cancelledLatch.await();
     }

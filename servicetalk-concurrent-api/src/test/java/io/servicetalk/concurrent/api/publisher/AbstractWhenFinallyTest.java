@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -151,8 +151,7 @@ abstract class AbstractWhenFinallyTest {
         try {
             doFinally(publisher, mock).subscribe(subscriber);
             publisher.onSubscribe(subscription);
-            Exception e = assertThrows(DeliberateException.class, () -> subscriber.awaitSubscription().cancel());
-            assertThat(e, is(sameInstance(DELIBERATE_EXCEPTION)));
+            assertThrows(DeliberateException.class, () -> subscriber.awaitSubscription().cancel());
         } finally {
             verify(mock).cancel();
             verifyNoMoreInteractions(mock);

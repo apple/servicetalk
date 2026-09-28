@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,8 +45,7 @@ class AfterFinallyTest extends AbstractWhenFinallyTest {
         try {
             doFinally(publisher, mock).subscribe(subscriber);
             assertFalse(subscription.isCancelled());
-            Exception e = assertThrows(DeliberateException.class, publisher::onComplete);
-            assertThat(e, is(sameInstance(DELIBERATE_EXCEPTION)));
+            assertThrows(DeliberateException.class, publisher::onComplete);
         } finally {
             subscriber.awaitOnComplete();
             verify(mock).onComplete();

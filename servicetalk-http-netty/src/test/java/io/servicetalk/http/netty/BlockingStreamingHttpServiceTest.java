@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -70,7 +71,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
 
 class BlockingStreamingHttpServiceTest {
 
@@ -409,14 +409,10 @@ class BlockingStreamingHttpServiceTest {
             }
         });
 
-        try {
-            BlockingStreamingHttpResponse response = client.request(client.get("/"));
-            assertResponse(response);
-            assertThat(response.toResponse().toFuture().get().payloadBody(), is(EMPTY_BUFFER));
-            fail("Payload body should complete with an error");
-        } catch (Exception e) {
-            assertThat(serverException.get(), instanceOf(IllegalStateException.class));
-        }
+        BlockingStreamingHttpResponse response = client.request(client.get("/"));
+        assertResponse(response);
+        assertThrows(ExecutionException.class, () -> response.toResponse().toFuture().get());
+        assertThat(serverException.get(), instanceOf(IllegalStateException.class));
     }
 
     @Test
