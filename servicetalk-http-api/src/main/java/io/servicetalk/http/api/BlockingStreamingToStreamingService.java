@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021-2022, 2026 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,8 +73,7 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                                                 final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory responseFactory) {
         // Read on the request thread; the request context is not thread-safe.
-        final Boolean interrupt = request.context().get(INTERRUPT_ON_CANCEL);
-        final boolean interruptOnCancel = interrupt == null || interrupt;
+        final boolean interruptOnCancel = interruptOnCancel(request);
         return new SubscribableSingle<StreamingHttpResponse>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
@@ -173,6 +172,11 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                 tiCancellable.setDone();
             }
         };
+    }
+
+    private static boolean interruptOnCancel(final HttpRequestMetaData request) {
+        final Boolean interrupt = request.context().get(INTERRUPT_ON_CANCEL);
+        return interrupt == null || interrupt;
     }
 
     @Override

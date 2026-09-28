@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021, 2026 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -48,6 +49,7 @@ import static java.lang.Runtime.getRuntime;
 import static java.lang.System.arraycopy;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
@@ -252,7 +254,12 @@ class ConnectablePayloadWriterTest {
 
     @Test
     void cancelWritesBeforeConnectFailsWrite() throws Exception {
-        Future<?> f = executorService.submit(toRunnable(() -> cpw.write("foo")));
+        AtomicReference<Thread> writer = new AtomicReference<>();
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            writer.set(Thread.currentThread());
+            cpw.write("foo");
+        }));
+        awaitParked(writer);
         cpw.cancelWrites();
 
         ExecutionException e = assertThrows(ExecutionException.class, f::get);
@@ -263,7 +270,12 @@ class ConnectablePayloadWriterTest {
     void cancelWritesWithoutDemandFailsWriteAndSubscriber() throws Exception {
         toSource(cpw.connect()).subscribe(subscriber);
         subscriber.awaitSubscription();
-        Future<?> f = executorService.submit(toRunnable(() -> cpw.write("foo")));
+        AtomicReference<Thread> writer = new AtomicReference<>();
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            writer.set(Thread.currentThread());
+            cpw.write("foo");
+        }));
+        awaitParked(writer);
         cpw.cancelWrites();
 
         ExecutionException e = assertThrows(ExecutionException.class, f::get);
@@ -295,6 +307,21 @@ class ConnectablePayloadWriterTest {
         })).subscribe(subscriber);
 
         subscriber.awaitOnComplete();
+    }
+
+    /**
+     * Waits until the writer is parked in {@link ConnectablePayloadWriter#write(Object)}, its only blocking point, so
+     * that a following cancel exercises the unpark rather than the fast path.
+     */
+    private static void awaitParked(AtomicReference<Thread> writer) throws InterruptedException {
+        final long deadlineNanos = System.nanoTime() + SECONDS.toNanos(DEFAULT_TIMEOUT_SECONDS);
+        Thread thread = writer.get();
+        while ((thread == null || thread.getState() != Thread.State.WAITING) &&
+                System.nanoTime() - deadlineNanos < 0) {
+            MILLISECONDS.sleep(1);
+            thread = writer.get();
+        }
+        assertThat("the writer never parked", thread == null ? null : thread.getState(), is(Thread.State.WAITING));
     }
 
     static void assertNoTerminal(TestPublisherSubscriber<?> subscriber) {

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2026 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -156,7 +156,9 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
     }
 
     private void terminateRequestN() {
-        requested = REQUESTN_TERMINATED;
+        // We need to use getAndSet to get the read op which provides the happens-before guarantee we see
+        // writerThread used below.
+        requestedUpdater.getAndSet(this, REQUESTN_TERMINATED);
         tryWakeupWriterThread();
     }
 
