@@ -395,7 +395,8 @@ in memory, and the `File` reader spools it to a temporary file.
 
 For a streaming router -- or to express one policy whichever way the router is built
 -- add `PayloadSizeLimitingHttpServiceFilter` (from `servicetalk-http-utils`) to the
-server. It applies to every resource and entity type, streaming reads included. An
+server. It applies to every resource and entity type, streaming reads included, or only
+to matching requests when appended with `appendServiceFilter(predicate, filter)`. An
 oversized body is rejected as soon as it is detected, either with
 `413 Payload Too Large` or by tearing down the connection. Appended after any
 content-decoding filter it bounds everything held in memory and can be the only limit,
