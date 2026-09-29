@@ -391,6 +391,48 @@ class BlockingStreamingToStreamingServiceTest {
     }
 
     @Test
+    void cancelAfterSendMetaDataWithFilterFailsWriteWithoutInterrupt() throws Exception {
+        CountDownLatch cancelObserved = new CountDownLatch(1);
+        CountDownLatch releaseLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(1);
+        AtomicBoolean interrupted = new AtomicBoolean();
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+
+        BlockingStreamingHttpService syncService = (ctx, request, response) -> {
+            HttpPayloadWriter<Buffer> writer = response.sendMetaData();
+            try {
+                releaseLatch.await();
+            } catch (InterruptedException e) {
+                interrupted.set(true);
+                doneLatch.countDown();
+                return;
+            }
+            try {
+                writer.write(ctx.executionContext().bufferAllocator().fromAscii("x"));
+            } catch (IOException e) {
+                throwableRef.set(e);
+            } finally {
+                doneLatch.countDown();
+            }
+        };
+        StreamingHttpService asyncService = DisableInterruptOnCancelHttpServiceFilter.INSTANCE.create(
+                toStreamingHttpService(offloadNone(), syncService));
+        try {
+            StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"),
+                    reqRespFactory).subscribeOn(executorExtension.executor()).toFuture().get();
+            assertMetaData(OK, asyncResponse);
+            asyncResponse.payloadBody().afterCancel(cancelObserved::countDown).ignoreElements().subscribe().cancel();
+            cancelObserved.await();
+        } finally {
+            releaseLatch.countDown();
+        }
+        doneLatch.await();
+
+        assertThat("the service thread must not be interrupted", interrupted.get(), is(false));
+        assertThat(throwableRef.get(), instanceOf(IOException.class));
+    }
+
+    @Test
     void sendMetaDataTwice() throws Exception {
         BlockingStreamingHttpService syncService = (ctx, request, response) -> {
             response.sendMetaData();

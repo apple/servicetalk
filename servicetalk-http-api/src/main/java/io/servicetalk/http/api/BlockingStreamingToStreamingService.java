@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021-2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,16 +25,19 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.ConnectablePayloadWriter;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
+import io.servicetalk.context.api.ContextMap.Key;
 
 import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_META_STRATEGY;
 import static io.servicetalk.http.api.DefaultPayloadInfo.forTransportReceive;
 import static io.servicetalk.http.api.HeaderUtils.hasContentLength;
@@ -50,6 +53,12 @@ import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
 final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHolder {
+    /**
+     * Whether the service thread is interrupted on cancel. Absent means {@code true};
+     * {@link DisableInterruptOnCancelHttpServiceFilter} sets it to {@code false}.
+     */
+    static final Key<Boolean> INTERRUPT_ON_CANCEL = newKey("INTERRUPT_ON_CANCEL", Boolean.class);
+
     private static final HttpExecutionStrategy DEFAULT_STRATEGY = OFFLOAD_RECEIVE_META_STRATEGY;
     private final BlockingStreamingHttpService original;
 
@@ -64,12 +73,14 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                 final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory responseFactory) {
+        // Read on the request thread; the request context is not thread-safe.
+        final boolean interruptOnCancel = interruptOnCancel(request);
         return new SubscribableSingle<StreamingHttpResponse>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
                 final ThreadInterruptingCancellable tiCancellable = new ThreadInterruptingCancellable(currentThread());
                 try {
-                    subscriber.onSubscribe(tiCancellable);
+                    subscriber.onSubscribe(interruptOnCancel ? tiCancellable : IGNORE_CANCEL);
                 } catch (Throwable cause) {
                     // The Subscriber may have cancelled before throwing, which interrupts this thread. Complete the
                     // Cancellable so the interrupt is not left behind for unrelated work on this (typically pooled)
@@ -112,16 +123,19 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                             if (addTrailers) {
                                 messageBody = messageBody.scanWithMapper(() -> new TrailersMapper(payloadWriter));
                             }
-                            messageBody = messageBody.beforeSubscription(() -> new Subscription() {
-                                @Override
-                                public void request(final long n) {
-                                }
+                            if (interruptOnCancel) {
+                                messageBody = messageBody.beforeSubscription(() -> new Subscription() {
+                                    @Override
+                                    public void request(final long n) {
+                                    }
 
-                                @Override
-                                public void cancel() {
-                                    tiCancellable.cancel();
-                                }
-                            });
+                                    @Override
+                                    public void cancel() {
+                                        tiCancellable.cancel();
+                                    }
+                                });
+                            }
+                            // Otherwise the writer's own cancel fails the next write().
                             result = new DefaultStreamingHttpResponse(metaData.status(), version, headers,
                                     metaData.context0(), ctx.executionContext().bufferAllocator(), messageBody,
                                     forTransportReceive(false, version, headers), ctx.headersFactory(),
@@ -158,6 +172,11 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                 tiCancellable.setDone();
             }
         };
+    }
+
+    private static boolean interruptOnCancel(final HttpRequestMetaData request) {
+        final Boolean interrupt = request.context().get(INTERRUPT_ON_CANCEL);
+        return interrupt == null || interrupt;
     }
 
     @Override
