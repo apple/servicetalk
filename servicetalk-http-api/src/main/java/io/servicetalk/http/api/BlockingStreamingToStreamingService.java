@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
@@ -78,11 +79,8 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
             @Override
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
                 final ThreadInterruptingCancellable tiCancellable = new ThreadInterruptingCancellable(currentThread());
-                // Created before onSubscribe, so that a cancel before sendMetaData() still fails the next write().
-                final BufferHttpPayloadWriter payloadWriter = new BufferHttpPayloadWriter(
-                        () -> ctx.headersFactory().newTrailers());
                 try {
-                    subscriber.onSubscribe(interruptOnCancel ? tiCancellable : payloadWriter::cancelWrites);
+                    subscriber.onSubscribe(interruptOnCancel ? tiCancellable : IGNORE_CANCEL);
                 } catch (Throwable cause) {
                     // The Subscriber may have cancelled before throwing, which interrupts this thread. Complete the
                     // Cancellable so the interrupt is not left behind for unrelated work on this (typically pooled)
@@ -96,6 +94,8 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                 // (e.g. try-with-resources) this processor is merged with the payloadWriter Publisher so the error will
                 // still be propagated.
                 final CompletableSource.Processor exceptionProcessor = newCompletableProcessor();
+                final BufferHttpPayloadWriter payloadWriter = new BufferHttpPayloadWriter(
+                        () -> ctx.headersFactory().newTrailers());
                 DefaultBlockingStreamingHttpServerResponse response = null;
                 try {
                     final Consumer<DefaultHttpResponseMetaData> sendMeta = (metaData) -> {
@@ -240,10 +240,6 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
 
         Publisher<Buffer> connect() {
             return payloadWriter.connect();
-        }
-
-        void cancelWrites() {
-            payloadWriter.cancelWrites();
         }
     }
 
