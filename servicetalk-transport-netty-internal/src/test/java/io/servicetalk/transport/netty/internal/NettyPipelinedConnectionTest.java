@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
@@ -49,6 +50,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
@@ -175,6 +177,88 @@ class NettyPipelinedConnectionTest {
     }
 
     @Test
+    void fourPipelinedWritesCompleteBeforeAnyRead() {
+        final int requests = 4;
+        final List<TestPublisher<Integer>> writePublishers = new ArrayList<>(requests);
+        final List<TestPublisherSubscriber<Integer>> readSubscribers = new ArrayList<>(requests);
+        for (int i = 0; i < requests; i++) {
+            TestPublisher<Integer> writePublisher = new TestPublisher<>();
+            TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
+            writePublishers.add(writePublisher);
+            readSubscribers.add(subscriber);
+            toSource(requester.write(writePublisher)).subscribe(subscriber);
+        }
+        // Only the first write task runs on subscribe; the rest are handed a Subscription as the preceding write
+        // completes.
+        assertTrue(writePublishers.get(0).isSubscribed());
+        for (int i = 1; i < requests; i++) {
+            assertFalse(writePublishers.get(i).isSubscribed());
+        }
+
+        for (int i = 0; i < requests; i++) {
+            TestPublisher<Integer> writePublisher = writePublishers.get(i);
+            assertTrue(writePublisher.isSubscribed());
+            readSubscribers.get(i).awaitSubscription().request(1);
+            writePublisher.onNext(i);
+            writePublisher.onComplete();
+            Integer written = channel.readOutbound();
+            assertNotNull(written);
+            assertEquals(i, written.intValue());
+        }
+
+        for (int i = 0; i < requests; i++) {
+            channel.writeInbound(i);
+        }
+        for (int i = 0; i < requests; i++) {
+            TestPublisherSubscriber<Integer> subscriber = readSubscribers.get(i);
+            Integer next = subscriber.takeOnNext();
+            assertNotNull(next);
+            assertEquals(i, next.intValue());
+            subscriber.awaitOnComplete();
+        }
+    }
+
+    @Test
+    void responsesMatchRequestsWhenWritesCompleteOnSubscribe() {
+        // Holding the first write open lets the rest queue behind it, so releasing it drains them in one nested
+        // cascade. Responses must still match request order, not the order the reads get subscribed.
+        final int requests = 4;
+        final List<TestPublisherSubscriber<Integer>> readSubscribers = new ArrayList<>(requests);
+        final TestPublisher<Integer> heldWrite = new TestPublisher<>();
+        final TestPublisherSubscriber<Integer> firstSubscriber = new TestPublisherSubscriber<>();
+        readSubscribers.add(firstSubscriber);
+        toSource(requester.write(heldWrite)).subscribe(firstSubscriber);
+        for (int i = 1; i < requests; i++) {
+            TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
+            readSubscribers.add(subscriber);
+            toSource(requester.write(Publisher.from(i))).subscribe(subscriber);
+        }
+
+        firstSubscriber.awaitSubscription().request(1);
+        heldWrite.onNext(0);
+        heldWrite.onComplete();
+
+        for (int i = 0; i < requests; i++) {
+            Integer written = channel.readOutbound();
+            assertNotNull(written);
+            assertEquals(i, written.intValue());
+        }
+        for (int i = 1; i < requests; i++) {
+            readSubscribers.get(i).awaitSubscription().request(1);
+        }
+        for (int i = 0; i < requests; i++) {
+            channel.writeInbound(i);
+        }
+        for (int i = 0; i < requests; i++) {
+            TestPublisherSubscriber<Integer> subscriber = readSubscribers.get(i);
+            Integer next = subscriber.takeOnNext();
+            assertNotNull(next);
+            assertEquals(i, next.intValue());
+            subscriber.awaitOnComplete();
+        }
+    }
+
+    @Test
     void pipelinedReadsCompleteBeforeWrites() {
         toSource(requester.write(writePublisher1)).subscribe(readSubscriber);
         readSubscriber.awaitSubscription().request(1);
@@ -286,6 +370,137 @@ class NettyPipelinedConnectionTest {
         writePublisher1Subscription.awaitCancelled();
         assertFalse(writePublisher2.isSubscribed());
         assertFalse(channel.isOpen());
+    }
+
+    @Test
+    void cancellingQueuedResponseClosesOnlyAfterTheEarlierResponseFinishes() {
+        // A response cancelled before its turn was never read, so the connection has to close before anything reads
+        // again, but an earlier response that is still reading is healthy and must be allowed to finish.
+        toSource(requester.write(writePublisher1)).subscribe(readSubscriber);
+        readSubscriber.awaitSubscription().request(1);
+        toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
+
+        writePublisher1.onNext(1);
+        writePublisher1.onComplete();
+        assertTrue(writePublisher2.isSubscribed());
+
+        readSubscriber2.awaitSubscription().cancel();
+        assertTrue(channel.isOpen());
+
+        channel.writeInbound(1);
+        Integer next = readSubscriber.takeOnNext();
+        assertNotNull(next);
+        assertEquals(1, next.intValue());
+        readSubscriber.awaitOnComplete();
+        assertFalse(channel.isOpen());
+    }
+
+    @Test
+    void cancellingQueuedResponseDoesNotStartALaterRead() {
+        // Reads never terminate, so the read() count is the number of concurrently active read subscribers.
+        AtomicInteger readSubscribes = new AtomicInteger();
+        @SuppressWarnings("unchecked")
+        NettyConnection<Integer, Integer> mockConnection = mock(NettyConnection.class);
+        doAnswer((Answer<Publisher<Integer>>) invocation -> {
+            readSubscribes.incrementAndGet();
+            return Publisher.never();
+        }).when(mockConnection).read();
+        doAnswer((Answer<Completable>) invocation -> {
+            Publisher<Integer> writePub = invocation.getArgument(0);
+            return writePub.ignoreElements();
+        }).when(mockConnection).write(any(), any(), any());
+        // Completed, so the turn is the only thing that can hold the successor back.
+        when(mockConnection.closeAsync()).thenReturn(completed());
+        requester = new NettyPipelinedConnection<>(mockConnection, 8);
+
+        List<TestPublisherSubscriber<Integer>> subscribers = new ArrayList<>(3);
+        for (int i = 0; i < 3; i++) {
+            TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
+            subscribers.add(subscriber);
+            toSource(requester.write(Publisher.empty())).subscribe(subscriber);
+            subscriber.awaitSubscription().request(1);
+        }
+        assertThat("only the first response should be reading", readSubscribes.get(), is(1));
+
+        subscribers.get(1).awaitSubscription().cancel();
+
+        assertThat("a later response started reading over an earlier one", readSubscribes.get(), is(1));
+    }
+
+    @Test
+    void cancellingQueuedResponseWaitsForTheCloseBeforeReleasingTheNextRead() {
+        // The abandoned bytes are still on the wire, so the successor must wait for the close to complete, not just
+        // to be requested.
+        List<TestPublisher<Integer>> reads = new ArrayList<>();
+        TestCompletable closeCompletable = new TestCompletable();
+        @SuppressWarnings("unchecked")
+        NettyConnection<Integer, Integer> mockConnection = mock(NettyConnection.class);
+        doAnswer((Answer<Publisher<Integer>>) invocation -> {
+            TestPublisher<Integer> read = new TestPublisher<>();
+            reads.add(read);
+            return read;
+        }).when(mockConnection).read();
+        doAnswer((Answer<Completable>) invocation -> {
+            Publisher<Integer> writePub = invocation.getArgument(0);
+            return writePub.ignoreElements();
+        }).when(mockConnection).write(any(), any(), any());
+        when(mockConnection.closeAsync()).thenReturn(closeCompletable);
+        requester = new NettyPipelinedConnection<>(mockConnection, 8);
+
+        List<TestPublisherSubscriber<Integer>> subscribers = new ArrayList<>(3);
+        for (int i = 0; i < 3; i++) {
+            TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
+            subscribers.add(subscriber);
+            toSource(requester.write(Publisher.empty())).subscribe(subscriber);
+            subscriber.awaitSubscription().request(1);
+        }
+        assertThat(reads, hasSize(1));
+
+        subscribers.get(1).awaitSubscription().cancel();
+        reads.get(0).onComplete(); // the turn now belongs to the cancelled exchange
+        assertThat("a later read started before the close completed", reads, hasSize(1));
+
+        closeCompletable.onComplete();
+        assertThat("the next read was not released once the close completed", reads, hasSize(2));
+    }
+
+    @Test
+    void failedWriteSetupDoesNotReleaseTheNextReadEarly() {
+        // The second exchange's composition throws while the first is still reading; the third must wait for the
+        // first.
+        List<TestPublisher<Integer>> reads = new ArrayList<>();
+        AtomicInteger writes = new AtomicInteger();
+        @SuppressWarnings("unchecked")
+        NettyConnection<Integer, Integer> mockConnection = mock(NettyConnection.class);
+        doAnswer((Answer<Publisher<Integer>>) invocation -> {
+            TestPublisher<Integer> read = new TestPublisher<>();
+            reads.add(read);
+            return read;
+        }).when(mockConnection).read();
+        doAnswer((Answer<Completable>) invocation -> {
+            if (writes.incrementAndGet() == 2) {
+                throw DELIBERATE_EXCEPTION;
+            }
+            Publisher<Integer> writePub = invocation.getArgument(0);
+            return writePub.ignoreElements();
+        }).when(mockConnection).write(any(), any(), any());
+        when(mockConnection.closeAsync()).thenReturn(completed());
+        requester = new NettyPipelinedConnection<>(mockConnection, 8);
+
+        TestPublisherSubscriber<Integer> first = new TestPublisherSubscriber<>();
+        toSource(requester.write(Publisher.empty())).subscribe(first);
+        first.awaitSubscription().request(1);
+        assertThat(reads, hasSize(1));
+
+        TestPublisherSubscriber<Integer> failed = new TestPublisherSubscriber<>();
+        toSource(requester.write(Publisher.empty())).subscribe(failed);
+        assertThat(failed.awaitOnError(), is(DELIBERATE_EXCEPTION));
+
+        TestPublisherSubscriber<Integer> third = new TestPublisherSubscriber<>();
+        toSource(requester.write(Publisher.empty())).subscribe(third);
+        third.awaitSubscription().request(1);
+
+        assertThat("a later read started while the first was still reading", reads, hasSize(1));
     }
 
     @Test

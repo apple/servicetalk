@@ -65,6 +65,9 @@ import javax.net.ssl.SSLSession;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 
+// The write stream and the mock read below both terminate synchronously, and nothing here caps in-flight requests,
+// so the recursion described on NettyPipelinedConnection is unbounded here and this benchmark can exhaust the stack
+// at higher thread counts. Raise -Xss or make the mock read asynchronous if that happens.
 @Fork(1)
 @State(Scope.Benchmark)
 @Warmup(iterations = 5, time = 3)
