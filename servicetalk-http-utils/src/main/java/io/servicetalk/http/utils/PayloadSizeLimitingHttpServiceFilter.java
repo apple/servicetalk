@@ -44,7 +44,10 @@ import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
  * This is independent of the server's default
  * {@link io.servicetalk.http.api.HttpServerBuilder#maxAggregatedPayloadSize(int) maxAggregatedPayloadSize} limit, which
  * bounds the fully-decoded payload at aggregation time. This filter bounds bytes at its position in the chain (so it
- * can run before a decompressor to reject oversized wire bodies early); both limits apply.
+ * can run before a decompressor to reject oversized wire bodies early); where both are configured, both apply. Because
+ * {@code maxAggregatedPayloadSize} only bounds aggregation performed by ServiceTalk, this filter is also the way to
+ * bound a body that is buffered further up the stack, such as by the JAX-RS entity readers of a streaming Jersey
+ * router.
  */
 public final class PayloadSizeLimitingHttpServiceFilter implements StreamingHttpServiceFilterFactory {
     private final int maxRequestPayloadSize;

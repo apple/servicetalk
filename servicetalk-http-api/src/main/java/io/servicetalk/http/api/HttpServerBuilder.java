@@ -228,8 +228,9 @@ public interface HttpServerBuilder {
      *     rate-limited warning;</li>
      *     <li>{@code 0} disables it.</li>
      * </ul>
-     * Defaults to warn-only at 16 MiB; enforcing is planned to become the default in a future release. See also
-     * {@code PayloadSizeLimitingHttpServiceFilter} for a {@code Content-Length} fail-fast; both apply.
+     * Defaults to warn-only at 16 MiB; enforcing is planned to become the default in a future release. To limit every
+     * request body regardless of how it is consumed, including streamed requests and bodies buffered by a router such
+     * as JAX-RS, use {@code PayloadSizeLimitingHttpServiceFilter}.
      *
      * @param maxAggregatedPayloadSize bytes to buffer when a request is aggregated; positive enforces, negative warns
      * at its magnitude, {@code 0} disables

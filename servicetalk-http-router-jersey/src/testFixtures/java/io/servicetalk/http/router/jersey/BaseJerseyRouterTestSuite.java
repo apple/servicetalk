@@ -37,6 +37,9 @@ import org.junit.platform.suite.api.SuiteDisplayName;
         // RS features
         CancellationTest.class,
 
+        // Request payload size limits
+        RequestPayloadSizeLimitTest.class,
+
         // Execution strategy tests
         ExecutionStrategyConfigurationFailuresTest.class,
         ExecutionStrategyTest.class,
