@@ -62,15 +62,11 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
@@ -103,8 +99,6 @@ import static org.hamcrest.Matchers.not;
 
 @Execution(ExecutionMode.SAME_THREAD)
 class ClientEffectiveStrategyTest {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ClientEffectiveStrategyTest.class);
 
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
@@ -333,7 +327,7 @@ class ClientEffectiveStrategyTest {
                 invokingThreadsRecorder.reset(effectiveStrategy);
                 String responseBody = getResponse(clientApi, client, requestTarget);
                 assertThat("Unexpected response: " + responseBody, responseBody, is(not(emptyString())));
-                invokingThreadsRecorder.flakyVerifyOffloads(clientApi, client.executionContext().executionStrategy(),
+                invokingThreadsRecorder.verifyOffloads(clientApi, client.executionContext().executionStrategy(),
                         responseBody);
 
                 // Execute request one more time to make sure we cover all paths:
@@ -342,7 +336,7 @@ class ClientEffectiveStrategyTest {
                 invokingThreadsRecorder.reset(effectiveStrategy);
                 responseBody = getResponse(clientApi, client, requestTarget);
                 assertThat("Unexpected response: " + responseBody, responseBody, is(not(emptyString())));
-                invokingThreadsRecorder.flakyVerifyOffloads(clientApi, client.executionContext().executionStrategy(),
+                invokingThreadsRecorder.verifyOffloads(clientApi, client.executionContext().executionStrategy(),
                         responseBody);
             }
         }
@@ -486,30 +480,14 @@ class ClientEffectiveStrategyTest {
 
     private static final class ClientInvokingThreadRecorder implements StreamingHttpClientFilterFactory {
 
-        private volatile Thread applicationThread = Thread.currentThread();
-        private volatile HttpExecutionStrategy expectedStrategy;
-        private final Set<ClientOffloadPoint> offloadPoints =
-                Collections.synchronizedSet(EnumSet.noneOf(ClientOffloadPoint.class));
-        private final ConcurrentMap<ClientOffloadPoint, String> invokingThreads = new ConcurrentHashMap<>();
-        private final Queue<Throwable> errors = new LinkedBlockingQueue<>();
+        // Each request records into the Exchange that was current when it entered the filter. With offloaded send,
+        // the request payload can observe request(n) after the response has completed, which must not be attributed
+        // to a later request.
+        @Nullable
+        private volatile Exchange current;
 
         void reset(HttpExecutionStrategy expectedStrategy) {
-            invokingThreads.clear();
-            errors.clear();
-            offloadPoints.clear();
-            applicationThread = Thread.currentThread();
-
-            this.expectedStrategy = expectedStrategy;
-            // adjust expected offloads for specific execution strategy
-            if (expectedStrategy.isSendOffloaded()) {
-                offloadPoints.add(Send);
-            }
-            if (expectedStrategy.isMetadataReceiveOffloaded()) {
-                offloadPoints.add(ReceiveMeta);
-            }
-            if (expectedStrategy.isDataReceiveOffloaded()) {
-                offloadPoints.add(ReceiveData);
-            }
+            current = new Exchange(expectedStrategy);
         }
 
         @Override
@@ -525,15 +503,44 @@ class ClientEffectiveStrategyTest {
                 @Override
                 protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                 final StreamingHttpRequest request) {
+                    final Exchange exchange = Objects.requireNonNull(current, "reset() must be called first");
                     final HttpExecutionStrategy clientStrategy = delegate.executionContext().executionStrategy();
                     final HttpExecutionStrategy requestStrategy = request.context().get(HTTP_EXECUTION_STRATEGY_KEY);
-                    return delegate.request(request.transformPayloadBody(payload ->
-                                    payload.beforeRequest(__ -> recordThread(Send, clientStrategy, requestStrategy))))
-                            .beforeOnSuccess(__ -> recordThread(ReceiveMeta, clientStrategy, requestStrategy))
-                            .map(resp -> resp.transformPayloadBody(payload -> payload
-                                    .beforeOnNext(__ -> recordThread(ReceiveData, clientStrategy, requestStrategy))));
+                    return delegate.request(request.transformPayloadBody(payload -> payload.beforeRequest(__ ->
+                                    exchange.recordThread(Send, clientStrategy, requestStrategy))))
+                            .beforeOnSuccess(__ -> exchange.recordThread(ReceiveMeta, clientStrategy, requestStrategy))
+                            .map(resp -> resp.transformPayloadBody(payload -> payload.beforeOnNext(__ ->
+                                    exchange.recordThread(ReceiveData, clientStrategy, requestStrategy))));
                 }
             };
+        }
+
+        void verifyOffloads(ClientApi clientApi, HttpExecutionStrategy clientStrategy, String apiStrategy) {
+            Objects.requireNonNull(current, "reset() must be called first")
+                    .verifyOffloads(clientApi, clientStrategy, apiStrategy);
+        }
+    }
+
+    private static final class Exchange {
+
+        private final Thread applicationThread = Thread.currentThread();
+        private final HttpExecutionStrategy expectedStrategy;
+        private final Set<ClientOffloadPoint> offloadPoints = EnumSet.noneOf(ClientOffloadPoint.class);
+        private final ConcurrentMap<ClientOffloadPoint, String> invokingThreads = new ConcurrentHashMap<>();
+        private final Queue<Throwable> errors = new LinkedBlockingQueue<>();
+
+        Exchange(HttpExecutionStrategy expectedStrategy) {
+            this.expectedStrategy = expectedStrategy;
+            // adjust expected offloads for specific execution strategy
+            if (expectedStrategy.isSendOffloaded()) {
+                offloadPoints.add(Send);
+            }
+            if (expectedStrategy.isMetadataReceiveOffloaded()) {
+                offloadPoints.add(ReceiveMeta);
+            }
+            if (expectedStrategy.isDataReceiveOffloaded()) {
+                offloadPoints.add(ReceiveData);
+            }
         }
 
         void recordThread(final ClientOffloadPoint offloadPoint, final HttpExecutionStrategy clientStrategy,
@@ -565,31 +572,6 @@ class ClientEffectiveStrategyTest {
                 }
                 return ioThread ? "eventLoop" : (appThread ? "application" : "offloaded");
             });
-        }
-
-        void flakyVerifyOffloads(ClientApi clientApi, HttpExecutionStrategy clientStrategy, String apiStrategy) {
-            // For flaky tests we see unexpected offloading at the Send stage. This is messing with CI so this
-            // particular test case is skipped for now.
-            // See https://github.com/apple/servicetalk/issues/2245
-            Throwable firstFlakyException = null;
-            Iterator<Throwable> it = errors.iterator();
-            while (it.hasNext()) {
-                Throwable t = it.next();
-                // Example message:
-                // Suppressed: java.lang.AssertionError: Expected IoThread or ForkJoinPool-1-worker-1
-                //  at Send, but was running on an offloading executor thread: client-executor-7-5.
-                //  clientStrategy=DEFAULT_HTTP_EXECUTION_STRATEGY, expectedStrategy=OFFLOAD_NONE_STRATEGY,
-                //  requestStrategy=DEFAULT_HTTP_EXECUTION_STRATEGY"
-                if (clientApi == ClientApi.BLOCKING_AGGREGATED && t.getMessage().contains(
-                        "but was running on an offloading executor thread")) {
-                    firstFlakyException = firstFlakyException == null ? t : firstFlakyException;
-                    it.remove();
-                }
-            }
-            if (firstFlakyException != null) {
-                LOGGER.warn("Flaky throwable detected. Ignoring until test can be fixed.", firstFlakyException);
-            }
-            verifyOffloads(clientApi, clientStrategy, apiStrategy);
         }
 
         void verifyOffloads(ClientApi clientApi, HttpExecutionStrategy clientStrategy, String apiStrategy) {
