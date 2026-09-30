@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
@@ -428,40 +427,24 @@ class NettyPipelinedConnectionTest {
     }
 
     @Test
-    void cancellingQueuedResponseWaitsForTheCloseBeforeReleasingTheNextRead() {
-        // The abandoned bytes are still on the wire, so the successor must wait for the close to complete, not just
-        // to be requested.
-        List<TestPublisher<Integer>> reads = new ArrayList<>();
-        TestCompletable closeCompletable = new TestCompletable();
-        @SuppressWarnings("unchecked")
-        NettyConnection<Integer, Integer> mockConnection = mock(NettyConnection.class);
-        doAnswer((Answer<Publisher<Integer>>) invocation -> {
-            TestPublisher<Integer> read = new TestPublisher<>();
-            reads.add(read);
-            return read;
-        }).when(mockConnection).read();
-        doAnswer((Answer<Completable>) invocation -> {
-            Publisher<Integer> writePub = invocation.getArgument(0);
-            return writePub.ignoreElements();
-        }).when(mockConnection).write(any(), any(), any());
-        when(mockConnection.closeAsync()).thenReturn(closeCompletable);
-        requester = new NettyPipelinedConnection<>(mockConnection, 8);
-
+    void cancellingQueuedResponseClosesBeforeTheNextReadCanReadItsBytes() {
+        // The cancelled exchange's response still arrives. When its turn comes the transport read must see the cancel
+        // and close, so the successor fails instead of reading the abandoned response as its own.
         List<TestPublisherSubscriber<Integer>> subscribers = new ArrayList<>(3);
         for (int i = 0; i < 3; i++) {
             TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
             subscribers.add(subscriber);
-            toSource(requester.write(Publisher.empty())).subscribe(subscriber);
+            toSource(requester.write(Publisher.from(i))).subscribe(subscriber);
             subscriber.awaitSubscription().request(1);
         }
-        assertThat(reads, hasSize(1));
-
         subscribers.get(1).awaitSubscription().cancel();
-        reads.get(0).onComplete(); // the turn now belongs to the cancelled exchange
-        assertThat("a later read started before the close completed", reads, hasSize(1));
 
-        closeCompletable.onComplete();
-        assertThat("the next read was not released once the close completed", reads, hasSize(2));
+        channel.writeInbound(1, 2);
+        assertThat(subscribers.get(0).takeOnNext(), is(1));
+        subscribers.get(0).awaitOnComplete();
+        assertThat(subscribers.get(2).awaitOnError(), instanceOf(ClosedChannelException.class));
+        assertThat(subscribers.get(2).pollAllOnNext(), hasSize(0));
+        assertFalse(channel.isOpen());
     }
 
     @Test
@@ -699,6 +682,50 @@ class NettyPipelinedConnectionTest {
         assertThat(readSubscriber2.takeOnNext(), is(2));
         readSubscriber2.awaitOnComplete();
         verify(mockConnection, never()).closeAsync();
+    }
+
+    @Test
+    void cancelAfterResponseCompletesDoesNotCloseConnection() {
+        // A cancel after the terminal signal must be a no-op. Cancelling from inside onComplete delivers it before
+        // the read's own completion is recorded, which is the window a blocking iterator closing on another thread
+        // hits after it saw the end of the response.
+        AtomicReference<Subscription> subscriptionRef = new AtomicReference<>();
+        AtomicBoolean completed = new AtomicBoolean();
+        toSource(requester.write(writePublisher1)).subscribe(new PublisherSource.Subscriber<Integer>() {
+            @Override
+            public void onSubscribe(final Subscription subscription) {
+                subscriptionRef.set(subscription);
+                subscription.request(1);
+            }
+
+            @Override
+            public void onNext(final Integer integer) {
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+            }
+
+            @Override
+            public void onComplete() {
+                completed.set(true);
+                subscriptionRef.get().cancel();
+            }
+        });
+        writePublisher1.onNext(1);
+        writePublisher1.onComplete();
+        channel.writeInbound(1);
+        assertTrue(completed.get());
+        assertTrue(channel.isOpen());
+
+        toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
+        readSubscriber2.awaitSubscription().request(1);
+        writePublisher2.onNext(2);
+        writePublisher2.onComplete();
+        channel.writeInbound(2);
+        assertThat(readSubscriber2.takeOnNext(), is(2));
+        readSubscriber2.awaitOnComplete();
+        assertTrue(channel.isOpen());
     }
 
     @Test
