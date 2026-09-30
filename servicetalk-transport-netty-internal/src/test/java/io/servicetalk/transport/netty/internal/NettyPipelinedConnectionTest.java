@@ -702,6 +702,50 @@ class NettyPipelinedConnectionTest {
     }
 
     @Test
+    void cancelAfterResponseCompletesDoesNotCloseConnection() {
+        // A cancel after the terminal signal must be a no-op. Cancelling from inside onComplete delivers it before
+        // the read's own completion is recorded, which is the window a blocking iterator closing on another thread
+        // hits after it saw the end of the response.
+        AtomicReference<Subscription> subscriptionRef = new AtomicReference<>();
+        AtomicBoolean completed = new AtomicBoolean();
+        toSource(requester.write(writePublisher1)).subscribe(new PublisherSource.Subscriber<Integer>() {
+            @Override
+            public void onSubscribe(final Subscription subscription) {
+                subscriptionRef.set(subscription);
+                subscription.request(1);
+            }
+
+            @Override
+            public void onNext(final Integer integer) {
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+            }
+
+            @Override
+            public void onComplete() {
+                completed.set(true);
+                subscriptionRef.get().cancel();
+            }
+        });
+        writePublisher1.onNext(1);
+        writePublisher1.onComplete();
+        channel.writeInbound(1);
+        assertTrue(completed.get());
+        assertTrue(channel.isOpen());
+
+        toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
+        readSubscriber2.awaitSubscription().request(1);
+        writePublisher2.onNext(2);
+        writePublisher2.onComplete();
+        channel.writeInbound(2);
+        assertThat(readSubscriber2.takeOnNext(), is(2));
+        readSubscriber2.awaitOnComplete();
+        assertTrue(channel.isOpen());
+    }
+
+    @Test
     void multiThreadedWritesAllComplete() throws Exception {
         // Avoid using EmbeddedChannel because it is not thread safe. This test writes/reads from multiple threads.
         @SuppressWarnings("unchecked")

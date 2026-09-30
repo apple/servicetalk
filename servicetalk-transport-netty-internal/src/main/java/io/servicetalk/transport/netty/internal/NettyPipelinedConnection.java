@@ -286,8 +286,7 @@ public final class NettyPipelinedConnection<Req, Resp> implements NettyConnectio
                         // source. This has a side effect that the read async source isn't strictly full-duplex (data
                         // will be full-duplex, but completion will be delayed until the write completes).
                         // The merge is only for error propagation; response ordering comes from responseTurn.
-                        .mergeDelayError(responseTurn.concat(deferredRead)
-                                .afterFinally(new ResponseTerminated(responseTurn, responseTerminated))));
+                        .mergeDelayError(readWithTurn(responseTurn, responseTerminated)));
             } catch (Throwable cause) {
                 // Nothing will subscribe to the read above, so release the successor here, but only once this
                 // exchange's turn arrives or it would read over a response that is still reading. Release before
@@ -301,13 +300,27 @@ public final class NettyPipelinedConnection<Req, Resp> implements NettyConnectio
         }
     }
 
+    private Publisher<Resp> readWithTurn(final Completable responseTurn,
+                                         final CompletableSource.Processor responseTerminated) {
+        final ResponseTerminated terminated = new ResponseTerminated(responseTurn, responseTerminated);
+        return responseTurn.concat(deferredRead)
+                .beforeFinally(terminated.readTerminated)
+                .afterFinally(terminated);
+    }
+
     /**
      * Releases the next queued response once this one is done with the connection. Cancellation is not a completion:
      * the response may never have been read, so the connection is closed and the successor waits for that close.
+     * A cancel that arrives after the read terminated is a completion: the response was fully read, and
+     * {@link Completable#mergeDelayError(Publisher)} still forwards a downstream cancel that follows its terminal
+     * signal, which {@link PublisherSource.Subscription#cancel()} allows. {@link #readTerminated} records the
+     * terminal signal before it goes downstream, because the {@code afterFinally} that delivers this consumer runs
+     * only after downstream returns, leaving a window for such a cancel to reach it first.
      */
     private final class ResponseTerminated implements TerminalSignalConsumer {
         private final Completable responseTurn;
         private final CompletableSource.Processor responseTerminated;
+        private final ReadTerminated readTerminated = new ReadTerminated();
 
         private ResponseTerminated(final Completable responseTurn,
                                    final CompletableSource.Processor responseTerminated) {
@@ -327,12 +340,34 @@ public final class NettyPipelinedConnection<Req, Resp> implements NettyConnectio
 
         @Override
         public void cancel() {
+            if (readTerminated.terminated) {
+                responseTerminated.onComplete();
+                return;
+            }
             // Wait for this turn before closing, so an earlier response that is still reading finishes rather than
             // being torn down, then close before releasing the successor, or it would read the bytes this exchange
             // abandoned.
             responseTurn.concat(connection.closeAsync())
                     .afterFinally(responseTerminated::onComplete)
                     .subscribe();
+        }
+    }
+
+    private static final class ReadTerminated implements TerminalSignalConsumer {
+        volatile boolean terminated;
+
+        @Override
+        public void onComplete() {
+            terminated = true;
+        }
+
+        @Override
+        public void onError(final Throwable throwable) {
+            terminated = true;
+        }
+
+        @Override
+        public void cancel() {
         }
     }
 
