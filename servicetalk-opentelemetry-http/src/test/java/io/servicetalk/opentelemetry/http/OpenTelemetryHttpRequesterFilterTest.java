@@ -65,7 +65,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
-import static io.opentelemetry.api.internal.InstrumentationUtil.suppressInstrumentation;
+import static io.opentelemetry.api.impl.InstrumentationUtil.suppressInstrumentation;
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PROTOCOL_NAME;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PROTOCOL_VERSION;

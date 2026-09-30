@@ -43,7 +43,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
 
-import static io.opentelemetry.api.internal.InstrumentationUtil.suppressInstrumentation;
+import static io.opentelemetry.api.impl.InstrumentationUtil.suppressInstrumentation;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.INSTRUMENTATION_SCOPE_NAME;
