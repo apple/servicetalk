@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
@@ -40,6 +41,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -168,6 +170,67 @@ final class PublisherAsBlockingIterableTest {
         source.onNext(1); // Additional item, must be ignored.
         assertThat("Unexpected item found.", iterator.next(), is(1));
         assertThat("Unexpected item found.", iterator.next(), is(2));
+        assertThat("Item not expected but found.", iterator.hasNext(), is(false));
+    }
+
+    @Test
+    void closeAfterCompleteConsumedDoesNotCancel() throws Exception {
+        BlockingIterator<Integer> iterator = source.toIterable().iterator();
+        TestSubscription subscription = new TestSubscription();
+        source.onSubscribe(subscription);
+        source.onNext(1);
+        source.onComplete();
+        verifyNextIs(iterator, 1);
+        assertThat("Item not expected but found.", iterator.hasNext(), is(false));
+        iterator.close();
+        assertThat(subscription.isCancelled(), is(false));
+    }
+
+    @Test
+    void closeAfterErrorConsumedDoesNotCancel() throws Exception {
+        BlockingIterator<Integer> iterator = source.toIterable().iterator();
+        TestSubscription subscription = new TestSubscription();
+        source.onSubscribe(subscription);
+        source.onError(DELIBERATE_EXCEPTION);
+        DeliberateException e = assertThrows(DeliberateException.class, iterator::next);
+        assertThat(e, is(sameInstance(DELIBERATE_EXCEPTION)));
+        iterator.close();
+        assertThat(subscription.isCancelled(), is(false));
+    }
+
+    @Test
+    void closeAfterErrorConsumedWithTimeoutDoesNotCancel() throws Exception {
+        BlockingIterator<Integer> iterator = source.toIterable().iterator();
+        TestSubscription subscription = new TestSubscription();
+        source.onSubscribe(subscription);
+        source.onError(DELIBERATE_EXCEPTION);
+        DeliberateException e = assertThrows(DeliberateException.class, () -> iterator.next(-1, MILLISECONDS));
+        assertThat(e, is(sameInstance(DELIBERATE_EXCEPTION)));
+        iterator.close();
+        assertThat(subscription.isCancelled(), is(false));
+    }
+
+    @Test
+    void closeBeforeCompleteConsumedCancels() throws Exception {
+        BlockingIterator<Integer> iterator = source.toIterable().iterator();
+        TestSubscription subscription = new TestSubscription();
+        source.onSubscribe(subscription);
+        source.onNext(1);
+        source.onComplete();
+        verifyNextIs(iterator, 1);
+        iterator.close();
+        assertThat(subscription.isCancelled(), is(true));
+    }
+
+    @Test
+    void closeMidStreamCancels() throws Exception {
+        BlockingIterator<Integer> iterator = source.toIterable().iterator();
+        TestSubscription subscription = new TestSubscription();
+        source.onSubscribe(subscription);
+        source.onNext(1);
+        verifyNextIs(iterator, 1);
+        iterator.close();
+        assertThat(subscription.isCancelled(), is(true));
         assertThat("Item not expected but found.", iterator.hasNext(), is(false));
     }
 
