@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 import io.servicetalk.concurrent.internal.ConcurrentUtils;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -81,9 +80,7 @@ public final class NettyPipelinedConnection<Req, Resp> implements NettyConnectio
      * Completes when the previously queued request's response terminated, which is what orders reads. Written and read
      * only from {@link WriteTask#run()}, which {@code writeQueueLock} serializes. The ordering that makes the value
      * visible across a hand-off comes from the transport publishing the subscribe rather than from anything here, so
-     * this is {@code volatile} instead. A link must only ever be completed, never failed:
-     * {@link Completable#concat(Publisher)} skips its {@link Publisher} on error, leaving that request's response
-     * unread.
+     * this is {@code volatile} instead. A link is only ever completed, never failed.
      */
     private volatile Completable previousResponseTerminated = completed();
 
@@ -300,75 +297,40 @@ public final class NettyPipelinedConnection<Req, Resp> implements NettyConnectio
         }
     }
 
+    /**
+     * Subscribes the read only once this exchange's turn arrives, and releases the successor when the read is done
+     * with the connection.
+     * <p>
+     * {@code onSubscribe} is withheld until the turn, then the transport read subscribes the caller's
+     * {@link Subscriber} directly. A cancel that arrives while waiting is held by the merge and reaches the transport
+     * read as soon as it subscribes. The transport decides what a cancel means: it closes the connection if the
+     * response is unread, and ignores a cancel that follows a completed response. It records that decision on the
+     * event loop ahead of the successor's subscribe, so the successor never reads bytes this exchange abandoned.
+     */
     private Publisher<Resp> readWithTurn(final Completable responseTurn,
                                          final CompletableSource.Processor responseTerminated) {
-        final ResponseTerminated terminated = new ResponseTerminated(responseTurn, responseTerminated);
-        return responseTurn.concat(deferredRead)
-                .beforeFinally(terminated.readTerminated)
-                .afterFinally(terminated);
-    }
+        return new SubscribablePublisher<Resp>() {
+            @Override
+            protected void handleSubscribe(final Subscriber<? super Resp> subscriber) {
+                toSource(responseTurn).subscribe(new CompletableSource.Subscriber() {
+                    @Override
+                    public void onSubscribe(final Cancellable cancellable) {
+                        // Never cancelled: the turn must arrive for a cancel to reach the transport read.
+                    }
 
-    /**
-     * Releases the next queued response once this one is done with the connection. Cancellation is not a completion:
-     * the response may never have been read, so the connection is closed and the successor waits for that close.
-     * A cancel that arrives after the read terminated is a completion: the response was fully read, and
-     * {@link Completable#mergeDelayError(Publisher)} still forwards a downstream cancel that follows its terminal
-     * signal, which {@link PublisherSource.Subscription#cancel()} allows. {@link #readTerminated} records the
-     * terminal signal before it goes downstream, because the {@code afterFinally} that delivers this consumer runs
-     * only after downstream returns, leaving a window for such a cancel to reach it first.
-     */
-    private final class ResponseTerminated implements TerminalSignalConsumer {
-        private final Completable responseTurn;
-        private final CompletableSource.Processor responseTerminated;
-        private final ReadTerminated readTerminated = new ReadTerminated();
+                    @Override
+                    public void onComplete() {
+                        toSource(deferredRead).subscribe(subscriber);
+                    }
 
-        private ResponseTerminated(final Completable responseTurn,
-                                   final CompletableSource.Processor responseTerminated) {
-            this.responseTurn = responseTurn;
-            this.responseTerminated = responseTerminated;
-        }
-
-        @Override
-        public void onComplete() {
-            responseTerminated.onComplete();
-        }
-
-        @Override
-        public void onError(final Throwable throwable) {
-            responseTerminated.onComplete();
-        }
-
-        @Override
-        public void cancel() {
-            if (readTerminated.terminated) {
-                responseTerminated.onComplete();
-                return;
+                    @Override
+                    public void onError(final Throwable t) {
+                        // Links are only ever completed; read anyway rather than strand the response.
+                        toSource(deferredRead).subscribe(subscriber);
+                    }
+                });
             }
-            // Wait for this turn before closing, so an earlier response that is still reading finishes rather than
-            // being torn down, then close before releasing the successor, or it would read the bytes this exchange
-            // abandoned.
-            responseTurn.concat(connection.closeAsync())
-                    .afterFinally(responseTerminated::onComplete)
-                    .subscribe();
-        }
-    }
-
-    private static final class ReadTerminated implements TerminalSignalConsumer {
-        volatile boolean terminated;
-
-        @Override
-        public void onComplete() {
-            terminated = true;
-        }
-
-        @Override
-        public void onError(final Throwable throwable) {
-            terminated = true;
-        }
-
-        @Override
-        public void cancel() {
-        }
+        }.afterFinally(responseTerminated::onComplete);
     }
 
     // Must own the write lock, which here holds because the write was never subscribed, so its afterFinally cannot
