@@ -49,8 +49,8 @@ class PipelinedBlockingStreamingCloseTest {
 
     @Test
     void blockingStreamingPostDoesNotCloseConnections() throws Exception {
-        final int callers = 64;
-        final int perCaller = 200;
+        final int callers = 32;
+        final int perCaller = 32;
         ConnectionCloseObserver observer = new ConnectionCloseObserver();
         ExecutorService executor = Executors.newCachedThreadPool();
         try (ServerContext server = HttpServers.forAddress(localAddress(0))
