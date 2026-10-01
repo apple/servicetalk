@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021-2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionLimitReachedException;
 import io.servicetalk.client.api.LimitingConnectionFactoryFilter;
+import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
@@ -25,16 +26,23 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.ReservedHttpConnection;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy;
+import io.servicetalk.transport.api.ConnectionInfo;
+import io.servicetalk.transport.api.ConnectionObserver;
+import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
+import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http2.DefaultHttp2SettingsFrame;
@@ -56,6 +64,7 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -63,6 +72,7 @@ import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http2.Http2CodecUtil.MAX_UNSIGNED_INT;
 import static io.servicetalk.concurrent.api.BlockingUtils.blockingInvocation;
+import static io.servicetalk.concurrent.api.Publisher.range;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
@@ -210,6 +220,104 @@ class H2ConcurrencyControllerTest {
                     cancellable.cancel();
                 }
                 assertThat(exceptions, is(empty()));
+            }
+        }
+    }
+
+    @Test
+    void noMaxActiveStreamsViolatedErrorAfterCancelWhileConnectionUnwritable() throws Exception {
+        serverEventLoopGroup = createIoExecutor(1, "server-io").eventLoopGroup();
+        AtomicReference<Channel> stalledServerParent = new AtomicReference<>();
+        AtomicBoolean warmedUp = new AtomicBoolean();
+        serverAcceptorChannel = bindH2Server(serverEventLoopGroup, new ChannelInitializer<Http2StreamChannel>() {
+            @Override
+            protected void initChannel(Http2StreamChannel ch) {
+                if (ch.parent() == stalledServerParent.get() && !warmedUp.compareAndSet(false, true)) {
+                    // Stop reading so the client's request body backs up the socket and the client goes unwritable.
+                    ch.parent().config().setAutoRead(false);
+                } else {
+                    ch.pipeline().addLast(new EchoHttp2Handler());
+                }
+            }
+        },
+        parentPipeline -> {
+            if (stalledServerParent.compareAndSet(null, parentPipeline.channel())) {
+                // Http2ConnectionHandler keeps reading while auto-read is off, so swallow those reads.
+                parentPipeline.addFirst(new ChannelOutboundHandlerAdapter() {
+                    @Override
+                    public void read(ChannelHandlerContext ctx) {
+                        if (ctx.channel().config().isAutoRead()) {
+                            ctx.read();
+                        }
+                    }
+                });
+            }
+        },
+        h2Builder -> {
+            // A window large enough that the socket, not h2 flow control, is what stops the request body.
+            h2Builder.initialSettings().maxConcurrentStreams(1).initialWindowSize(1 << 26);
+            return h2Builder;
+        });
+        serverAddress = of((InetSocketAddress) serverAcceptorChannel.localAddress());
+
+        CountDownLatch clientUnwritable = new CountDownLatch(1);
+        Semaphore streamsClosed = new Semaphore(0);
+        TransportObserver observer = (localAddress, remoteAddress) -> new ConnectionObserver() {
+            @Override
+            public void connectionWritabilityChanged(boolean isWritable) {
+                if (!isWritable) {
+                    clientUnwritable.countDown();
+                }
+            }
+
+            @Override
+            public MultiplexedObserver multiplexedConnectionEstablished(ConnectionInfo info) {
+                return new MultiplexedObserver() {
+                    @Override
+                    public StreamObserver onNewStream() {
+                        return new StreamObserver() {
+                            @Override
+                            public void streamClosed(Throwable error) {
+                                streamsClosed.release();
+                            }
+
+                            @Override
+                            public void streamClosed() {
+                                streamsClosed.release();
+                            }
+                        };
+                    }
+                };
+            }
+        };
+
+        try (HttpClient client = newClientBuilder(serverAddress, CLIENT_CTX, HTTP_2)
+                .appendConnectionFactoryFilter(new TransportObserverConnectionFactoryFilter<>(observer))
+                .protocols(HTTP_2.config)
+                .build()) {
+
+            BlockingQueue<Integer> maxConcurrentStreams = new LinkedBlockingDeque<>();
+            try (ReservedHttpConnection connection = client.reserveConnection(client.get("/")).map(conn -> {
+                conn.transportEventStream(MAX_CONCURRENCY_NO_OFFLOADING)
+                        .forEach(event -> maxConcurrentStreams.add(event.event()));
+                return conn;
+            }).toFuture().get()) {
+                awaitMaxConcurrentStreamsSettingsUpdate(connection, maxConcurrentStreams, 1);
+                connection.releaseAsync().toFuture().get();
+                streamsClosed.acquire();
+
+                StreamingHttpClient streamingClient = client.asStreamingClient();
+                byte[] chunk = new byte[16 * 1024];
+                Cancellable stalledRequest = streamingClient.request(streamingClient.post("/")
+                                .payloadBody(range(0, Integer.MAX_VALUE)
+                                        .map(__ -> CLIENT_CTX.bufferAllocator().wrap(chunk))))
+                        .subscribe(__ -> { /* response is not expected */ });
+                clientUnwritable.await();
+                stalledRequest.cancel();
+                // The stream's close future, which releases its concurrency slot, completes before streamClosed.
+                streamsClosed.acquire();
+
+                assertThat(client.request(client.get("/")).toFuture().get().status(), is(OK));
             }
         }
     }
