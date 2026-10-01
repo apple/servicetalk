@@ -61,6 +61,9 @@
     <a class="nav-link" href="../../servicetalk/SNAPSHOT/performance.html">Performance</a>
   </li>
   <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../../servicetalk/SNAPSHOT/virtual-threads.html">Virtual Threads</a>
+  </li>
+  <li class="nav-item" data-depth="1">
     <button class="nav-toggle"></button>
     <span class="nav-text">Examples</span>
 <ul class="nav-list">
@@ -124,6 +127,9 @@
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#Files">Files</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#VirtualThreads">Virtual Threads</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/service-composition.html">Service Composition</a>
@@ -1241,6 +1247,12 @@ layer). It supports the following xDS compatible outlier detectors:</p>
 <p>In addition to the xDS defined outlier detectors default load balancer continues to support consecutive connection
 failure detection with active probing: when a host is found to be unreachable it is marked as unhealthy until a new
 connection can be established to the host. This probing is done outside the request path.</p>
+</div>
+<div class="paragraph">
+<p>All of the xDS outlier detectors are bounded by <code>maxEjectionPercentage</code>: an ejection only happens if it leaves the
+ejected share of hosts at or below that percentage. Small host sets therefore see no xDS ejection at all, which keeps
+a load balancer over a single endpoint from failing closed. Set <code>alwaysEjectOneHost</code> to permit one ejection
+regardless of the percentage.</p>
 </div>
 </div>
 <div class="sect2">

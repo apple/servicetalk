@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Contributing :: ServiceTalk Docs</title>
+    <title>Virtual Threads :: ServiceTalk Docs</title>
     <meta name="generator" content="Antora 2.3.4">
     <link rel="stylesheet" href="../../_/css/site.css">
 <meta name="description" content="ServiceTalk is a JVM network application framework with APIs tailored to specific protocols (e.g. HTTP/1.x, HTTP/2.x, etc…​) and supports multiple programming paradigms.">
@@ -60,7 +60,7 @@
   <li class="nav-item" data-depth="1">
     <a class="nav-link" href="performance.html">Performance</a>
   </li>
-  <li class="nav-item" data-depth="1">
+  <li class="nav-item is-current-page" data-depth="1">
     <a class="nav-link" href="virtual-threads.html">Virtual Threads</a>
   </li>
   <li class="nav-item" data-depth="1">
@@ -270,7 +270,7 @@
   <li class="nav-item" data-depth="1">
     <a class="nav-link" href="javadoc/index.html">Javadoc</a>
   </li>
-  <li class="nav-item is-current-page" data-depth="1">
+  <li class="nav-item" data-depth="1">
     <a class="nav-link" href="contributing.html">Contributing</a>
   </li>
 </ul>
@@ -1097,46 +1097,227 @@
 <nav class="crumbs" aria-label="breadcrumbs">
         <ul>
                     <li class="crumb"><a href="index.html">ServiceTalk</a></li>
-                <li class="crumb"><a href="contributing.html">Contributing</a></li>
+                <li class="crumb"><a href="virtual-threads.html">Virtual Threads</a></li>
         </ul>
 </nav>
 <div class="page-versions">
   <button class="versions-menu-toggle" title="Show other versions of page">SNAPSHOT</button>
   <div class="versions-menu">
-    <a class="version is-current" href="contributing.html">SNAPSHOT</a>
-    <a class="version" href="../0.42/contributing.html">0.42</a>
-    <a class="version" href="../0.41/contributing.html">0.41</a>
-    <a class="version" href="../0.40/contributing.html">0.40</a>
-    <a class="version" href="../0.39/contributing.html">0.39</a>
-    <a class="version" href="../0.38/contributing.html">0.38</a>
-    <a class="version" href="../0.37/contributing.html">0.37</a>
-    <a class="version" href="../0.36/contributing.html">0.36</a>
-    <a class="version" href="../0.35/contributing.html">0.35</a>
-    <a class="version" href="../0.34/contributing.html">0.34</a>
-    <a class="version" href="../0.33/contributing.html">0.33</a>
-    <a class="version" href="../0.32/contributing.html">0.32</a>
-    <a class="version" href="../0.31/contributing.html">0.31</a>
-    <a class="version" href="../0.30/contributing.html">0.30</a>
-    <a class="version" href="../0.29/contributing.html">0.29</a>
-    <a class="version" href="../0.28/contributing.html">0.28</a>
-    <a class="version" href="../0.27/contributing.html">0.27</a>
-    <a class="version" href="../0.26/contributing.html">0.26</a>
-    <a class="version" href="../0.25/contributing.html">0.25</a>
-    <a class="version" href="../0.24/contributing.html">0.24</a>
-    <a class="version" href="../0.23/contributing.html">0.23</a>
-    <a class="version" href="../0.22/contributing.html">0.22</a>
-    <a class="version" href="../0.21/contributing.html">0.21</a>
-    <a class="version" href="../0.20/contributing.html">0.20</a>
-    <a class="version" href="../0.19/contributing.html">0.19</a>
+    <a class="version is-current" href="virtual-threads.html">SNAPSHOT</a>
+    <a class="version is-missing" href="../0.42/index.html">0.42</a>
+    <a class="version is-missing" href="../0.41/index.html">0.41</a>
+    <a class="version is-missing" href="../0.40/index.html">0.40</a>
+    <a class="version is-missing" href="../0.39/index.html">0.39</a>
+    <a class="version is-missing" href="../0.38/index.html">0.38</a>
+    <a class="version is-missing" href="../0.37/index.html">0.37</a>
+    <a class="version is-missing" href="../0.36/index.html">0.36</a>
+    <a class="version is-missing" href="../0.35/index.html">0.35</a>
+    <a class="version is-missing" href="../0.34/index.html">0.34</a>
+    <a class="version is-missing" href="../0.33/index.html">0.33</a>
+    <a class="version is-missing" href="../0.32/index.html">0.32</a>
+    <a class="version is-missing" href="../0.31/index.html">0.31</a>
+    <a class="version is-missing" href="../0.30/index.html">0.30</a>
+    <a class="version is-missing" href="../0.29/index.html">0.29</a>
+    <a class="version is-missing" href="../0.28/index.html">0.28</a>
+    <a class="version is-missing" href="../0.27/index.html">0.27</a>
+    <a class="version is-missing" href="../0.26/index.html">0.26</a>
+    <a class="version is-missing" href="../0.25/index.html">0.25</a>
+    <a class="version is-missing" href="../0.24/index.html">0.24</a>
+    <a class="version is-missing" href="../0.23/index.html">0.23</a>
+    <a class="version is-missing" href="../0.22/index.html">0.22</a>
+    <a class="version is-missing" href="../0.21/index.html">0.21</a>
+    <a class="version is-missing" href="../0.20/index.html">0.20</a>
+    <a class="version is-missing" href="../0.19/index.html">0.19</a>
   </div>
 </div>
 </div>
         <article class="doc">
-<h1>Contributing</h1>
+<h1>Virtual Threads</h1>
+<div id="preamble">
+<div class="sectionbody">
 <div class="paragraph">
-<p>ServiceTalk is available on <a href="https://github.com/apple/servicetalk/">GitHub</a> and we welcome code contributions, issues
-and general feedback. Before you get started, we suggest reading the
-<a href="https://github.com/apple/servicetalk/blob/main/CONTRIBUTING.adoc">contribution guidelines</a>.</p>
+<p>ServiceTalk can run application request handling on
+<a href="https://openjdk.org/jeps/444">virtual threads</a>. No special mode is
+required: virtual threads are enabled by supplying an offloading <code>Executor</code> that starts a virtual thread per task.
+This page explains when that is worthwhile, how to configure it, and the trade-offs to be aware of.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="why-virtual-threads"><a class="anchor" href="#why-virtual-threads"></a><a class="link" href="#why-virtual-threads">Why virtual threads?</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A fixed platform-thread pool is an efficient, well-understood default, and it remains the right choice for most
+applications.</p>
+</div>
+<div class="paragraph">
+<p>Platform threads map to OS threads, which are expensive and limited, so a fixed pool caps how many blocking operations
+can be in flight at once. Virtual threads are cheap to create and park, so blocking calls no longer tie up a scarce
+resource.</p>
+</div>
+<div class="paragraph">
+<p>The sweet spot is an application serving many concurrent requests that spend most of their time <strong>waiting</strong> (for example
+on an upstream HTTP or database call) and expressed with a
+<a href="../../servicetalk-http-api/SNAPSHOT/blocking-safe-by-default.html#programming-models" class="page">blocking programming model</a>.
+Virtual threads let you keep straightforward, sequential blocking code while scaling to far more in-flight requests than
+a fixed pool would allow. As with any performance change, benchmark it against your current configuration before
+adopting it.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="prerequisites"><a class="anchor" href="#prerequisites"></a><a class="link" href="#prerequisites">Prerequisites</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Virtual threads require <strong>JDK 25 or later</strong>.</p>
+</div>
+<div class="paragraph">
+<p>While virtual threads are available from JDK 21, ServiceTalk recommends JDK 25 as the first release suitable for
+large-scale production use. Earlier releases pin the carrier (platform) thread whenever a virtual thread blocks inside a
+<code>synchronized</code> block or method, which under load silently starves the small carrier pool and negates the benefit.
+<a href="https://openjdk.org/jeps/491">JEP 491</a> resolved this in JDK 24, and JDK 25 is the first Long-Term-Support release to
+include it.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="enabling-virtual-threads"><a class="anchor" href="#enabling-virtual-threads"></a><a class="link" href="#enabling-virtual-threads">Enabling virtual threads</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>ServiceTalk splits work between the <code>IoExecutor</code> (Netty&#8217;s event loops) and an <strong>offloading</strong> <code>Executor</code> that runs
+application code away from the event loop — see
+<a href="performance.html#safe-to-block" class="page">Safe-to-block (offloading)</a>. To use virtual threads,
+supply an offloading <code>Executor</code> that starts a virtual thread per task and leave the <code>IoExecutor</code> at its default. Give
+the threads a name rather than accepting the default <code>VirtualThread[#N]</code> names — named threads are far easier to pick
+out in thread dumps, logs, and profilers, which matters for any serious workload:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.Executors;
+import io.servicetalk.http.netty.HttpServers;
+
+import java.util.concurrent.ThreadFactory;
+
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
+import static java.util.concurrent.Executors.newThreadPerTaskExecutor;
+
+ThreadFactory factory = Thread.ofVirtual().name("servicetalk-vt-", 0).factory();
+Executor executor = Executors.from(newThreadPerTaskExecutor(factory));
+
+HttpServers.forPort(8080)
+        .executor(executor)
+        .listenBlockingAndAwait((ctx, request, responseFactory) -&gt;
+                responseFactory.ok().payloadBody("Hello World!", textSerializerUtf8()))
+        .awaitShutdown();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Each offloaded request now runs on a fresh virtual thread; blocking within the handler parks that virtual thread instead
+of holding a platform thread. A runnable version is in the
+<a href="../../servicetalk-examples/SNAPSHOT/http/index.html#VirtualThreads" class="page">virtual threads example</a>.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Leave the <code>IoExecutor</code> on platform threads. Netty&#8217;s event loops must never run on virtual threads — blocking or parking
+an event loop stalls every connection it serves. Virtual threads belong on the offloading <code>Executor</code> only.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="client-side"><a class="anchor" href="#client-side"></a><a class="link" href="#client-side">Client side</a></h3>
+<div class="paragraph">
+<p>The benefit is overwhelmingly on the server side. On a client, ServiceTalk&#8217;s offloading <code>Executor</code> only runs response
+signals and filters; the blocking client APIs block the <strong>caller&#8217;s</strong> thread, which ServiceTalk does not own. Supplying a
+virtual-thread <code>Executor</code> to a client therefore moves the needle only if you have installed genuinely <strong>blocking</strong>
+client-side filters — an uncommon case. If your calling code makes many concurrent blocking client calls, the threads
+worth making virtual are the ones in your application that issue those calls, not ServiceTalk&#8217;s client executor.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="gotchas"><a class="anchor" href="#gotchas"></a><a class="link" href="#gotchas">Gotchas</a></h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="monitoring-assumptions"><a class="anchor" href="#monitoring-assumptions"></a><a class="link" href="#monitoring-assumptions">Monitoring assumptions</a></h3>
+<div class="paragraph">
+<p>Monitoring built around a bounded pool no longer reflects reality. There is no pool to observe — no meaningful active
+thread count, pool size, or queue depth — and a new thread exists per request rather than a stable, reusable set. Any
+dashboards, alerts, or tooling that watch thread-pool behaviour (including your own executor instrumentation and
+thread-dump-based analysis) will not report what you expect and need to be revisited.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="no-built-in-capacity-limit"><a class="anchor" href="#no-built-in-capacity-limit"></a><a class="link" href="#no-built-in-capacity-limit">No built-in capacity limit</a></h3>
+<div class="paragraph">
+<p>A fixed pool provides an implicit back-pressure ceiling: once every thread is busy and the queue is full, the server
+sheds load. A virtual-thread executor is effectively unbounded and imposes no such limit, so an overload can create
+unbounded in-flight work rather than being rejected. Bound concurrency explicitly — for example with a capacity limiter
+from
+<a href="../../servicetalk-examples/SNAPSHOT/http/index.html#TrafficResiliency" class="page">traffic resilience</a> — rather than relying on
+a thread pool&#8217;s size to cap it.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="threadlocal-as-a-cache"><a class="anchor" href="#threadlocal-as-a-cache"></a><a class="link" href="#threadlocal-as-a-cache">ThreadLocal as a cache</a></h3>
+<div class="paragraph">
+<p>With a fixed pool a few dozen threads serve every request, so an expensive object stashed in a <code>ThreadLocal</code> (a
+<code>SimpleDateFormat</code>, a scratch buffer, a reusable parser) is created a handful of times during warmup and then reused for
+free. Under virtual threads each request runs on a new thread, so anything placed in a <code>ThreadLocal</code> is initialized on
+the way in and discarded on the way out. What was a cache becomes per-request allocation and GC pressure — and nothing
+breaks, so it is easy to miss when benchmarking. Code that relied on a value surviving on the same thread across
+requests will also stop working. For implicitly propagating per-request state, prefer
+<a href="../../servicetalk-concurrent-api/SNAPSHOT/async-context.html" class="page"><code>AsyncContext</code></a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="asynccontext-does-not-propagate-to-threads-you-spawn"><a class="anchor" href="#asynccontext-does-not-propagate-to-threads-you-spawn"></a><a class="link" href="#asynccontext-does-not-propagate-to-threads-you-spawn">AsyncContext does not propagate to threads you spawn</a></h3>
+<div class="paragraph">
+<p><a href="../../servicetalk-concurrent-api/SNAPSHOT/async-context.html" class="page"><code>AsyncContext</code></a> is bound to the current thread and
+is not an <code>InheritableThreadLocal</code>. ServiceTalk propagates it across its own asynchronous boundaries, but a thread your
+application starts inside a handler does not inherit it and sees an empty context — anything relying on <code>AsyncContext</code>,
+such as tracing spans, MDC, or auth, is absent there.</p>
+</div>
+<div class="paragraph">
+<p>Virtual threads make spawning a thread or subtask per unit of work — via <code>StructuredTaskScope</code>,
+<code>Thread.ofVirtual().start(&#8230;&#8203;)</code>, or a fan-out to downstream calls — common, so this is more likely to occur. Capture
+and reinstall the context across the boundary with <code>AsyncContext.wrapCallable</code> / <code>wrapRunnable</code>, or wrap a JDK executor
+with <code>AsyncContext.wrapJdkExecutorService</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">// Each forked subtask runs on its own virtual thread. Wrap it so it inherits the handler's AsyncContext; without the
+// wrapCallable, these calls (and any tracing/MDC they depend on) would run with an empty context.
+try (var scope = StructuredTaskScope.open()) {
+    var user = scope.fork(AsyncContext.wrapCallable(() -&gt; userClient.lookup(id)));
+    var prefs = scope.fork(AsyncContext.wrapCallable(() -&gt; prefsClient.lookup(id)));
+    scope.join();
+    return render(user.get(), prefs.get());
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>wrap*</code> helpers share one <code>ContextMap</code> across the parent and all spawned tasks: a task&#8217;s writes are visible to the
+others, and concurrent writes to the same key race. This is what you want for read-mostly context (tracing, MDC, auth).</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="pinning"><a class="anchor" href="#pinning"></a><a class="link" href="#pinning">Pinning</a></h3>
+<div class="paragraph">
+<p>As noted under <a href="#prerequisites">Prerequisites</a>, a virtual thread that blocks while holding a monitor pins its carrier thread. JDK 25
+removes this for <code>synchronized</code>, but blocking inside native frames or foreign functions can still pin. If throughput
+does not scale as expected, profile for pinning — for example with the <code>jdk.VirtualThreadPinned</code> JDK Flight Recorder
+event.</p>
+</div>
+</div>
+</div>
 </div>
 </article>
     </main>

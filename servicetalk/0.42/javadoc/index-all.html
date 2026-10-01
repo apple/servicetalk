@@ -1157,6 +1157,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Create a new <a href="io/servicetalk/http/api/HttpResponseStatus.html#ALREADY_REPORTED"><code>HttpResponseStatus.ALREADY_REPORTED</code></a> response.</div>
 </dd>
+<dt><a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.html#alwaysEjectOneHost()" class="member-name-link">alwaysEjectOneHost()</a> - Method in class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig</a></dt>
+<dd>
+<div class="block">Whether a single host may be ejected even when that exceeds <a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.html#maxEjectionPercentage()"><code>OutlierDetectorConfig.maxEjectionPercentage()</code></a>.</div>
+</dd>
+<dt><a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.Builder.html#alwaysEjectOneHost(boolean)" class="member-name-link">alwaysEjectOneHost(boolean)</a> - Method in class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></dt>
+<dd>
+<div class="block">Set whether a single host may be ejected even when that exceeds <a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.Builder.html#maxEjectionPercentage(int)"><code>OutlierDetectorConfig.Builder.maxEjectionPercentage(int)</code></a>.</div>
+</dd>
 <dt><a href="io/servicetalk/concurrent/api/Completable.html#amb(io.servicetalk.concurrent.api.Completable...)" class="member-name-link">amb(Completable...)</a> - Static method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></dt>
 <dd>
 <div class="block">Creates a new <a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that terminates with the result (either success or error) of whichever amongst
@@ -5353,6 +5361,8 @@ loadScripts(document, 'script');</script>
 &nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/ContentEncodingHttpServiceFilter.html#create(io.servicetalk.http.api.StreamingHttpService)" class="member-name-link">create(StreamingHttpService)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/ContentEncodingHttpServiceFilter.html" title="class in io.servicetalk.http.api">ContentEncodingHttpServiceFilter</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/api/DisableInterruptOnCancelHttpServiceFilter.html#create(io.servicetalk.http.api.StreamingHttpService)" class="member-name-link">create(StreamingHttpService)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DisableInterruptOnCancelHttpServiceFilter.html" title="class in io.servicetalk.http.api">DisableInterruptOnCancelHttpServiceFilter</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpExceptionMapperServiceFilter.html#create(io.servicetalk.http.api.StreamingHttpService)" class="member-name-link">create(StreamingHttpService)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpExceptionMapperServiceFilter.html" title="class in io.servicetalk.http.api">HttpExceptionMapperServiceFilter</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/StreamingHttpServiceFilterFactory.html#create(io.servicetalk.http.api.StreamingHttpService)" class="member-name-link">create(StreamingHttpService)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpServiceFilterFactory</a></dt>
@@ -5621,7 +5631,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection.html#%3Cinit%3E(io.servicetalk.http.api.FilterableStreamingHttpConnection,io.servicetalk.client.api.ReservableRequestConcurrencyController)" class="member-name-link">DefaultFilterableStreamingHttpLoadBalancedConnection(FilterableStreamingHttpConnection, ReservableRequestConcurrencyController)</a> - Constructor for class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection.html" title="class in io.servicetalk.http.api">HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection</a></dt>
 <dd>
-<div class="block">Create a new instance without support for <a href="io/servicetalk/http/api/HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection.html#score()"><code>HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection.score()</code></a>.</div>
+<div class="block">Create a new instance.</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection.html#%3Cinit%3E(io.servicetalk.http.api.FilterableStreamingHttpConnection,io.servicetalk.client.api.ReservableRequestConcurrencyController,io.servicetalk.client.api.ScoreSupplier)" class="member-name-link">DefaultFilterableStreamingHttpLoadBalancedConnection(FilterableStreamingHttpConnection, ReservableRequestConcurrencyController, ScoreSupplier)</a> - Constructor for class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection.html" title="class in io.servicetalk.http.api">HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection</a></dt>
 <dd>
@@ -6797,6 +6807,11 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/loadbalancer/OutlierDetectorConfigs.html#disabled()" class="member-name-link">disabled()</a> - Static method in class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/OutlierDetectorConfigs.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfigs</a></dt>
 <dd>
 <div class="block"><a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer"><code>OutlierDetectorConfig</code></a> that disables all outlier detection.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/DisableInterruptOnCancelHttpServiceFilter.html" class="type-name-link" title="class in io.servicetalk.http.api">DisableInterruptOnCancelHttpServiceFilter</a> - Class in <a href="io/servicetalk/http/api/package-summary.html">io.servicetalk.http.api</a></dt>
+<dd>
+<div class="block">Stops the thread running a <a href="io/servicetalk/http/api/BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpService</code></a> from being <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Thread.html#interrupt()" title="class or interface in java.lang" class="external-link"><code>interrupted</code></a>
+ when the response is cancelled.</div>
 </dd>
 <dt><a href="io/servicetalk/buffer/api/CompositeBuffer.html#discardSomeReadBytes()" class="member-name-link">discardSomeReadBytes()</a> - Method in interface io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/CompositeBuffer.html" title="interface in io.servicetalk.buffer.api">CompositeBuffer</a></dt>
 <dd>
@@ -11987,6 +12002,10 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/http/api/DefaultHttpHeadersFactory.html#INSTANCE" class="member-name-link">INSTANCE</a> - Static variable in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DefaultHttpHeadersFactory.html" title="class in io.servicetalk.http.api">DefaultHttpHeadersFactory</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/api/DisableInterruptOnCancelHttpServiceFilter.html#INSTANCE" class="member-name-link">INSTANCE</a> - Static variable in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DisableInterruptOnCancelHttpServiceFilter.html" title="class in io.servicetalk.http.api">DisableInterruptOnCancelHttpServiceFilter</a></dt>
+<dd>
+<div class="block">Instance of <a href="io/servicetalk/http/api/DisableInterruptOnCancelHttpServiceFilter.html" title="class in io.servicetalk.http.api"><code>DisableInterruptOnCancelHttpServiceFilter</code></a>.</div>
+</dd>
 <dt><a href="io/servicetalk/http/api/EmptyHttpHeaders.html#INSTANCE" class="member-name-link">INSTANCE</a> - Static variable in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/EmptyHttpHeaders.html" title="class in io.servicetalk.http.api">EmptyHttpHeaders</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpExceptionMapperServiceFilter.html#INSTANCE" class="member-name-link">INSTANCE</a> - Static variable in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpExceptionMapperServiceFilter.html" title="class in io.servicetalk.http.api">HttpExceptionMapperServiceFilter</a></dt>
@@ -19253,6 +19272,8 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/http/api/ContentEncodingHttpServiceFilter.html#requiredOffloads()" class="member-name-link">requiredOffloads()</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/ContentEncodingHttpServiceFilter.html" title="class in io.servicetalk.http.api">ContentEncodingHttpServiceFilter</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/DefaultHttpLoadBalancerFactory.html#requiredOffloads()" class="member-name-link">requiredOffloads()</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DefaultHttpLoadBalancerFactory.html" title="class in io.servicetalk.http.api">DefaultHttpLoadBalancerFactory</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/api/DisableInterruptOnCancelHttpServiceFilter.html#requiredOffloads()" class="member-name-link">requiredOffloads()</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DisableInterruptOnCancelHttpServiceFilter.html" title="class in io.servicetalk.http.api">DisableInterruptOnCancelHttpServiceFilter</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpExceptionMapperServiceFilter.html#requiredOffloads()" class="member-name-link">requiredOffloads()</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpExceptionMapperServiceFilter.html" title="class in io.servicetalk.http.api">HttpExceptionMapperServiceFilter</a></dt>
 <dd>&nbsp;</dd>

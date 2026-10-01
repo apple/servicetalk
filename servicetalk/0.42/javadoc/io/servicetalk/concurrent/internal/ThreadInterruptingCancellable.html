@@ -85,8 +85,8 @@ loadScripts(document, 'script');</script>
 implements <a href="../Cancellable.html" title="interface in io.servicetalk.concurrent">Cancellable</a></span></div>
 <div class="block">A <a href="../Cancellable.html" title="interface in io.servicetalk.concurrent"><code>Cancellable</code></a> that will <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Thread.html#interrupt()" title="class or interface in java.lang" class="external-link"><code>interrupt a thread</code></a>.
  <p>
- It is important that <a href="#setDone()"><code>setDone()</code></a> (or <a href="#setDone(java.lang.Throwable)"><code>setDone(Throwable)</code></a>) is called after the associated blocking
- operation completes to avoid "spurious" thread interrupts.</div>
+ It is important that <a href="#setDone()"><code>setDone()</code></a> (or <a href="#setDone(java.lang.Throwable)"><code>setDone(Throwable)</code></a>) is called on the interrupted
+ thread after the associated blocking operation completes to avoid "spurious" thread interrupts.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">

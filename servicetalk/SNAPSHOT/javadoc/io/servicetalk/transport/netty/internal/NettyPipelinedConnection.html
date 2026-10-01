@@ -91,7 +91,14 @@ implements <a href="NettyConnectionContext.html" title="interface in io.servicet
 <div class="block">Contract for using a <a href="NettyConnection.html" title="interface in io.servicetalk.transport.netty.internal"><code>NettyConnection</code></a> to make pipelined requests, typically for a client.
  <p>
  Pipelining allows to have concurrent requests processed on the server but still deliver responses in order.
- This eliminates the need for request-response correlation, at the cost of head-of-line blocking.</div>
+ This eliminates the need for request-response correlation, at the cost of head-of-line blocking.
+ <p>
+ The write lock is a token rather than a synchronous critical section: it is claimed when a request is dequeued and
+ released only once that request's write terminates, so it spans threads and outlives the call that claimed it.
+ <p>
+ Each queued request is started from the completion of the one before it, so exchanges that complete synchronously
+ recurse rather than iterate and can exhaust the stack. Depth is whatever a caller keeps in flight, which this class
+ does not limit: <code>maxPipelinedRequests</code> only sizes the queue.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -264,7 +271,7 @@ implements <a href="NettyConnectionContext.html" title="interface in io.servicet
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>connection</code> - <a href="NettyConnection.html" title="interface in io.servicetalk.transport.netty.internal"><code>NettyConnection</code></a> requests to which are to be pipelined.</dd>
-<dd><code>maxPipelinedRequests</code> - The maximum number of pipelined requests.</dd>
+<dd><code>maxPipelinedRequests</code> - initial size hint for the pipelining queue; not enforced.</dd>
 </dl>
 </section>
 </li>

@@ -1164,7 +1164,7 @@ Here is a quick start example of the
 </div>
 <div class="paragraph">
 <p>See
-<a href="https://github.com/apple/servicetalk/blob/0.42.65/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/BlockingHelloWorldClient.java">BlockingHelloWorldClient</a>.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/BlockingHelloWorldClient.java">BlockingHelloWorldClient</a>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1180,7 +1180,7 @@ Here is a quick start example of the
 </div>
 <div class="paragraph">
 <p>See
-<a href="https://github.com/apple/servicetalk/blob/0.42.65/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/BlockingHelloWorldServer.java">BlockingHelloWorldServer</a>.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/BlockingHelloWorldServer.java">BlockingHelloWorldServer</a>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1196,19 +1196,24 @@ Here is a quick start example of the
 <h2 id="maxInboundMessageSize"><a class="anchor" href="#maxInboundMessageSize"></a><a class="link" href="#maxInboundMessageSize">Inbound message size limit</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>To bound memory use, ServiceTalk caps a single decoded inbound gRPC message at <strong>4 MiB</strong> by default (matching
-<a href="https://github.com/grpc/grpc-java">grpc-java</a>). A message whose declared length exceeds the limit is rejected with
-<code>RESOURCE_EXHAUSTED</code> <strong>before</strong> its payload is buffered. The limit applies on the receiving side of every paradigm: a
-server bounds request messages, a client bounds response messages. For a compressed message it bounds the on-wire
-(still-compressed) length before buffering, and the decoded length after decompression.</p>
+<p>To bound memory use, ServiceTalk limits the size of a single decoded inbound gRPC message. The limit applies on the
+receiving side of every paradigm: a server bounds request messages, a client bounds response messages. For a compressed
+message it bounds the on-wire (still-compressed) length before buffering, and the decoded length after decompression.</p>
 </div>
 <div class="paragraph">
-<p>Configure it with <code>GrpcServerBuilder#maxInboundMessageSize(int)</code> / <code>GrpcClientBuilder#maxInboundMessageSize(int)</code>:
-<code>0</code> disables the limit and a positive value enforces it (negative values are rejected). The default can be changed
-globally with the temporary <code>io.servicetalk.grpc.netty.temporaryDefaultMaxInboundMessageSize</code> system property (to be
-removed in a future release); an explicit builder call takes precedence. Setting that property to <code>-1</code> enables a
-<strong>warn-only</strong> rollout mode globally: an oversized message is delivered but a warning is logged (rate-limited to once
-every five minutes per client/server) instead of being rejected.</p>
+<p>Configure it with <code>GrpcServerBuilder#maxInboundMessageSize(int)</code> / <code>GrpcClientBuilder#maxInboundMessageSize(int)</code>,
+where the sign selects the mode and the magnitude selects the threshold: a <strong>positive</strong> value enforces the limit,
+rejecting a message whose declared length exceeds it with <code>RESOURCE_EXHAUSTED</code> <strong>before</strong> its payload is buffered; a
+<strong>negative</strong> value enables <strong>warn-only</strong> mode at <code>abs(value)</code> bytes, where an oversized message is delivered but a
+rate-limited warning is logged per client/server instead of being rejected; and <code>0</code> disables
+the limit. By default the client warns at 64 MiB and the server warns at 16 MiB; enforcing is planned to become the
+default for servers in a future release.</p>
+</div>
+<div class="paragraph">
+<p>The built-in defaults can be overridden globally with the
+<code>io.servicetalk.grpc.netty.defaultClientMaxInboundMessageSize</code> and
+<code>io.servicetalk.grpc.netty.defaultServerMaxInboundMessageSize</code> system properties (same sign convention); a per-builder
+call takes precedence.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -1258,9 +1263,9 @@ transport for gRPC. The flow of data from the socket to the gRPC <code>Service</
 </div>
 <div class="paragraph">
 <p>Each <code>Service</code> has access to a
-<a href="https://github.com/apple/servicetalk/blob/0.42.65/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcServiceContext.java">GrpcServiceContext</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcServiceContext.java">GrpcServiceContext</a>
 which provides additional context
-(via <a href="https://github.com/apple/servicetalk/blob/0.42.65/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionContext.java">ConnectionContext</a>)
+(via <a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionContext.java">ConnectionContext</a>)
 into the <code>Connection</code>/transport details for each request/response. This means that a <code>GrpcService</code> method may be invoked
 for multiple connections, from different threads, and even concurrently.</p>
 </div>
@@ -1291,7 +1296,7 @@ if decoded protos are required.
 <div class="paragraph">
 <p>In addition to HTTP filters, gRPC users can also add gRPC filters which follow the same interface definition as the
 service and can be composed using the generated
-<a href="https://github.com/apple/servicetalk/blob/0.42.65/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcServiceFactory.java">GrpcServiceFactory</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcServiceFactory.java">GrpcServiceFactory</a>
 for a particular service definition.</p>
 </div>
 </div>
@@ -1302,7 +1307,7 @@ for a particular service definition.</p>
 <div class="sectionbody">
 <div class="paragraph">
 <p>A <code>Client</code> is created via the
-<a href="https://github.com/apple/servicetalk/blob/0.42.65/servicetalk-grpc-netty/src/main/java/io/servicetalk/grpc/netty/GrpcClients.java">GrpcClients</a> static
+<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-grpc-netty/src/main/java/io/servicetalk/grpc/netty/GrpcClients.java">GrpcClients</a> static
 factory. It manages multiple <code>Connections</code> via a <a href="../../servicetalk-loadbalancer/0.42/index.html" class="page">LoadBalancer</a>.
 The control flow of a request/response can be visualized in the below diagram:</p>
 </div>
@@ -1352,7 +1357,7 @@ service definition if decoded protos are required.
 <div class="paragraph">
 <p>In addition to HTTP filters, gRPC users can also add gRPC filters which follow the same interface definition as the
 service and can be composed using the generated
-<a href="https://github.com/apple/servicetalk/blob/0.42.65/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcClientFactory.java">GrpcClientFactory</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcClientFactory.java">GrpcClientFactory</a>
 for a particular service definition.</p>
 </div>
 </div>
@@ -1377,7 +1382,7 @@ instances of the target service similar to the <a href="../../servicetalk-http-a
 <div class="sectionbody">
 <div class="paragraph">
 <p>When a <code>Service</code> fails, ServiceTalk maps the <code>Throwable</code> to a
-<a href="https://github.com/apple/servicetalk/blob/0.42.65/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcStatus.java">GrpcStatus</a> that is sent
+<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcStatus.java">GrpcStatus</a> that is sent
 to the client as the <code>grpc-status</code> and (optionally) <code>grpc-message</code> trailers. Well-known exception types are mapped to
 specific status codes; any other exception is mapped to <code>UNKNOWN</code>.</p>
 </div>
@@ -1385,7 +1390,7 @@ specific status codes; any other exception is mapped to <code>UNKNOWN</code>.</p
 <h3 id="returningErrors"><a class="anchor" href="#returningErrors"></a><a class="link" href="#returningErrors">Returning an error from a service</a></h3>
 <div class="paragraph">
 <p>To return a meaningful, client-facing error, a <code>Service</code> should fail with a
-<a href="https://github.com/apple/servicetalk/blob/0.42.65/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcStatusException.java">GrpcStatusException</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcStatusException.java">GrpcStatusException</a>
 that it constructs explicitly — either by throwing it (blocking APIs) or by completing the <code>Single</code>/<code>Publisher</code>
 with it (asynchronous APIs). The status code and description you put on it are sent <strong>verbatim</strong> on the wire.</p>
 </div>
@@ -1404,7 +1409,7 @@ throw new GrpcStatusException(new GrpcStatus(GrpcStatusCode.INVALID_ARGUMENT, "i
 <a href="https://grpc.io/docs/guides/error/#richer-error-model">richer error model</a>), use
 <code>GrpcStatusException.of(&#8230;&#8203;)</code> with a <code>com.google.rpc.Status</code> — the <code>details</code> (a repeated <code>Any</code>) are carried in the
 <code>grpc-status-details-bin</code> trailer. This is what the
-<a href="https://github.com/apple/servicetalk/blob/0.42.65/servicetalk-examples/grpc/errors/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleServer.java">Application Errors example</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-examples/grpc/errors/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleServer.java">Application Errors example</a>
 demonstrates, returning an <code>INVALID_ARGUMENT</code> with a <code>com.google.rpc.BadRequest</code> detail.</p>
 </div>
 <div class="admonitionblock important">

@@ -565,8 +565,9 @@ loadScripts(document, 'script');</script>
      rate-limited warning;</li>
      <li><code>0</code> disables it.</li>
  </ul>
- Defaults to warn-only at 16 MiB; enforcing is planned to become the default in a future release. See also
- <code>PayloadSizeLimitingHttpServiceFilter</code> for a <code>Content-Length</code> fail-fast; both apply.</div>
+ Defaults to warn-only at 16 MiB; enforcing is planned to become the default in a future release. To limit every
+ request body regardless of how it is consumed, including streamed requests and bodies buffered by a router such
+ as JAX-RS, use <code>PayloadSizeLimitingHttpServiceFilter</code>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>maxAggregatedPayloadSize</code> - bytes to buffer when a request is aggregated; positive enforces, negative warns

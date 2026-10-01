@@ -111,7 +111,7 @@ implements <a href="FilterableStreamingHttpLoadBalancedConnection.html" title="i
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.http.api.FilterableStreamingHttpConnection,io.servicetalk.client.api.ReservableRequestConcurrencyController)" class="member-name-link">DefaultFilterableStreamingHttpLoadBalancedConnection</a><wbr>(<a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>&nbsp;delegate,
  <a href="../../client/api/ReservableRequestConcurrencyController.html" title="interface in io.servicetalk.client.api">ReservableRequestConcurrencyController</a>&nbsp;controller)</code></div>
 <div class="col-last even-row-color">
-<div class="block">Create a new instance without support for <a href="#score()"><code>score()</code></a>.</div>
+<div class="block">Create a new instance.</div>
 </div>
 <div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.http.api.FilterableStreamingHttpConnection,io.servicetalk.client.api.ReservableRequestConcurrencyController,io.servicetalk.client.api.ScoreSupplier)" class="member-name-link">DefaultFilterableStreamingHttpLoadBalancedConnection</a><wbr>(<a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>&nbsp;delegate,
  <a href="../../client/api/ReservableRequestConcurrencyController.html" title="interface in io.servicetalk.client.api">ReservableRequestConcurrencyController</a>&nbsp;controller,
@@ -257,7 +257,8 @@ implements <a href="FilterableStreamingHttpLoadBalancedConnection.html" title="i
 <h3>DefaultFilterableStreamingHttpLoadBalancedConnection</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">DefaultFilterableStreamingHttpLoadBalancedConnection</span><wbr><span class="parameters">(<a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>&nbsp;delegate,
  <a href="../../client/api/ReservableRequestConcurrencyController.html" title="interface in io.servicetalk.client.api">ReservableRequestConcurrencyController</a>&nbsp;controller)</span></div>
-<div class="block">Create a new instance without support for <a href="#score()"><code>score()</code></a>.</div>
+<div class="block">Create a new instance. If <code>controller</code> implements <a href="../../client/api/ScoreSupplier.html" title="interface in io.servicetalk.client.api"><code>ScoreSupplier</code></a> its score is used for
+ <a href="#score()"><code>score()</code></a>, otherwise all connections score equally.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>delegate</code> - <a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpConnection</code></a> to delegate to</dd>

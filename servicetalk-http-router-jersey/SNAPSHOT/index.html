@@ -61,6 +61,9 @@
     <a class="nav-link" href="../../servicetalk/SNAPSHOT/performance.html">Performance</a>
   </li>
   <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../../servicetalk/SNAPSHOT/virtual-threads.html">Virtual Threads</a>
+  </li>
+  <li class="nav-item" data-depth="1">
     <button class="nav-toggle"></button>
     <span class="nav-text">Examples</span>
 <ul class="nav-list">
@@ -124,6 +127,9 @@
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#Files">Files</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#VirtualThreads">Virtual Threads</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/service-composition.html">Service Composition</a>
@@ -1153,7 +1159,7 @@ router amounts to:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">HttpServers.forPort(8080)
-    .listenStreamingAndAwait(new HttpJerseyRouterBuilder().build(jaxrsApplication))
+    .listenStreamingAndAwait(new HttpJerseyRouterBuilder().buildStreaming(jaxrsApplication))
     .awaitShutdown()</code></pre>
 </div>
 </div>
@@ -1226,6 +1232,19 @@ public CompletionStage&lt;Map&lt;String, String&gt;&gt; hello(final Map&lt;Strin
 </td>
 <td class="content">
 Server-Sent Events are also fully supported.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Entity parameters such as the <code>Map</code> above are read in full before the resource
+method runs; see <a href="#payload-size-limits">Limiting Request Payload Sizes</a>.
 </td>
 </tr>
 </table>
@@ -1630,6 +1649,87 @@ been disabled, users must manually register
 its feature would have to be registered too:
 <code>io.servicetalk.data.jackson.jersey.ServiceTalkJacksonSerializerFeature</code></p>
 </div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="payload-size-limits"><a class="anchor" href="#payload-size-limits"></a><a class="link" href="#payload-size-limits">Limiting Request Payload Sizes</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Whether the server&#8217;s
+<a href="../../servicetalk-http-api/SNAPSHOT/programming-paradigms.html" class="page"><code>maxAggregatedPayloadSize</code></a>
+bounds a request body depends on how the router is built, because it only bounds
+aggregation performed by ServiceTalk:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>build(..)</code> / <code>buildBlocking(..)</code>&#8201;&#8212;&#8201;ServiceTalk aggregates the request before the
+router sees it, so an enforcing (positive) limit applies to every resource and entity
+type.</p>
+</li>
+<li>
+<p><code>buildStreaming(..)</code> / <code>buildBlockingStreaming(..)</code>&#8201;&#8212;&#8201;the body reaches the router
+un-aggregated, and any entity reader&#8201;&#8212;&#8201;built in or provided by the application&#8201;&#8212;&#8201;that
+consumes it in full before the resource method runs does so inside Jersey, where the
+limit never applies. For example, JAX-RS&#8217;s <code>String</code>, <code>byte[]</code>, form and <code>DataSource</code>
+readers, object mappers such as Jersey&#8217;s Jackson and JAXB providers, and ServiceTalk&#8217;s
+<code>Buffer</code>, <code>Single&lt;Buffer&gt;</code> and single-object JSON/Protobuf readers hold the whole body
+in memory, and the <code>File</code> reader spools it to a temporary file.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For a streaming router&#8201;&#8212;&#8201;or to express one policy whichever way the router is built&#8201;&#8212;&#8201;add <code>PayloadSizeLimitingHttpServiceFilter</code> (from <code>servicetalk-http-utils</code>) to the
+server. It applies to every resource and entity type, streaming reads included, or only
+to matching requests when appended with <code>appendServiceFilter(predicate, filter)</code>. An
+oversized body is rejected as soon as it is detected, either with
+<code>413 Payload Too Large</code> or by tearing down the connection. Appended after any
+content-decoding filter it bounds everything held in memory and can be the only limit,
+so the example disables <code>maxAggregatedPayloadSize</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">HttpServers.forPort(8080)
+    // Filters run in the order they are appended, which decides whether this one
+    // counts bytes as received or after a decoding filter has expanded them.
+    .appendServiceFilter(new PayloadSizeLimitingHttpServiceFilter(1024 * 1024))
+    .maxAggregatedPayloadSize(0)
+    .listenStreamingAndAwait(new HttpJerseyRouterBuilder().buildStreaming(jaxrsApplication))
+    .awaitShutdown()</code></pre>
+</div>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-caution" title="Caution"></i>
+</td>
+<td class="content">
+The filter counts bytes where it sits in the chain, so an instance appended
+before a content-decoding filter bounds only the encoded body. To also reject oversized
+wire bodies early, append one instance on each side of the decoder. See
+<a href="../../servicetalk-http-api/SNAPSHOT/index.html#service-filters" class="page">Service Filters</a>
+for how the filter chain is ordered.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+For a streaming router, resources that consume a <code>Publisher&lt;Buffer&gt;</code>,
+<code>InputStream</code> or <code>Reader</code> stream the body instead of buffering it, so this filter is
+the only thing that bounds them&#8201;&#8212;&#8201;which is what makes it the right place to express a
+payload size policy for the whole server. In an aggregated router even these resources
+receive a body that ServiceTalk has already buffered in full.
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>

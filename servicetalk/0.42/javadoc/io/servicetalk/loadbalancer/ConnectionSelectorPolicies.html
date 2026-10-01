@@ -161,9 +161,10 @@ loadScripts(document, 'script');</script>
 <dt>Type Parameters:</dt>
 <dd><code>C</code> - the concrete type of the <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api"><code>LoadBalancedConnection</code></a></dd>
 <dt>Parameters:</dt>
-<dd><code>corePoolSize</code> - the size of the core pool.</dd>
+<dd><code>corePoolSize</code> - the size of the core pool. A size of 0 disables the core pool: all connections are selected
+                     in-order and <code>forceCorePool</code> has no effect.</dd>
 <dd><code>forceCorePool</code> - whether to avoid selecting connections from the core pool until it has reached the
-                      configured core pool size.</dd>
+                      configured core pool size. Only honored while the host can add a connection.</dd>
 <dt>Returns:</dt>
 <dd>the configured <a href="ConnectionSelectorPolicy.html" title="class in io.servicetalk.loadbalancer"><code>ConnectionSelectorPolicy</code></a>.</dd>
 </dl>
@@ -217,8 +218,9 @@ loadScripts(document, 'script');</script>
 <span class="return-type"><a href="ConnectionSelectorPolicy.html" title="class in io.servicetalk.loadbalancer">ConnectionSelectorPolicy</a>&lt;C&gt;</span>&nbsp;<span class="element-name">p2c</span><wbr><span class="parameters">(int&nbsp;corePoolSize,
  boolean&nbsp;forceCorePool)</span></div>
 <div class="block">A <a href="ConnectionSelectorPolicy.html" title="class in io.servicetalk.loadbalancer"><code>ConnectionSelectorPolicy</code></a> that attempts to discern between the health of individual connections.
- If individual connections have health data the P2C policy can be used to bias traffic toward the best
- connections. This has the following algorithm:
+ Connections are ranked by their <a href="../client/api/ScoreSupplier.html#score()"><code>score</code></a>: the built-in HTTP connections
+ score by outstanding request count, while custom connections must implement scoring for this policy to bias
+ traffic at all. This has the following algorithm:
  <ol>
      <li>Randomly select two connections from the 'core pool' (pick-two).
          <ol>
@@ -233,9 +235,10 @@ loadScripts(document, 'script');</script>
 <dt>Type Parameters:</dt>
 <dd><code>C</code> - the concrete type of the <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api"><code>LoadBalancedConnection</code></a></dd>
 <dt>Parameters:</dt>
-<dd><code>corePoolSize</code> - the size of the core pool.</dd>
+<dd><code>corePoolSize</code> - the size of the core pool. A size of 0 disables the core pool: all connections are selected
+                     in-order and <code>forceCorePool</code> has no effect.</dd>
 <dd><code>forceCorePool</code> - whether to avoid selecting connections from the core pool until it has reached the
-                      configured core pool size.</dd>
+                      configured core pool size. Only honored while the host can add a connection.</dd>
 <dt>Returns:</dt>
 <dd>the configured <a href="ConnectionSelectorPolicy.html" title="class in io.servicetalk.loadbalancer"><code>ConnectionSelectorPolicy</code></a>.</dd>
 </dl>
@@ -249,8 +252,9 @@ loadScripts(document, 'script');</script>
  int&nbsp;corePoolSize,
  boolean&nbsp;forceCorePool)</span></div>
 <div class="block">A <a href="ConnectionSelectorPolicy.html" title="class in io.servicetalk.loadbalancer"><code>ConnectionSelectorPolicy</code></a> that attempts to discern between the health of individual connections.
- If individual connections have health data the P2C policy can be used to bias traffic toward the best
- connections. This has the following algorithm:
+ Connections are ranked by their <a href="../client/api/ScoreSupplier.html#score()"><code>score</code></a>: the built-in HTTP connections
+ score by outstanding request count, while custom connections must implement scoring for this policy to bias
+ traffic at all. This has the following algorithm:
  <ol>
      <li>Randomly select two connections from the 'core pool' (pick-two).
          <ol>
@@ -266,9 +270,10 @@ loadScripts(document, 'script');</script>
 <dd><code>C</code> - the concrete type of the <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api"><code>LoadBalancedConnection</code></a></dd>
 <dt>Parameters:</dt>
 <dd><code>maxEffort</code> - the maximum number of attempts to pick a healthy connection from the core pool.</dd>
-<dd><code>corePoolSize</code> - the size of the core pool.</dd>
+<dd><code>corePoolSize</code> - the size of the core pool. A size of 0 disables the core pool: all connections are selected
+                     in-order and <code>forceCorePool</code> has no effect.</dd>
 <dd><code>forceCorePool</code> - whether to avoid selecting connections from the core pool until it has reached the
-                      configured core pool size.</dd>
+                      configured core pool size. Only honored while the host can add a connection.</dd>
 <dt>Returns:</dt>
 <dd>the configured <a href="ConnectionSelectorPolicy.html" title="class in io.servicetalk.loadbalancer"><code>ConnectionSelectorPolicy</code></a>.</dd>
 </dl>

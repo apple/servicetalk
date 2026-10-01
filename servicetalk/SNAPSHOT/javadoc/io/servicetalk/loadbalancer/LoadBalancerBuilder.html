@@ -239,7 +239,10 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="connectionSelectorPolicy(io.servicetalk.loadbalancer.ConnectionSelectorPolicy)">
 <h3>connectionSelectorPolicy</h3>
 <div class="member-signature"><span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">connectionSelectorPolicy</span><wbr><span class="parameters">(<a href="ConnectionSelectorPolicy.html" title="class in io.servicetalk.loadbalancer">ConnectionSelectorPolicy</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;&nbsp;connectionSelectorPolicy)</span></div>
-<div class="block">Set the <a href="ConnectionSelectorPolicy.html" title="class in io.servicetalk.loadbalancer"><code>ConnectionSelectorPolicy</code></a> to use with this load balancer.</div>
+<div class="block">Set the <a href="ConnectionSelectorPolicy.html" title="class in io.servicetalk.loadbalancer"><code>ConnectionSelectorPolicy</code></a> to use with this load balancer.
+ <p>
+ Defaults to <a href="ConnectionSelectorPolicies.html#linearSearch()"><code>ConnectionSelectorPolicies.linearSearch()</code></a> except as described by
+ <a href="#minConnectionsPerHost(int)"><code>minConnectionsPerHost(int)</code></a>; setting a policy here takes precedence over that.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>connectionSelectorPolicy</code> - the factory of connection selection strategies to use.</dd>
@@ -257,6 +260,10 @@ loadScripts(document, 'script');</script>
  Setting a minimum number of connections can help reduce the occurrences where connection establishment happens
  on the request path, thereby reducing tail latencies, particularly for links which are prone idle-connection
  closure. The tradeoff is that it may require tuning and will create more connection overhead overall.
+ <p>
+ When this is greater than one and no <a href="ConnectionSelectorPolicy.html" title="class in io.servicetalk.loadbalancer"><code>ConnectionSelectorPolicy</code></a> is set, selection defaults to a forced
+ <a href="ConnectionSelectorPolicies.html#corePool(int,boolean)"><code>core pool</code></a> of this size. Without it multiplexed
+ connections would rarely be selected beyond the first, leaving the extra connections idle.
  <p>
  Note: this is a best-effort setting. There are inherent uncertainties, race conditions, and assumptions that
  will cause the number of connections to transiently fall below the specified minimum. Currently, these include:
