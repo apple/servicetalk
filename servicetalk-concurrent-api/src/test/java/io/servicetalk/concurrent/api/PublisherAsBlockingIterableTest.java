@@ -318,6 +318,28 @@ final class PublisherAsBlockingIterableTest {
     }
 
     @Test
+    void hasNextAfterCompleteDoesNotRequestMore() throws Exception {
+        BlockingIterator<Integer> iterator = source.toIterable(2).iterator();
+        TestSubscription subscription = new TestSubscription();
+        source.onSubscribe(subscription);
+        assertThat(subscription.requested(), is(2L));
+        source.onComplete();
+        assertThat("Item not expected but found.", iterator.hasNext(), is(false));
+        assertThat(subscription.requested(), is(2L));
+    }
+
+    @Test
+    void hasNextWithTimeoutAfterErrorDoesNotRequestMore() throws Exception {
+        BlockingIterator<Integer> iterator = source.toIterable(2).iterator();
+        TestSubscription subscription = new TestSubscription();
+        source.onSubscribe(subscription);
+        assertThat(subscription.requested(), is(2L));
+        source.onError(DELIBERATE_EXCEPTION);
+        assertThat(iterator.hasNext(-1, MILLISECONDS), is(true));
+        assertThat(subscription.requested(), is(2L));
+    }
+
+    @Test
     void verifyRequestedReplenishedCapacityAs1() {
         Iterator<Integer> iterator = source.toIterable(1).iterator();
         TestSubscription subscription = new TestSubscription();

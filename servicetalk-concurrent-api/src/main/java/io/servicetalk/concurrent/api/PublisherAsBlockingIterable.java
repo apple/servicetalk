@@ -174,7 +174,6 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
             }
             try {
                 next = data.take();
-                requestMoreIfRequired();
             } catch (InterruptedException e) {
                 return hasNextInterrupted(e);
             }
@@ -198,7 +197,6 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
                     }
                     throw new TimeoutException("timed out after: " + timeout + " units: " + unit);
                 }
-                requestMoreIfRequired();
             } catch (InterruptedException e) {
                 return hasNextInterrupted(e);
             }
@@ -235,6 +233,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
                 next = null;
                 return false;
             }
+            requestMoreIfRequired();
             return true;
         }
 
