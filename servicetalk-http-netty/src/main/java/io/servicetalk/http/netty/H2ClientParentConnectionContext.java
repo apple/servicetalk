@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,8 +56,13 @@ import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopMultipl
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
+import io.netty.handler.codec.http2.Http2Connection;
+import io.netty.handler.codec.http2.Http2Connection.PropertyKey;
+import io.netty.handler.codec.http2.Http2ConnectionAdapter;
+import io.netty.handler.codec.http2.Http2FrameCodec;
 import io.netty.handler.codec.http2.Http2SettingsAckFrame;
 import io.netty.handler.codec.http2.Http2SettingsFrame;
+import io.netty.handler.codec.http2.Http2Stream;
 import io.netty.handler.codec.http2.Http2StreamChannel;
 import io.netty.handler.codec.http2.Http2StreamChannelBootstrap;
 import io.netty.util.concurrent.EventExecutor;
@@ -75,6 +80,7 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURRENT_STREAMS;
+import static io.netty.handler.codec.http2.Http2CodecUtil.isStreamIdValid;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessorDropHeadOnOverflow;
 import static io.servicetalk.concurrent.api.Publisher.failed;
@@ -182,6 +188,11 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         @Nullable
         private Subscriber<? super H2ClientParentConnection> subscriber;
         private MultiplexedObserver multiplexedObserver = NoopMultiplexedObserver.INSTANCE;
+        // Confined to the event loop.
+        private final Http2Connection nettyConnection;
+        // Set before the connection is handed out, so it is non-null whenever a stream exists.
+        @Nullable
+        private PropertyKey onStreamRemovedKey;
 
         DefaultH2ClientParentConnection(H2ClientParentConnectionContext connection,
                                         Subscriber<? super H2ClientParentConnection> subscriber,
@@ -201,6 +212,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             // Set maxConcurrency to the initial value recommended by the HTTP/2 spec
             maxConcurrencyProcessor.onNext(DEFAULT_H2_MAX_CONCURRENCY_EVENT);
             bs = new Http2StreamChannelBootstrap(connection.channel());
+            nettyConnection = connection.channel().pipeline().get(Http2FrameCodec.class).connection();
             maxConcurrencyPublisher = fromSource(maxConcurrencyProcessor)
                     .replay(1); // Allow multiple Subscribers to consume, new Subscribers get last signal.
             // Maintain a Subscriber so signals are always delivered to replay and new Subscribers get the latest
@@ -213,6 +225,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             if (subscriber != null) {
                 Subscriber<? super H2ClientParentConnection> subscriberCopy = subscriber;
                 subscriber = null;
+                assert parentContext.nettyChannel().eventLoop().inEventLoop();
+                onStreamRemovedKey = addOnStreamRemovedListener(nettyConnection);
                 multiplexedObserver = observer.multiplexedConnectionEstablished(this);
                 subscriberCopy.onSuccess(this);
             }
@@ -370,7 +384,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                 try {
                     streamChannel = future.getNow();
                     if (onCloseRunnable != null) {
-                        streamChannel.closeFuture().addListener(f -> onCloseRunnable.run());
+                        final Http2StreamChannel sc = streamChannel;
+                        streamChannel.closeFuture().addListener(f -> runWhenNettyRemovesStream(sc, onCloseRunnable));
                     }
                     parentContext.trackActiveStream(streamChannel);
 
@@ -430,6 +445,35 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                 cleanupWhenError(futureCause, streamObserver, onCloseRunnable);
                 subscriber.onError(futureCause);
             }
+        }
+
+        // A closing child channel writes RST_STREAM, but Netty keeps counting the stream as active until that write
+        // completes, which on a backed-up connection can be long after the child closed. Running onCloseRunnable (which
+        // frees the concurrency slot) any earlier lets a new request through that Netty refuses with "Maximum active
+        // streams violated".
+        private void runWhenNettyRemovesStream(final Http2StreamChannel streamChannel, final Runnable onCloseRunnable) {
+            final int streamId = streamChannel.stream().id();
+            final Http2Stream stream = isStreamIdValid(streamId) ? nettyConnection.stream(streamId) : null;
+            if (stream == null) {
+                // HEADERS were never written, or Netty has already removed the stream.
+                onCloseRunnable.run();
+            } else {
+                stream.setProperty(onStreamRemovedKey, onCloseRunnable);
+            }
+        }
+
+        private static PropertyKey addOnStreamRemovedListener(final Http2Connection nettyConnection) {
+            final PropertyKey key = nettyConnection.newKey();
+            nettyConnection.addListener(new Http2ConnectionAdapter() {
+                @Override
+                public void onStreamRemoved(final Http2Stream stream) {
+                    final Runnable onCloseRunnable = stream.removeProperty(key);
+                    if (onCloseRunnable != null) {
+                        onCloseRunnable.run();
+                    }
+                }
+            });
+            return key;
         }
 
         @Override
