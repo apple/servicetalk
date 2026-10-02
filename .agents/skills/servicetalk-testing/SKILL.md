@@ -296,8 +296,11 @@ Add whichever of these matches the harness you picked:
 - A hanging test is diagnosed from the `TimeoutTracingInfoExtension` thread
   dump printed just before the timeout fires. Read it before guessing.
 - To see wire-level traffic:
-  `./gradlew :servicetalk-http-netty:test -Dservicetalk.logger.wireLogLevel=DEBUG`.
-  Other keys are `h2FrameLogLevel`, `lifecycleObserverLogLevel`, and `rootLevel`.
+  `JAVA_TOOL_OPTIONS="-Dservicetalk.logger.wireLogLevel=TRACE" ./gradlew :servicetalk-http-netty:test --rerun`.
+  Gradle does not forward `-D` to the test JVM, and the test loggers log at
+  `TRACE`. Without `--rerun`, up-to-date tests are skipped and print nothing,
+  because the environment is not a task input. Other keys are
+  `h2FrameLogLevel`, `lifecycleObserverLogLevel`, and `rootLevel`.
 - To check whether the lines you changed are covered:
   `./gradlew :servicetalk-<module>:jacocoTestReport`, then open
   `servicetalk-<module>/build/reports/jacoco/test/html/index.html`. Coverage is
