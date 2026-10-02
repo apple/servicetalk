@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,6 +111,9 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
         @Nullable
         private Object next;
         private boolean terminated;
+        // Set once the upstream terminates, so close() has nothing to cancel. Unlike terminated, a
+        // hasNext(long, TimeUnit) timeout doesn't set it because the subscription is still active.
+        private volatile boolean upstreamTerminated;
 
         SubscriberAndIterator(int queueCapacity) {
             requestN = queueCapacity;
@@ -128,6 +131,9 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
 
         @Override
         public void close() {
+            if (upstreamTerminated) {
+                return;
+            }
             try {
                 subscription.cancel();
             } finally {
@@ -144,11 +150,13 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
 
         @Override
         public void onError(final Throwable t) {
+            upstreamTerminated = true;
             offer(error(t));
         }
 
         @Override
         public void onComplete() {
+            upstreamTerminated = true;
             offer(COMPLETE_NOTIFICATION);
         }
 
@@ -168,7 +176,6 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
             }
             try {
                 next = data.take();
-                requestMoreIfRequired();
             } catch (InterruptedException e) {
                 return hasNextInterrupted(e);
             }
@@ -192,7 +199,6 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
                     }
                     throw new TimeoutException("timed out after: " + timeout + " units: " + unit);
                 }
-                requestMoreIfRequired();
             } catch (InterruptedException e) {
                 return hasNextInterrupted(e);
             }
@@ -228,6 +234,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
                 next = null;
                 return false;
             }
+            requestMoreIfRequired();
             return true;
         }
 
