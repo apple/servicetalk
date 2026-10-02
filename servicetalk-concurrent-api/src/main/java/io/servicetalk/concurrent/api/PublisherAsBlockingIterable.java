@@ -111,9 +111,9 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
         @Nullable
         private Object next;
         private boolean terminated;
-        // Set once the upstream terminal is dequeued, so close() has nothing to cancel. Unlike terminated, a
+        // Set once the upstream terminates, so close() has nothing to cancel. Unlike terminated, a
         // hasNext(long, TimeUnit) timeout doesn't set it because the subscription is still active.
-        private boolean upstreamTerminated;
+        private volatile boolean upstreamTerminated;
 
         SubscriberAndIterator(int queueCapacity) {
             requestN = queueCapacity;
@@ -150,11 +150,13 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
 
         @Override
         public void onError(final Throwable t) {
+            upstreamTerminated = true;
             offer(error(t));
         }
 
         @Override
         public void onComplete() {
+            upstreamTerminated = true;
             offer(COMPLETE_NOTIFICATION);
         }
 
@@ -224,7 +226,6 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
         private boolean hasNextProcessNext() {
             if (next instanceof TerminalNotification) {
                 terminated = true;
-                upstreamTerminated = true;
                 // If we have an error, return true, so that the same can be thrown from next().
                 return ((TerminalNotification) next).cause() != null;
             }

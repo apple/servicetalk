@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+  ~ Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -111,6 +111,15 @@
   <Match>
     <Class name="io.servicetalk.concurrent.api.PublisherFlatMapMerge$FlatMapSubscriber$FlatMapPublisherSubscriber"/>
     <Field name="signalsQueued"/>
+    <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
+  </Match>
+  <!-- Iterator state is confined to the consuming thread; a stale read of terminated in close() is benign -->
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.PublisherAsBlockingIterable$SubscriberAndIterator"/>
+    <Or>
+      <Field name="terminated"/>
+      <Field name="itemsToNextRequest"/>
+    </Or>
     <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
   </Match>
   <Match>

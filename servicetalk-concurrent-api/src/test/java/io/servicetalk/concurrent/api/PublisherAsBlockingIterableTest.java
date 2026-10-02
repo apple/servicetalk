@@ -211,7 +211,7 @@ final class PublisherAsBlockingIterableTest {
     }
 
     @Test
-    void closeBeforeCompleteConsumedCancels() throws Exception {
+    void closeAfterCompleteQueuedDoesNotCancel() throws Exception {
         BlockingIterator<Integer> iterator = source.toIterable().iterator();
         TestSubscription subscription = new TestSubscription();
         source.onSubscribe(subscription);
@@ -219,7 +219,22 @@ final class PublisherAsBlockingIterableTest {
         source.onComplete();
         verifyNextIs(iterator, 1);
         iterator.close();
-        assertThat(subscription.isCancelled(), is(true));
+        assertThat(subscription.isCancelled(), is(false));
+        assertThat("Item not expected but found.", iterator.hasNext(), is(false));
+    }
+
+    @Test
+    void closeAfterErrorQueuedDoesNotCancel() throws Exception {
+        BlockingIterator<Integer> iterator = source.toIterable().iterator();
+        TestSubscription subscription = new TestSubscription();
+        source.onSubscribe(subscription);
+        source.onNext(1);
+        source.onError(DELIBERATE_EXCEPTION);
+        verifyNextIs(iterator, 1);
+        iterator.close();
+        assertThat(subscription.isCancelled(), is(false));
+        DeliberateException e = assertThrows(DeliberateException.class, iterator::next);
+        assertThat(e, is(sameInstance(DELIBERATE_EXCEPTION)));
     }
 
     @Test
