@@ -161,16 +161,15 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                         // seen by the transport before cancel. We have no way of knowing at this layer if this indeed
                         // happen. Therefore, we close the connection manually to guarantee closure.
                         //
-                        // For H2 and above, connection are multiplexed and use virtual streams for each
-                        // request-response exchange. At the time users own a Cancellable, the stream already owns
-                        // OnStreamClosedRunnable in H2ClientParentConnectionContext. It will update the concurrency
-                        // controller state if cancellation results in stream closure instead of completion.
-                        if (connectionContext().protocol().major() < 2) {
-                            LOGGER.debug("{} {} request was cancelled before receiving the full response, " +
-                                            "closing this {} connection to stop receiving more data",
-                                    connectionContext, requestMetaData, connectionContext.protocol());
-                            closeAsync().subscribe();
-                        }
+                        // For H2 and above, this connection is a single stream, so closing it resets only this
+                        // exchange. The transport resets a stream whose response is unread, but not one whose response
+                        // completed while its request body was still being written: that stream would stay open and
+                        // hold a concurrent-stream slot on both peers. OnStreamClosedRunnable in
+                        // H2ClientParentConnectionContext updates the concurrency controller when the stream closes.
+                        LOGGER.debug("{} {} request was cancelled before it completed, closing this {} {}",
+                                connectionContext, requestMetaData, connectionContext.protocol(),
+                                connectionContext.protocol().major() < 2 ? "connection" : "stream");
+                        closeAsync().subscribe();
                     }
                 })
                 .firstAndTail(this::newSplicedResponse);
