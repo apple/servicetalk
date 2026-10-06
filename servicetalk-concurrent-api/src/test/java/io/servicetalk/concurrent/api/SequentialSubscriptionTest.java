@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
@@ -58,6 +59,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -81,7 +83,8 @@ final class SequentialSubscriptionTest {
     @AfterEach
     void tearDown() throws Exception {
         executor.shutdownNow();
-        executor.awaitTermination(DEFAULT_TIMEOUT_SECONDS, SECONDS);
+        assertThat("Executor did not terminate",
+                executor.awaitTermination(DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
     }
 
     @ParameterizedTest
@@ -293,6 +296,97 @@ final class SequentialSubscriptionTest {
             demands.merge(next.requestedReceived(), 1, Integer::sum);
         }
         assertThat("Requested demand -> iterations: " + demands, demands.keySet(), contains((long) EMIT_BATCH));
+    }
+
+    @Test
+    void switchToWithoutOutstandingDemandReceivesSubsequentRequest() {
+        s.request(1);
+        s.itemReceived();
+        s.switchTo(s2);
+        verifyNoMoreInteractions(s2);
+        s.request(1);
+        verify(s2).request(1);
+        verify(s1).request(1);
+        verifyNoMoreInteractions(s1, s2);
+    }
+
+    @Test
+    void switchToAfterRequestOverflowPreservesOutstandingDemand() {
+        s.request(MAX_VALUE - 1);
+        s.request(2);
+        s.itemReceived();
+        s.switchTo(s2);
+        verify(s2).request(MAX_VALUE - 1);
+        verifyNoMoreInteractions(s2);
+    }
+
+    @Test
+    void requestThrowsAfterSwitchStillDrainsPendingDemand() {
+        doAnswer(invocation -> {
+            s.itemReceived();
+            s.switchTo(s2);
+            s.request(1);
+            throw DELIBERATE_EXCEPTION;
+        }).when(s1).request(anyLong());
+        assertThrows(DeliberateException.class, () -> s.request(1));
+        verify(s2).request(1);
+        s.request(1);
+        verify(s2, times(2)).request(1);
+        verifyNoMoreInteractions(s2);
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: requestThrows={0}")
+    @ValueSource(booleans = {false, true})
+    void cancelDuringRequestCancelsActiveAndPendingSubscriptions(boolean requestThrows) throws Exception {
+        final CountDownLatch requested = new CountDownLatch(1);
+        final CountDownLatch release = new CountDownLatch(1);
+        doAnswer(invocation -> {
+            requested.countDown();
+            assertThat(release.await(DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
+            if (requestThrows) {
+                throw DELIBERATE_EXCEPTION;
+            }
+            return null;
+        }).when(s1).request(anyLong());
+        final Subscription s3 = mock(Subscription.class);
+        final Future<?> requesting = executor.submit(() -> s.request(1));
+        try {
+            assertThat(requested.await(DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
+            s.switchTo(s2);
+            s.cancel();
+            s.switchTo(s3);
+        } finally {
+            release.countDown();
+            if (requestThrows) {
+                assertThat(assertThrows(ExecutionException.class, requesting::get).getCause(),
+                        is(DELIBERATE_EXCEPTION));
+            } else {
+                requesting.get();
+            }
+        }
+        verify(s1).request(1);
+        verify(s1).cancel();
+        verify(s2).cancel();
+        verify(s3).cancel();
+        verifyNoMoreInteractions(s1, s2, s3);
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: n={0}")
+    @ValueSource(longs = {-1, 0, MIN_VALUE})
+    void invalidRequestDuringSwitchReachesPendingSubscriptions(long n) {
+        final Subscription s3 = mock(Subscription.class);
+        doAnswer(invocation -> {
+            s.switchTo(s2);
+            s.request(n);
+            s.switchTo(s3);
+            return null;
+        }).doNothing().when(s1).request(anyLong());
+        s.request(1);
+        final long expected = n == 0 ? MIN_VALUE : n;
+        verify(s3).request(expected);
+        verify(s2).request(expected);
+        s.request(1);
+        verifyNoMoreInteractions(s2, s3);
     }
 
     private void testConcurrentRequestEmitAndSwitch(int totalItems, int maxDeliveryPerSubscription) throws Exception {
