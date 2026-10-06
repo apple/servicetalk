@@ -25,9 +25,13 @@ import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -42,6 +46,7 @@ import static java.lang.Math.min;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
@@ -58,6 +63,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 final class SequentialSubscriptionTest {
     private static final int ITERATIONS_FOR_CONCURRENT_TESTS = 500;
+    private static final int ITERATIONS_FOR_RACE_TESTS = 200_000;
+    private static final int EMIT_BATCH = 10;
     private SequentialSubscription s;
     private Subscription s1;
     private Subscription s2;
@@ -237,6 +244,57 @@ final class SequentialSubscriptionTest {
         }
     }
 
+    @ParameterizedTest(name = "{displayName} [{index}]: overlap={0}")
+    @ValueSource(booleans = {false, true})
+    void switchToAfterReentrantRequestTransfersOutstandingDemandOnce(boolean overlap) throws Exception {
+        final CountDownLatch requested = new CountDownLatch(1);
+        final CountDownLatch release = new CountDownLatch(1);
+        doAnswer(invocation -> {
+            s.itemReceived();
+            s.request(1);
+            requested.countDown();
+            assertThat("The old request was not released", release.await(DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
+            return null;
+        }).doNothing().when(s2).request(anyLong());
+        s.request(1);
+        final CountingSubscription next = new CountingSubscription();
+        final Future<?> switching = executor.submit(() -> s.switchTo(s2));
+        try {
+            assertThat("The old request was not reached", requested.await(DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
+            if (!overlap) {
+                release.countDown();
+                switching.get();
+            }
+            // The old source emitted its item; only its request callback may still be unwinding.
+            s.switchTo(next);
+        } finally {
+            release.countDown();
+            switching.get();
+        }
+        assertThat("Outstanding demand must be transferred once", next.requestedReceived(), is(1L));
+    }
+
+    @Test
+    @Timeout(60) // Deliberate stress loop; the latch does not force the handoff window.
+    void switchToWhileAnotherSwitchUnwindsRequestsOutstandingDemandFromNewSubscription() throws Exception {
+        final Map<Long, Integer> demands = new TreeMap<>();
+        for (int i = 0; i < ITERATIONS_FOR_RACE_TESTS; ++i) {
+            final SequentialSubscription subscription = new SequentialSubscription();
+            subscription.request(EMIT_BATCH);
+            final EmittingSubscription source = new EmittingSubscription(subscription, 2 * EMIT_BATCH, EMIT_BATCH);
+            final CountingSubscription next = new CountingSubscription();
+            final Future<?> resubscribe = executor.submit(() -> {
+                source.awaitTerminated();
+                subscription.switchTo(next);
+                return null;
+            });
+            subscription.switchTo(source);
+            resubscribe.get();
+            demands.merge(next.requestedReceived(), 1, Integer::sum);
+        }
+        assertThat("Requested demand -> iterations: " + demands, demands.keySet(), contains((long) EMIT_BATCH));
+    }
+
     private void testConcurrentRequestEmitAndSwitch(int totalItems, int maxDeliveryPerSubscription) throws Exception {
         final SequentialSubscription subscription = new SequentialSubscription();
         final CyclicBarrier allStarted = new CyclicBarrier(3);
@@ -375,6 +433,59 @@ final class SequentialSubscriptionTest {
         @Override
         public String toString() {
             return "requestedReceived: " + requestedReceived.get() + " cancelled: " + cancelled;
+        }
+    }
+
+    /**
+     * Emits items synchronously from {@link #request(long)} like a {@link Publisher#range(int, int)} does.
+     */
+    private static final class EmittingSubscription implements Subscription {
+        private final SequentialSubscription subscription;
+        private final int totalItems;
+        private final int requestMoreEvery;
+        private final CountDownLatch terminatedLatch = new CountDownLatch(1);
+        private long demand;
+        private int emitted;
+        private boolean emitting;
+
+        EmittingSubscription(final SequentialSubscription subscription, final int totalItems,
+                             final int requestMoreEvery) {
+            this.subscription = subscription;
+            this.totalItems = totalItems;
+            this.requestMoreEvery = requestMoreEvery;
+        }
+
+        @Override
+        public void request(final long n) {
+            demand += n;
+            if (emitting) {
+                return;
+            }
+            emitting = true;
+            try {
+                while (demand > 0 && emitted < totalItems) {
+                    --demand;
+                    ++emitted;
+                    subscription.itemReceived();
+                    if (emitted % requestMoreEvery == 0) {
+                        subscription.request(requestMoreEvery);
+                    }
+                }
+            } finally {
+                emitting = false;
+            }
+            if (emitted == totalItems) {
+                terminatedLatch.countDown();
+            }
+        }
+
+        @Override
+        public void cancel() {
+        }
+
+        void awaitTerminated() throws InterruptedException {
+            assertThat("The emitting source did not terminate",
+                    terminatedLatch.await(DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
         }
     }
 
