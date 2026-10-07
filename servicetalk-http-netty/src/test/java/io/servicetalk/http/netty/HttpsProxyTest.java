@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,8 @@ import io.servicetalk.http.api.ProxyConfigBuilder;
 import io.servicetalk.http.api.ProxyConnectException;
 import io.servicetalk.http.api.ProxyConnectResponseException;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.http.netty.HttpClients.DiscoveryStrategy;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectionObserver;
@@ -66,6 +68,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
@@ -76,6 +79,7 @@ import javax.net.ssl.TrustManagerFactory;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.dns.discovery.netty.DnsServiceDiscoverers.globalARecordsDnsServiceDiscoverer;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_TARGET_ADDRESS_BEHIND_PROXY;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -164,13 +168,22 @@ class HttpsProxyTest {
 
     void setUp(List<HttpProtocol> protocols, boolean failHandshake, boolean failProxyHandshake,
                Consumer<HttpHeaders> connectRequestHeadersInitializer, boolean proxyTls) throws Exception {
+        setUp(protocols, failHandshake, failProxyHandshake, connectRequestHeadersInitializer, proxyTls,
+                address -> BuilderUtils.newClientBuilder(address, CLIENT_CTX));
+    }
+
+    void setUp(List<HttpProtocol> protocols, boolean failHandshake, boolean failProxyHandshake,
+               Consumer<HttpHeaders> connectRequestHeadersInitializer, boolean proxyTls,
+               Function<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>
+                       clientBuilderFactory) throws Exception {
         initMocks();
         if (proxyTls) {
             proxyTunnel.sslContext(buildProxySslContext());
         }
         proxyAddress = proxyTunnel.startProxy();
         startServer(protocols);
-        createClient(protocols, failHandshake, failProxyHandshake, connectRequestHeadersInitializer, proxyTls);
+        createClient(protocols, failHandshake, failProxyHandshake, connectRequestHeadersInitializer, proxyTls,
+                clientBuilderFactory);
     }
 
     /**
@@ -254,8 +267,10 @@ class HttpsProxyTest {
     }
 
     private void createClient(List<HttpProtocol> protocols, boolean failHandshake, boolean failProxyHandshake,
-                              Consumer<HttpHeaders> connectRequestHeadersInitializer, boolean proxyTls) {
-        assert serverContext != null && proxyAddress != null;
+                              Consumer<HttpHeaders> connectRequestHeadersInitializer, boolean proxyTls,
+                              Function<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>
+                                      clientBuilderFactory) {
+        assert serverAddress != null && proxyAddress != null;
         final ProxyConfigBuilder<HostAndPort> proxyBuilder = new ProxyConfigBuilder<>(proxyAddress)
                 .connectRequestHeadersInitializer(connectRequestHeadersInitializer);
         if (proxyTls) {
@@ -267,7 +282,7 @@ class HttpsProxyTest {
                     new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem);
             proxyBuilder.sslConfig(proxySslConfig.build());
         }
-        client = BuilderUtils.newClientBuilder(serverContext, CLIENT_CTX)
+        client = clientBuilderFactory.apply(serverAddress)
                 .proxyConfig(proxyBuilder.build())
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         .peerHost(failHandshake ? "unknown" : serverPemHostname()).build())
@@ -283,6 +298,25 @@ class HttpsProxyTest {
         setUp(protocols, proxyTls);
         assertThat(client, is(notNullValue()));
         assertResponse(client.request(client.get("/path")), protocols.get(0).version, proxyTls);
+    }
+
+    static Stream<Arguments> discoveryStrategiesAndProxyTls() {
+        return Stream.of(DiscoveryStrategy.values())
+                .flatMap(strategy -> Stream.of(Arguments.of(strategy, false), Arguments.of(strategy, true)));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] discoveryStrategy={0} proxyTls={1}")
+    @MethodSource("discoveryStrategiesAndProxyTls")
+    void testClientRequestWithServiceDiscoverer(DiscoveryStrategy discoveryStrategy, boolean proxyTls)
+            throws Exception {
+        setUp(singletonList(HttpProtocol.HTTP_1), false, false, __ -> { /* noop */ }, proxyTls,
+                address -> HttpClients.forSingleAddress(globalARecordsDnsServiceDiscoverer(), address,
+                                discoveryStrategy)
+                        .ioExecutor(CLIENT_CTX.ioExecutor())
+                        .executor(CLIENT_CTX.executor())
+                        .bufferAllocator(CLIENT_CTX.bufferAllocator()));
+        assertThat(client, is(notNullValue()));
+        assertResponse(client.request(client.get("/path")), HttpProtocol.HTTP_1.version, proxyTls);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocols={0} proxyTls={1}")
