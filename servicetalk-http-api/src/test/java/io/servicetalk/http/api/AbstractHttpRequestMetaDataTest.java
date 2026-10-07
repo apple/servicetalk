@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021, 2026 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,6 +104,15 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
 
         // Host header ignored when request-target is absolute.
         fixture.headers().set(HOST, "other.site.com:8080");
+        assertEffectiveHostAndPort("my.site.com");
+    }
+
+    @Test
+    void hostIsLowerCased() {
+        createFixture("http://My.Site.COM/some/path");
+
+        assertEquals("my.site.com", fixture.host());
+        assertEquals("http://My.Site.COM/some/path", fixture.requestTarget());
         assertEffectiveHostAndPort("my.site.com");
     }
 

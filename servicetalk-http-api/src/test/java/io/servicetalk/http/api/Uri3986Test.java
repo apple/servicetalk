@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -169,6 +169,19 @@ class Uri3986Test {
         verifyUri3986("HTTP://test.com", "http", null, "test.com", -1, "", "", null, null, null);
         verifyUri3986("HTTPS://test.com", "https", null, "test.com", -1, "", "", null, null, null);
         verifyUri3986("ANY://test.com", "any", null, "test.com", -1, "", "", null, null, null);
+    }
+
+    @Test
+    void hostIsLowerCased() {
+        Uri uri = new Uri3986("http://Apple.COM/path");
+        assertThat(uri.uri(), is("http://Apple.COM/path"));
+        assertThat(uri.host(), is("apple.com"));
+        assertThat(uri.authority(), is("apple.com"));
+
+        uri = new Uri3986("http://[ABCD::EF01]/path");
+        assertThat(uri.uri(), is("http://[ABCD::EF01]/path"));
+        assertThat(uri.host(), is("[abcd::ef01]"));
+        assertThat(uri.authority(), is("[abcd::ef01]"));
     }
 
     @Test

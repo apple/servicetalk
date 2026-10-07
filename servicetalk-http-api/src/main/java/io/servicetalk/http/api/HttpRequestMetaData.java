@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,10 +117,10 @@ public interface HttpRequestMetaData extends HttpMetaData {
 
     /**
      * The <a href="https://tools.ietf.org/html/rfc3986#section-3.2.2">host component</a> derived
-     * from {@link #requestTarget()}.
+     * from {@link #requestTarget()} in lower case.
      *
      * @return The <a href="https://tools.ietf.org/html/rfc3986#section-3.2.2">host component</a> derived
-     * from {@link #requestTarget()}, or {@code null} if none can be derived.
+     * from {@link #requestTarget()} in lower case, or {@code null} if none can be derived.
      */
     @Nullable
     String host();
