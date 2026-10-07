@@ -62,7 +62,7 @@ public final class HttpSerializers {
             newAsciiString(APPLICATION_TEXT_VARINT + "; charset=US-ASCII");
 
     private static final HttpSerializerDeserializer<Map<String, List<String>>> FORM_ENCODED_UTF_8 =
-            new DefaultHttpSerializerDeserializer<>(new FormUrlEncodedSerializer(UTF_8),
+            new DefaultHttpSerializerDeserializer<>(FormUrlEncodedSerializer.formUrlEncodedSerializer(UTF_8),
                     headers -> headers.set(CONTENT_TYPE, APPLICATION_X_WWW_FORM_URLENCODED_UTF_8)
                                       .set(ACCEPT, APPLICATION_X_WWW_FORM_URLENCODED),
                     headers -> hasContentType(headers, APPLICATION_X_WWW_FORM_URLENCODED, UTF_8));
@@ -130,7 +130,7 @@ public final class HttpSerializers {
         }
         final CharSequence contentType = newAsciiString(APPLICATION_X_WWW_FORM_URLENCODED + "; charset=" +
                 charset.name());
-        return new DefaultHttpSerializerDeserializer<>(new FormUrlEncodedSerializer(charset),
+        return new DefaultHttpSerializerDeserializer<>(FormUrlEncodedSerializer.formUrlEncodedSerializer(charset),
                 headers -> headers.set(CONTENT_TYPE, contentType)
                                   .set(ACCEPT, APPLICATION_X_WWW_FORM_URLENCODED),
                 headers -> hasContentType(headers, APPLICATION_X_WWW_FORM_URLENCODED, charset));

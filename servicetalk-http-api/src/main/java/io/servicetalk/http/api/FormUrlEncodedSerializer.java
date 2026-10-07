@@ -36,7 +36,10 @@ import static io.servicetalk.http.api.UriUtils.decodeQueryParams;
 import static io.servicetalk.utils.internal.CharsetUtils.standardCharsets;
 import static java.util.Collections.emptyMap;
 
-final class FormUrlEncodedSerializer implements SerializerDeserializer<Map<String, List<String>>> {
+/**
+ * Serialize/deserialize key-values {@link Map}s to/from urlencoded forms.
+ */
+public final class FormUrlEncodedSerializer implements SerializerDeserializer<Map<String, List<String>>> {
     private static final Map<Charset, byte[]> CONTINUATIONS_SEPARATORS;
     private static final Map<Charset, byte[]> KEYVALUE_SEPARATORS;
     static {
@@ -62,7 +65,7 @@ final class FormUrlEncodedSerializer implements SerializerDeserializer<Map<Strin
     private final byte[] continuationSeparator;
     private final byte[] keyValueSeparator;
 
-    FormUrlEncodedSerializer(final Charset charset) {
+    private FormUrlEncodedSerializer(final Charset charset) {
         this.charset = charset;
         byte[] continuationSeparator = CONTINUATIONS_SEPARATORS.get(charset);
         if (continuationSeparator == null) {
@@ -72,6 +75,16 @@ final class FormUrlEncodedSerializer implements SerializerDeserializer<Map<Strin
             this.continuationSeparator = continuationSeparator;
             this.keyValueSeparator = KEYVALUE_SEPARATORS.get(charset);
         }
+    }
+
+    /**
+     * Create a new instance.
+     *
+     * @param charset The charset used for encoding.
+     * @return A serializer that uses {@code charset} for encoding.
+     */
+    public static SerializerDeserializer<Map<String, List<String>>> formUrlEncodedSerializer(final Charset charset) {
+        return new FormUrlEncodedSerializer(charset);
     }
 
     @Override
