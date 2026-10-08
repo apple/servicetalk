@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopWriteObserver;
@@ -365,6 +366,57 @@ class WriteStreamSubscriberTest extends AbstractWriteTest {
 
         subscriber.onComplete();
         verifyNoMoreInteractions(subscription, closeHandler, completableSubscriber);
+    }
+
+    @Test
+    void clientCancelAfterPartialWriteClosesOutbound() {
+        setUp(true, false);
+        writeAndFlush("Hello");
+
+        writeCancellable().cancel();
+        verify(subscription).cancel();
+        verify(closeHandler).closeChannelOutbound(channel);
+        verifyNoMoreInteractions(closeHandler);
+    }
+
+    @Test
+    void clientCancelBeforeWriteDropsLaterItems() {
+        setUp(true, false);
+
+        writeCancellable().cancel();
+        verify(subscription).cancel();
+        subscriber.onNext("Hello");
+        verifyWriteSuccessful();
+        verifyNoInteractions(closeHandler);
+    }
+
+    @Test
+    void clientCancelAfterSourceCompletesDoesNotClose() {
+        setUp(true, false);
+        writeAndFlush("Hello");
+        subscriber.onComplete();
+        verifyListenerSuccessful();
+
+        writeCancellable().cancel();
+        verifyWriteSuccessful("Hello");
+        verifyNoInteractions(closeHandler);
+    }
+
+    @Test
+    void serverCancelAfterPartialWriteDoesNotClose() {
+        setUp(false, false);
+        writeAndFlush("Hello");
+
+        writeCancellable().cancel();
+        verify(subscription).cancel();
+        verifyWriteSuccessful("Hello");
+        verifyNoInteractions(closeHandler);
+    }
+
+    private Cancellable writeCancellable() {
+        ArgumentCaptor<Cancellable> cancellable = forClass(Cancellable.class);
+        verify(completableSubscriber).onSubscribe(cancellable.capture());
+        return cancellable.getValue();
     }
 
     private void failingWriteClosesChannel(Runnable enableWriteFailure) throws InterruptedException {
