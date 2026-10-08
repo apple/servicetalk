@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021-2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.ProxyConfigBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.http.netty.HttpClients.DiscoveryStrategy;
 import io.servicetalk.http.netty.HttpsProxyTest.TargetAddressCheckConnectionFactoryFilter;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
@@ -38,9 +39,11 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.dns.discovery.netty.DnsServiceDiscoverers.globalARecordsDnsServiceDiscoverer;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
@@ -117,6 +120,19 @@ class HttpProxyTest {
     @MethodSource("protocols")
     void testRequestForSingleAddress(HttpProtocol clientProtocol, HttpProtocol serverProtocol) throws Exception {
         testRequest(clientProtocol, serverProtocol, HttpClients::forSingleAddress);
+    }
+
+    private static Stream<Arguments> protocolsAndDiscoveryStrategies() {
+        return protocols().stream().flatMap(protocols -> Stream.of(DiscoveryStrategy.values())
+                .map(strategy -> Arguments.of(protocols.get()[0], protocols.get()[1], strategy)));
+    }
+
+    @ParameterizedTest(name = "[{index}] clientProtocol={0} serverProtocol={1} discoveryStrategy={2}")
+    @MethodSource("protocolsAndDiscoveryStrategies")
+    void testRequestForSingleAddressWithServiceDiscoverer(HttpProtocol clientProtocol, HttpProtocol serverProtocol,
+                                                          DiscoveryStrategy discoveryStrategy) throws Exception {
+        testRequest(clientProtocol, serverProtocol, address ->
+                HttpClients.forSingleAddress(globalARecordsDnsServiceDiscoverer(), address, discoveryStrategy));
     }
 
     @ParameterizedTest(name = "[{index}] clientProtocol={0} serverProtocol={1}")

@@ -476,7 +476,9 @@ public final class HttpClients {
                             mappingServiceDiscoverer(u -> (R) u,
                                     "from " + address.getClass().getSimpleName() + " to an " +
                                             Object.class.getSimpleName()),
-                            __ -> address);
+                            // Reverse the cast above instead of returning the captured address: the connection
+                            // factory receives the proxy address when a proxy is configured, not the origin address.
+                            r -> (U) r);
             default:
                 throw new IllegalArgumentException("Unsupported strategy: " + discoveryStrategy);
         }
