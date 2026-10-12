@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 package io.servicetalk.http.api;
+
+import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import org.junit.jupiter.api.Test;
 
@@ -58,5 +60,12 @@ class HttpRequestMethodTest {
     void validatesName() {
         assertThrows(IllegalArgumentException.class, () -> of("", NONE));
         assertThrows(IllegalArgumentException.class, () -> of("<GET>", NONE));
+    }
+
+    @Test
+    void invalidNameMessage() {
+        final IllegalCharacterException e = assertThrows(IllegalCharacterException.class, () -> of("G\tET", NONE));
+        assertThat(e.getMessage(), is("0x09 (HTAB) at index=1 of length=4 in request method 'G\\x09ET', " +
+                "expected: TCHAR (any VCHAR except delimiters)"));
     }
 }

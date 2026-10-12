@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import javax.annotation.Nullable;
 
@@ -94,12 +93,8 @@ public final class HttpRequestMethod implements Comparable<HttpRequestMethod> {
         if (name.isEmpty()) {
             throw new IllegalArgumentException("Invalid HTTP request method name: cannot be empty");
         }
-        try {
-            validateToken(name, "request method");
-            return name;
-        } catch (IllegalCharacterException e) {
-            throw new IllegalArgumentException("Invalid HTTP request method name: " + name, e);
-        }
+        validateToken(name, "request method");
+        return name;
     }
 
     /**
