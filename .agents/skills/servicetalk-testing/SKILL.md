@@ -32,9 +32,14 @@ is which harness you need. See "Pick your harness" below.
    No `should` prefix, no underscores. Real examples from the repo:
    `decodeThrowsIfMoreThanMaxBytes`, `cancelBeforeSetDoneClearsInterrupt`,
    `timeoutExceptionDeliveredBeforeUpstreamException`.
-5. **Assert with Hamcrest** — `assertThat(actual, matcher)`. This is the
-   overwhelming majority style. Do not add AssertJ.
-6. **Test exceptions with `assertThrows`**, never try/catch plus `fail()`.
+5. **Assert with Hamcrest** — `assertThat(actual, matcher)` from `org.hamcrest.MatcherAssert`.
+   This is the overwhelming majority style. Do not add AssertJ.
+6. **Test exceptions with `assertThrows`** from `org.junit.jupiter.api.Assertions`,
+   never try/catch plus `fail()`. Its counterpart `assertDoesNotThrow` is also
+   allowed — use it when "this call succeeds" is the point of the assertion,
+   typically the valid-input half of a validation test, or to capture a return
+   value for further `assertThat` checks. Don't wrap ordinary calls in it just
+   to look defensive.
 7. **Do not add `@Timeout`.** A global default already applies to every test:
    10s locally, 30s in CI
    (`ServiceTalkLibraryPlugin.groovy`, `junit.jupiter.execution.timeout.default`).
@@ -72,10 +77,12 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 ```
 
-`assertTrue`, `assertFalse`, `assertNotNull`, and `assertThrows` from
-`org.junit.jupiter.api.Assertions` are fine for plain boolean and exception
-checks. Reach for Hamcrest whenever a matcher would produce a better failure
-message.
+If an existing test class already uses `org.junit.jupiter.api.Assertions`
+like `assertTrue`, `assertFalse`, `assertNotNull`, `assertEquals`, etc.,
+and doesn't use `org.hamcrest` at all — stick to the consistent pattern of the
+current test. If it mixes them, prefer hamcrest for new cases. If migrating
+current tests to hamcrest won't increase the scope of changes significantly —
+migrate them to follow consistent patterns.
 
 **For an expected failure, use `DELIBERATE_EXCEPTION`**, not
 `new RuntimeException("boom")`. It is the repo-wide convention and stubs out
@@ -114,8 +121,9 @@ assertTrue(areSetCookiesEqual(expected, actual));
 Better still, write the helper to assert internally and return `void`, so no
 call site can forget.
 
-If a test's only contract really is "this does not throw", say so in the name
-(`...DoesNotThrow`) so the next reader knows it is deliberate.
+If a test's only contract really is "this does not throw", make that explicit —
+wrap the call in `assertDoesNotThrow(...)` and say so in the name
+(`...DoesNotThrow`) — so the next reader knows it is deliberate.
 
 ## 4. Test classes run concurrently
 
