@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021, 2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,6 @@ import java.net.SocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
@@ -57,7 +56,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class NettyHttpServerConnectionDrainTest {
     private static final String LARGE_TEXT;
@@ -86,12 +84,12 @@ class NettyHttpServerConnectionDrainTest {
 
     @Test
     void requestIsAutoDrainedWhenUserFailsToConsumeAndResponseBodyFails() throws Exception {
-        AtomicBoolean requestDrained = new AtomicBoolean();
+        CountDownLatch requestDrainedByCancellation = new CountDownLatch(1);
         StreamingHttpServiceFilterFactory filter = (service) -> new StreamingHttpServiceFilter(service) {
             @Override
             public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
                                                         StreamingHttpResponseFactory responseFactory) {
-                request.transformMessageBody(body -> body.afterFinally(() -> requestDrained.set(true)));
+                request.transformMessageBody(body -> body.afterCancel(requestDrainedByCancellation::countDown));
                 return delegate().handle(ctx, request, responseFactory);
             }
         };
@@ -99,9 +97,9 @@ class NettyHttpServerConnectionDrainTest {
             try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                     .buildBlocking()) {
                 assertThrows(Exception.class, () -> client.request(client.get("/foo")));
+                requestDrainedByCancellation.await();
             }
         }
-        assertTrue(requestDrained.get());
     }
 
     @Test
