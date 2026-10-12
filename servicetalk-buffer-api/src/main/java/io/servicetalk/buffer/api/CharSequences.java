@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,8 +69,12 @@ public final class CharSequences {
     /**
      * Create a new {@link CharSequence} from the specified {@code input}, supporting only 8-bit ASCII characters, and
      * with a case-insensitive {@code hashCode}.
+     * <p>
+     * Only {@link Buffer#readableBytes() readable bytes} of the {@code input} are used. Indexes of the returned
+     * {@link CharSequence} range from {@code 0} to {@link CharSequence#length() length()} - 1, regardless of the
+     * {@link Buffer#readerIndex() readerIndex} of the {@code input}.
      *
-     * @param input a {@link Buffer} containing
+     * @param input a {@link Buffer} containing only 8-bit ASCII characters.
      * @return a {@link CharSequence}.
      */
     public static CharSequence newAsciiString(final Buffer input) {
@@ -114,8 +118,9 @@ public final class CharSequences {
      *
      * @param sequence the {@link CharSequence} to operate on.
      * @param visitor the {@link ByteProcessor} visitor of each element.
-     * @return {@code -1} if the processor iterated to or beyond the end of the readable bytes.
-     * The last-visited index If the {@link ByteProcessor#process(byte)} returned {@code false}.
+     * @return {@code -1} if the processor iterated to or beyond the end of the {@code sequence}.
+     * The index (in range from {@code 0} to {@link CharSequence#length() length()} - 1) of the last-visited character
+     * if the {@link ByteProcessor#process(byte)} returned {@code false}.
      */
     public static int forEachByte(final CharSequence sequence, final ByteProcessor visitor) {
         requireNonNull(sequence);

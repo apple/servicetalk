@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,9 @@ final class AsciiBuffer implements CharSequence {
     private int hash;
 
     AsciiBuffer(Buffer buffer) {
-        this.buffer = buffer.asReadOnly();
+        // CharSequence indexes range from 0 to length() - 1. Normalize readerIndex to 0, so that all methods can use
+        // CharSequence indexes as Buffer indexes without any translation.
+        this.buffer = (buffer.readerIndex() == 0 ? buffer : buffer.slice()).asReadOnly();
     }
 
     @Override
