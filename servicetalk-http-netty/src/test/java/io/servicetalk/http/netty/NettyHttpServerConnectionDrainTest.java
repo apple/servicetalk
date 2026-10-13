@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,35 +31,46 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.internal.AddressUtils;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
-import io.netty.util.CharsetUtil;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.net.SocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.annotation.Nullable;
+import java.util.function.UnaryOperator;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
+import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
-import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static io.servicetalk.http.netty.BuilderUtils.newClientBuilder;
+import static io.servicetalk.http.netty.BuilderUtils.newServerBuilder;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class NettyHttpServerConnectionDrainTest {
+
+    @RegisterExtension
+    static final ExecutionContextExtension SERVER_CTX =
+            ExecutionContextExtension.cached("server-io", "server-executor")
+                    .setClassLevel(true);
+    @RegisterExtension
+    static final ExecutionContextExtension CLIENT_CTX =
+            ExecutionContextExtension.cached("client-io", "client-executor")
+                    .setClassLevel(true);
+
     private static final String LARGE_TEXT;
 
     static {
@@ -72,64 +83,80 @@ class NettyHttpServerConnectionDrainTest {
         LARGE_TEXT = sb.toString();
     }
 
-    @Test
-    void requestIsAutoDrainedWhenUserFailsToConsume() throws Exception {
-        BlockingHttpClient client = null;
-        try (ServerContext serverContext = server(true, respondOkWithoutReadingRequest())) {
-            client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
-                    .buildBlocking();
+    @ParameterizedTest(name = "{displayName} [{index}]: protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void requestIsAutoDrainedWhenUserFailsToConsume(HttpProtocol protocol) throws Exception {
+        CountDownLatch requestDrainedByCompletion = new CountDownLatch(1);
+        try (ServerContext serverContext = server(protocol, true, (ctx, request, responseFactory) ->
+                        succeeded(responseFactory.ok().payloadBody(from("OK"), appSerializerUtf8FixLen())),
+                transformRequestMessageBody(body -> body.afterOnComplete(requestDrainedByCompletion::countDown)));
+             BlockingHttpClient client = newClientBuilder(serverContext, CLIENT_CTX, protocol)
+                     .buildBlocking()) {
+
             postLargePayloadAndAssertResponseOk(client);
-        } finally {
-            closeClient(client);
+            requestDrainedByCompletion.await();
         }
     }
 
-    @Test
-    void requestIsAutoDrainedWhenUserFailsToConsumeAndResponseBodyFails() throws Exception {
-        AtomicBoolean requestDrained = new AtomicBoolean();
-        StreamingHttpServiceFilterFactory filter = (service) -> new StreamingHttpServiceFilter(service) {
-            @Override
-            public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
-                                                        StreamingHttpResponseFactory responseFactory) {
-                request.transformMessageBody(body -> body.afterFinally(() -> requestDrained.set(true)));
-                return delegate().handle(ctx, request, responseFactory);
-            }
-        };
-        try (ServerContext serverContext = server(true, respondFailsWithoutReadingRequest(), filter)) {
-            try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
-                    .buildBlocking()) {
-                assertThrows(Exception.class, () -> client.request(client.get("/foo")));
-            }
+    @ParameterizedTest(name = "{displayName} [{index}]: protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void requestIsAutoDrainedWhenUserFailsToConsumeAndResponseBodyFails(HttpProtocol protocol) throws Exception {
+        CountDownLatch requestDrainedByCancellation = new CountDownLatch(1);
+        try (ServerContext serverContext = server(protocol, true, (ctx, request, responseFactory) ->
+                        succeeded(responseFactory.ok().payloadBody(Publisher.failed(DELIBERATE_EXCEPTION))),
+                transformRequestMessageBody(body -> body.afterCancel(requestDrainedByCancellation::countDown)));
+             BlockingHttpClient client = newClientBuilder(serverContext, CLIENT_CTX, protocol)
+                     .buildBlocking()) {
+
+            assertThrows(Exception.class, () -> client.request(client.get("/foo")));
+            requestDrainedByCancellation.await();
         }
-        assertTrue(requestDrained.get());
     }
 
-    @Test
-    void requestIsDrainedByUserWithDrainingDisabled() throws Exception {
-        try (ServerContext serverContext = server(false, (ctx, request, responseFactory) ->
+    @ParameterizedTest(name = "{displayName} [{index}]: protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void requestIsAutoDrainedWhenUserFailsToConsumeAndServiceFails(HttpProtocol protocol) throws Exception {
+        CountDownLatch requestDrainedByCompletion = new CountDownLatch(1);
+        try (ServerContext serverContext = server(protocol, true,
+                (ctx, request, responseFactory) -> Single.failed(DELIBERATE_EXCEPTION),
+                transformRequestMessageBody(body -> body.afterOnComplete(requestDrainedByCompletion::countDown)));
+             BlockingHttpClient client = newClientBuilder(serverContext, CLIENT_CTX, protocol)
+                     .buildBlocking()) {
+
+            HttpResponse response = client.request(client.post("/").payloadBody(LARGE_TEXT, textSerializerUtf8()));
+            assertThat(response.status(), equalTo(INTERNAL_SERVER_ERROR));
+            requestDrainedByCompletion.await();
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void requestIsDrainedByUserWithDrainingDisabled(HttpProtocol protocol) throws Exception {
+        try (ServerContext serverContext = server(protocol, false, (ctx, request, responseFactory) ->
                 request.messageBody().ignoreElements() // User consumes payload (ignoring)
                         .concat(succeeded(responseFactory.ok().payloadBody(from("OK"), appSerializerUtf8FixLen()))));
-             BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+             BlockingHttpClient client = newClientBuilder(serverContext, CLIENT_CTX, protocol)
                      .buildBlocking()) {
 
             postLargePayloadAndAssertResponseOk(client);
         }
     }
 
-    @Test
-    void requestIsConsumedByUserWithDrainingEnabled() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void requestIsConsumedByUserWithDrainingEnabled(HttpProtocol protocol) throws Exception {
         AtomicReference<String> resultRef = new AtomicReference<>();
-        try (ServerContext serverContext = server(true, (ctx, request, responseFactory) ->
+        try (ServerContext serverContext = server(protocol, true, (ctx, request, responseFactory) ->
                 request.payloadBody()
                         // User consumes payload and stores for assert ensuring auto-draining doesn't break it
                         .collect(() -> new StringBuilder(LARGE_TEXT.length()),
-                                (sb, b) -> sb.append(b.toString(CharsetUtil.US_ASCII)))
+                                (sb, b) -> sb.append(b.toString(StandardCharsets.US_ASCII)))
                         .map(StringBuilder::toString)
                         .whenOnSuccess(resultRef::set)
                         .toCompletable()
                         .concat(succeeded(responseFactory.ok().payloadBody(from("OK"), appSerializerUtf8FixLen()))));
 
-             BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+             BlockingHttpClient client = newClientBuilder(serverContext, CLIENT_CTX, protocol)
                      .buildBlocking()) {
 
             postLargePayloadAndAssertResponseOk(client);
@@ -137,30 +164,24 @@ class NettyHttpServerConnectionDrainTest {
         }
     }
 
-    @Disabled("https://github.com/apple/servicetalk/issues/981")
-    @Test
-    void requestTimesOutWithoutAutoDrainingOrUserConsuming() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void requestTimesOutWithoutAutoDrainingOrUserConsuming(HttpProtocol protocol) throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
-        StreamingHttpClient client = null;
-        try (ServerContext serverContext = server(false, respondOkWithoutReadingRequest(latch::countDown))) {
-
-            client = HttpClients.forSingleAddress(serverHostAndPort(serverContext)).buildStreaming();
+        try (ServerContext serverContext = server(protocol, false, (ctx, request, responseFactory) -> {
+            latch.countDown();
+            return succeeded(responseFactory.ok().payloadBody(from("OK"), appSerializerUtf8FixLen()));
+        });
+             StreamingHttpClient client = newClientBuilder(serverContext, CLIENT_CTX, protocol)
+                     .buildStreaming()) {
 
             client.request(client.post("/").payloadBody(from(LARGE_TEXT), appSerializerUtf8FixLen()))
                     // Subscribe to send the request, don't care about the response since graceful close of the server
                     // will hang until the request is consumed, thus we expect the timeout to hit
                     .ignoreElement().subscribe();
 
-            assertThrows(TimeoutException.class, latch::await); // Wait till the request is received
-            // before initiating graceful close of the server
-        } finally {
-            closeClient(client);
-        }
-    }
-
-    private static void closeClient(@Nullable final AutoCloseable client) throws Exception {
-        if (client != null) {
-            client.close();
+            latch.await(); // Wait till the request is received before initiating graceful close of the server
+            assertThrows(TimeoutException.class, serverContext::close);
         }
     }
 
@@ -170,27 +191,21 @@ class NettyHttpServerConnectionDrainTest {
                         .collect(StringBuilder::new, StringBuilder::append).toFuture().get().toString(), equalTo("OK"));
     }
 
-    private static StreamingHttpService respondOkWithoutReadingRequest(Runnable onRequest) {
-        return (ctx, request, responseFactory) -> {
-            onRequest.run();
-            return succeeded(responseFactory.ok().payloadBody(from("OK"), appSerializerUtf8FixLen()));
+    private static StreamingHttpServiceFilterFactory transformRequestMessageBody(
+            UnaryOperator<Publisher<?>> transformer) {
+        return service -> new StreamingHttpServiceFilter(service) {
+            @Override
+            public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
+                                                        StreamingHttpResponseFactory responseFactory) {
+                request.transformMessageBody(transformer);
+                return delegate().handle(ctx, request, responseFactory);
+            }
         };
     }
 
-    private static StreamingHttpService respondOkWithoutReadingRequest() {
-        return respondOkWithoutReadingRequest(() -> { });
-    }
-
-    private static StreamingHttpService respondFailsWithoutReadingRequest() {
-        return (ctx, request, responseFactory) -> {
-            return succeeded(responseFactory.ok().payloadBody(from("OK"), appSerializerUtf8FixLen())
-                    .transformPayloadBody(body -> body.concat(Publisher.failed(DELIBERATE_EXCEPTION))));
-        };
-    }
-
-    private static ServerContext server(boolean autoDrain, StreamingHttpService handler,
+    private static ServerContext server(HttpProtocol protocol, boolean autoDrain, StreamingHttpService handler,
                                         StreamingHttpServiceFilterFactory... filters) throws Exception {
-        HttpServerBuilder httpServerBuilder = HttpServers.forAddress(AddressUtils.localAddress(0));
+        HttpServerBuilder httpServerBuilder = newServerBuilder(SERVER_CTX, protocol);
         if (!autoDrain) {
             httpServerBuilder = httpServerBuilder.drainRequestPayloadBody(false);
         }
@@ -237,8 +252,9 @@ class NettyHttpServerConnectionDrainTest {
 
             @Override
             public void close() {
-                // Without draining the request is expected to hang, don't wait too long unless on CI
-                int timeoutSeconds = CI ? 15 : 1;
+                // Without draining, graceful close is expected to hang until the request is consumed. Don't wait
+                // too long unless on CI.
+                int timeoutSeconds = CI ? 10 : 1;
                 awaitTermination(serverContext.closeAsyncGracefully()
                         .timeout(timeoutSeconds, SECONDS)
                         .onErrorResume(t -> serverContext.closeAsync().concat(Completable.failed(t))).toFuture());
