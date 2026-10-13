@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import javax.annotation.Nullable;
 
@@ -94,12 +93,8 @@ public final class HttpRequestMethod implements Comparable<HttpRequestMethod> {
         if (name.isEmpty()) {
             throw new IllegalArgumentException("Invalid HTTP request method name: cannot be empty");
         }
-        try {
-            validateToken(name, "request method");
-            return name;
-        } catch (IllegalCharacterException e) {
-            throw new IllegalArgumentException("Invalid HTTP request method name: " + name, e);
-        }
+        validateToken(name, "request method");
+        return name;
     }
 
     /**

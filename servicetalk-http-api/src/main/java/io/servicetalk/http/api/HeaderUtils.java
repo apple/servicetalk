@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.api.ByteProcessor;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.encoding.api.Identity;
 import io.servicetalk.serialization.api.SerializationException;
@@ -113,6 +112,9 @@ public final class HeaderUtils {
     private static final byte HT = 9;
     private static final byte DEL = 127;
     private static final byte CONTROL_CHARS_MASK = (byte) 0xE0;
+
+    private static final String TOKEN_EXPECTED = "TCHAR (any VCHAR except delimiters)";
+    private static final String FIELD_VALUE_EXPECTED = "(VCHAR / obs-text) [ 1*(SP / HTAB) (VCHAR / obs-text) ]";
 
     private static final Pattern HAS_CHARSET_PATTERN = compile(".+;\\s*charset=.+", CASE_INSENSITIVE);
     private static final Map<Charset, Pattern> CHARSET_PATTERNS;
@@ -296,11 +298,98 @@ public final class HeaderUtils {
      * @param what name of the field that is validated.
      */
     static void validateToken(final CharSequence token, final String what) {
-        forEachByte(token, new TokenValidatingProcessor(token, what));
+        final int idx = forEachByte(token, HeaderUtils::isTchar);
+        if (idx >= 0) {
+            throw invalidToken(token, what, idx);
+        }
     }
 
-    static void validateHeaderValue(final CharSequence value) {
-        forEachByte(value, HeaderUtils::validateHeaderValue);
+    /**
+     * Validate a <a href="https://tools.ietf.org/html/rfc7230#section-3.2">field-value</a> of a header-field contains
+     * only allowed characters.
+     *
+     * @param name the field-name of the header-field, used only to describe a failure.
+     * @param value the field-value to validate.
+     */
+    static void validateHeaderValue(final CharSequence name, final CharSequence value) {
+        final int idx = forEachByte(value, HeaderUtils::isFieldValueChar);
+        if (idx >= 0) {
+            throw invalidHeaderValue(name, value, idx);
+        }
+    }
+
+    private static IllegalCharacterException invalidToken(final CharSequence token, final String what,
+                                                          final int idx) {
+        return new IllegalCharacterException(invalidMessage(token, idx, what, token, TOKEN_EXPECTED));
+    }
+
+    private static IllegalCharacterException invalidHeaderValue(final CharSequence name, final CharSequence value,
+                                                                final int idx) {
+        // Header values may contain sensitive data (credentials, tokens, cookies, etc.), never include them in the
+        // message. The header name, index, and length of the value are enough to locate the illegal character.
+        return new IllegalCharacterException(invalidMessage(value, idx, "value of header", name, FIELD_VALUE_EXPECTED));
+    }
+
+    private static String invalidMessage(final CharSequence source, final int idx, final String what,
+                                         final CharSequence name, final String expected) {
+        return describe(source.charAt(idx)) + " at index=" + idx + " of length=" +
+                source.length() + " in " + what + " '" + escape(name) + "', expected: " + expected;
+    }
+
+    /**
+     * Describes an illegal character as its hex value, followed by the character itself if it is a printable US-ASCII
+     * character, or by its <a href="https://tools.ietf.org/html/rfc5234#appendix-B.1">ABNF core rule</a> name if
+     * available. For example: {@code 0x3d ('=')}, {@code 0x0a (LF)}, {@code 0x01}.
+     * <p>
+     * Non-printable characters are never included as-is, so that the description cannot break a log line.
+     *
+     * @param c the character to describe. Only its low byte is used, consistently with the validation logic.
+     * @return the description of the character.
+     */
+    private static String describe(final char c) {
+        final int codePoint = c & 0xff;
+        final String hex = "0x" + toHexString(0x100 | codePoint).substring(1);  // 2 digit hex number
+        if (codePoint > ' ' && codePoint < DEL) {
+            return hex + " ('" + (char) codePoint + "')";
+        }
+        switch (codePoint) {
+            case 0x00:
+                return hex + " (NUL)";
+            case 0x09:
+                return hex + " (HTAB)";
+            case 0x0a:
+                return hex + " (LF)";
+            case 0x0d:
+                return hex + " (CR)";
+            case 0x20:
+                return hex + " (SP)";
+            case 0x7f:
+                return hex + " (DEL)";
+            default:
+                return hex;
+        }
+    }
+
+    /**
+     * Escapes all characters of the {@code cs} except printable US-ASCII ones, so that the result cannot break a log
+     * line.
+     *
+     * @param cs the {@link CharSequence} to escape.
+     * @return the escaped {@link String}.
+     */
+    private static String escape(final CharSequence cs) {
+        final StringBuilder sb = new StringBuilder(cs.length());
+        for (int i = 0; i < cs.length(); ++i) {
+            final char c = cs.charAt(i);
+            if (c >= ' ' && c < DEL && c != '\\') {
+                sb.append(c);
+            } else if (c <= 0xff) {
+                sb.append("\\x").append(toHexString(0x100 | c), 1, 3);
+            } else {
+                sb.append("\\u").append(toHexString(0x10000 | c), 1, 5);
+            }
+        }
+        return sb.toString();
     }
 
     /**
@@ -860,15 +949,37 @@ public final class HeaderUtils {
      */
     // visible for testing
     static boolean isTchar(final byte value) {
+        // HEADER
+        // header-field   = field-name ":" OWS field-value OWS
+        // field-name     = token
+        // token          = 1*tchar
+        //
+        //  Delimiters are chosen
+        //   from the set of US-ASCII visual characters not allowed in a token
+        //   (DQUOTE and "(),/:;<=>?@[\]{}")
+        //
+        // COOKIE
+        // cookie-pair       = cookie-name "=" cookie-value
+        // cookie-name       = token
+        // token          = 1*<any CHAR except CTLs or separators>
+        // CTL = <any US-ASCII control character
+        //       (octets 0 - 31) and DEL (127)>
+        // separators     = "(" | ")" | "<" | ">" | "@"
+        //                      | "," | ";" | ":" | "\" | <">
+        //                      | "/" | "[" | "]" | "?" | "="
+        //                      | "{" | "}" | SP | HT
+        //
+        // field-name's token is equivalent to cookie-name's token, we can reuse the tchar mask for both:
         return isBitSet(value, TCHAR_LMASK, TCHAR_HMASK);
     }
 
     /**
-     * Validate char is a valid <a href="https://tools.ietf.org/html/rfc7230#section-3.2">field-value</a> character.
+     * Checks if a byte is a valid <a href="https://tools.ietf.org/html/rfc7230#section-3.2">field-value</a> character.
      *
-     * @param value the character to validate.
+     * @param value the character to check.
+     * @return {@code true} if the {@code value} is allowed in a field-value.
      */
-    private static boolean validateHeaderValue(final byte value) {
+    private static boolean isFieldValueChar(final byte value) {
         // HEADER
         // header-field   = field-name ":" OWS field-value OWS
         //
@@ -882,90 +993,6 @@ public final class HeaderUtils {
         //
         // Note: we do not support obs-fold.
         // Illegal chars are control chars (0-31) except HT (9), and DEL (127):
-        if (((value & CONTROL_CHARS_MASK) == 0 && value != HT) || value == DEL) {
-            throw new IllegalCharacterException(value,
-                    "(VCHAR / obs-text) [ 1*(SP / HTAB) (VCHAR / obs-text) ]");
-        }
-        return true;
-    }
-
-    private static final class TokenValidatingProcessor implements ByteProcessor {
-
-        private static final String EXPECTED =
-                "! / # / $ / % / & / ' / * / + / - / . / ^ / _ / ` / | / ~ / DIGIT / ALPHA";
-
-        private final CharSequence token;
-        private final String what;
-        private int idx;
-
-        TokenValidatingProcessor(final CharSequence token, final String what) {
-            this.token = token;
-            this.what = what;
-        }
-
-        @Override
-        public boolean process(final byte value) {
-            // HEADER
-            // header-field   = field-name ":" OWS field-value OWS
-            // field-name     = token
-            // token          = 1*tchar
-            //
-            //  Delimiters are chosen
-            //   from the set of US-ASCII visual characters not allowed in a token
-            //   (DQUOTE and "(),/:;<=>?@[\]{}")
-            //
-            // COOKIE
-            // cookie-pair       = cookie-name "=" cookie-value
-            // cookie-name       = token
-            // token          = 1*<any CHAR except CTLs or separators>
-            // CTL = <any US-ASCII control character
-            //       (octets 0 - 31) and DEL (127)>
-            // separators     = "(" | ")" | "<" | ">" | "@"
-            //                      | "," | ";" | ":" | "\" | <">
-            //                      | "/" | "[" | "]" | "?" | "="
-            //                      | "{" | "}" | SP | HT
-            //
-            // field-name's token is equivalent to cookie-name's token, we can reuse the tchar mask for both:
-            if (!isTchar(value)) {
-                throw new IllegalCharacterException(message(value));
-            }
-            ++idx;
-            return true;
-        }
-
-        private String message(final byte value) {
-            final int codePoint = value & 0xff;
-            final int idx = this.idx;
-            final StringBuilder sb = new StringBuilder(40 + intToStringLength(idx) + what.length() +
-                    token.length() + EXPECTED.length())
-                    .append('\'')   // 1
-                    .append((char) codePoint)   // 1
-                    .append("' (0x")    // 5
-                    .append(toHexString(0x100 | codePoint), 1, 3)   // 2 digit hex number
-                    .append(") at index=")  // 11
-                    .append(idx)
-                    .append(" in ") // 4
-                    .append(what)
-                    .append(" '")   // 2
-                    .append(token)
-                    .append("', expected [")    // 13
-                    .append(EXPECTED)
-                    .append(']');   // 1
-            return sb.toString();
-        }
-
-        /**
-         * Calculates the length of {@link Integer#toString(int)} for the specified value.
-         */
-        private static int intToStringLength(final int value) {
-            assert value >= 0;
-            int length = 1;
-            int test = 10;
-            while (test <= value && test <= 1_000_000_000) {
-                ++length;
-                test *= 10;
-            }
-            return length;
-        }
+        return ((value & CONTROL_CHARS_MASK) != 0 || value == HT) && value != DEL;
     }
 }

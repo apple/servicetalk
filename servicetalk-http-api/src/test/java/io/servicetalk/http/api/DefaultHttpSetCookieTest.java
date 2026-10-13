@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.utils.internal.IllegalCharacterException;
+
 import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
@@ -24,6 +26,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class DefaultHttpSetCookieTest {
 
@@ -94,5 +97,13 @@ class DefaultHttpSetCookieTest {
         assertThat(encoded, containsString("SameSite=Lax"));
         assertThat(encoded, containsString("HttpOnly"));
         assertThat(encoded, containsString("Secure"));
+    }
+
+    @Test
+    void invalidNameMessage() {
+        final IllegalCharacterException e = assertThrows(IllegalCharacterException.class,
+                () -> DefaultHttpSetCookie.parseSetCookie("my(name)=value; Path=/", true));
+        assertThat(e.getMessage(), is("0x28 ('(') at index=2 of length=8 in set-cookie name 'my(name)', " +
+                "expected: TCHAR (any VCHAR except delimiters)"));
     }
 }

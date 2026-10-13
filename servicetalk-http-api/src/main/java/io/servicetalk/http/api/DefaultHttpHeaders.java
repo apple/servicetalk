@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import static io.servicetalk.http.api.HeaderUtils.domainMatches;
 import static io.servicetalk.http.api.HeaderUtils.isSetCookieNameMatches;
 import static io.servicetalk.http.api.HeaderUtils.parseCookiePair;
 import static io.servicetalk.http.api.HeaderUtils.pathMatches;
+import static io.servicetalk.http.api.HeaderUtils.validateHeaderValue;
 import static io.servicetalk.http.api.HeaderUtils.validateToken;
 import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
 import static io.servicetalk.http.api.HttpHeaderNames.SET_COOKIE;
@@ -581,7 +582,7 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
                     "Null values are not allowed, encountered null for header name: " + name);
         }
         if (validateValues) {
-            validateHeaderValue(value);
+            validateHeaderValue(name, value);
         }
         return value;
     }
@@ -593,15 +594,6 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
      */
     private static void validateHeaderName(final CharSequence name) {
         validateToken(name, "header name");
-    }
-
-    /**
-     * Validate a <a href="https://tools.ietf.org/html/rfc7230#section-3.2">field-value</a> of a header-field.
-     *
-     * @param value The field-value to validate.
-     */
-    private static void validateHeaderValue(final CharSequence value) {
-        HeaderUtils.validateHeaderValue(value);
     }
 
     @Nullable
