@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,11 +29,11 @@ import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.defer;
-import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromInputStream;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
+import static io.servicetalk.http.api.BlockingStreamingHttpMessageBodyUtils.fromFilterNull;
 import static io.servicetalk.http.api.BlockingStreamingHttpMessageBodyUtils.newMessageBody;
-import static io.servicetalk.http.api.DefaultBlockingStreamingHttpResponse.fromFilterNull;
+import static io.servicetalk.http.api.BlockingStreamingHttpMessageBodyUtils.serializeMessageBody;
 
 final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRequest
         implements BlockingStreamingHttpRequest {
@@ -216,13 +216,8 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
     @Override
     public <T> BlockingStreamingHttpRequest messageBody(final HttpMessageBodyIterable<T> messageBody,
                                                         final HttpStreamingSerializer<T> serializer) {
-        original.payloadHolder().messageBody(defer(() -> {
-            HttpMessageBodyIterator<T> body = messageBody.iterator();
-            return from(serializer.serialize(headers(), () -> body, original.payloadHolder().allocator()))
-                    .cast(Object.class)
-                    .concat(defer(() -> fromFilterNull(body.trailers()).shareContextOnSubscribe()))
-                    .shareContextOnSubscribe();
-        }));
+        original.payloadHolder().messageBody(serializeMessageBody(messageBody, headers(), serializer,
+                original.payloadHolder().allocator()));
         return this;
     }
 
