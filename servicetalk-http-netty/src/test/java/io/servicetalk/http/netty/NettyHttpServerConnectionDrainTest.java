@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.netty.util.CharsetUtil;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -38,6 +37,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.net.SocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
@@ -103,12 +103,12 @@ class NettyHttpServerConnectionDrainTest {
         CountDownLatch requestDrainedByCancellation = new CountDownLatch(1);
         try (ServerContext serverContext = server(protocol, true, (ctx, request, responseFactory) ->
                         succeeded(responseFactory.ok().payloadBody(Publisher.failed(DELIBERATE_EXCEPTION))),
-                transformRequestMessageBody(body -> body.afterCancel(requestDrainedByCancellation::countDown)))) {
-            try (BlockingHttpClient client = newClientBuilder(serverContext, CLIENT_CTX, protocol)
-                    .buildBlocking()) {
-                assertThrows(Exception.class, () -> client.request(client.get("/foo")));
-                requestDrainedByCancellation.await();
-            }
+                transformRequestMessageBody(body -> body.afterCancel(requestDrainedByCancellation::countDown)));
+             BlockingHttpClient client = newClientBuilder(serverContext, CLIENT_CTX, protocol)
+                     .buildBlocking()) {
+
+            assertThrows(Exception.class, () -> client.request(client.get("/foo")));
+            requestDrainedByCancellation.await();
         }
     }
 
@@ -149,7 +149,7 @@ class NettyHttpServerConnectionDrainTest {
                 request.payloadBody()
                         // User consumes payload and stores for assert ensuring auto-draining doesn't break it
                         .collect(() -> new StringBuilder(LARGE_TEXT.length()),
-                                (sb, b) -> sb.append(b.toString(CharsetUtil.US_ASCII)))
+                                (sb, b) -> sb.append(b.toString(StandardCharsets.US_ASCII)))
                         .map(StringBuilder::toString)
                         .whenOnSuccess(resultRef::set)
                         .toCompletable()
@@ -167,12 +167,12 @@ class NettyHttpServerConnectionDrainTest {
     @EnumSource(HttpProtocol.class)
     void requestTimesOutWithoutAutoDrainingOrUserConsuming(HttpProtocol protocol) throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
-        ServerContext serverContext = server(protocol, false, (ctx, request, responseFactory) -> {
+        try (ServerContext serverContext = server(protocol, false, (ctx, request, responseFactory) -> {
             latch.countDown();
             return succeeded(responseFactory.ok().payloadBody(from("OK"), appSerializerUtf8FixLen()));
         });
-        try (StreamingHttpClient client = newClientBuilder(serverContext, CLIENT_CTX, protocol)
-                .buildStreaming()) {
+             StreamingHttpClient client = newClientBuilder(serverContext, CLIENT_CTX, protocol)
+                     .buildStreaming()) {
 
             client.request(client.post("/").payloadBody(from(LARGE_TEXT), appSerializerUtf8FixLen()))
                     // Subscribe to send the request, don't care about the response since graceful close of the server
