@@ -337,7 +337,7 @@ final class SequentialSubscriptionTest {
 
     @ParameterizedTest(name = "{displayName} [{index}]: requestThrows={0}")
     @ValueSource(booleans = {false, true})
-    void cancelDuringRequestCancelsActiveAndPendingSubscriptions(boolean requestThrows) throws Exception {
+    void cancelDuringRequestCancelsActiveAndLatestSubscriptions(boolean requestThrows) throws Exception {
         final CountDownLatch requested = new CountDownLatch(1);
         final CountDownLatch release = new CountDownLatch(1);
         doAnswer(invocation -> {
@@ -366,14 +366,14 @@ final class SequentialSubscriptionTest {
         }
         verify(s1).request(1);
         verify(s1).cancel();
-        verify(s2).cancel();
         verify(s3).cancel();
+        // s2 was replaced before it became current, so it receives no calls.
         verifyNoMoreInteractions(s1, s2, s3);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}]: n={0}")
     @ValueSource(longs = {-1, 0, MIN_VALUE})
-    void invalidRequestDuringSwitchReachesPendingSubscriptions(long n) {
+    void invalidRequestDuringSwitchReachesLatestSubscription(long n) {
         final Subscription s3 = mock(Subscription.class);
         doAnswer(invocation -> {
             s.switchTo(s2);
@@ -384,8 +384,8 @@ final class SequentialSubscriptionTest {
         s.request(1);
         final long expected = n == 0 ? MIN_VALUE : n;
         verify(s3).request(expected);
-        verify(s2).request(expected);
         s.request(1);
+        // s2 was replaced before it became current, so it receives no calls.
         verifyNoMoreInteractions(s2, s3);
     }
 

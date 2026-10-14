@@ -42,20 +42,24 @@ import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
  * not received via {@link #itemReceived()}, will be requested from the next {@link Subscription}.
  *
  * <h2>Cancel</h2>
- * If this {@link Subscription} is cancelled, then any other {@link Subscription} set via
- * {@link #switchTo(Subscription)} will be cancelled.
+ * If this {@link Subscription} is cancelled, then the <strong>current</strong> {@link Subscription} and any
+ * {@link Subscription} that becomes <strong>current</strong> later via {@link #switchTo(Subscription)} will be
+ * cancelled.
  */
 final class SequentialSubscription implements Subscription {
     private static final AtomicLongFieldUpdater<SequentialSubscription> requestedUpdater =
             newUpdater(SequentialSubscription.class, "requested");
     private static final AtomicIntegerFieldUpdater<SequentialSubscription> emittingUpdater =
             AtomicIntegerFieldUpdater.newUpdater(SequentialSubscription.class, "emitting");
+    private static final AtomicReferenceFieldUpdater<SequentialSubscription, Subscription> subscriptionUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(SequentialSubscription.class, Subscription.class, "subscription");
     private static final AtomicReferenceFieldUpdater<SequentialSubscription, Subscription> pendingSubscriptionUpdater =
             AtomicReferenceFieldUpdater.newUpdater(SequentialSubscription.class, Subscription.class,
                     "pendingSubscription");
 
-    // Only the drain owner changes the active subscription and its demand accounting.
-    private Subscription subscription;
+    // Only the drain owner installs the next subscription and changes the demand accounting. cancel() may swap the
+    // current subscription out concurrently.
+    private volatile Subscription subscription;
     private long sourceRequested;
     // Subscriber signals are serialized. Publishing the next subscription also publishes this count to the drain.
     private long sourceEmitted;
@@ -64,6 +68,9 @@ final class SequentialSubscription implements Subscription {
     private volatile boolean cancelled;
     @Nullable
     private volatile Subscription pendingSubscription;
+    // Set while a drain started by switchTo() owns the lock. cancel() on another thread then leaves the cancel to it.
+    @Nullable
+    private volatile Thread switchDrainer;
 
     /**
      * New instance.
@@ -89,80 +96,92 @@ final class SequentialSubscription implements Subscription {
         } else {
             requested = sanitizeInvalidRequestN(n);
         }
-        drain();
+        drain(false);
     }
 
     @Override
     public void cancel() {
         cancelled = true;
-        drain();
-    }
-
-    /**
-     * Switches <strong>current</strong> {@link Subscription} to {@code next}. The previous source must no longer call
-     * {@link #itemReceived()}. Subscriber signals must be serialized, but a previous request callback may still be
-     * unwinding on another thread.
-     * @param next {@link Subscription} that should now be <strong>current</strong>.
-     */
-    void switchTo(Subscription next) {
-        final Subscription previous = pendingSubscriptionUpdater.getAndSet(this, requireNonNull(next));
         try {
-            // A source may terminate without demand before the drain reaches it. Only the latest source needs demand,
-            // but a displaced subscription must still observe a pending terminal action.
-            if (previous != null) {
-                if (cancelled) {
-                    previous.cancel();
-                } else {
-                    final long n = requested;
-                    if (n < 0) {
-                        previous.request(n);
-                    }
-                }
+            // As on main, cancel the current subscription directly instead of waiting for the drain owner, whose
+            // request(n) may only return once it is cancelled. Also as on main, while another thread drains for
+            // switchTo(), leave the cancel to that thread, so cancel() never overlaps a request(n) it issued.
+            final Thread drainer = switchDrainer;
+            if (drainer == null || drainer == Thread.currentThread()) {
+                // Swapping in EMPTY cancels each subscription once.
+                subscriptionUpdater.getAndSet(this, EMPTY_SUBSCRIPTION_NO_THROW).cancel();
             }
         } finally {
-            drain();
+            // Cancels a pending subscription. If a switching thread already read cancelled, this makes it run
+            // another round, which cancels.
+            drain(false);
         }
     }
 
-    private void drain() {
+    /**
+     * Switches <strong>current</strong> {@link Subscription} to {@code next}. Callers must only switch after the
+     * previous source has terminated, or after they cancelled it, and the previous source must no longer call
+     * {@link #itemReceived()}. Subscriber signals must be serialized, but a previous request callback may still be
+     * unwinding on another thread.
+     * <p>
+     * If a later call replaces {@code next} before a drain picks it up, {@code next} receives no calls.
+     * @param next {@link Subscription} that should now be <strong>current</strong>.
+     */
+    void switchTo(Subscription next) {
+        pendingSubscription = requireNonNull(next);
+        drain(true);
+    }
+
+    private void drain(boolean fromSwitch) {
         Throwable delayedCause = null;
         boolean tryAcquire = true;
         while (tryAcquire && tryAcquireLock(emittingUpdater, this)) {
+            if (fromSwitch) {
+                switchDrainer = Thread.currentThread();
+            }
             try {
-                final Subscription next = pendingSubscriptionUpdater.getAndSet(this, null);
-                if (cancelled) {
-                    final Subscription current = subscription;
-                    subscription = EMPTY_SUBSCRIPTION_NO_THROW;
-                    try {
-                        current.cancel();
-                    } finally {
-                        if (next != null) {
-                            next.cancel();
-                        }
-                    }
-                } else {
-                    if (next != null) {
-                        subscription = next;
-                        sourceRequested = sourceEmitted;
-                    }
+                // switchTo() writes pendingSubscription before it calls drain(). If this reads null just before that
+                // write, that drain() call takes the lock or marks it pending, so another round picks next up.
+                final Subscription next = pendingSubscription == null ? null :
+                        pendingSubscriptionUpdater.getAndSet(this, null);
+                if (next != null) {
+                    sourceRequested = sourceEmitted;
+                }
+                try {
                     final long n = requested;
-                    if (sourceRequested >= 0) {
+                    if (!cancelled && sourceRequested >= 0) {
+                        final Subscription current = next == null ? subscription : next;
                         if (n < 0) {
                             sourceRequested = n;
-                            subscription.request(n);
+                            current.request(n);
                         } else {
                             final long delta = n - sourceRequested;
+                            assert delta >= 0 : "Source emitted more than requested: requested=" + n +
+                                    ", delta=" + delta;
                             if (delta != 0) {
                                 // Commit before the callback: reentrant request/switch calls only enqueue more work.
                                 sourceRequested = n;
-                                subscription.request(delta);
+                                current.request(delta);
                             }
                         }
+                    }
+                } finally {
+                    if (next != null) {
+                        // next becomes current only after its first request(n) returns.
+                        subscription = next;
+                    }
+                    // cancel() sets cancelled before it reads switchDrainer and swaps subscription. This sets both
+                    // before it reads cancelled, so cancel() or this cancels the current subscription.
+                    if (cancelled) {
+                        subscriptionUpdater.getAndSet(this, EMPTY_SUBSCRIPTION_NO_THROW).cancel();
                     }
                 }
             } catch (Throwable cause) {
                 delayedCause = catchUnexpected(delayedCause, cause);
             } finally {
+                if (fromSwitch) {
+                    switchDrainer = null;
+                }
                 // A publisher racing with release either marks pending work or becomes the next drain owner.
                 tryAcquire = !releaseLock(emittingUpdater, this);
             }
