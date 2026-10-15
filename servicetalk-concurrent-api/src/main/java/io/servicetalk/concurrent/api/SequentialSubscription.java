@@ -103,6 +103,9 @@ final class SequentialSubscription implements Subscription {
     public void cancel() {
         cancelled = true;
         try {
+            // Must run after cancelled is set to be race free with switchTo(). A drain owner blocked in request(n)
+            // would otherwise never pick up the pending subscription to cancel it.
+            cancelPending();
             // As on main, cancel the current subscription directly instead of waiting for the drain owner, whose
             // request(n) may only return once it is cancelled. Also as on main, while another thread drains for
             // switchTo(), leave the cancel to that thread, so cancel() never overlaps a request(n) it issued.
@@ -129,7 +132,17 @@ final class SequentialSubscription implements Subscription {
      */
     void switchTo(Subscription next) {
         pendingSubscription = requireNonNull(next);
+        if (cancelled) {
+            cancelPending();
+        }
         drain(true);
+    }
+
+    private void cancelPending() {
+        final Subscription pending = pendingSubscriptionUpdater.getAndSet(this, null);
+        if (pending != null) {
+            pending.cancel();
+        }
     }
 
     private void drain(boolean fromSwitch) {

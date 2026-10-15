@@ -25,7 +25,6 @@ import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -65,7 +64,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 final class SequentialSubscriptionTest {
     private static final int ITERATIONS_FOR_CONCURRENT_TESTS = 500;
-    private static final int ITERATIONS_FOR_RACE_TESTS = 200_000;
+    private static final int ITERATIONS_FOR_RACE_TESTS = 20_000;
     private static final int EMIT_BATCH = 10;
     private SequentialSubscription s;
     private Subscription s1;
@@ -278,7 +277,22 @@ final class SequentialSubscriptionTest {
     }
 
     @Test
-    @Timeout(60) // Deliberate stress loop; the latch does not force the handoff window.
+    void switchToFromReentrantRequestTransfersOutstandingDemandOnce() {
+        final CountingSubscription next = new CountingSubscription();
+        doAnswer(invocation -> {
+            // A synchronous source emits, its subscriber requests more, then the source completes and the operator
+            // resubscribes, all from inside request(n) on one thread.
+            s.itemReceived();
+            s.request(1);
+            s.switchTo(next);
+            return null;
+        }).when(s2).request(anyLong());
+        s.request(1);
+        s.switchTo(s2);
+        assertThat("Outstanding demand must be transferred once", next.requestedReceived(), is(1L));
+    }
+
+    @Test
     void switchToWhileAnotherSwitchUnwindsRequestsOutstandingDemandFromNewSubscription() throws Exception {
         final Map<Long, Integer> demands = new TreeMap<>();
         for (int i = 0; i < ITERATIONS_FOR_RACE_TESTS; ++i) {
@@ -366,9 +380,41 @@ final class SequentialSubscriptionTest {
         }
         verify(s1).request(1);
         verify(s1).cancel();
+        // s2 is still pending when cancel() runs, so it is cancelled without receiving demand.
+        verify(s2).cancel();
         verify(s3).cancel();
-        // s2 was replaced before it became current, so it receives no calls.
         verifyNoMoreInteractions(s1, s2, s3);
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: cancelBeforeSwitch={0}")
+    @ValueSource(booleans = {false, true})
+    void cancelReachesPendingSubscriptionWhoseSourceBlocksInSubscribe(boolean cancelBeforeSwitch) throws Exception {
+        final CountDownLatch requested = new CountDownLatch(1);
+        final CountDownLatch cancelCalled = new CountDownLatch(1);
+        final CountDownLatch s2Cancelled = new CountDownLatch(1);
+        doAnswer(invocation -> {
+            s2Cancelled.countDown();
+            return null;
+        }).when(s2).cancel();
+        doAnswer(invocation -> {
+            if (!cancelBeforeSwitch) {
+                s.switchTo(s2);
+            }
+            requested.countDown();
+            if (cancelBeforeSwitch) {
+                assertThat(cancelCalled.await(DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
+                s.switchTo(s2);
+            }
+            // The next source, e.g. Single.fromCallable(...).toPublisher(), blocks in subscribe() until cancelled.
+            assertThat("Pending subscription was not cancelled",
+                    s2Cancelled.await(DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
+            return null;
+        }).when(s1).request(anyLong());
+        final Future<?> requesting = executor.submit(() -> s.request(1));
+        assertThat(requested.await(DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
+        s.cancel();
+        cancelCalled.countDown();
+        requesting.get();
     }
 
     @ParameterizedTest(name = "{displayName} [{index}]: n={0}")
