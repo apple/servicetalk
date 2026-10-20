@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2021, 2026 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -154,6 +154,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.CONTINUE;
 import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
+import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
@@ -701,6 +702,62 @@ class H2PriorKnowledgeFeatureParityTest {
         CharSequence v = headers.get(key);
         assertNotNull(v);
         assertThat(v.toString(), is(value));
+    }
+
+    /**
+     * A HEAD response must never put a payload body or trailers on the wire (RFC 7231, section 4.3.2), even if a
+     * (misbehaving) handler produces them.
+     */
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void headResponseDoesNotLeakBodyOrTrailers(HttpTestExecutionStrategy strategy,
+                                               boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
+        String trailerName = "x-leaked-trailer";
+        String trailerValue = "leaked";
+        String leakedBody = "leaked-body-should-never-be-sent-for-a-head-response";
+        h1ServerContext = HttpServers.forAddress(localAddress(0))
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(
+                        responseFactory.ok()
+                                .payloadBody(Publisher.from(
+                                        ctx.executionContext().bufferAllocator().fromAscii(leakedBody)))
+                                .transform(new StatelessTrailersTransformer<Buffer>() {
+                                    @Override
+                                    protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
+                                        trailers.add(trailerName, trailerValue);
+                                        return trailers;
+                                    }
+                                })));
+        InetSocketAddress serverAddress = (InetSocketAddress) h1ServerContext.listenAddress();
+        try (StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy).buildStreaming()) {
+            StreamingHttpResponse response = client.request(client.newRequest(HEAD, "/")).toFuture().get();
+            assertThat(response.status(), is(OK));
+
+            AtomicInteger leakedBytes = new AtomicInteger();
+            SingleSource.Processor<HttpHeaders, HttpHeaders> trailersProcessor = Processors.newSingleProcessor();
+            response.transformPayloadBody(buf -> buf) // intermediate Buffer transform may drop trailers
+                    .transform(new StatelessTrailersTransformer<Buffer>() {
+                        @Override
+                        protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
+                            trailersProcessor.onSuccess(trailers);
+                            return trailers;
+                        }
+                    })
+                    .messageBody()
+                    .whenOnNext(item -> {
+                        if (item instanceof Buffer) {
+                            leakedBytes.addAndGet(((Buffer) item).readableBytes());
+                        }
+                    })
+                    .ignoreElements().toFuture().get();
+            HttpHeaders responseTrailers = fromSource(trailersProcessor).toFuture().get();
+
+            assertThat("HEAD response leaked a payload body onto the wire", leakedBytes.get(), is(0));
+            assertFalse(responseTrailers.contains(trailerName), "HEAD response leaked trailers onto the wire");
+        }
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
