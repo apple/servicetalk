@@ -164,4 +164,14 @@ public enum GrpcStatusCode {
         return h2ErrorCode < 0 || h2ErrorCode >= H2_ERROR_TO_STATUS_CODE_MAP.length ?
                 UNKNOWN : H2_ERROR_TO_STATUS_CODE_MAP[h2ErrorCode];
     }
+
+    /**
+     * Returns a standard {@link GrpcStatus} with description as part of a {@link GrpcStatusException} builder pattern.
+     * @param description the Description for pending {@link GrpcStatusException}.
+     * @return the GrpcStatus with set description
+     */
+    public GrpcStatus withDescription(String description) {
+        GrpcStatus grpcStatus = GrpcStatus.fromCodeValueAndDescription(this.value(), description);
+        return grpcStatus;
+    }
 }
