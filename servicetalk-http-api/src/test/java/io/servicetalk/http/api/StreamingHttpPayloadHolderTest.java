@@ -341,17 +341,23 @@ class StreamingHttpPayloadHolderTest {
     }
 
     @Test
-    void transformPayloadBodyWithTrailersSupportsResubscribe() throws Exception {
+    void transformPayloadBodyWithTrailersResubscribeEmitsTrailersAfterData() throws Exception {
+        // Models a retried request: each attempt re-subscribes the message body, and the retry's data arrives
+        // asynchronously. A chain shared with the first attempt would replay that attempt's trailers as soon as the
+        // retry subscribes, and trailers end the HTTP message, so the retry would be sent without a body.
         final Buffer payload = DEFAULT_ALLOCATOR.fromAscii("hello");
         final HttpHeaders firstTrailers = DefaultHttpHeadersFactory.INSTANCE.newTrailers().set("t", "1");
-        final HttpHeaders secondTrailers = DefaultHttpHeadersFactory.INSTANCE.newTrailers().set("t", "2");
-        final Iterator<HttpHeaders> trailersPerSubscribe = asList(firstTrailers, secondTrailers).iterator();
-        final StreamingHttpPayloadHolder holder =
-                holderWithTrailers(Publisher.defer(() -> Publisher.from(payload, trailersPerSubscribe.next())));
+        final HttpHeaders retryTrailers = DefaultHttpHeadersFactory.INSTANCE.newTrailers().set("t", "2");
+        final CompletableSource.Processor retryDataGate = newCompletableProcessor();
+        final Iterator<Publisher<Object>> attempts = asList(Publisher.<Object>from(payload, firstTrailers),
+                fromSource(retryDataGate).concat(Publisher.<Object>from(payload, retryTrailers))).iterator();
+        final StreamingHttpPayloadHolder holder = holderWithTrailers(Publisher.defer(attempts::next));
         holder.transformPayloadBody(UnaryOperator.identity());
 
         assertThat(holder.messageBody().toFuture().get(), contains(payload, firstTrailers));
-        assertThat(holder.messageBody().toFuture().get(), contains(payload, secondTrailers));
+        final Future<Collection<Object>> retry = holder.messageBody().toFuture();
+        retryDataGate.onComplete();
+        assertThat(retry.get(), contains(payload, retryTrailers));
     }
 
     @Test

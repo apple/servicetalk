@@ -19,9 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpServiceContext;
-import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -29,32 +27,24 @@ import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
-import io.servicetalk.http.netty.RetryingHttpRequesterFilter.HttpResponseException;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
-import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofImmediate;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.time.Duration.ofMillis;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 class TransformPayloadBodyWithSerializerTest {
 
     private static final String HELLO_WORLD = "Hello\nWorld\n";
-    private static final String X_TRAILER = "x-trailer";
 
     @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
     @EnumSource(HttpProtocol.class)
@@ -106,53 +96,6 @@ class TransformPayloadBodyWithSerializerTest {
             StreamingHttpResponse response = client.request(client.post("/").payloadBody(helloWorldBuffers()))
                     .toFuture().get();
             assertThat(response.status(), is(OK));
-            assertThat(concat(response.payloadBody(appSerializerUtf8FixLen())), is(HELLO_WORLD));
-        }
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
-    @EnumSource(HttpProtocol.class)
-    void retriedRequestResendsTransformedBodyAndTrailers(HttpProtocol protocol) throws Exception {
-        final AtomicInteger attempts = new AtomicInteger();
-        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
-                .protocols(protocol.config)
-                .listenStreamingAndAwait((ctx, request, factory) -> request.toRequest().map(req -> {
-                    final StreamingHttpResponse response = attempts.incrementAndGet() == 1 ?
-                            factory.serviceUnavailable() : factory.ok();
-                    final CharSequence contentType = req.headers().get(CONTENT_TYPE);
-                    if (contentType != null) {
-                        response.setHeader(CONTENT_TYPE, contentType);
-                    }
-                    final CharSequence trailer = req.trailers().get(X_TRAILER);
-                    if (trailer != null) {
-                        response.setHeader(X_TRAILER, trailer);
-                    }
-                    return response.payloadBody(from(req.payloadBody()));
-                }));
-             StreamingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
-                     .protocols(protocol.config)
-                     .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
-                             .responseMapper(response -> SERVICE_UNAVAILABLE.equals(response.status()) ?
-                                     new HttpResponseException("retry", response) : null)
-                             .retryResponses((requestMetaData, cause) -> ofImmediate(1))
-                             .build())
-                     .buildStreaming()) {
-            final StreamingHttpRequest request = client.post("/")
-                    .payloadBody(helloWorldBuffers())
-                    .transform(new StatelessTrailersTransformer<Buffer>() {
-                        @Override
-                        protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
-                            return trailers.set(X_TRAILER, "v");
-                        }
-                    })
-                    // The transformer does asynchronous work before emitting its data.
-                    .transformPayloadBody(buffers -> client.executionContext().executor().timer(ofMillis(100))
-                                    .concat(toStrings(buffers)), appSerializerUtf8FixLen());
-
-            final StreamingHttpResponse response = client.request(request).toFuture().get();
-            assertThat(attempts.get(), is(2));
-            assertThat(response.status(), is(OK));
-            assertThat(response.headers().get(X_TRAILER).toString(), is("v"));
             assertThat(concat(response.payloadBody(appSerializerUtf8FixLen())), is(HELLO_WORLD));
         }
     }
