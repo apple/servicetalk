@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -212,6 +212,21 @@ class HostHeaderHttpRequesterFilterTest {
                     .version(httpVersionConfig.version());
             request.headers().add(HOST, explicitHostHeader);
             assertResponse(client, request, explicitHostHeader, explicitHostHeader);
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(HttpVersionConfig.class)
+    void clientBuilderAppendClientFilterDoubleSlashPathUsesFallbackHost(HttpVersionConfig httpVersionConfig)
+            throws Exception {
+        this.httpVersionConfig = httpVersionConfig;
+        try (ServerContext context = buildServer();
+             BlockingHttpClient client = forSingleAddress(serverHostAndPort(context))
+                     .protocols(httpVersionConfig.config())
+                     .appendClientFilter(new HostHeaderHttpRequesterFilter("foo.bar:-1"))
+                     .buildBlocking()) {
+            HttpRequest request = client.get("//a/b").version(httpVersionConfig.version());
+            assertResponse(client, request, null, "foo.bar:-1");
         }
     }
 

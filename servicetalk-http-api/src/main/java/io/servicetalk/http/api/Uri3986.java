@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,10 @@ import static io.servicetalk.http.api.UriUtils.encodeComponent;
 import static io.servicetalk.http.api.UriUtils.parsePort;
 
 /**
- * Represents the components of a <a href="https://tools.ietf.org/html/rfc3986">URI</a>.
+ * Represents the components of an HTTP
+ * <a href="https://tools.ietf.org/html/rfc9112#section-3.2">request-target</a>, parsed with
+ * <a href="https://tools.ietf.org/html/rfc3986">URI</a> syntax. A request-target is never a network-path reference, so
+ * a leading {@code //} is an authority only after a scheme: {@code //a/b} is a path whose first segment is empty.
  * <p>
  * {@link java.net.URI} targets the obsolete <a href="https://tools.ietf.org/html/rfc2396">rfc2732</a>. This class
  * also lazy parses some components which may not be as commonly used (e.g. query, fragment).
@@ -80,7 +83,9 @@ final class Uri3986 implements Uri {
         while (i < uri.length()) {
             final char c = uri.charAt(i);
             if (c == '/') {
-                if (begin == i && parsedHost == null && uri.length() - 1 > i && uri.charAt(i + 1) == '/') {
+                // Without a scheme a leading "//" is a path, see the class javadoc.
+                if (begin == i && parsedHost == null && parsedScheme != null &&
+                        uri.length() - 1 > i && uri.charAt(i + 1) == '/') {
                     // authority   = [ userinfo "@" ] host [ ":" port ]
                     i += 2;
                     begin = i;

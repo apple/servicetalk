@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021, 2026 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -274,16 +276,16 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
 
     @Test
     void testSlashAddedToPath() {
-        createFixture("//authority");
+        createFixture("http://authority");
         fixture.path("path");
-        assertEquals("//authority/path", fixture.requestTarget());
+        assertEquals("http://authority/path", fixture.requestTarget());
     }
 
     @Test
     void testSlashNotAddedToEmptyPath() {
-        createFixture("//authority");
+        createFixture("http://authority");
         fixture.path("");
-        assertEquals("//authority", fixture.requestTarget());
+        assertEquals("http://authority", fixture.requestTarget());
     }
 
     @Test
@@ -394,15 +396,82 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
 
     @Test
     void testPathCannotInjectAuthority() {
-        createFixture("/temp");
+        createFixture("http:/temp");
         assertThrows(IllegalArgumentException.class, () -> fixture.rawPath("//authorityinjection"));
     }
 
     @Test
-    void testAuthoritySetAllowsPathAuthorityLookalike() {
-        createFixture("//realauthority");
+    void testPathCannotInjectAuthorityAfterEmptyAuthority() {
+        createFixture("http://");
+        fixture.rawPath("a.example/x");
+        assertThat(fixture.requestTarget(), is("http:///a.example/x"));
+        assertThat(fixture.host(), is(""));
+        assertThat(fixture.path(), is("/a.example/x"));
+    }
+
+    @Test
+    void testAppendEmptySegmentCannotInjectAuthority() {
+        createFixture("http:/");
+        assertThrows(IllegalArgumentException.class, () -> fixture.appendPathSegments("", "a.example"));
+        assertThat(fixture.requestTarget(), is("http:/"));
+        createFixture("http:");
+        assertThrows(IllegalArgumentException.class, () -> fixture.appendPathSegments("", "a.example"));
+        assertThat(fixture.requestTarget(), is("http:"));
+    }
+
+    @Test
+    void testAppendEmptySegmentWithoutSchemeIsPath() {
+        createFixture("/");
+        fixture.appendPathSegments("", "a.example");
+        assertThat(fixture.requestTarget(), is("//a.example"));
+        assertThat(fixture.host(), is(nullValue()));
+    }
+
+    @Test
+    void testDoubleSlashPathWithoutSchemeIsNotAuthority() {
+        createFixture("/temp?foo");
         fixture.rawPath("//authorityinjection");
-        assertEquals("//realauthority//authorityinjection", fixture.requestTarget());
+        assertThat(fixture.requestTarget(), is("//authorityinjection?foo"));
+        assertThat(fixture.host(), is(nullValue()));
+    }
+
+    @Test
+    void testDoubleSlashTargetIsPath() {
+        createFixture("//a.example/b?c=d");
+        fixture.headers().set(HOST, "b.example");
+        assertThat(fixture.host(), is(nullValue()));
+        assertThat(fixture.path(), is("//a.example/b"));
+        assertThat(fixture.rawPath(), is("//a.example/b"));
+        assertThat(fixture.query(), is("c=d"));
+        HostAndPort effective = fixture.effectiveHostAndPort();
+        assertThat(effective, is(notNullValue()));
+        assertThat(effective.hostName(), is("b.example"));
+        assertThat(effective.port(), is(lessThan(0)));
+    }
+
+    @Test
+    void testDoubleSlashPathRoundTrips() {
+        createFixture("//a.example/b?c=d");
+        fixture.rawPath(fixture.rawPath());
+        assertThat(fixture.requestTarget(), is("//a.example/b?c=d"));
+        fixture.path(fixture.path());
+        assertThat(fixture.requestTarget(), is("//a.example/b?c=d"));
+    }
+
+    @Test
+    void testDoubleSlashTargetWithCharsetIsPath() {
+        createFixture("//a.example:abc/b");
+        assertThat(fixture.requestTarget(UTF_8), is("//a.example:abc/b"));
+        fixture.requestTarget("//a.example:080/b", UTF_8);
+        assertThat(fixture.requestTarget(), is("//a.example:080/b"));
+        assertThat(fixture.host(), is(nullValue()));
+    }
+
+    @Test
+    void testAuthoritySetAllowsPathAuthorityLookalike() {
+        createFixture("http://realauthority");
+        fixture.rawPath("//authorityinjection");
+        assertEquals("http://realauthority//authorityinjection", fixture.requestTarget());
         assertEquals("realauthority", fixture.host());
         assertEquals("//authorityinjection", fixture.path());
     }
