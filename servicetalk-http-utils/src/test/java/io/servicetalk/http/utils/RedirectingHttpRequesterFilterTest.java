@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
@@ -99,7 +100,6 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
@@ -169,10 +169,14 @@ class RedirectingHttpRequesterFilterTest {
 
     private Single<StreamingHttpResponse> redirectResponse(HttpResponseStatus status, @Nullable String locationPrefix,
                                                            int n) {
+        return redirectResponseWithLocation(status, (locationPrefix == null ? "" : locationPrefix) + "/location-" + n);
+    }
+
+    private Single<StreamingHttpResponse> redirectResponseWithLocation(HttpResponseStatus status, String location) {
         TestPublisher<Buffer> payloadBody = new TestPublisher<>();
         redirectResponsePayloads.add(payloadBody);
         return succeeded(reqRespFactory.newResponse(status)
-                .setHeader(LOCATION, (locationPrefix == null ? "" : locationPrefix) + "/location-" + n)
+                .setHeader(LOCATION, location)
                 .payloadBody(payloadBody.afterOnSubscribe(ignore -> EXECUTOR.executor()
                         .execute(payloadBody::onComplete))));
     }
@@ -432,6 +436,129 @@ class RedirectingHttpRequesterFilterTest {
         }
     }
 
+    @ParameterizedTest(name = "{displayName} [{index}] requestTarget={0} allowNonRelativeRedirects={1} location={2}" +
+            " expectedTarget={3} expectedRelative={4}")
+    @CsvSource({
+            "http://servicetalk.io/a/b?q, true,  //servicetalk.io/x,            http://servicetalk.io/x,       true",
+            "http://servicetalk.io/a/b?q, true,  //other.servicetalk.io/x,      http://other.servicetalk.io/x, false",
+            "http://servicetalk.io/a/b?q, true,  d,                             http://servicetalk.io/a/d,     true",
+            "http://servicetalk.io/a/b?q, true,  ../d,                          http://servicetalk.io/d,       true",
+            "http://servicetalk.io/a/b?q, true,  ?r,                            http://servicetalk.io/a/b?r,   true",
+            "http://servicetalk.io/a/b?q, true,  /x,                            http://servicetalk.io/x,       true",
+            "http://servicetalk.io/a/b?q, true,  d#f,                           http://servicetalk.io/a/d,     true",
+            "http://servicetalk.io/a/b?q, true,  http://other.servicetalk.io/x, http://other.servicetalk.io/x, false",
+            "http://servicetalk.io/a/b?q, true,  https://servicetalk.io:80/x,   https://servicetalk.io:80/x,   false",
+            "http://servicetalk.io/a/b?q, true,  mailto:x,                      ,",
+            "http://servicetalk.io/a/b?q, false, //servicetalk.io/x,            /x,                            true",
+            "http://servicetalk.io/a/b?q, false, //other.servicetalk.io/x,      ,",
+            "http://servicetalk.io/a/b?q, false, d,                             /a/d,                          true",
+            "http://servicetalk.io/a/b?q, false, ../d,                          /d,                            true",
+            "http://servicetalk.io/a/b?q, false, ?r,                            /a/b?r,                        true",
+            "http://servicetalk.io/a/b?q, false, /x,                            /x,                            true",
+            "http://servicetalk.io/a/b?q, false, http://servicetalk.io,         /,                             true",
+            "http://servicetalk.io/a/b?q, false, http://other.servicetalk.io/x, ,",
+            "http://servicetalk.io/a/b?q, false, https://servicetalk.io:80/x,   ,",
+            "/a/b?q,                      true,  //servicetalk.io/x,            /x,                            true",
+            "/a/b?q,                      true,  //other.servicetalk.io/x,      ,",
+            "/a/b?q,                      true,  d,                             /a/d,                          true",
+            "/a/b?q,                      true,  ?r,                            /a/b?r,                        true",
+            "/a/b?q,                      true,  http://other.servicetalk.io/x, http://other.servicetalk.io/x, false",
+            "/a/b?q,                      false, //servicetalk.io/x,            /x,                            true",
+            "/a/b?q,                      false, //other.servicetalk.io/x,      ,",
+            "/a/b?q,                      false, d,                             /a/d,                          true",
+            "/a/b?q,                      false, ?r,                            /a/b?r,                        true",
+            "http://servicetalk.io/a/b?q, true,  ///x,                          ,",
+            "http://servicetalk.io/a/b?q, true,  http:///x,                     ,",
+            "http://servicetalk.io/a/b?q, false, ///x,                          ,",
+            "http://servicetalk.io/a/b?q, true,  http:x,                        ,",
+            "http://servicetalk.io/a/b?q, false, http:x,                        ,",
+            "http://servicetalk.io/a/b?q, false, http://serv\u0131cetalk.io/x,  ,",
+            "http://servicetalk.io/a/b?q, true,  http://serv\u0131cetalk.io/x,  http://serv\u0131cetalk.io/x, false",
+            "http://servicetalk.io/a/b?q, true,  http://:80/x,                  ,",
+            "http://servicetalk.io/a/b?q, true,  //:8080/x,                     ,",
+            "http://servicetalk.io/a/b?q, true,  http://@/x,                    ,",
+            "http://[::1]/a/b?q,          false, /x,                            /x,                            true",
+            "http://[::1]:8080/a/b?q,     true,  /x,                            http://[::1]:8080/x,           true",
+            "http://[::1]:8080/a/b?q,     true,  //[::1]:8080/x,                http://[::1]:8080/x,           true",
+            "http://servicetalk.io/a/b?q, true,  /.//x,                         http://servicetalk.io//x,      true",
+            "http://servicetalk.io/a/b?q, false, /.//x,                         //x,                           true",
+            "http://servicetalk.io/a/b?q, true,  HTTP://SERVICETALK.io/x,       HTTP://SERVICETALK.io/x,       true",
+            "http://servicetalk.io/a/b?q, false, HTTP://SERVICETALK.io/x,       /x,                            true",
+            "http://servicetalk.io/a/b?q, false, //SERVICETALK.io/x,            /x,                            true",
+            "http://servicetalk.io/a/b?q, false, http://servicetalk.io:80/x,    /x,                            true",
+            "https://servicetalk.io/a/b?q, true,  //servicetalk.io/x,           https://servicetalk.io/x,      true",
+            "https://servicetalk.io/a/b?q, true,  //servicetalk.io:443/x,       https://servicetalk.io:443/x,  true",
+            "https://servicetalk.io/a/b?q, true,  //servicetalk.io:80/x,        https://servicetalk.io:80/x,   false",
+            "https://servicetalk.io/a/b?q, false, //servicetalk.io:443/x,       /x,                            true",
+            "https://servicetalk.io/a/b?q, false, //servicetalk.io:80/x,        ,",
+            "https://servicetalk.io/a/b?q, false, http://servicetalk.io:443/x,  ,",
+            "http://servicetalk.io/a/b?q, false, //servicetalk.io:99999/x,      ,",
+            "http://servicetalk.io/a/b?q, false, //servicetalk.io:8080:90/x,    ,",
+            "http://servicetalk.io/a/b?q, false, //[::1/x,                      ,",
+    })
+    void locationIsResolvedAgainstRequestTarget(String requestTarget, boolean allowNonRelativeRedirects,
+                                                String location, @Nullable String expectedTarget,
+                                                @Nullable Boolean expectedRelative) throws Exception {
+        when(httpClient.request(any())).thenReturn(redirectResponseWithLocation(MOVED_PERMANENTLY, location),
+                okResponse());
+        AtomicReference<Boolean> relativeRef = new AtomicReference<>();
+        StreamingHttpClient client = newClient(new RedirectConfigBuilder()
+                .allowNonRelativeRedirects(allowNonRelativeRedirects)
+                .redirectPredicate((relative, count, request, response) -> {
+                    relativeRef.set(relative);
+                    return true;
+                }).build());
+
+        StreamingHttpResponse response = client.request(newRequest(client, GET).requestTarget(requestTarget))
+                .toFuture().get();
+        ArgumentCaptor<StreamingHttpRequest> requestCaptor = forClass(StreamingHttpRequest.class);
+        if (expectedTarget == null) {
+            assertThat(response.status(), is(MOVED_PERMANENTLY));
+            verify(httpClient).request(requestCaptor.capture());
+            assertThat(relativeRef.get(), is(nullValue()));
+        } else {
+            assertThat(response.status(), is(OK));
+            verify(httpClient, times(2)).request(requestCaptor.capture());
+            assertThat(requestCaptor.getValue().requestTarget(), is(expectedTarget));
+            assertThat(relativeRef.get(), is(expectedRelative));
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] allowNonRelativeRedirects={0}")
+    @ValueSource(booleans = {true, false})
+    void relativeRedirectKeepsHostHeaderOfOriginalRequest(boolean allowNonRelativeRedirects) throws Exception {
+        when(httpClient.request(any())).thenReturn(redirectResponseWithLocation(MOVED_PERMANENTLY, "/x"),
+                okResponse());
+        StreamingHttpClient client = newClient(new RedirectConfigBuilder()
+                .allowNonRelativeRedirects(allowNonRelativeRedirects).build());
+
+        StreamingHttpRequest request = newRequest(client, GET).requestTarget("http://10.0.0.1/a");
+        StreamingHttpRequest redirectedRequest = verifyResponse(client, request, OK, -1, 2, GET);
+        assertThat(redirectedRequest.headers().get(HOST), contentEqualTo("servicetalk.io"));
+    }
+
+    @Test
+    void http10WithoutHostAfterOriginFormRewriteIsNotFollowed() throws Exception {
+        when(httpClient.request(any())).thenAnswer(invocation -> Single.defer(() -> {
+            // The multi-address client rewrites the request-target to origin-form in place:
+            invocation.<StreamingHttpRequest>getArgument(0).requestTarget("/path");
+            return redirectResponse(MOVED_PERMANENTLY);
+        }));
+        AtomicBoolean predicateInvoked = new AtomicBoolean();
+        StreamingHttpClient client = newClient(new RedirectConfigBuilder()
+                .allowNonRelativeRedirects(true)
+                .redirectPredicate((relative, count, request, response) -> {
+                    predicateInvoked.set(true);
+                    return true;
+                }).build());
+
+        StreamingHttpRequest request = newRequest(client, GET).requestTarget("http://servicetalk.io/path")
+                .version(HTTP_1_0);
+        request.headers().remove(HOST);
+        verifyDoesNotRedirect(client, request, MOVED_PERMANENTLY);
+        assertThat(predicateInvoked.get(), is(false));
+    }
+
     @Test
     void overrideAllowedStatuses() throws Exception {
         HttpResponseStatus[] allowedStatuses = notAllowedStatusesByDefault().stream()
@@ -646,17 +773,24 @@ class RedirectingHttpRequesterFilterTest {
         verifyRedirectResponsePayloadsDrained(true, cancel);
     }
 
-    @Test
-    void invalidLocation() {
-        when(httpClient.request(any())).thenReturn(
-                redirectResponse(MOVED_PERMANENTLY, "://non-relative.servicetalk.io"),
+    @ParameterizedTest(name = "{displayName} [{index}] location={0} allowNonRelativeRedirects={1}")
+    @CsvSource({
+            "://non-relative.servicetalk.io/x, true",
+            "://non-relative.servicetalk.io/x, false",
+            "//servicetalk.io:abc/x,           true",
+            "//servicetalk.io:abc/x,           false",
+    })
+    void invalidLocationIsNotFollowed(String location, boolean allowNonRelativeRedirects) throws Exception {
+        when(httpClient.request(any())).thenReturn(redirectResponseWithLocation(MOVED_PERMANENTLY, location),
                 okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
-                .allowNonRelativeRedirects(true).build());
+                .allowNonRelativeRedirects(allowNonRelativeRedirects).build());
 
-        ExecutionException e = assertThrows(ExecutionException.class,
-                () -> client.request(newRequest(client, GET)).toFuture().get());
-        assertThat(e.getCause(), instanceOf(IllegalArgumentException.class));
+        StreamingHttpRequest request = newRequest(client, GET);
+        StreamingHttpResponse response = client.request(request).toFuture().get();
+        assertThat(response.status(), is(MOVED_PERMANENTLY));
+        verify(httpClient).request(request);
+        verifyRedirectResponsePayloadsDrained(false, false);
     }
 
     @Test

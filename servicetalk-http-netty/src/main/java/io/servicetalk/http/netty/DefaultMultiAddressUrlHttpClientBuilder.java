@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2024 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -214,8 +214,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             }
         }
 
-        // This code is similar to io.servicetalk.http.utils.RedirectSingle#absoluteToRelativeFormRequestTarget
-        // but cannot be shared because we don't have an internal module for http
         private static String absoluteToRelativeFormRequestTarget(final String requestTarget,
                                                                   final String scheme, final String host) {
             final int fromIndex = scheme.length() + 3 + host.length();  // +3 because of "://" delimiter after scheme

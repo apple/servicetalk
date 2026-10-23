@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,8 @@ import io.servicetalk.transport.api.ServerContext;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -300,6 +302,24 @@ class MultiAddressUrlHttpClientTest {
         StreamingHttpRequest request = client.get(format("http://%s/301", hostHeader))
                 .setHeader(X_REQUESTED_LOCATION, "/200");  // Location for redirect
         requestAndValidate(client, request, OK, "/200", hostHeader);
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] location={0}")
+    @ValueSource(strings = {"200", "./200", "../200", "//%s/200"})
+    void requestWithRelativeReferenceRedirect(String location) throws Exception {
+        StreamingHttpRequest request = client.get(format("http://%s/301", hostHeader))
+                .setHeader(X_REQUESTED_LOCATION, format(location, hostHeader));  // Location for redirect
+        requestAndValidate(client, request, OK, "/200", hostHeader);
+    }
+
+    @Test
+    void requestWithProtocolRelativeRedirectToOtherServer() throws Exception {
+        try (CompositeCloseable closeables = newCompositeCloseable()) {
+            String hostHeader2 = hostHeader(serverHostAndPort(startNewLocalServer(httpService, closeables)));
+            StreamingHttpRequest request = client.get(format("http://%s/301", hostHeader))
+                    .setHeader(X_REQUESTED_LOCATION, format("//%s/200", hostHeader2));  // Location for redirect
+            requestAndValidate(client, request, OK, "/200", hostHeader2);
+        }
     }
 
     @Test
