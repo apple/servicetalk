@@ -1,3 +1,23 @@
 == ServiceTalk gRPC Application Errors Example
 
-Extends "Hello World" ServiceTalk gRPC example to demonstrate how services can return application level errors which are propagated to the client via the gRPC transport.
+Extends the "Hello World" ServiceTalk gRPC example to demonstrate how services can translate application exceptions into
+gRPC errors that are propagated to the client.
+
+`ErrorExampleClient` intentionally sends a request without a `token`. The server's validation throws an
+`IllegalArgumentException`, which the endpoint catches and maps to a failed `Single` containing a `GrpcStatusException`.
+The exception carries an `INVALID_ARGUMENT` status and a `google.rpc.BadRequest` detail identifying the missing token
+field. The client catches the `GrpcStatusException` and prints its application status. Requests with a non-empty token
+receive a greeting.
+
+The example's `mapException` method maps the known validation exception to details that are safe to expose to clients.
+It preserves existing `GrpcStatusException` instances and passes other exceptions through for ServiceTalk's default
+mapping and logging. An unmapped application exception, such as an `IllegalStateException`, produces an `UNKNOWN` status
+with an opaque description; its internal details are logged on the server.
+
+The server builder automatically installs `GrpcExceptionMapperServiceFilter` to handle errors from other filters.
+Application-specific mapping belongs in the service because the default mapper cannot infer the application's error
+semantics.
+
+The endpoint's `try/catch` handles exceptions thrown before a `Single` is returned. If an asynchronous operation emits a
+failure through its returned `Single`, use `single.onErrorMap(ErrorExampleServer::mapException)` within the server
+to apply the same application mapping to that failure.

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
  */
 public final class ErrorExampleServer {
     public static void main(String... args) throws Exception {
+        // GrpcExceptionMapperServiceFilter is installed automatically to handle errors from other filters.
         GrpcServers.forPort(8080)
                 .listenAndAwait(new ErrorGreeterService())
                 .awaitShutdown();
@@ -45,20 +46,33 @@ public final class ErrorExampleServer {
     private static final class ErrorGreeterService implements GreeterService {
         @Override
         public Single<HelloReply> sayHello(final GrpcServiceContext ctx, final HelloRequest request) {
-            if (request.getToken().isEmpty()) {
-                return failed(GrpcStatusException.of(Status.newBuilder()
-                        .setCode(INVALID_ARGUMENT.value())
-                        .setMessage("example message for invalid argument")
-                        .addDetails(pack(BadRequest.newBuilder().addFieldViolations(
-                                FieldViolation.newBuilder()
-                                        .setField(HelloRequest.getDescriptor().findFieldByNumber(2).getFullName())
-                                        .setDescription("missing required field!")
-                                        .build())
-                                .build()))
-                        .build()));
-            } else {
+            try {
+                if (request.getToken().isEmpty()) {
+                    throw new IllegalArgumentException("missing required field!");
+                }
                 return succeeded(HelloReply.newBuilder().setMessage("hello " + request.getName()).build());
+            } catch (Exception cause) {
+                // Convert exceptions thrown before returning a Single into failed signals.
+                return failed(mapException(cause));
             }
         }
+    }
+
+    private static Throwable mapException(final Throwable cause) {
+        if (cause instanceof IllegalArgumentException) {
+            // In this example, IllegalArgumentException indicates a missing token. Only expose known, safe details.
+            return GrpcStatusException.of(Status.newBuilder()
+                    .setCode(INVALID_ARGUMENT.value())
+                    .setMessage("example message for invalid argument")
+                    .addDetails(pack(BadRequest.newBuilder().addFieldViolations(
+                            FieldViolation.newBuilder()
+                                    .setField(HelloRequest.getDescriptor().findFieldByNumber(2).getFullName())
+                                    .setDescription("missing required field!")
+                                    .build())
+                            .build()))
+                    .build());
+        }
+        // Preserve existing GrpcStatusExceptions and let ServiceTalk map and log other failures.
+        return cause;
     }
 }

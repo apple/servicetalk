@@ -159,8 +159,20 @@ level error. In this case the application level error type happens to be defined
 link:https://github.com/googleapis/googleapis/blob/master/google/rpc/error_details.proto[error_details.proto], but it
 could be any protobuf object.
 
+The endpoint catches the application's missing-token `IllegalArgumentException` and returns a failed `Single` containing
+a `GrpcStatusException` with an `INVALID_ARGUMENT` status and a `google.rpc.BadRequest` detail identifying the field.
+Its `mapException` method maps this known validation exception to details that are safe for clients. Existing
+`GrpcStatusException` instances pass through unchanged, and other exceptions retain ServiceTalk's default mapping and
+logging. An unmapped application exception, such as an `IllegalStateException`, becomes an `UNKNOWN` status with an opaque
+description while its internal details are logged on the server.
+
+The server builder automatically installs `GrpcExceptionMapperServiceFilter` to handle errors from other filters.
+The service provides application-specific mapping because the default mapper cannot infer the application's error
+semantics. The endpoint's `try/catch` handles synchronous exceptions; failures emitted by an asynchronous operation's
+returned `Single` require `Single.onErrorMap` to apply the same mapping.
+
 * link:{source-root}/servicetalk-examples/grpc/errors/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleServer.java[ErrorExampleServer] - Requires each request has a non-empty `token` field or else returns an
-error.
+error with application-specific details.
 * link:{source-root}/servicetalk-examples/grpc/errors/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleClient.java[ErrorExampleClient] - Sends a request with missing `token` field to simulate an error
 condition on the server.
 
