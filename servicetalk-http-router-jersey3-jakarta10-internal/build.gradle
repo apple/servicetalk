@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2024 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ tasks.processResources.dependsOn(copySourcesForJersey3)
 tasks.sourcesJar.dependsOn(copySourcesForJersey3)
 tasks.compileJava.dependsOn(copySourcesForJersey3)
 tasks.processTestResources.dependsOn(copySourcesForJersey3)
+tasks.compileTestJava.dependsOn(copySourcesForJersey3)
 afterEvaluate {
   if (tasks.findByName("projectHealth")) {
     tasks.withType(com.autonomousapps.tasks.CodeSourceExploderTask) {
@@ -80,5 +81,11 @@ dependencies {
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-transport-api")
+  implementation project(":servicetalk-utils-internal")
   implementation "org.glassfish.jersey.core:jersey-common"
+
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+  testImplementation project(":servicetalk-buffer-netty")
+  testImplementation "org.junit.jupiter:junit-jupiter-api"
+  testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
 }

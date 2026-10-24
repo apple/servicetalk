@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ import javax.annotation.Nullable;
 import static com.fasterxml.jackson.databind.node.JsonNodeFactory.instance;
 import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.data.jackson.JacksonSerializer.doSerialize;
+import static io.servicetalk.utils.internal.BufferUtils.toByteArray;
 import static java.util.Collections.singletonList;
 import static java.util.function.Function.identity;
 
@@ -138,8 +139,7 @@ final class JacksonStreamingSerializer<T> implements StreamingSerializerDeserial
                 } else {
                     int readableBytes = buffer.readableBytes();
                     if (readableBytes != 0) {
-                        byte[] copy = new byte[readableBytes];
-                        buffer.readBytes(copy);
+                        byte[] copy = toByteArray(buffer);
                         feeder.feedInput(copy, 0, copy.length);
                     }
                 }

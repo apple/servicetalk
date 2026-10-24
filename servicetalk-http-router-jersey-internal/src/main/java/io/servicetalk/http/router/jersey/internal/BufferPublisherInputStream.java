@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.transport.api.IoThreadFactory;
+import io.servicetalk.utils.internal.BufferUtils;
 
 import org.glassfish.jersey.message.internal.EntityInputStream;
 
@@ -42,7 +43,6 @@ import static org.glassfish.jersey.message.internal.ReaderInterceptorExecutor.cl
  * and {@link BufferPublisherInputStream#bufferPublisher()}.
  */
 public final class BufferPublisherInputStream extends InputStream {
-    private static final byte[] EMPTY_ARRAY = new byte[0];
     private static final InputStream EMPTY_INPUT_STREAM = new InputStream() {
         @Override
         public int read() {
@@ -112,7 +112,7 @@ public final class BufferPublisherInputStream extends InputStream {
 
     private void publisherToInputStream() {
         if (inputStream == EMPTY_INPUT_STREAM) {
-            inputStream = publisher.toInputStream(BufferPublisherInputStream::getBytes, queueCapacity);
+            inputStream = publisher.toInputStream(BufferUtils::toByteArray, queueCapacity);
         }
     }
 
@@ -149,21 +149,5 @@ public final class BufferPublisherInputStream extends InputStream {
         }
 
         return inputStreamHandler.apply(wrappedStream, allocator);
-    }
-
-    private static byte[] getBytes(final Buffer content) {
-        final int readableBytes = content.readableBytes();
-
-        if (readableBytes == 0) {
-            return EMPTY_ARRAY;
-        }
-
-        if (content.hasArray() && content.arrayOffset() == 0 && content.array().length == readableBytes) {
-            return content.array();
-        }
-
-        final byte[] bytes = new byte[readableBytes];
-        content.readBytes(bytes);
-        return bytes;
     }
 }

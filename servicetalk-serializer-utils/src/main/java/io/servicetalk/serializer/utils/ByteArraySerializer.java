@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package io.servicetalk.serializer.utils;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.serializer.api.SerializerDeserializer;
+
+import static io.servicetalk.utils.internal.BufferUtils.toByteArray;
 
 /**
  * Serialize/deserialize {@code byte[]}.
@@ -45,15 +47,9 @@ public final class ByteArraySerializer implements SerializerDeserializer<byte[]>
 
     @Override
     public byte[] deserialize(final Buffer serializedData, final BufferAllocator allocator) {
-        // First try to return the raw underlying array, otherwise fallback to copy.
-        byte[] result;
-        if (!forceCopy && serializedData.hasArray() && serializedData.arrayOffset() == 0 &&
-                (result = serializedData.array()).length == serializedData.readableBytes()) {
-            serializedData.skipBytes(result.length);
-            return result;
-        }
-        result = new byte[serializedData.readableBytes()];
-        serializedData.readBytes(result);
+        final byte[] result = toByteArray(serializedData, forceCopy);
+        // Reusing the backing array does not advance the reader index.
+        serializedData.skipBytes(serializedData.readableBytes());
         return result;
     }
 
