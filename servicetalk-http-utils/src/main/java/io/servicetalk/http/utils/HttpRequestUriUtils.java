@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,12 @@ import static io.servicetalk.http.api.HttpRequestMethod.OPTIONS;
 public final class HttpRequestUriUtils {
     private HttpRequestUriUtils() {
         // no instances
+    }
+
+    static boolean hasRequestTargetScheme(final HttpRequestMetaData metaData, final String scheme) {
+        // A request factory may supply a default scheme even for origin-form request targets.
+        return !CONNECT.equals(metaData.method()) && metaData.requestTarget().regionMatches(true, 0,
+                scheme + ':', 0, scheme.length() + 1);
     }
 
     /**
@@ -203,7 +209,7 @@ public final class HttpRequestUriUtils {
         }
 
         final String metadataScheme = metaData.scheme();
-        if (metadataScheme != null) {
+        if (metadataScheme != null && hasRequestTargetScheme(metaData, metadataScheme)) {
             // absolute form
             return buildRequestUri(
                     metadataScheme,
@@ -214,8 +220,14 @@ public final class HttpRequestUriUtils {
                     query);
         }
 
-        final String scheme = fixedScheme != null ? fixedScheme.toLowerCase(Locale.ENGLISH) :
-                (ctx.sslSession() != null ? "https" : "http");
+        final String scheme;
+        if (fixedScheme != null) {
+            scheme = fixedScheme.toLowerCase(Locale.ENGLISH);
+        } else if (metadataScheme != null) {
+            scheme = metadataScheme;
+        } else {
+            scheme = ctx.sslSession() != null ? "https" : "http";
+        }
 
         final HostAndPort effectiveHostAndPort;
         if (fixedAuthority != null) {

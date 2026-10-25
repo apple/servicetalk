@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.REDIRECTION_3XX;
+import static io.servicetalk.http.utils.HttpRequestUriUtils.hasRequestTargetScheme;
 import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 
 /**
@@ -168,7 +169,8 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                         newRequest.requestTarget(scheme + "://" + newRequest.headers().get(HOST) +
                                 newRequest.requestTarget());
                     }
-                    if (!redirectSingle.allowNonRelativeRedirects && newScheme != null) {
+                    if (!redirectSingle.allowNonRelativeRedirects && newScheme != null &&
+                            hasRequestTargetScheme(newRequest, newScheme)) {
                         // Rewrite absolute-form location to origin-form request-target in case only relative redirects
                         // are supported:
                         newRequest.requestTarget(

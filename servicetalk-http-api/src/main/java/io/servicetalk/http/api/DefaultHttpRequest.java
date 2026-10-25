@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -288,7 +288,8 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
                 .setMayHaveTrailersAndGenericTypeBuffer(trailers != null);
         return new DefaultStreamingHttpRequest(method(), requestTarget(), version(), headers(), context0(), encoding(),
                 contentEncoding(), original.payloadHolder().allocator(), payload, payloadInfo,
-                original.payloadHolder().headersFactory(), StreamingHttpPayloadHolder.NO_AGGREGATED_PAYLOAD_LIMIT);
+                original.payloadHolder().headersFactory(), StreamingHttpPayloadHolder.NO_AGGREGATED_PAYLOAD_LIMIT,
+                original.defaultScheme());
     }
 
     @Override

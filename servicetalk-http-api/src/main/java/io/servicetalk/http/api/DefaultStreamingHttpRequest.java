@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,18 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
                                 final BufferAllocator allocator, @Nullable final Publisher<?> payloadBody,
                                 final DefaultPayloadInfo payloadInfo, final HttpHeadersFactory headersFactory,
                                 final LongConsumer payloadSizeLimiter) {
-        super(method, requestTarget, version, headers, context);
+        this(method, requestTarget, version, headers, context, encoding, encoder, allocator, payloadBody, payloadInfo,
+                headersFactory, payloadSizeLimiter, null);
+    }
+
+    DefaultStreamingHttpRequest(final HttpRequestMethod method, final String requestTarget,
+                                final HttpProtocolVersion version, final HttpHeaders headers,
+                                @Nullable final ContextMap context,
+                                @Nullable final ContentCodec encoding, @Nullable final BufferEncoder encoder,
+                                final BufferAllocator allocator, @Nullable final Publisher<?> payloadBody,
+                                final DefaultPayloadInfo payloadInfo, final HttpHeadersFactory headersFactory,
+                                final LongConsumer payloadSizeLimiter, @Nullable final String defaultScheme) {
+        super(method, requestTarget, version, headers, context, defaultScheme);
         if (encoding != null) {
             encoding(encoding);
         }
