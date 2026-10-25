@@ -42,6 +42,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.REDIRECTION_3XX;
+import static io.servicetalk.http.utils.HttpRequestUriUtils.hasRequestTargetScheme;
 import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 
 /**
@@ -109,7 +110,8 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
             this.redirectSingle = redirectSingle;
             this.request = request;
             // Remember scheme here because it can be wiped by multi-address client later as part of processing:
-            this.scheme = request.scheme();
+            final String scheme = request.scheme();
+            this.scheme = scheme != null && hasRequestTargetScheme(request, scheme) ? scheme : null;
             this.redirectCount = redirectCount;
             this.sequentialCancellable = sequentialCancellable;
         }

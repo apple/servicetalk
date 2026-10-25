@@ -50,6 +50,8 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
     private HttpRequestMethod method;
     private String requestTarget;
+    @Nullable
+    private final String defaultScheme;
 
     @Nullable
     private HttpQuery httpQuery;
@@ -65,9 +67,16 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     DefaultHttpRequestMetaData(final HttpRequestMethod method, final String requestTarget,
                                final HttpProtocolVersion version, final HttpHeaders headers,
                                @Nullable final ContextMap context) {
+        this(method, requestTarget, version, headers, context, null);
+    }
+
+    DefaultHttpRequestMetaData(final HttpRequestMethod method, final String requestTarget,
+                               final HttpProtocolVersion version, final HttpHeaders headers,
+                               @Nullable final ContextMap context, @Nullable final String defaultScheme) {
         super(version, headers, context);
         this.method = requireNonNull(method);
         this.requestTarget = requireNonNull(requestTarget);
+        this.defaultScheme = defaultScheme;
     }
 
     @Override
@@ -140,7 +149,13 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     @Nullable
     @Override
     public final String scheme() {
-        return lazyParseRequestTarget().scheme();
+        final String scheme = lazyParseRequestTarget().scheme();
+        return scheme != null ? scheme : defaultScheme;
+    }
+
+    @Nullable
+    final String defaultScheme() {
+        return defaultScheme;
     }
 
     @Nullable
