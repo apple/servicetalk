@@ -177,21 +177,31 @@ public interface SslConfig {
     /**
      * Get the list of usable {@link CertificateCompressionAlgorithm CertificateCompressionAlgorithms} to advertise.
      * <p>
-     * If this method returns null (by default) or an empty list, no certificate compression algorithms will be
-     * advertised during the TLS handshake which effectively disables this feature. Note that even though they
-     * are advertised, the other side is not required per RFC to compress so certificates might still be sent
-     * uncompressed.
+     * If this method returns {@code null} (by default), the default behavior of the underlying TLS implementation is
+     * used, which may apply compression by default. If this method returns an empty list, certificate compression is
+     * disabled and no algorithms are advertised during the TLS handshake. Note that even though they are advertised,
+     * the other side is not required per RFC to compress so certificates might still be sent uncompressed.
      * <p>
-     * Also note that this feature is only available with:
+     * Also note that this configuration is only applied with:
      * <ul>
-     *     <li><a href="https://netty.io/wiki/forked-tomcat-native.html">BoringSSL</a> implementation of
-     *     {@link SslProvider#OPENSSL}. Provided compression algorithms are ignored when the {@link SslProvider#JDK} is
-     *     used.</li>
+     *     <li><a href="https://netty.io/wiki/forked-tomcat-native.html">BoringSSL</a> or AWS-LC implementation of
+     *     {@link SslProvider#OPENSSL}.</li>
      *     <li>TLSv1.3 or above.</li>
      * </ul>
+     * <p>
+     * The returned value (including an empty list) is ignored when the {@link SslProvider#JDK} is used. JDK 27+
+     * enables ZLIB certificate compression by default, which can only be disabled for the whole JVM by adding
+     * {@code compress_certificate} to the {@code jdk.tls.client.disableExtensions} and
+     * {@code jdk.tls.server.disableExtensions} system properties. Newer Netty versions also respect these properties
+     * when this method returns {@code null}.
      *
-     * @return the list of certificate compression algorithms to advertise.
-     * @see <a href="https://www.rfc-editor.org/rfc/rfc8879">RFC8879 - TLS Certificate Compression</a>
+     * @return the list of certificate compression algorithms to advertise, an empty list to disable certificate
+     * compression, or {@code null} to use the default behavior of the underlying TLS implementation.
+     * @see <a href="https://www.rfc-editor.org/info/rfc8879/">RFC8879 - TLS Certificate Compression</a>
+     * @see <a href="https://bugs.openjdk.org/browse/JDK-8372526">JDK-8372526 - Add support for ZLIB TLS Certificate
+     * Compression (JDK27)</a>
+     * @see <a href="https://github.com/netty/netty/pull/17548">Netty 4.2.20 - Add consistent TLS certificate
+     * compression support</a>
      * @see CertificateCompressionAlgorithms
      */
     @Nullable // FIXME 0.43 - remove default implementation
