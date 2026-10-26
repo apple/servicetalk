@@ -35,6 +35,7 @@ import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
+import java.time.Duration;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -187,6 +188,33 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
     // FIXME: 0.43 - consider removing default impl
     default SingleAddressHttpClientBuilder<U, R> maxAggregatedPayloadSize(int maxAggregatedPayloadSize) {
         throw new UnsupportedOperationException("Setting maxAggregatedPayloadSize is not yet supported by " +
+                getClass().getName());
+    }
+
+    /**
+     * Sets how long this client waits for a response to a request carrying an {@code Expect: 100-continue} header
+     * before it sends the request payload body anyway.
+     * <p>
+     * Normally the payload body is withheld until the server answers with {@code 100 (Continue)} or a final response.
+     * If the server never answers, the request stalls until another timeout fires. When this timeout expires the
+     * client logs an INFO message and sends the payload body without waiting further, as permitted by
+     * <a href="https://www.rfc-editor.org/rfc/rfc9110#section-10.1.1">RFC 9110, section 10.1.1</a>. The message is
+     * logged at most once every 2 hours per client, with the number of requests that timed out since the previous
+     * message. A response that arrives afterwards is handled as usual.
+     * <p>
+     * Applies to HTTP/1.1 and HTTP/2, to every request sent by this client; it cannot be set per request. The default
+     * is 3 seconds. {@link Duration#ZERO} disables the timeout, and the client waits indefinitely. The timeout does not
+     * apply to HTTP/1.1 connections when {@code maxPipelinedRequests} is greater than 1, where the payload body keeps
+     * waiting for the server's response.
+     *
+     * @param expectContinueTimeout the {@link Duration} to wait, must be non-negative; {@link Duration#ZERO} waits
+     * indefinitely
+     * @return {@code this}
+     * @throws IllegalArgumentException if {@code expectContinueTimeout} is negative
+     */
+    // FIXME: 0.43 - consider removing default impl
+    default SingleAddressHttpClientBuilder<U, R> expectContinueTimeout(Duration expectContinueTimeout) {
+        throw new UnsupportedOperationException("Setting expectContinueTimeout is not yet supported by " +
                 getClass().getName());
     }
 

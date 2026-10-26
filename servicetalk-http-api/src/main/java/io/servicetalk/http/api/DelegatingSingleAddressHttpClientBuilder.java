@@ -28,6 +28,7 @@ import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.TransportConfig;
 
 import java.net.SocketOption;
+import java.time.Duration;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -115,6 +116,12 @@ public class DelegatingSingleAddressHttpClientBuilder<U, R> implements SingleAdd
     @Override
     public SingleAddressHttpClientBuilder<U, R> maxAggregatedPayloadSize(final int maxAggregatedPayloadSize) {
         delegate = delegate.maxAggregatedPayloadSize(maxAggregatedPayloadSize);
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> expectContinueTimeout(final Duration expectContinueTimeout) {
+        delegate = delegate.expectContinueTimeout(expectContinueTimeout);
         return this;
     }
 

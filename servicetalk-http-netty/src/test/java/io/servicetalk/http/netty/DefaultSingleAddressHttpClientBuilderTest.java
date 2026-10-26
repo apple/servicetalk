@@ -31,8 +31,12 @@ import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.http.netty.InternalServiceDiscoverers.mappingServiceDiscoverer;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static java.time.Duration.ZERO;
+import static java.time.Duration.ofMillis;
+import static java.time.Duration.ofNanos;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -92,6 +96,31 @@ class DefaultSingleAddressHttpClientBuilderTest {
              new TestAddress(),
             mappingServiceDiscoverer(u -> null, "description"))
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build());
+    }
+
+    @Test
+    void expectContinueTimeoutRejectsNegative() {
+        assertThrows(IllegalArgumentException.class, () -> newBuilder().expectContinueTimeout(ofMillis(-1)));
+    }
+
+    @Test
+    void expectContinueTimeoutRejectsNull() {
+        assertThrows(NullPointerException.class, () -> newBuilder().expectContinueTimeout(null));
+    }
+
+    @Test
+    void expectContinueTimeoutAcceptsZero() {
+        assertDoesNotThrow(() -> newBuilder().expectContinueTimeout(ZERO));
+    }
+
+    @Test
+    void expectContinueTimeoutAcceptsPositive() {
+        assertDoesNotThrow(() -> newBuilder().expectContinueTimeout(ofNanos(1)));
+    }
+
+    private static DefaultSingleAddressHttpClientBuilder<TestAddress, InetSocketAddress> newBuilder() {
+        return new DefaultSingleAddressHttpClientBuilder<>(new TestAddress(),
+                mappingServiceDiscoverer(u -> null, "description"));
     }
 
     private static void hostToCharSequenceFunction(String hostNamePrefix, String hostName, String hostNameSuffix,

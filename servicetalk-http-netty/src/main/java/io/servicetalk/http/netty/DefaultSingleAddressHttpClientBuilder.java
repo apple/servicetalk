@@ -69,6 +69,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
@@ -89,6 +90,8 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
 import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalClientFilterFactory;
 import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalConnectionFilterFactory;
+import static io.servicetalk.utils.internal.DurationUtils.ensureNonNegative;
+import static io.servicetalk.utils.internal.DurationUtils.toNanos;
 import static java.lang.Integer.parseInt;
 import static java.net.StandardSocketOptions.SO_KEEPALIVE;
 import static java.time.Duration.ofMinutes;
@@ -586,6 +589,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> maxAggregatedPayloadSize(final int maxAggregatedPayloadSize) {
         config.protocolConfigs().maxAggregatedPayloadSize(maxAggregatedPayloadSize);
+        return this;
+    }
+
+    @Override
+    public DefaultSingleAddressHttpClientBuilder<U, R> expectContinueTimeout(final Duration expectContinueTimeout) {
+        config.expectContinueTimeoutNanos(toNanos(ensureNonNegative(expectContinueTimeout, "expectContinueTimeout")));
         return this;
     }
 

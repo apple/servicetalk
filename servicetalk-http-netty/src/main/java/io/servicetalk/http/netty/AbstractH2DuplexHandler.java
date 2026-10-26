@@ -62,7 +62,7 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public final void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
         if (evt instanceof Http2ResetFrame) {
             ctx.fireExceptionCaught(newStreamResetException((Http2ResetFrame) evt));
         } else {

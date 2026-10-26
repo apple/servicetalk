@@ -76,7 +76,8 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
                     final H1ProtocolConfig h1Config = config.h1Config();
                     assert h1Config != null;
                     return StreamingConnectionFactory.createConnection(channel, executionContext, h1Config, tcpConfig,
-                            NoopChannelInitializer.INSTANCE, connectionObserver)
+                            NoopChannelInitializer.INSTANCE, connectionObserver,
+                            config.h1ExpectContinueTimeout())
                             .map(conn -> new PipelinedStreamingHttpConnection(conn, h1Config,
                                     reqRespFactoryFunc.apply(HttpProtocolVersion.HTTP_1_1),
                                     config.allowDropTrailersReadFromTransport(),
@@ -89,7 +90,7 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
                             tcpConfig.idleTimeoutMs(), tcpConfig.sslConfig(),
                             new H2ClientParentChannelInitializer(h2Config),
                             connectionObserver, config.allowDropTrailersReadFromTransport(),
-                            config.payloadSizeLimiter());
+                            config.payloadSizeLimiter(), config.expectContinueTimeout());
                 default:
                     return unknownAlpnProtocol(protocol);
             }

@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.ProxyConfig;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
+import io.servicetalk.transport.netty.internal.ExpectContinueTimeout;
 
 import java.util.function.LongConsumer;
 import javax.annotation.Nullable;
@@ -31,6 +32,8 @@ final class ReadOnlyHttpClientConfig {
     private final ProxyConfig<String> proxyConfig;
     private final boolean allowDropTrailers;
     private final LongConsumer payloadSizeLimiter;
+    private final ExpectContinueTimeout expectContinueTimeout;
+    private final ExpectContinueTimeout h1ExpectContinueTimeout;
 
     ReadOnlyHttpClientConfig(final HttpClientConfig from, @Nullable final Object owner) {
         final HttpConfig configs = from.protocolConfigs();
@@ -40,6 +43,9 @@ final class ReadOnlyHttpClientConfig {
         proxyConfig = from.proxyConfig();
         allowDropTrailers = configs.allowDropTrailersReadFromTransport();
         payloadSizeLimiter = configs.newAggregatedPayloadSizeLimiter(owner);
+        expectContinueTimeout = new ExpectContinueTimeoutLogger(from.expectContinueTimeoutNanos());
+        h1ExpectContinueTimeout = from.isExpectContinueTimeoutIgnoredByH1() ?
+                ExpectContinueTimeout.NONE : expectContinueTimeout;
     }
 
     ReadOnlyTcpClientConfig tcpConfig() {
@@ -62,6 +68,17 @@ final class ReadOnlyHttpClientConfig {
 
     LongConsumer payloadSizeLimiter() {
         return payloadSizeLimiter;
+    }
+
+    ExpectContinueTimeout expectContinueTimeout() {
+        return expectContinueTimeout;
+    }
+
+    /**
+     * {@link ExpectContinueTimeout} for HTTP/1.1 connections, {@link ExpectContinueTimeout#NONE} when pipelining.
+     */
+    ExpectContinueTimeout h1ExpectContinueTimeout() {
+        return h1ExpectContinueTimeout;
     }
 
     boolean isH2PriorKnowledge() {

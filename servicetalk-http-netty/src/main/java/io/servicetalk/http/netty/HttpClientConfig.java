@@ -22,6 +22,9 @@ import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.DelegatingClientSslConfig;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.List;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
@@ -31,8 +34,13 @@ import static io.servicetalk.http.netty.HttpServerConfig.httpAlpnProtocols;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV4Address;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 final class HttpClientConfig {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpClientConfig.class);
+
+    static final long DEFAULT_EXPECT_CONTINUE_TIMEOUT_NANOS = SECONDS.toNanos(3);
 
     private final TcpClientConfig tcpConfig;
     private final HttpConfig protocolConfigs;
@@ -47,6 +55,8 @@ final class HttpClientConfig {
     @Nullable
     private String fallbackProxyPeerHost;
     private int fallbackProxyPeerPort = -1;
+    private long expectContinueTimeoutNanos = DEFAULT_EXPECT_CONTINUE_TIMEOUT_NANOS;
+    private boolean expectContinueTimeoutExplicit;
 
     HttpClientConfig() {
         tcpConfig = new TcpClientConfig();
@@ -76,6 +86,8 @@ final class HttpClientConfig {
         inferSniHostname = from.inferSniHostname;
         fallbackProxyPeerHost = from.fallbackProxyPeerHost;
         fallbackProxyPeerPort = from.fallbackProxyPeerPort;
+        expectContinueTimeoutNanos = from.expectContinueTimeoutNanos;
+        expectContinueTimeoutExplicit = from.expectContinueTimeoutExplicit;
     }
 
     TcpClientConfig tcpConfig() {
@@ -128,9 +140,28 @@ final class HttpClientConfig {
         this.fallbackProxyPeerPort = fallbackProxyPeerPort;
     }
 
+    long expectContinueTimeoutNanos() {
+        return expectContinueTimeoutNanos;
+    }
+
+    void expectContinueTimeoutNanos(final long expectContinueTimeoutNanos) {
+        this.expectContinueTimeoutNanos = expectContinueTimeoutNanos;
+        expectContinueTimeoutExplicit = true;
+    }
+
+    boolean isExpectContinueTimeoutIgnoredByH1() {
+        final H1ProtocolConfig h1Config = protocolConfigs.h1Config();
+        return h1Config != null && h1Config.maxPipelinedRequests() > 1;
+    }
+
     ReadOnlyHttpClientConfig asReadOnly(@Nullable final Object owner) {
         applySslConfigOverrides();
         final ReadOnlyHttpClientConfig roConfig = new ReadOnlyHttpClientConfig(this, owner);
+        if (expectContinueTimeoutExplicit && expectContinueTimeoutNanos > 0 && isExpectContinueTimeoutIgnoredByH1()) {
+            LOGGER.warn("expectContinueTimeout is not applied to HTTP/1.1 connections because maxPipelinedRequests " +
+                    "is greater than 1, the request body keeps waiting for the server's response. Set " +
+                    "H1ProtocolConfigBuilder.maxPipelinedRequests(1) to apply expectContinueTimeout to HTTP/1.1.");
+        }
         if (roConfig.tcpConfig().sslContext() == null && roConfig.h1Config() != null && roConfig.h2Config() != null) {
             throw new IllegalStateException("Cleartext HTTP/1.1 -> HTTP/2 (h2c) upgrade is not supported");
         }
