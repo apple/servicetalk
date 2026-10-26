@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterable;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.ContentCodec;
@@ -28,11 +27,11 @@ import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.defer;
-import static io.servicetalk.concurrent.api.Publisher.empty;
-import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromInputStream;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
+import static io.servicetalk.http.api.BlockingStreamingHttpMessageBodyUtils.fromFilterNull;
 import static io.servicetalk.http.api.BlockingStreamingHttpMessageBodyUtils.newMessageBody;
+import static io.servicetalk.http.api.BlockingStreamingHttpMessageBodyUtils.serializeMessageBody;
 
 final class DefaultBlockingStreamingHttpResponse extends AbstractDelegatingHttpResponse
         implements BlockingStreamingHttpResponse {
@@ -100,13 +99,8 @@ final class DefaultBlockingStreamingHttpResponse extends AbstractDelegatingHttpR
     @Override
     public <T> BlockingStreamingHttpResponse messageBody(final HttpMessageBodyIterable<T> messageBody,
                                                          final HttpStreamingSerializer<T> serializer) {
-        original.payloadHolder().messageBody(defer(() -> {
-            HttpMessageBodyIterator<T> body = messageBody.iterator();
-            return from(serializer.serialize(headers(), () -> body, original.payloadHolder().allocator()))
-                    .cast(Object.class)
-                    .concat(defer(() -> fromFilterNull(body.trailers())).shareContextOnSubscribe())
-                    .shareContextOnSubscribe();
-        }));
+        original.payloadHolder().messageBody(serializeMessageBody(messageBody, headers(), serializer,
+                original.payloadHolder().allocator()));
         return this;
     }
 
@@ -182,9 +176,5 @@ final class DefaultBlockingStreamingHttpResponse extends AbstractDelegatingHttpR
     public BlockingStreamingHttpResponse status(final HttpResponseStatus status) {
         original.status(status);
         return this;
-    }
-
-    static <T> Publisher<T> fromFilterNull(@Nullable T value) {
-        return value == null ? empty() : from(value);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,10 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.http.api.HttpDataSourceTransformations.PayloadAndTrailers;
 import io.servicetalk.serializer.api.StreamingSerializerDeserializer;
@@ -32,14 +34,18 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.DefaultPayloadInfo.forTransportReceive;
@@ -49,6 +55,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.serializer.utils.StringSerializer.stringSerializer;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Arrays.asList;
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -331,6 +338,79 @@ class StreamingHttpPayloadHolderTest {
         final List<Long> totals = new ArrayList<>();
         aggregate(totals::add, ascii(5), ascii(3), ascii(2));
         assertThat(totals, contains(5L, 8L, 10L));
+    }
+
+    @Test
+    void transformPayloadBodyWithTrailersResubscribeEmitsTrailersAfterData() throws Exception {
+        // Models a retried request: each attempt re-subscribes the message body, and the retry's data arrives
+        // asynchronously. A chain shared with the first attempt would replay that attempt's trailers as soon as the
+        // retry subscribes, and trailers end the HTTP message, so the retry would be sent without a body.
+        final Buffer payload = DEFAULT_ALLOCATOR.fromAscii("hello");
+        final HttpHeaders firstTrailers = DefaultHttpHeadersFactory.INSTANCE.newTrailers().set("t", "1");
+        final HttpHeaders retryTrailers = DefaultHttpHeadersFactory.INSTANCE.newTrailers().set("t", "2");
+        final CompletableSource.Processor retryDataGate = newCompletableProcessor();
+        final Iterator<Publisher<Object>> attempts = asList(Publisher.<Object>from(payload, firstTrailers),
+                fromSource(retryDataGate).concat(Publisher.<Object>from(payload, retryTrailers))).iterator();
+        final StreamingHttpPayloadHolder holder = holderWithTrailers(Publisher.defer(attempts::next));
+        holder.transformPayloadBody(UnaryOperator.identity());
+
+        assertThat(holder.messageBody().toFuture().get(), contains(payload, firstTrailers));
+        final Future<Collection<Object>> retry = holder.messageBody().toFuture();
+        retryDataGate.onComplete();
+        assertThat(retry.get(), contains(payload, retryTrailers));
+    }
+
+    @Test
+    void transformPayloadBodyWithTrailersSupportsOverlappingSubscribes() throws Exception {
+        final Buffer payload = DEFAULT_ALLOCATOR.fromAscii("hello");
+        final HttpHeaders trailers = DefaultHttpHeadersFactory.INSTANCE.newTrailers().set("t", "v");
+        final StreamingHttpPayloadHolder holder = holderWithTrailers(Publisher.from(payload, trailers));
+        final CompletableSource.Processor inputGate = newCompletableProcessor();
+        holder.transformPayloadBody(payloadBody -> fromSource(inputGate).concat(payloadBody));
+
+        final Future<Collection<Object>> first = holder.messageBody().toFuture();
+        final Future<Collection<Object>> second = holder.messageBody().toFuture();
+        inputGate.onComplete();
+        assertThat(first.get(), contains(payload, trailers));
+        assertThat(second.get(), contains(payload, trailers));
+    }
+
+    @Test
+    void transformPayloadBodyWithTrailersAllowsTransformerToSubscribeInput() throws Exception {
+        final Buffer payload = DEFAULT_ALLOCATOR.fromAscii("hello");
+        final HttpHeaders trailers = DefaultHttpHeadersFactory.INSTANCE.newTrailers().set("t", "v");
+        final StreamingHttpPayloadHolder holder = holderWithTrailers(Publisher.from(payload, trailers));
+        final TestPublisherSubscriber<Buffer> subscribedInApply = new TestPublisherSubscriber<>();
+        holder.transformPayloadBody(payloadBody -> {
+            toSource(payloadBody).subscribe(subscribedInApply);
+            return payloadBody;
+        });
+
+        subscribedInApply.awaitSubscription().request(Long.MAX_VALUE);
+        assertThat(subscribedInApply.takeOnNext(), is(payload));
+        subscribedInApply.awaitOnComplete();
+        assertThat(holder.messageBody().toFuture().get(), contains(payload, trailers));
+    }
+
+    @Test
+    void transformPayloadBodyWithTrailersThrowsTransformerException() throws Exception {
+        final Buffer payload = DEFAULT_ALLOCATOR.fromAscii("hello");
+        final HttpHeaders trailers = DefaultHttpHeadersFactory.INSTANCE.newTrailers().set("t", "v");
+        final StreamingHttpPayloadHolder holder = holderWithTrailers(Publisher.from(payload, trailers));
+
+        assertThrows(DeliberateException.class, () -> holder.transformPayloadBody(payloadBody -> {
+            throw DELIBERATE_EXCEPTION;
+        }));
+        assertThat(holder.messageBody().toFuture().get(), contains(payload, trailers));
+    }
+
+    private static StreamingHttpPayloadHolder holderWithTrailers(final Publisher<Object> messageBody) {
+        final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders().set(TRANSFER_ENCODING, CHUNKED);
+        final StreamingHttpPayloadHolder holder = new StreamingHttpPayloadHolder(headers, DEFAULT_ALLOCATOR,
+                messageBody, forTransportReceive(false, HTTP_1_1, headers), DefaultHttpHeadersFactory.INSTANCE,
+                StreamingHttpPayloadHolder.NO_AGGREGATED_PAYLOAD_LIMIT);
+        assertThat(holder.mayHaveTrailers(), is(true));
+        return holder;
     }
 
     // Mimics the enforcing limiter (whose real implementation lives in servicetalk-http-netty): reject once the

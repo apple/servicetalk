@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,18 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
+import io.servicetalk.concurrent.api.Publisher;
 
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Publisher.defer;
+import static io.servicetalk.concurrent.api.Publisher.empty;
+import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Publisher.fromIterable;
+import static io.servicetalk.http.api.HttpDataSourceTransformations.eagerForFirstSubscribe;
 import static java.lang.System.nanoTime;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -78,6 +84,45 @@ final class BlockingStreamingHttpMessageBodyUtils {
                 return deserialized.hasNext();
             }
         };
+    }
+
+    static <T> Publisher<Object> serializeMessageBody(
+            HttpMessageBodyIterable<T> messageBody, HttpHeaders headers, HttpStreamingSerializer<T> serializer,
+            BufferAllocator allocator) {
+        // Serialize now rather than on subscribe: the serializer may update headers, which are sent before the body.
+        return eagerForFirstSubscribe(() -> {
+            final TrailersTrackingIterable<T> body = new TrailersTrackingIterable<>(messageBody);
+            return fromIterable(serializer.serialize(headers, body, allocator))
+                    .cast(Object.class)
+                    .concat(defer(() -> fromFilterNull(body.trailers()).shareContextOnSubscribe()));
+        });
+    }
+
+    static <T> Publisher<T> fromFilterNull(@Nullable T value) {
+        return value == null ? empty() : from(value);
+    }
+
+    private static final class TrailersTrackingIterable<T> implements BlockingIterable<T> {
+        private final HttpMessageBodyIterable<T> delegate;
+        @Nullable
+        private volatile HttpMessageBodyIterator<T> current;
+
+        TrailersTrackingIterable(HttpMessageBodyIterable<T> delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public HttpMessageBodyIterator<T> iterator() {
+            final HttpMessageBodyIterator<T> iterator = delegate.iterator();
+            current = iterator;
+            return iterator;
+        }
+
+        @Nullable
+        HttpHeaders trailers() {
+            final HttpMessageBodyIterator<T> iterator = current;
+            return iterator == null ? null : iterator.trailers();
+        }
     }
 
     private static final class DefaultHttpMessageBodyIterator<I> implements HttpMessageBodyIterator<Buffer> {
