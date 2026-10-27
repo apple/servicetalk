@@ -110,6 +110,7 @@ final class UriReference {
      * Returns the host and port of the {@link #authority}, or {@code null} if it is undefined.
      *
      * @return the host and port of the {@link #authority}, or {@code null} if it is undefined.
+     * @throws IllegalArgumentException if the host or port is malformed.
      */
     @Nullable
     HostAndPort hostAndPort() {
@@ -120,11 +121,46 @@ final class UriReference {
         final int ipLiteralEnd = authority.lastIndexOf(']');
         final int portDelimiter = authority.lastIndexOf(':');
         if (portDelimiter < hostStart || portDelimiter < ipLiteralEnd) {
-            return HostAndPort.of(authority.substring(hostStart), -1);
+            return HostAndPort.of(host(authority, hostStart, authority.length()), -1);
         }
-        final String port = authority.substring(portDelimiter + 1);
-        return HostAndPort.of(authority.substring(hostStart, portDelimiter),
-                port.isEmpty() ? -1 : Integer.parseInt(port));
+        return HostAndPort.of(host(authority, hostStart, portDelimiter), port(authority, portDelimiter + 1));
+    }
+
+    /**
+     * Returns the path and query as an origin-form request-target.
+     *
+     * @return the path and query as an origin-form request-target.
+     */
+    String originForm() {
+        return (path.isEmpty() ? "/" : path) + (query == null ? "" : '?' + query);
+    }
+
+    // Only an IP literal may contain ':', and it must be enclosed in brackets.
+    private static String host(final String authority, final int begin, final int end) {
+        final String host = authority.substring(begin, end);
+        if (host.startsWith("[") ? !host.endsWith("]") : host.indexOf(':') >= 0) {
+            throw new IllegalArgumentException("Invalid host in authority: " + authority);
+        }
+        return host;
+    }
+
+    // https://datatracker.ietf.org/doc/html/rfc3986#section-3.2.3: port = *DIGIT, limited to the TCP port range.
+    private static int port(final String authority, final int begin) {
+        if (begin == authority.length()) {
+            return -1;
+        }
+        int port = 0;
+        for (int i = begin; i < authority.length(); ++i) {
+            final char c = authority.charAt(i);
+            if (c < '0' || c > '9') {
+                throw new IllegalArgumentException("Invalid port in authority: " + authority);
+            }
+            port = port * 10 + (c - '0');
+            if (port > 65_535) {
+                throw new IllegalArgumentException("Invalid port in authority: " + authority);
+            }
+        }
+        return port;
     }
 
     // https://datatracker.ietf.org/doc/html/rfc3986#section-5.2.3
@@ -137,7 +173,7 @@ final class UriReference {
 
     // https://datatracker.ietf.org/doc/html/rfc3986#section-5.2.4, with an index into the input buffer instead of
     // removing its prefix: a substring per segment would make this quadratic in the length of the path.
-    static String removeDotSegments(final String path) {
+    private static String removeDotSegments(final String path) {
         if (path.indexOf('.') < 0) {
             return path;
         }

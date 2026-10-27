@@ -149,10 +149,31 @@ class UriReferenceTest {
             "//[::1],          [::1],     -1",
             "//[::1]:8080,     [::1],     8080",
             "//u@[::1]:8080,   [::1],     8080",
+            "//a:0,            a,         0",
+            "//a:65535,        a,         65535",
     })
     void hostAndPort(String reference, String expectedHost, int expectedPort) {
         HostAndPort hostAndPort = UriReference.parse(reference).hostAndPort();
         assertThat(hostAndPort, is(HostAndPort.of(expectedHost, expectedPort)));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] \"{0}\"")
+    @ValueSource(strings = {"//a:+80", "//a:-1", "//a:65536", "//a:99999999999", "//a:\u0668\u0660", "//a:abc",
+            "//a:80:90", "//[::1", "//[::1]x"})
+    void hostAndPortWithInvalidHostOrPortThrows(String reference) {
+        UriReference uriReference = UriReference.parse(reference);
+        assertThrows(IllegalArgumentException.class, uriReference::hostAndPort);
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] \"{0}\" -> \"{1}\"")
+    @CsvSource({
+            "http://a,     /",
+            "http://a/b?q, /b?q",
+            "//a?q,        /?q",
+            "/b,           /b",
+    })
+    void originFormDefaultsEmptyPathToSlash(String reference, String expected) {
+        assertThat(UriReference.parse(reference).originForm(), is(expected));
     }
 
     @Test

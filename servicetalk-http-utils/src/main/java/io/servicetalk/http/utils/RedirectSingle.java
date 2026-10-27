@@ -261,8 +261,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                 // happen but still possible for HTTP/1.0.
                 return null;
             }
-            return (redirectUri.path.isEmpty() ? "/" : redirectUri.path) +
-                    (redirectUri.query == null ? "" : '?' + redirectUri.query);
+            return redirectUri.originForm();
         }
 
         @Nullable

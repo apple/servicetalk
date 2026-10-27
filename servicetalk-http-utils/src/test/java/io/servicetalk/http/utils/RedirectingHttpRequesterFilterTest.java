@@ -537,6 +537,29 @@ class RedirectingHttpRequesterFilterTest {
         assertThat(redirectedRequest.headers().get(HOST), contentEqualTo("servicetalk.io"));
     }
 
+    @ParameterizedTest(name = "{displayName} [{index}] allowNonRelativeRedirects={0} expectedTarget={1}")
+    @CsvSource({
+            "true,  http://servicetalk.io:443/x",
+            "false, /x",
+    })
+    void originFormRequestRedirectToSamePortWithOtherSchemeIsRelative(boolean allowNonRelativeRedirects,
+                                                                      String expectedTarget) throws Exception {
+        when(httpClient.request(any())).thenReturn(
+                redirectResponseWithLocation(MOVED_PERMANENTLY, "http://servicetalk.io:443/x"), okResponse());
+        AtomicReference<Boolean> relativeRef = new AtomicReference<>();
+        StreamingHttpClient client = newClient(new RedirectConfigBuilder()
+                .allowNonRelativeRedirects(allowNonRelativeRedirects)
+                .redirectPredicate((relative, count, request, response) -> {
+                    relativeRef.set(relative);
+                    return true;
+                }).build());
+
+        StreamingHttpRequest request = newRequest(client, GET).setHeader(HOST, "servicetalk.io:443");
+        StreamingHttpRequest redirectedRequest = verifyResponse(client, request, OK, -1, 2, GET);
+        assertThat(relativeRef.get(), is(true));
+        assertThat(redirectedRequest.requestTarget(), is(expectedTarget));
+    }
+
     @Test
     void http10WithoutHostAfterOriginFormRewriteIsNotFollowed() throws Exception {
         when(httpClient.request(any())).thenAnswer(invocation -> Single.defer(() -> {
@@ -779,6 +802,10 @@ class RedirectingHttpRequesterFilterTest {
             "://non-relative.servicetalk.io/x, false",
             "//servicetalk.io:abc/x,           true",
             "//servicetalk.io:abc/x,           false",
+            "//servicetalk.io:99999/x,         true",
+            "//servicetalk.io:+80/x,           true",
+            "//servicetalk.io:+80/x,           false",
+            "//servicetalk.io:80:90/x,         true",
     })
     void invalidLocationIsNotFollowed(String location, boolean allowNonRelativeRedirects) throws Exception {
         when(httpClient.request(any())).thenReturn(redirectResponseWithLocation(MOVED_PERMANENTLY, location),
@@ -786,7 +813,7 @@ class RedirectingHttpRequesterFilterTest {
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
                 .allowNonRelativeRedirects(allowNonRelativeRedirects).build());
 
-        StreamingHttpRequest request = newRequest(client, GET);
+        StreamingHttpRequest request = newRequest(client, GET).requestTarget("http://servicetalk.io/path");
         StreamingHttpResponse response = client.request(request).toFuture().get();
         assertThat(response.status(), is(MOVED_PERMANENTLY));
         verify(httpClient).request(request);
