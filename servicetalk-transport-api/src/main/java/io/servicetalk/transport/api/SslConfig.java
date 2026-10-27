@@ -200,7 +200,7 @@ public interface SslConfig {
      * @see <a href="https://www.rfc-editor.org/info/rfc8879/">RFC8879 - TLS Certificate Compression</a>
      * @see <a href="https://bugs.openjdk.org/browse/JDK-8372526">JDK-8372526 - Add support for ZLIB TLS Certificate
      * Compression (JDK27)</a>
-     * @see <a href="https://github.com/netty/netty/pull/17548">Netty 4.2.20 - Add consistent TLS certificate
+     * @see <a href="https://github.com/netty/netty/pull/17548">Netty #17548 - Add consistent TLS certificate
      * compression support</a>
      * @see CertificateCompressionAlgorithms
      */
