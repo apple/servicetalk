@@ -28,7 +28,7 @@ import io.grpc.examples.errors.HelloReply;
 import io.grpc.examples.errors.HelloRequest;
 
 import static com.google.protobuf.Any.pack;
-import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
 
@@ -46,33 +46,42 @@ public final class ErrorExampleServer {
     private static final class ErrorGreeterService implements GreeterService {
         @Override
         public Single<HelloReply> sayHello(final GrpcServiceContext ctx, final HelloRequest request) {
-            try {
+            return defer(() -> {
                 if (request.getToken().isEmpty()) {
-                    throw new IllegalArgumentException("missing required field!");
+                    throw new InvalidFieldException(
+                            HelloRequest.getDescriptor().findFieldByNumber(HelloRequest.TOKEN_FIELD_NUMBER)
+                                    .getFullName(),
+                            "missing required field!");
                 }
                 return succeeded(HelloReply.newBuilder().setMessage("hello " + request.getName()).build());
-            } catch (Exception cause) {
-                // Convert exceptions thrown before returning a Single into failed signals.
-                return failed(mapException(cause));
-            }
+            }).onErrorMap(InvalidFieldException.class, ErrorExampleServer::mapException);
         }
     }
 
-    private static Throwable mapException(final Throwable cause) {
-        if (cause instanceof IllegalArgumentException) {
-            // In this example, IllegalArgumentException indicates a missing token. Only expose known, safe details.
-            return GrpcStatusException.of(Status.newBuilder()
-                    .setCode(INVALID_ARGUMENT.value())
-                    .setMessage("example message for invalid argument")
-                    .addDetails(pack(BadRequest.newBuilder().addFieldViolations(
-                            FieldViolation.newBuilder()
-                                    .setField(HelloRequest.getDescriptor().findFieldByNumber(2).getFullName())
-                                    .setDescription("missing required field!")
-                                    .build())
-                            .build()))
-                    .build());
+    private static GrpcStatusException mapException(final InvalidFieldException cause) {
+        return GrpcStatusException.of(Status.newBuilder()
+                .setCode(INVALID_ARGUMENT.value())
+                .setMessage("example message for invalid argument")
+                .addDetails(pack(BadRequest.newBuilder().addFieldViolations(
+                        FieldViolation.newBuilder()
+                                .setField(cause.field)
+                                .setDescription(cause.getMessage())
+                                .build())
+                        .build()))
+                .build());
+    }
+
+    /**
+     * An application exception containing only validation details that are safe to expose to clients.
+     */
+    private static final class InvalidFieldException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
+        private final String field;
+
+        InvalidFieldException(final String field, final String description) {
+            super(description);
+            this.field = field;
         }
-        // Preserve existing GrpcStatusExceptions and let ServiceTalk map and log other failures.
-        return cause;
     }
 }
