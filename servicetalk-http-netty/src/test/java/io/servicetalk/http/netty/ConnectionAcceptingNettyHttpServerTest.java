@@ -49,7 +49,9 @@ import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.CONNECT_TIMEOUT;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.SO_BACKLOG;
+import static io.servicetalk.transport.api.ServiceTalkSocketOptions.TCP_FASTOPEN_BACKLOG;
 import static io.servicetalk.utils.internal.PlatformDependent.isLinux;
+import static io.servicetalk.utils.internal.PlatformDependent.isOsx;
 import static java.lang.Boolean.TRUE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -61,17 +63,21 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ConnectionAcceptingNettyHttpServerTest extends AbstractNettyHttpServerTest {
 
-    private static final boolean IS_LINUX = isLinux();
     // There is an off-by-one behavior difference between macOS & Linux.
     // Linux has a greater-than check
     // (see. https://github.com/torvalds/linux/blob/5bfc75d92efd494db37f5c4c173d3639d4772966/include/net/sock.h#L941)
-    private static final int TCP_BACKLOG = IS_LINUX ? 0 : 1;
+    private static final int TCP_BACKLOG = isLinux() ? 0 : 1;
     private static final int CONNECT_TIMEOUT_MILLIS = (int) SECONDS.toMillis(2);
     private static final int TRY_REQUEST_AWAIT_MILLIS = 500;
 
     @Override
     protected void configureServerBuilder(final HttpServerBuilder serverBuilder) {
         serverBuilder.listenSocketOption(SO_BACKLOG, TCP_BACKLOG);
+        if (isOsx()) {
+            // With SYN cookies, macOS resets connections when the accept queue is full instead of dropping SYNs.
+            // XNU doesn't use SYN cookies for TFO listeners, so enable TFO to keep connects timing out.
+            serverBuilder.listenSocketOption(TCP_FASTOPEN_BACKLOG, 1);
+        }
     }
 
     @Override

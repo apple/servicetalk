@@ -103,4 +103,15 @@ class ZlibOpenSslCertificateCompressionAlgorithmTest {
                 ZlibOpenSslCertificateCompressionAlgorithm.INSTANCE.decompress(
                         null, originalCert.length - 1, compressed));
     }
+
+    @Test
+    void decompressRejectsTrailingBytes() throws Exception {
+        byte[] originalCert = inputStreamToArray(DefaultTestCerts.loadServerPem());
+        byte[] compressed = ZlibOpenSslCertificateCompressionAlgorithm.INSTANCE.compress(null, originalCert);
+        byte[] withTrailingBytes = Arrays.copyOf(compressed, compressed.length + 3);
+
+        assertThrows(CertificateCompressionException.class, () ->
+                ZlibOpenSslCertificateCompressionAlgorithm.INSTANCE.decompress(
+                        null, originalCert.length, withTrailingBytes));
+    }
 }
