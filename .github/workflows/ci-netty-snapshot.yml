@@ -42,7 +42,7 @@ jobs:
       - name: Clean Gradle project
         run: ./gradlew --parallel clean
       - name: Build and Test
-        run:  sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel test"
+        run: ./gradlew --no-daemon --parallel test
       - name: Publish Test Results
         if: '!cancelled()'
         uses: EnricoMi/publish-unit-test-result-action@7622c5bf3d112a72ab4fa3951c2aa5723d8ab92d # v2.25.0
