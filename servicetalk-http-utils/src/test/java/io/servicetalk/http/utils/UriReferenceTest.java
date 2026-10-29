@@ -143,7 +143,6 @@ class UriReferenceTest {
     @CsvSource({
             "//a,              a,         -1",
             "//a:8080,         a,         8080",
-            "//a:,             a,         -1",
             "//u:p@a,          a,         -1",
             "//u:p@a:8080,     a,         8080",
             "//[::1],          [::1],     -1",
@@ -151,6 +150,7 @@ class UriReferenceTest {
             "//u@[::1]:8080,   [::1],     8080",
             "//a:0,            a,         0",
             "//a:65535,        a,         65535",
+            "//a:00080,        a,         80",
     })
     void hostAndPort(String reference, String expectedHost, int expectedPort) {
         HostAndPort hostAndPort = UriReference.parse(reference).hostAndPort();
@@ -159,7 +159,7 @@ class UriReferenceTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] \"{0}\"")
     @ValueSource(strings = {"//a:+80", "//a:-1", "//a:65536", "//a:99999999999", "//a:\u0668\u0660", "//a:abc",
-            "//a:80:90", "//[::1", "//[::1]x"})
+            "//a:80:90", "//[::1", "//[::1]x", "//a:", "//a:000080", "//a@b@c", "//a]", "//[]", "//[::1]]"})
     void hostAndPortWithInvalidHostOrPortThrows(String reference) {
         UriReference uriReference = UriReference.parse(reference);
         assertThrows(IllegalArgumentException.class, uriReference::hostAndPort);

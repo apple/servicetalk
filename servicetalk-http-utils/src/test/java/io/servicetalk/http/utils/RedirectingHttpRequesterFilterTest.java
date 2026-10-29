@@ -890,6 +890,14 @@ class RedirectingHttpRequesterFilterTest {
             "//servicetalk.io:80:90/x,         false",
             "//[::1/x,                         true",
             "//[::1/x,                         false",
+            "http://a@b@servicetalk.io/x,      true",
+            "http://a@b@servicetalk.io/x,      false",
+            "http://servicetalk.io:/x,         true",
+            "http://servicetalk.io:/x,         false",
+            "http://servicetalk.io:000080/x,   true",
+            "http://servicetalk.io:000080/x,   false",
+            "http://a]/x,                      true",
+            "http://a]/x,                      false",
     })
     void invalidLocation(String location, boolean allowNonRelativeRedirects) {
         when(httpClient.request(any())).thenReturn(redirectResponseWithLocation(MOVED_PERMANENTLY, location),

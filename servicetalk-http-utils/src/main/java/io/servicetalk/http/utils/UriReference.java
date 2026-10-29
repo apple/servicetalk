@@ -127,6 +127,9 @@ final class UriReference {
             return null;
         }
         final int hostStart = authority.lastIndexOf('@') + 1;
+        if (authority.indexOf('@') != hostStart - 1) {
+            throw new IllegalArgumentException("Invalid userinfo in authority: " + authority);
+        }
         final int ipLiteralEnd = authority.lastIndexOf(']');
         final int portDelimiter = authority.lastIndexOf(':');
         if (portDelimiter < hostStart || portDelimiter < ipLiteralEnd) {
@@ -144,19 +147,24 @@ final class UriReference {
         return (path.isEmpty() ? "/" : path) + (query == null ? "" : '?' + query);
     }
 
-    // Only an IP literal may contain ':', and it must be enclosed in brackets.
+    // Brackets may only enclose a non-empty IP literal, and only an IP literal may contain ':'.
     private static String host(final String authority, final int begin, final int end) {
         final String host = authority.substring(begin, end);
-        if (host.startsWith("[") ? !host.endsWith("]") : host.indexOf(':') >= 0) {
+        final boolean valid = host.startsWith("[") ?
+                host.length() > 2 && host.indexOf('[', 1) < 0 && host.indexOf(']') == host.length() - 1 :
+                host.indexOf(':') < 0 && host.indexOf('[') < 0 && host.indexOf(']') < 0;
+        if (!valid) {
             throw new IllegalArgumentException("Invalid host in authority: " + authority);
         }
         return host;
     }
 
-    // https://datatracker.ietf.org/doc/html/rfc3986#section-3.2.3: port = *DIGIT, limited to the TCP port range.
+    // https://datatracker.ietf.org/doc/html/rfc3986#section-3.2.3: port = *DIGIT. Like the request-target parser,
+    // this also rejects an empty port, more than five digits, and values outside the TCP port range.
     private static int port(final String authority, final int begin) {
-        if (begin == authority.length()) {
-            return -1;
+        final int length = authority.length() - begin;
+        if (length == 0 || length > 5) {
+            throw new IllegalArgumentException("Invalid port in authority: " + authority);
         }
         int port = 0;
         for (int i = begin; i < authority.length(); ++i) {
