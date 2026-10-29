@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -378,10 +378,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     private static StreamingHttpRequestResponseFactory defaultReqRespFactory(ReadOnlyHttpClientConfig roConfig,
                                                                              BufferAllocator allocator) {
+        final String scheme = roConfig.tcpConfig().sslConfig() == null ? "http" : "https";
         if (roConfig.isH2PriorKnowledge()) {
             H2ProtocolConfig h2Config = roConfig.h2Config();
             assert h2Config != null;
-            return new DefaultStreamingHttpRequestResponseFactory(allocator, h2Config.headersFactory(), HTTP_2_0);
+            return new DefaultStreamingHttpRequestResponseFactory(allocator, h2Config.headersFactory(), HTTP_2_0,
+                    scheme);
         } else if (roConfig.tcpConfig().preferredAlpnProtocol() != null) {
             H1ProtocolConfig h1Config = roConfig.h1Config();
             H2ProtocolConfig h2Config = roConfig.h2Config();
@@ -390,19 +392,22 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             String preferredAlpnProtocol = roConfig.tcpConfig().preferredAlpnProtocol();
             if (HTTP_2.equals(preferredAlpnProtocol)) {
                 assert h2Config != null;
-                return new DefaultStreamingHttpRequestResponseFactory(allocator, h2Config.headersFactory(), HTTP_2_0);
+                return new DefaultStreamingHttpRequestResponseFactory(allocator, h2Config.headersFactory(), HTTP_2_0,
+                        scheme);
             } else { // just fall back to h1, all other protocols should convert to/from it.
                 if (h1Config == null) {
                     throw new IllegalStateException(preferredAlpnProtocol +
                             " is preferred ALPN protocol, falling back to " + HTTP_1_1 + " but the " + HTTP_1_1 +
                             " protocol was not configured.");
                 }
-                return new DefaultStreamingHttpRequestResponseFactory(allocator, h1Config.headersFactory(), HTTP_1_1);
+                return new DefaultStreamingHttpRequestResponseFactory(allocator, h1Config.headersFactory(), HTTP_1_1,
+                        scheme);
             }
         } else {
             H1ProtocolConfig h1Config = roConfig.h1Config();
             assert h1Config != null;
-            return new DefaultStreamingHttpRequestResponseFactory(allocator, h1Config.headersFactory(), HTTP_1_1);
+            return new DefaultStreamingHttpRequestResponseFactory(allocator, h1Config.headersFactory(), HTTP_1_1,
+                    scheme);
         }
     }
 
@@ -815,22 +820,22 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             if (version == HTTP_1_1) {
                 if (h1Factory == null) { // it is OK if we race and re-initialize the instance.
                     h1Factory = new DefaultStreamingHttpRequestResponseFactory(allocator,
-                            headersFactory(h1HeadersFactory, HTTP_1_1), HTTP_1_1);
+                            headersFactory(h1HeadersFactory, HTTP_1_1), HTTP_1_1, "https");
                 }
                 return h1Factory;
             } else if (version == HTTP_2_0) {
                 if (h2Factory == null) { // it is OK if we race and re-initialize the instance.
                     h2Factory = new DefaultStreamingHttpRequestResponseFactory(allocator,
-                            headersFactory(h2HeadersFactory, HTTP_2_0), HTTP_2_0);
+                            headersFactory(h2HeadersFactory, HTTP_2_0), HTTP_2_0, "https");
                 }
                 return h2Factory;
             } else if (version.major() <= 1) {
                 // client doesn't generate HTTP_1_0 requests, no need to cache.
                 return new DefaultStreamingHttpRequestResponseFactory(allocator,
-                        headersFactory(h1HeadersFactory, version), version);
+                        headersFactory(h1HeadersFactory, version), version, "https");
             } else if (version.major() == 2) {
                 return new DefaultStreamingHttpRequestResponseFactory(allocator,
-                        headersFactory(h2HeadersFactory, version), version);
+                        headersFactory(h2HeadersFactory, version), version, "https");
             } else {
                 throw new IllegalArgumentException("unsupported protocol: " + version);
             }

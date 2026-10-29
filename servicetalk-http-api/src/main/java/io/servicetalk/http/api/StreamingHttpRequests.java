@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,8 +51,16 @@ public final class StreamingHttpRequests {
     public static StreamingHttpRequest newRequest(
             final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
             final HttpHeaders headers, final BufferAllocator allocator, final HttpHeadersFactory headersFactory) {
+        return newRequest(method, requestTarget, version, headers, allocator, headersFactory, null);
+    }
+
+    static StreamingHttpRequest newRequest(
+            final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
+            final HttpHeaders headers, final BufferAllocator allocator, final HttpHeadersFactory headersFactory,
+            @Nullable final String defaultScheme) {
         return new DefaultStreamingHttpRequest(method, requestTarget, version, headers, null, null, null, allocator,
-                null, forUserCreated(), headersFactory, StreamingHttpPayloadHolder.NO_AGGREGATED_PAYLOAD_LIMIT);
+                null, forUserCreated(), headersFactory, StreamingHttpPayloadHolder.NO_AGGREGATED_PAYLOAD_LIMIT,
+                defaultScheme);
     }
 
     /**
