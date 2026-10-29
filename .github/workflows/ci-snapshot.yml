@@ -44,14 +44,19 @@ jobs:
       - name: Clean Gradle project
         run: ./gradlew --parallel clean
       - name: Gradle Check project
-        run: sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel check"
+        run: ./gradlew --no-daemon --parallel check
       - name: Publish with Gradle
         env:
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.ORG_GRADLE_PROJECT_SIGNINGKEY }}
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.ORG_GRADLE_PROJECT_SIGNINGPASSWORD }}
           SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
           SONATYPE_TOKEN: ${{ secrets.SONATYPE_TOKEN }}
-        run: sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --no-parallel publish"
+        # Publishing has failed on resource limits without these. Raise them on this shell rather than running Gradle
+        # under sudo, which can drop the environment, including the credentials above.
+        run: |
+          sudo prlimit --pid $$ --memlock=67108864:67108864 --nofile=65536:65536
+          ulimit -a
+          ./gradlew --no-daemon --no-parallel publish
       - name: Publish Test Results
         if: '!cancelled()'
         uses: EnricoMi/publish-unit-test-result-action@7622c5bf3d112a72ab4fa3951c2aa5723d8ab92d # v2.25.0
