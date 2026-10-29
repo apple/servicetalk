@@ -122,6 +122,8 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
             }
         }
 
+        // The outer catch drains the response before failing, including for an invalid location.
+        @SuppressWarnings("PMD.ExceptionAsFlowControl")
         @Override
         public void onSuccess(@Nullable final StreamingHttpResponse response) {
             if (response == null) {
@@ -138,21 +140,21 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                     return;
                 }
 
-                final boolean relative;
-                final String redirectTarget;
+                final UriReference reference;
+                final HostAndPort locationHostAndPort;
                 try {
-                    final UriReference base = new UriReference(scheme, authority(request), request.rawPath(),
-                            request.rawQuery());
-                    final UriReference reference = UriReference.parse(location);
-                    final UriReference redirectUri = base.resolve(reference);
-                    relative = isRelative(base, reference, redirectUri);
-                    redirectTarget = redirectTarget(redirectUri, relative, request);
+                    reference = UriReference.parse(location);
+                    locationHostAndPort = reference.hostAndPort();
                 } catch (IllegalArgumentException e) {
-                    LOGGER.debug("Ignoring redirect to invalid location '{}' for request '{}'", location, request, e);
-                    terminalDelivered = true;
-                    target.onSuccess(response);
-                    return;
+                    // TODO: fail with an exception type that identifies the server as the cause.
+                    throw new IllegalArgumentException(
+                            "Server returned an invalid redirect location: " + e.getMessage(), e);
                 }
+                final UriReference base = new UriReference(scheme, authority(request), request.rawPath(),
+                        request.rawQuery());
+                final UriReference redirectUri = base.resolve(reference);
+                final boolean relative = isRelative(base, reference, locationHostAndPort, redirectUri);
+                final String redirectTarget = redirectTarget(redirectUri, relative, request);
                 if (redirectTarget == null ||
                         !redirectSingle.config.redirectPredicate().test(relative, redirectCount, request, response)) {
                     terminalDelivered = true;
@@ -279,12 +281,11 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
         }
 
         private static boolean isRelative(final UriReference base, final UriReference reference,
-                                          final UriReference redirectUri) {
+                                          @Nullable final HostAndPort to, final UriReference redirectUri) {
             if (reference.scheme == null && reference.authority == null) {
                 return true;    // Resolution copies the scheme and authority of the previous request
             }
             final HostAndPort original = base.hostAndPort();
-            final HostAndPort to = redirectUri.hostAndPort();
             if (original == null || to == null) {
                 return false;
             }

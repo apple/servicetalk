@@ -100,6 +100,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
@@ -492,9 +493,6 @@ class RedirectingHttpRequesterFilterTest {
             "https://servicetalk.io/a/b?q, false, //servicetalk.io:443/x,       /x,                            true",
             "https://servicetalk.io/a/b?q, false, //servicetalk.io:80/x,        ,",
             "https://servicetalk.io/a/b?q, false, http://servicetalk.io:443/x,  ,",
-            "http://servicetalk.io/a/b?q, false, //servicetalk.io:99999/x,      ,",
-            "http://servicetalk.io/a/b?q, false, //servicetalk.io:8080:90/x,    ,",
-            "http://servicetalk.io/a/b?q, false, //[::1/x,                      ,",
     })
     void locationIsResolvedAgainstRequestTarget(String requestTarget, boolean allowNonRelativeRedirects,
                                                 String location, @Nullable String expectedTarget,
@@ -581,15 +579,13 @@ class RedirectingHttpRequesterFilterTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] allowNonRelativeRedirects={0} location={1} expectedTarget={2}")
     @CsvSource({
-            "true,  /x,                 /x",
-            "false, /x,                 /x",
-            "true,  d,                  /d",
-            "false, d,                  /d",
-            "true,  //servicetalk.io/x, ",
-            "false, //servicetalk.io/x, ",
+            "true,  /x, /x",
+            "false, /x, /x",
+            "true,  d,  /d",
+            "false, d,  /d",
     })
-    void malformedHostHeaderIsOnlyParsedForLocationWithAuthority(boolean allowNonRelativeRedirects, String location,
-                                                                 @Nullable String expectedTarget) throws Exception {
+    void malformedHostHeaderIsIgnoredForLocationWithoutAuthority(boolean allowNonRelativeRedirects, String location,
+                                                                 String expectedTarget) throws Exception {
         when(httpClient.request(any())).thenReturn(redirectResponseWithLocation(MOVED_PERMANENTLY, location),
                 okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
@@ -597,6 +593,38 @@ class RedirectingHttpRequesterFilterTest {
 
         StreamingHttpRequest request = newRequest(client, GET).setHeader(HOST, "servicetalk.io:abc");
         assertThat(followedRedirectTarget(client, request), is(expectedTarget));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] allowNonRelativeRedirects={0}")
+    @ValueSource(booleans = {true, false})
+    void malformedHostHeaderFailsRedirectToLocationWithAuthority(boolean allowNonRelativeRedirects) {
+        when(httpClient.request(any())).thenReturn(
+                redirectResponseWithLocation(MOVED_PERMANENTLY, "//servicetalk.io/x"), okResponse());
+        StreamingHttpClient client = newClient(new RedirectConfigBuilder()
+                .allowNonRelativeRedirects(allowNonRelativeRedirects).build());
+
+        StreamingHttpRequest request = newRequest(client, GET).setHeader(HOST, "servicetalk.io:abc");
+        ExecutionException e = assertThrows(ExecutionException.class, () -> client.request(request).toFuture().get());
+        assertThat(e.getCause(), instanceOf(IllegalArgumentException.class));
+        assertThat(e.getCause().getMessage(), not(startsWith("Server returned")));
+        verifyRedirectResponsePayloadsDrained(true, false);
+    }
+
+    @Test
+    void malformedHostHeaderFailsAbsoluteFormRedirectAfterOriginFormRewrite() {
+        when(httpClient.request(any())).thenAnswer(invocation -> Single.defer(() -> {
+            // The multi-address client rewrites the request-target to origin-form in place:
+            invocation.<StreamingHttpRequest>getArgument(0).requestTarget("/path");
+            return redirectResponseWithLocation(MOVED_PERMANENTLY, "/x");
+        }));
+        StreamingHttpClient client = newClient(new RedirectConfigBuilder().allowNonRelativeRedirects(true).build());
+
+        StreamingHttpRequest request = newRequest(client, GET).requestTarget("http://servicetalk.io/path")
+                .setHeader(HOST, "servicetalk.io:abc");
+        ExecutionException e = assertThrows(ExecutionException.class, () -> client.request(request).toFuture().get());
+        assertThat(e.getCause(), instanceOf(IllegalArgumentException.class));
+        assertThat(e.getCause().getMessage(), not(startsWith("Server returned")));
+        verifyRedirectResponsePayloadsDrained(true, false);
     }
 
     @Nullable
@@ -855,21 +883,26 @@ class RedirectingHttpRequesterFilterTest {
             "//servicetalk.io:abc/x,           true",
             "//servicetalk.io:abc/x,           false",
             "//servicetalk.io:99999/x,         true",
+            "//servicetalk.io:99999/x,         false",
             "//servicetalk.io:+80/x,           true",
             "//servicetalk.io:+80/x,           false",
             "//servicetalk.io:80:90/x,         true",
+            "//servicetalk.io:80:90/x,         false",
+            "//[::1/x,                         true",
+            "//[::1/x,                         false",
     })
-    void invalidLocationIsNotFollowed(String location, boolean allowNonRelativeRedirects) throws Exception {
+    void invalidLocation(String location, boolean allowNonRelativeRedirects) {
         when(httpClient.request(any())).thenReturn(redirectResponseWithLocation(MOVED_PERMANENTLY, location),
                 okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
                 .allowNonRelativeRedirects(allowNonRelativeRedirects).build());
 
         StreamingHttpRequest request = newRequest(client, GET).requestTarget("http://servicetalk.io/path");
-        StreamingHttpResponse response = client.request(request).toFuture().get();
-        assertThat(response.status(), is(MOVED_PERMANENTLY));
+        ExecutionException e = assertThrows(ExecutionException.class, () -> client.request(request).toFuture().get());
+        assertThat(e.getCause(), instanceOf(IllegalArgumentException.class));
+        assertThat(e.getCause().getMessage(), startsWith("Server returned an invalid redirect location: "));
         verify(httpClient).request(request);
-        verifyRedirectResponsePayloadsDrained(false, false);
+        verifyRedirectResponsePayloadsDrained(true, false);
     }
 
     @Test
