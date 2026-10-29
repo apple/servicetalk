@@ -59,6 +59,7 @@ public final class BufferUtils {
             if (buffer.hasArray() && buffer.arrayOffset() == 0) {
                 final byte[] array = buffer.array();
                 if (array.length == readableBytes) {
+                    buffer.skipBytes(readableBytes);
                     return array;
                 }
             }
