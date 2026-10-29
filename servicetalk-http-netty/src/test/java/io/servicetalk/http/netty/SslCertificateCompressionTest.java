@@ -21,6 +21,7 @@ import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.CertificateCompressionAlgorithm;
 import io.servicetalk.transport.api.CertificateCompressionAlgorithms;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectionObserver;
@@ -38,7 +39,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.InetSocketAddress;
-import java.util.Collections;
+import java.util.List;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -47,10 +48,16 @@ import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class SslCertificateCompressionTest {
+
+    private static final List<CertificateCompressionAlgorithm> DISABLED = emptyList();
+    private static final List<CertificateCompressionAlgorithm> ZLIB =
+            singletonList(CertificateCompressionAlgorithms.zlibDefault());
 
     private static boolean certCompressionAvailable() {
         return OpenSsl.isAvailable() && io.netty.handler.ssl.SslProvider.isOptionSupported(
@@ -74,18 +81,19 @@ class SslCertificateCompressionTest {
         long writtenWithoutCompression;
         long writtenWithCompression;
 
-        try (ServerContext server = serverBuilder(false).listenAndAwait(service)) {
+        try (ServerContext server = serverBuilder(DISABLED).listenAndAwait(service)) {
             SslBytesReadTransportObserver observer = new SslBytesReadTransportObserver();
-            try (BlockingHttpClient client = clientBuilder(server, false, observer).buildBlocking()) {
+            try (BlockingHttpClient client = clientBuilder(server, DISABLED, observer).buildBlocking()) {
                 client.request(client.get("/sayHello"));
                 readWithoutCompression = observer.handshakeBytesRead;
                 writtenWithoutCompression = observer.handshakeBytesWritten;
             }
         }
 
-        try (ServerContext server = serverBuilder(true).listenAndAwait(service)) {
+        try (ServerContext server = serverBuilder(ZLIB).listenAndAwait(service)) {
             SslBytesReadTransportObserver observer = new SslBytesReadTransportObserver();
-            try (BlockingHttpClient client = clientBuilder(server, clientEnabled, observer).buildBlocking()) {
+            try (BlockingHttpClient client = clientBuilder(server, clientEnabled ? ZLIB : DISABLED, observer)
+                    .buildBlocking()) {
                 client.request(client.get("/sayHello"));
                 readWithCompression = observer.handshakeBytesRead;
                 writtenWithCompression = observer.handshakeBytesWritten;
@@ -105,27 +113,22 @@ class SslCertificateCompressionTest {
         }
     }
 
-    private static HttpServerBuilder serverBuilder(final boolean withCompression) {
-        ServerSslConfigBuilder sslConfig = new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
-                DefaultTestCerts::loadServerKey).provider(SslProvider.OPENSSL);
-        if (withCompression) {
-            sslConfig.certificateCompressionAlgorithms(
-                    Collections.singletonList(CertificateCompressionAlgorithms.zlibDefault()));
-        }
+    private static HttpServerBuilder serverBuilder(final List<CertificateCompressionAlgorithm> algorithms) {
+        ServerSslConfigBuilder sslConfig = new ServerSslConfigBuilder(
+                DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                .provider(SslProvider.OPENSSL)
+                .certificateCompressionAlgorithms(algorithms);
         return HttpServers.forAddress(localAddress(0)).sslConfig(sslConfig.build());
     }
 
     private static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder(
-            ServerContext ctx, boolean withCompression, SslBytesReadTransportObserver observer) {
+            ServerContext ctx, List<CertificateCompressionAlgorithm> algorithms,
+            SslBytesReadTransportObserver observer) {
         ClientSslConfigBuilder sslConfig = new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                 .peerHost(serverPemHostname())
-                .provider(SslProvider.OPENSSL);
-        if (withCompression) {
-            sslConfig.certificateCompressionAlgorithms(
-                    Collections.singletonList(CertificateCompressionAlgorithms.zlibDefault()));
-        }
-        return HttpClients
-                .forSingleAddress(serverHostAndPort(ctx))
+                .provider(SslProvider.OPENSSL)
+                .certificateCompressionAlgorithms(algorithms);
+        return HttpClients.forSingleAddress(serverHostAndPort(ctx))
                 .appendConnectionFactoryFilter(new TransportObserverConnectionFactoryFilter<>(observer))
                 .sslConfig(sslConfig.build());
     }

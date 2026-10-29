@@ -418,24 +418,27 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
 
     /**
      * Sets the certificate compression algorithms to advertise if the feature is supported at runtime.
+     * <p>
+     * An empty list disables certificate compression. If not set, the default behavior of the underlying TLS
+     * implementation is used.
      *
-     * @param algorithms the certificate compression algorithms to use.
+     * @param algorithms the certificate compression algorithms to use, or an empty list to disable compression.
      * @return {@code this}.
      * @see SslConfig#certificateCompressionAlgorithms()
      * @see CertificateCompressionAlgorithms
      */
     public final T certificateCompressionAlgorithms(final List<CertificateCompressionAlgorithm> algorithms) {
-        if (algorithms.isEmpty()) {
-            throw new IllegalArgumentException("algorithms cannot be empty");
-        }
-        this.certificateCompressionAlgorithms = algorithms;
+        this.certificateCompressionAlgorithms = requireNonNull(algorithms);
         return thisT();
     }
 
     /**
      * Sets the certificate compression algorithms to advertise if the feature is supported at runtime.
+     * <p>
+     * No arguments disable certificate compression. If not set, the default behavior of the underlying TLS
+     * implementation is used.
      *
-     * @param algorithms the certificate compression algorithms to use.
+     * @param algorithms the certificate compression algorithms to use, or none to disable compression.
      * @return {@code this}.
      * @see SslConfig#certificateCompressionAlgorithms()
      * @see CertificateCompressionAlgorithms
