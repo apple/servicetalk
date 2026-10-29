@@ -560,6 +560,58 @@ class RedirectingHttpRequesterFilterTest {
         assertThat(redirectedRequest.requestTarget(), is(expectedTarget));
     }
 
+    @ParameterizedTest(name = "{displayName} [{index}] host={0} location={1} expectedTarget={2}")
+    @CsvSource({
+            "servicetalk.io:8080, //servicetalk.io/x,      ",
+            "servicetalk.io:8080, //servicetalk.io:8080/x, /x",
+            "servicetalk.io:80,   //servicetalk.io/x,      ",
+            "servicetalk.io,      //servicetalk.io/x,      /x",
+            "[::1]:8080,          //[::1]:8080/x,          /x",
+            "[::1]:8080,          //[::1]/x,               ",
+    })
+    void protocolRelativeLocationPortIsComparedWithHostPort(String host, String location,
+                                                            @Nullable String expectedTarget) throws Exception {
+        when(httpClient.request(any())).thenReturn(redirectResponseWithLocation(MOVED_PERMANENTLY, location),
+                okResponse());
+        StreamingHttpClient client = newClient(new RedirectConfigBuilder().build());
+
+        StreamingHttpRequest request = newRequest(client, GET).setHeader(HOST, host);
+        assertThat(followedRedirectTarget(client, request), is(expectedTarget));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] allowNonRelativeRedirects={0} location={1} expectedTarget={2}")
+    @CsvSource({
+            "true,  /x,                 /x",
+            "false, /x,                 /x",
+            "true,  d,                  /d",
+            "false, d,                  /d",
+            "true,  //servicetalk.io/x, ",
+            "false, //servicetalk.io/x, ",
+    })
+    void malformedHostHeaderIsOnlyParsedForLocationWithAuthority(boolean allowNonRelativeRedirects, String location,
+                                                                 @Nullable String expectedTarget) throws Exception {
+        when(httpClient.request(any())).thenReturn(redirectResponseWithLocation(MOVED_PERMANENTLY, location),
+                okResponse());
+        StreamingHttpClient client = newClient(new RedirectConfigBuilder()
+                .allowNonRelativeRedirects(allowNonRelativeRedirects).build());
+
+        StreamingHttpRequest request = newRequest(client, GET).setHeader(HOST, "servicetalk.io:abc");
+        assertThat(followedRedirectTarget(client, request), is(expectedTarget));
+    }
+
+    @Nullable
+    private String followedRedirectTarget(StreamingHttpClient client, StreamingHttpRequest request) throws Exception {
+        StreamingHttpResponse response = client.request(request).toFuture().get();
+        ArgumentCaptor<StreamingHttpRequest> requestCaptor = forClass(StreamingHttpRequest.class);
+        if (MOVED_PERMANENTLY.equals(response.status())) {
+            verify(httpClient).request(requestCaptor.capture());
+            return null;
+        }
+        assertThat(response.status(), is(OK));
+        verify(httpClient, times(2)).request(requestCaptor.capture());
+        return requestCaptor.getValue().requestTarget();
+    }
+
     @Test
     void http10WithoutHostAfterOriginFormRewriteIsNotFollowed() throws Exception {
         when(httpClient.request(any())).thenAnswer(invocation -> Single.defer(() -> {

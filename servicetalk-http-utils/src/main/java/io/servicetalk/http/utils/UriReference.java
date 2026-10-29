@@ -85,14 +85,23 @@ final class UriReference {
     }
 
     /**
-     * Resolves a reference against this base URI.
+     * Parses {@code reference} and {@linkplain #resolve(UriReference) resolves} it against this base URI.
      *
      * @param reference the reference to resolve.
      * @return the target URI.
-     * @see <a href="https://datatracker.ietf.org/doc/html/rfc3986#section-5.2.2">RFC 3986, section 5.2.2</a>
      */
     UriReference resolve(final String reference) {
-        final UriReference r = parse(reference);
+        return resolve(parse(reference));
+    }
+
+    /**
+     * Resolves a reference against this base URI.
+     *
+     * @param r the reference to resolve.
+     * @return the target URI.
+     * @see <a href="https://datatracker.ietf.org/doc/html/rfc3986#section-5.2.2">RFC 3986, section 5.2.2</a>
+     */
+    UriReference resolve(final UriReference r) {
         if (r.scheme != null) {
             return new UriReference(r.scheme, r.authority, removeDotSegments(r.path), r.query);
         }
