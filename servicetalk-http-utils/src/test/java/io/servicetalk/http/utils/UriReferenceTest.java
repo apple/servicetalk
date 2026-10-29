@@ -25,7 +25,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 import javax.annotation.Nullable;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -163,6 +165,22 @@ class UriReferenceTest {
     void hostAndPortWithInvalidHostOrPortThrows(String reference) {
         UriReference uriReference = UriReference.parse(reference);
         assertThrows(IllegalArgumentException.class, uriReference::hostAndPort);
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] \"{0}\"")
+    @ValueSource(strings = {"//u:secret@a:abc", "//u:secret@[::1", "//u:secret@a@b"})
+    void hostAndPortExceptionRedactsUserInfo(String reference) {
+        UriReference uriReference = UriReference.parse(reference);
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, uriReference::hostAndPort);
+        assertThat(e.getMessage(), not(containsString("secret")));
+        assertThat(e.getMessage(), containsString("<redacted>@"));
+    }
+
+    @Test
+    void parseExceptionOmitsReference() {
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                () -> UriReference.parse("://u:secret@a/b"));
+        assertThat(e.getMessage(), not(containsString("secret")));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] \"{0}\" -> \"{1}\"")

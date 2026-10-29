@@ -55,7 +55,7 @@ final class UriReference {
             if (i == 0) {
                 // https://datatracker.ietf.org/doc/html/rfc3986#section-4.2: the first segment of a relative-path
                 // reference cannot contain a colon, otherwise it would be mistaken for a scheme name.
-                throw new IllegalArgumentException("Invalid URI-reference: " + uriReference);
+                throw new IllegalArgumentException("Invalid URI-reference: no scheme before ':'");
             }
             scheme = uriReference.substring(0, i);
             start = i + 1;
@@ -128,7 +128,7 @@ final class UriReference {
         }
         final int hostStart = authority.lastIndexOf('@') + 1;
         if (authority.indexOf('@') != hostStart - 1) {
-            throw new IllegalArgumentException("Invalid userinfo in authority: " + authority);
+            throw new IllegalArgumentException("Invalid userinfo in authority: " + redactUserInfo(authority));
         }
         final int ipLiteralEnd = authority.lastIndexOf(']');
         final int portDelimiter = authority.lastIndexOf(':');
@@ -154,7 +154,7 @@ final class UriReference {
                 host.length() > 2 && host.indexOf('[', 1) < 0 && host.indexOf(']') == host.length() - 1 :
                 host.indexOf(':') < 0 && host.indexOf('[') < 0 && host.indexOf(']') < 0;
         if (!valid) {
-            throw new IllegalArgumentException("Invalid host in authority: " + authority);
+            throw new IllegalArgumentException("Invalid host in authority: " + redactUserInfo(authority));
         }
         return host;
     }
@@ -164,20 +164,26 @@ final class UriReference {
     private static int port(final String authority, final int begin) {
         final int length = authority.length() - begin;
         if (length == 0 || length > 5) {
-            throw new IllegalArgumentException("Invalid port in authority: " + authority);
+            throw new IllegalArgumentException("Invalid port in authority: " + redactUserInfo(authority));
         }
         int port = 0;
         for (int i = begin; i < authority.length(); ++i) {
             final char c = authority.charAt(i);
             if (c < '0' || c > '9') {
-                throw new IllegalArgumentException("Invalid port in authority: " + authority);
+                throw new IllegalArgumentException("Invalid port in authority: " + redactUserInfo(authority));
             }
             port = port * 10 + (c - '0');
             if (port > 65_535) {
-                throw new IllegalArgumentException("Invalid port in authority: " + authority);
+                throw new IllegalArgumentException("Invalid port in authority: " + redactUserInfo(authority));
             }
         }
         return port;
+    }
+
+    // Exception messages are often logged, and userinfo may carry credentials.
+    private static String redactUserInfo(final String authority) {
+        final int hostStart = authority.lastIndexOf('@') + 1;
+        return hostStart == 0 ? authority : "<redacted>@" + authority.substring(hostStart);
     }
 
     // https://datatracker.ietf.org/doc/html/rfc3986#section-5.2.3
