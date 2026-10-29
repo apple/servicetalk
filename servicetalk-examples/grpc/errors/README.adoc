@@ -1,3 +1,25 @@
 == ServiceTalk gRPC Application Errors Example
 
-Extends "Hello World" ServiceTalk gRPC example to demonstrate how services can return application level errors which are propagated to the client via the gRPC transport.
+Extends the "Hello World" ServiceTalk gRPC example to demonstrate how services can translate application exceptions into
+gRPC errors that are propagated to the client.
+
+`ErrorExampleClient` intentionally sends a request without a `token`. The server's validation throws an
+`InvalidFieldException`, which the endpoint maps with `Single.onErrorMap` to a `GrpcStatusException`.
+The exception carries an `INVALID_ARGUMENT` status and a `google.rpc.BadRequest` detail identifying the missing token
+field. The client catches the `GrpcStatusException` and prints its application status. Requests with a non-empty token
+receive a greeting.
+
+The example's `InvalidFieldException` carries the field name and a description that is safe to expose to clients.
+The typed `onErrorMap` maps only that dedicated exception, so unrelated `IllegalArgumentException` instances cannot be
+misclassified as validation failures. Existing `GrpcStatusException` instances and other exceptions pass through for
+ServiceTalk's default mapping and logging. An unmapped application exception, such as an `IllegalArgumentException`,
+produces an `UNKNOWN` status with an opaque description; its internal details are logged on the server.
+
+The server builder automatically installs `GrpcExceptionMapperServiceFilter` to handle errors from other filters.
+Application-specific mapping belongs in the service because the default mapper cannot infer the application's error
+semantics.
+
+The endpoint uses `Single.defer` so validation and response creation run only when the returned `Single` is
+subscribed to.
+Exceptions thrown by the deferred supplier become error signals handled by `onErrorMap`. If the supplier returns an
+asynchronous `Single`, its failures flow through the same mapping.
