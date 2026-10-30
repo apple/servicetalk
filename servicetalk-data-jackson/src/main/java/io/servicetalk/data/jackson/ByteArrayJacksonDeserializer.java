@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.util.List;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.utils.internal.BufferUtils.toByteArray;
 import static java.util.Collections.emptyList;
 
 @Deprecated
@@ -45,7 +44,8 @@ final class ByteArrayJacksonDeserializer<T> extends AbstractJacksonDeserializer<
         } else {
             int readableBytes = buffer.readableBytes();
             if (readableBytes != 0) {
-                byte[] copy = toByteArray(buffer);
+                byte[] copy = buffer.toByteArray(true);
+                buffer.skipBytes(readableBytes);
                 feeder.feedInput(copy, 0, copy.length);
             }
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021-2026 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,19 +53,23 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class VarIntLengthStreamingSerializerTest {
     @Test
     void decodeThrowsIfMoreThanMaxBytes() {
-        byte[] bytes = new byte[MAX_LENGTH_BYTES + 1];
-        Arrays.fill(bytes, (byte) 0x80);
-        Buffer buffer = DEFAULT_ALLOCATOR.wrap(bytes);
+        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer(MAX_LENGTH_BYTES);
+        byte nonFinalByte = (byte) 0x80;
+        for (int i = 0; i <= MAX_LENGTH_BYTES; ++i) {
+            buffer.writeByte(nonFinalByte);
+        }
 
         assertThrows(SerializationException.class, () -> getVarInt(buffer));
     }
 
     @Test
     void decodeThrowsIfGreaterThanMaxInt() {
-        byte[] bytes = new byte[MAX_LENGTH_BYTES];
-        Arrays.fill(bytes, (byte) 0xFF);
-        bytes[bytes.length - 1] = 0xF;
-        Buffer buffer = DEFAULT_ALLOCATOR.wrap(bytes);
+        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer(MAX_LENGTH_BYTES);
+        byte nonFinalByte = (byte) 0xFF;
+        for (int i = 0; i < MAX_LENGTH_BYTES - 1; ++i) {
+            buffer.writeByte(nonFinalByte);
+        }
+        buffer.writeByte((byte) 0xF);
 
         assertThrows(SerializationException.class, () -> getVarInt(buffer));
     }

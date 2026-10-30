@@ -19,8 +19,6 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.serializer.api.SerializerDeserializer;
 
-import static io.servicetalk.utils.internal.BufferUtils.toByteArray;
-
 /**
  * Serialize/deserialize {@code byte[]}.
  */
@@ -47,9 +45,8 @@ public final class ByteArraySerializer implements SerializerDeserializer<byte[]>
 
     @Override
     public byte[] deserialize(final Buffer serializedData, final BufferAllocator allocator) {
-        final byte[] result = toByteArray(serializedData, forceCopy);
-        // Reusing the backing array does not advance the reader index.
-        serializedData.skipBytes(serializedData.readableBytes());
+        final byte[] result = serializedData.toByteArray(forceCopy);
+        serializedData.skipBytes(result.length);
         return result;
     }
 

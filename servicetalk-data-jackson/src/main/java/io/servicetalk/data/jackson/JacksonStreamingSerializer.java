@@ -52,7 +52,6 @@ import javax.annotation.Nullable;
 import static com.fasterxml.jackson.databind.node.JsonNodeFactory.instance;
 import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.data.jackson.JacksonSerializer.doSerialize;
-import static io.servicetalk.utils.internal.BufferUtils.toByteArray;
 import static java.util.Collections.singletonList;
 import static java.util.function.Function.identity;
 
@@ -139,7 +138,8 @@ final class JacksonStreamingSerializer<T> implements StreamingSerializerDeserial
                 } else {
                     int readableBytes = buffer.readableBytes();
                     if (readableBytes != 0) {
-                        byte[] copy = toByteArray(buffer);
+                        byte[] copy = buffer.toByteArray(true);
+                        buffer.skipBytes(readableBytes);
                         feeder.feedInput(copy, 0, copy.length);
                     }
                 }

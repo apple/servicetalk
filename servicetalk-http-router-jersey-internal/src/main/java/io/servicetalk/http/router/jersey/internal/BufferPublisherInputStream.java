@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.transport.api.IoThreadFactory;
-import io.servicetalk.utils.internal.BufferUtils;
 
 import org.glassfish.jersey.message.internal.EntityInputStream;
 
@@ -112,7 +111,14 @@ public final class BufferPublisherInputStream extends InputStream {
 
     private void publisherToInputStream() {
         if (inputStream == EMPTY_INPUT_STREAM) {
-            inputStream = publisher.toInputStream(BufferUtils::toByteArray, queueCapacity);
+            inputStream = publisher.toInputStream(buffer -> {
+                final byte[] bytes = buffer.toByteArray(false);
+                // Preserve the backing-array fast path, which does not consume the buffer.
+                if (!buffer.hasArray() || bytes != buffer.array()) {
+                    buffer.skipBytes(bytes.length);
+                }
+                return bytes;
+            }, queueCapacity);
         }
     }
 

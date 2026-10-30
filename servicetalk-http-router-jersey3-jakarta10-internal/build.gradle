@@ -81,7 +81,6 @@ dependencies {
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-transport-api")
-  implementation project(":servicetalk-utils-internal")
   implementation "org.glassfish.jersey.core:jersey-common"
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")

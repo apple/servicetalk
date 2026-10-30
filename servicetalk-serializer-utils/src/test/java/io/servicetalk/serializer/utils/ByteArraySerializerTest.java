@@ -20,7 +20,6 @@ import io.servicetalk.buffer.api.Buffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_DIRECT_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_HEAP_ALLOCATOR;
 import static io.servicetalk.serializer.utils.ByteArraySerializer.byteArraySerializer;
@@ -36,10 +35,13 @@ class ByteArraySerializerTest {
     @ParameterizedTest(name = "{displayName} [{index}]: forceCopy={0}")
     @ValueSource(booleans = {false, true})
     void deserializeEmptyBufferReturnsEmptyArray(boolean forceCopy) {
-        assertThat(byteArraySerializer(forceCopy).deserialize(EMPTY_BUFFER, PREFER_HEAP_ALLOCATOR),
-                equalTo(new byte[0]));
-        assertThat(EMPTY_BUFFER.readerIndex(), is(0));
-        assertThat(EMPTY_BUFFER.writerIndex(), is(0));
+        Buffer[] buffers = {PREFER_HEAP_ALLOCATOR.newBuffer(8), PREFER_DIRECT_ALLOCATOR.newBuffer(8)};
+        for (Buffer buffer : buffers) {
+            assertThat(byteArraySerializer(forceCopy).deserialize(buffer, PREFER_HEAP_ALLOCATOR),
+                    equalTo(new byte[0]));
+            assertThat(buffer.readerIndex(), is(0));
+            assertThat(buffer.writerIndex(), is(0));
+        }
     }
 
     @ParameterizedTest(name = "{displayName} [{index}]: forceCopy={0}")
