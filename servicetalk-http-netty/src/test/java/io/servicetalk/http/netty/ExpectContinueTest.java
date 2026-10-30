@@ -39,15 +39,20 @@ import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
+import io.servicetalk.log4j2.mdc.utils.LoggerStringWriter;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -75,11 +80,19 @@ import static io.servicetalk.http.api.HttpResponseStatus.UNPROCESSABLE_ENTITY;
 import static io.servicetalk.http.netty.BuilderUtils.newClientBuilderWithConfigs;
 import static io.servicetalk.http.netty.BuilderUtils.newServerBuilderWithConfigs;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.time.Duration.ofMillis;
+import static java.time.Duration.ofMinutes;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class ExpectContinueTest {
@@ -93,11 +106,21 @@ class ExpectContinueTest {
 
     private static final String PAYLOAD = "hello";
     private static final String FAIL = "fail";
+    private static final Duration CONTINUE_TIMEOUT = ofMillis(200);
+    private static final Duration LONG_CONTINUE_TIMEOUT = ofMinutes(5);
+    private static final String TIMEOUT_LOG_REGEX = "No 100 \\(Continue\\) arrived from";
+    private static final int LOG_WAIT_MS = 10_000;
 
     private final CountDownLatch requestReceived = new CountDownLatch(1);
     private final CountDownLatch sendContinue = new CountDownLatch(1);
     private final CountDownLatch returnResponse = new CountDownLatch(1);
     private final BlockingQueue<StreamingHttpResponse> responses = new LinkedBlockingDeque<>();
+    private final LoggerStringWriter loggerStringWriter = new LoggerStringWriter();
+
+    @AfterEach
+    void removeLogAppender() {
+        loggerStringWriter.remove();
+    }
 
     private static List<Arguments> arguments() {
         List<Arguments> list = new ArrayList<>();
@@ -549,6 +572,213 @@ class ExpectContinueTest {
         }
     }
 
+    @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
+    @MethodSource("arguments")
+    void continueTimeoutSendsPayloadAndLateContinueIsHarmless(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                                              boolean withCL) throws Exception {
+        loggerStringWriter.reset();
+        try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory);
+             StreamingHttpClient client = createClientWithTimeout(serverContext, protocol, useOtherHeadersFactory,
+                     CONTINUE_TIMEOUT);
+             StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
+            BufferAllocator allocator = connection.executionContext().bufferAllocator();
+
+            TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().singleSubscriber().build();
+            connection.request(newRequest(connection, withCL, false, payload)).subscribe(responses::add);
+            requestReceived.await();
+
+            // The server withholds 100 (Continue) until sendContinue is counted down, so only the timeout can
+            // request the payload body.
+            sendRequestPayload(payload, allocator);
+
+            // The server reads the payload body that was already delivered and answers with a late 100 (Continue).
+            sendContinue.countDown();
+            returnResponse.countDown();
+            assertResponse(OK, PAYLOAD + PAYLOAD);
+            final List<String> lines = timeoutLogLines(serverContext);
+            assertThat(lines, hasSize(1));
+            assertThat(lines.get(0), containsString("[INFO ]"));
+            assertThat(lines.get(0), containsString("1 requests since the last message"));
+
+            sendFollowUpRequest(connection, withCL, allocator, OK);
+        }
+    }
+
+    @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
+    @MethodSource("arguments")
+    void continueTimeoutThenFinalErrorResponseWithoutContinue(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                                              boolean withCL) throws Exception {
+        try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory,
+                (ctx, request, response) -> {
+            requestReceived.countDown();
+            returnResponse.await();
+            if (request.headers().contains(EXPECT, CONTINUE)) {
+                response.status(INTERNAL_SERVER_ERROR);
+            }
+            response.sendMetaData().close();
+        });
+             StreamingHttpClient client = createClientWithTimeout(serverContext, protocol, useOtherHeadersFactory,
+                     CONTINUE_TIMEOUT);
+             StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
+            BufferAllocator allocator = connection.executionContext().bufferAllocator();
+
+            TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().singleSubscriber().build();
+            connection.request(newRequest(connection, withCL, false, payload)).subscribe(responses::add);
+            requestReceived.await();
+
+            sendRequestPayload(payload, allocator);
+            returnResponse.countDown();
+            assertResponse(INTERNAL_SERVER_ERROR, "");
+        }
+    }
+
+    @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
+    @MethodSource("arguments")
+    void zeroContinueTimeoutNeverSendsPayloadWithoutContinue(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                                             boolean withCL) throws Exception {
+        try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory);
+             StreamingHttpClient client = createClientWithTimeout(serverContext, protocol, useOtherHeadersFactory,
+                     Duration.ZERO);
+             StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
+            BufferAllocator allocator = connection.executionContext().bufferAllocator();
+
+            TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().singleSubscriber().build();
+            connection.request(newRequest(connection, withCL, false, payload)).subscribe(responses::add);
+            requestReceived.await();
+
+            // Wait for any signal that could unblock the exchange, none is expected.
+            assertThat(responses.poll(CONTINUE_TIMEOUT.toMillis() * 5, MILLISECONDS), is(nullValue()));
+            assertThat("Unexpected subscribe to payload body before 100 (Continue)",
+                    payload.isSubscribed(), is(false));
+
+            sendContinue.countDown();
+            sendRequestPayload(payload, allocator);
+            returnResponse.countDown();
+            assertResponse(OK, PAYLOAD + PAYLOAD);
+        }
+    }
+
+    @Test
+    void continueTimeoutIsNotAppliedToPipelinedH1Connection() throws Exception {
+        try (HttpServerContext serverContext = startServer(HTTP_1, false);
+             StreamingHttpClient client = newClientBuilderWithConfigs(serverContext, CLIENT_CTX,
+                     h1().maxPipelinedRequests(2).build())
+                     .expectContinueTimeout(CONTINUE_TIMEOUT)
+                     .buildStreaming();
+             StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
+            BufferAllocator allocator = connection.executionContext().bufferAllocator();
+
+            TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().singleSubscriber().build();
+            connection.request(newRequest(connection, true, false, payload)).subscribe(responses::add);
+            requestReceived.await();
+
+            // Wait for any signal that could unblock the exchange, none is expected.
+            assertThat(responses.poll(CONTINUE_TIMEOUT.toMillis() * 5, MILLISECONDS), is(nullValue()));
+            assertThat("Unexpected subscribe to payload body before 100 (Continue)",
+                    payload.isSubscribed(), is(false));
+
+            sendContinue.countDown();
+            sendRequestPayload(payload, allocator);
+            returnResponse.countDown();
+            assertResponse(OK, PAYLOAD + PAYLOAD);
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void defaultContinueTimeoutSendsPayloadWithoutContinue(HttpProtocol protocol) throws Exception {
+        try (HttpServerContext serverContext = startServer(protocol, false);
+             StreamingHttpClient client = createClient(serverContext, protocol, false);
+             StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
+            BufferAllocator allocator = connection.executionContext().bufferAllocator();
+
+            TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().singleSubscriber().build();
+            connection.request(newRequest(connection, true, false, payload)).subscribe(responses::add);
+            requestReceived.await();
+
+            // Nothing releases the payload body except the default timeout, which blocks here until it fires.
+            sendRequestPayload(payload, allocator);
+
+            sendContinue.countDown();
+            returnResponse.countDown();
+            assertResponse(OK, PAYLOAD + PAYLOAD);
+        }
+    }
+
+    @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
+    @MethodSource("arguments")
+    void continueBeforeTimeoutDoesNotLog(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                         boolean withCL) throws Exception {
+        loggerStringWriter.reset();
+        try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory);
+             StreamingHttpClient client = createClientWithTimeout(serverContext, protocol, useOtherHeadersFactory,
+                     LONG_CONTINUE_TIMEOUT);
+             StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
+            BufferAllocator allocator = connection.executionContext().bufferAllocator();
+
+            TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().singleSubscriber().build();
+            connection.request(newRequest(connection, withCL, false, payload)).subscribe(responses::add);
+            requestReceived.await();
+
+            assertThat("Unexpected subscribe to payload body before 100 (Continue)",
+                    payload.isSubscribed(), is(false));
+            sendContinue.countDown();
+            sendRequestPayload(payload, allocator);
+
+            returnResponse.countDown();
+            assertResponse(OK, PAYLOAD + PAYLOAD);
+            assertThat(timeoutLogLines(serverContext), is(empty()));
+
+            sendFollowUpRequest(connection, withCL, allocator, OK);
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void continueTimeoutOnSameClientLogsOnceAndSendsEveryPayload(HttpProtocol protocol) throws Exception {
+        loggerStringWriter.reset();
+        final BlockingQueue<CountDownLatch> serverGates = new LinkedBlockingDeque<>();
+        try (HttpServerContext serverContext = startServer(protocol, false, (ctx, request, response) -> {
+            final CountDownLatch gate = new CountDownLatch(1);
+            serverGates.add(gate);
+            gate.await();
+            StringBuilder sb = new StringBuilder();
+            request.payloadBody().forEach(chunk -> sb.append(chunk.toString(US_ASCII)));
+            try (HttpPayloadWriter<Buffer> writer = response.sendMetaData()) {
+                writer.write(ctx.executionContext().bufferAllocator().fromAscii(sb));
+            }
+        });
+             StreamingHttpClient client = createClientWithTimeout(serverContext, protocol, false,
+                     CONTINUE_TIMEOUT)) {
+            final BufferAllocator allocator = client.executionContext().bufferAllocator();
+            for (int i = 0; i < 2; i++) {
+                TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().singleSubscriber().build();
+                client.request(newRequest(client, true, false, payload)).subscribe(responses::add);
+                final CountDownLatch gate = serverGates.take();
+
+                // The server holds 100 (Continue) until the gate opens, so only the timeout requests the payload.
+                sendRequestPayload(payload, allocator);
+                gate.countDown();
+                assertResponse(OK, PAYLOAD + PAYLOAD);
+            }
+            final List<String> lines = timeoutLogLines(serverContext);
+            assertThat(lines, hasSize(1));
+            assertThat(lines.get(0), containsString("[INFO ]"));
+            assertThat(lines.get(0), containsString("1 requests since the last message"));
+        }
+    }
+
+    private List<String> timeoutLogLines(HttpServerContext serverContext) throws Exception {
+        final int port = ((InetSocketAddress) serverContext.listenAddress()).getPort();
+        final List<String> lines = new ArrayList<>();
+        for (String line : loggerStringWriter.stableAccumulated(LOG_WAIT_MS).split("\\R")) {
+            if (line.matches(".*" + TIMEOUT_LOG_REGEX + " \\S*:" + port + " within.*")) {
+                lines.add(line);
+            }
+        }
+        return lines;
+    }
+
     private HttpServerContext startServer(HttpProtocol protocol, boolean useOtherHeadersFactory) throws Exception {
         return startServer(protocol, useOtherHeadersFactory, (ctx, request, response) -> {
                     requestReceived.countDown();
@@ -585,11 +815,27 @@ class ExpectContinueTest {
     private static StreamingHttpClient createClient(HttpServerContext serverContext,
                                                     HttpProtocol protocol, boolean useOtherHeadersFactory,
                                                     @Nullable StreamingHttpClientFilterFactory filterFactory) {
+        return createClient(serverContext, protocol, useOtherHeadersFactory, filterFactory, null);
+    }
+
+    private static StreamingHttpClient createClientWithTimeout(HttpServerContext serverContext,
+                                                               HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                                               Duration expectContinueTimeout) {
+        return createClient(serverContext, protocol, useOtherHeadersFactory, null, expectContinueTimeout);
+    }
+
+    private static StreamingHttpClient createClient(HttpServerContext serverContext,
+                                                    HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                                    @Nullable StreamingHttpClientFilterFactory filterFactory,
+                                                    @Nullable Duration expectContinueTimeout) {
         final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder = newClientBuilderWithConfigs(
                 serverContext, CLIENT_CTX,
                 useOtherHeadersFactory ? protocol.configOtherHeadersFactory : protocol.config);
         if (filterFactory != null) {
             builder.appendClientFilter(filterFactory);
+        }
+        if (expectContinueTimeout != null) {
+            builder.expectContinueTimeout(expectContinueTimeout);
         }
         return builder.buildStreaming();
     }

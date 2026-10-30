@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 import io.servicetalk.transport.api.RetryableException;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ContinueUserEvent;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -30,6 +31,7 @@ import io.netty.channel.DefaultChannelPromise;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
+import io.netty.util.concurrent.ScheduledFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +51,7 @@ import static io.servicetalk.transport.netty.internal.ByteMaskUtils.set;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.assignConnectionError;
 import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * A {@link PublisherSource.Subscriber} for any {@link Publisher} written via {@link DefaultNettyConnection}.
@@ -113,11 +116,22 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     private final boolean isClient;
     private final Predicate<Object> shouldWait;
     private boolean shouldWaitFlag;
+    private final ExpectContinueTimeout continueTimeout;
+    @Nullable
+    private ScheduledFuture<?> continueTimeoutFuture;
 
     WriteStreamSubscriber(Channel channel, WriteDemandEstimator demandEstimator, Subscriber subscriber,
                           CloseHandler closeHandler, WriteObserver observer,
                           UnaryOperator<Throwable> enrichProtocolError, boolean isClient,
                           Predicate<Object> shouldWait) {
+        this(channel, demandEstimator, subscriber, closeHandler, observer, enrichProtocolError, isClient, shouldWait,
+                ExpectContinueTimeout.NONE);
+    }
+
+    WriteStreamSubscriber(Channel channel, WriteDemandEstimator demandEstimator, Subscriber subscriber,
+                          CloseHandler closeHandler, WriteObserver observer,
+                          UnaryOperator<Throwable> enrichProtocolError, boolean isClient,
+                          Predicate<Object> shouldWait, ExpectContinueTimeout continueTimeout) {
         this.eventLoop = requireNonNull(channel.eventLoop());
         this.subscriber = subscriber;
         this.channel = channel;
@@ -127,6 +141,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         this.observer = observer;
         this.isClient = isClient;
         this.shouldWait = requireNonNull(shouldWait);
+        this.continueTimeout = requireNonNull(continueTimeout);
     }
 
     @Override
@@ -182,7 +197,28 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             // they receive continueWriting() signal.
             if (!isClient || !(shouldWaitFlag = shouldWait.test(msg))) {
                 requestMoreIfRequired(subscription, capacityAfter);
+            } else if (continueTimeout.timeoutNanos() > 0) {
+                scheduleContinueTimeout();
             }
+        }
+    }
+
+    private void scheduleContinueTimeout() {
+        continueTimeoutFuture = eventLoop.schedule(() -> {
+            continueTimeoutFuture = null;
+            if (shouldWaitFlag) {
+                continueTimeout.onTimeout(channel);
+                // Through the pipeline, so the protocol handlers tracking the expectation are released as well.
+                channel.pipeline().fireUserEventTriggered(ContinueUserEvent.INSTANCE);
+            }
+        }, continueTimeout.timeoutNanos(), NANOSECONDS);
+    }
+
+    private void cancelContinueTimeout() {
+        final ScheduledFuture<?> future = continueTimeoutFuture;
+        if (future != null) {
+            continueTimeoutFuture = null;
+            future.cancel(false);
         }
     }
 
@@ -230,6 +266,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     public void continueWriting() {
         assert eventLoop.inEventLoop();
         if (shouldWaitFlag) {
+            cancelContinueTimeout();
             shouldWaitFlag = false; // Reset the flag to avoid promise.sourceTerminated(null)
             requestMoreIfRequired(subscription, -1L);
         }
@@ -255,6 +292,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         assert eventLoop.inEventLoop();
         // Terminate the source only if it awaits continuation.
         if (shouldWaitFlag) {
+            cancelContinueTimeout();
             assert promise.activeWrites == 0 :
                     channel + " Unexpected activeWrites=" + promise.activeWrites + " while waiting for continuation";
             // Cancel the passed write Publisher to signal transport is not interested in more data.
@@ -286,6 +324,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
     private void close0(@Nullable Subscription oldVal, Throwable closedException, boolean closeOutboundIfIdle) {
         assert eventLoop.inEventLoop();
+        cancelContinueTimeout();
         if (oldVal == null) {
             // If there was no subscriber when the channel closed, we need to call onSubscribe before we terminate.
             subscriber.onSubscribe(IGNORE_CANCEL);
@@ -574,6 +613,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
         private void terminateSubscriber(@Nullable Throwable cause) {
             state = set(state, SUBSCRIBER_TERMINATED);
+            cancelContinueTimeout();
             if (cause == null) {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("{} Terminate subscriber, state: {}", channel, Integer.toString(state, 2));

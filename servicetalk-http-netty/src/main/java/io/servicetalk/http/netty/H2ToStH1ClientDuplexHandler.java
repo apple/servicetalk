@@ -120,6 +120,15 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
     }
 
     @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+        // Fired from the head of the pipeline when the wait for 100 (Continue) timed out.
+        if (evt == ContinueUserEvent.INSTANCE) {
+            waitForContinuation = false;
+        }
+        super.userEventTriggered(ctx, evt);
+    }
+
+    @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Http2Exception {
         if (msg instanceof Http2HeadersFrame) {
             final Http2HeadersFrame headersFrame = (Http2HeadersFrame) msg;

@@ -17,12 +17,15 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.TestSubscription;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ContinueUserEvent;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopWriteObserver;
 import io.servicetalk.transport.netty.internal.WriteStreamSubscriber.AbortedFirstWriteException;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.WriteBufferWaterMark;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.junit.jupiter.api.Test;
@@ -31,10 +34,13 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 import java.nio.channels.ClosedChannelException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.lang.Long.MAX_VALUE;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.function.UnaryOperator.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -57,8 +63,11 @@ import static org.mockito.Mockito.when;
 class WriteStreamSubscriberTest extends AbstractWriteTest {
     static final int CHANNEL_OUTBOUND_BUFFER_ENTRY_OVERHEAD =
             SystemPropertyUtil.getInt("io.netty.transport.outboundBufferEntrySizeOverhead", 96);
+    private static final long CONTINUE_TIMEOUT_MS = 1000;
     private final Subscription subscription = mock(Subscription.class);
     private final CloseHandler closeHandler = mock(CloseHandler.class);
+    private final RecordingContinueTimeout continueTimeout =
+            new RecordingContinueTimeout(MILLISECONDS.toNanos(CONTINUE_TIMEOUT_MS));
     private WriteStreamSubscriber subscriber;
 
     void setUp(boolean isClient, boolean shouldWait) {
@@ -367,6 +376,117 @@ class WriteStreamSubscriberTest extends AbstractWriteTest {
         verifyNoMoreInteractions(subscription, closeHandler, completableSubscriber);
     }
 
+    @Test
+    void clientContinueTimeoutFiresContinueUserEventThroughPipeline() {
+        final List<Object> events = newContinueTimeoutSubscriber();
+        writeAndFlush("Hello1");
+        verifyNoMoreInteractions(subscription);
+
+        channel.advanceTimeBy(CONTINUE_TIMEOUT_MS - 1, MILLISECONDS);
+        channel.runPendingTasks();
+        assertThat(events, is(empty()));
+        assertThat(continueTimeout.timedOut, is(empty()));
+
+        channel.advanceTimeBy(1, MILLISECONDS);
+        channel.runPendingTasks();
+        assertThat(continueTimeout.timedOut, contains(channel));
+        assertThat(events, contains(ContinueUserEvent.INSTANCE));
+        verify(subscription).request(10L);
+
+        writeAndFlush("Hello2");
+        verifyWriteSuccessful("Hello1", "Hello2");
+        subscriber.onComplete();
+        verifyListenerSuccessful();
+    }
+
+    @Test
+    void clientContinueTimeoutDisabledSchedulesNothing() {
+        when(demandEstimator.estimateRequestN(anyLong())).thenReturn(10L);
+        subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber, closeHandler,
+                NoopWriteObserver.INSTANCE, identity(), true, __ -> true, new RecordingContinueTimeout(0L));
+        subscriber.onSubscribe(subscription);
+        writeAndFlush("Hello1");
+
+        assertThat(channel.runScheduledPendingTasks(), is(-1L));
+    }
+
+    @Test
+    void clientContinueWritingCancelsContinueTimeout() {
+        final List<Object> events = newContinueTimeoutSubscriber();
+        writeAndFlush("Hello1");
+
+        subscriber.continueWriting();
+        verify(subscription).request(10L);
+        assertThat(channel.runScheduledPendingTasks(), is(-1L));
+
+        channel.advanceTimeBy(CONTINUE_TIMEOUT_MS, MILLISECONDS);
+        channel.runPendingTasks();
+        assertThat(events, is(empty()));
+        assertThat(continueTimeout.timedOut, is(empty()));
+    }
+
+    @Test
+    void clientTerminateSourceCancelsContinueTimeout() {
+        final List<Object> events = newContinueTimeoutSubscriber();
+        writeAndFlush("Hello1");
+
+        subscriber.terminateSource();
+        verify(subscription).cancel();
+        assertThat(channel.runScheduledPendingTasks(), is(-1L));
+
+        channel.advanceTimeBy(CONTINUE_TIMEOUT_MS, MILLISECONDS);
+        channel.runPendingTasks();
+        assertThat(events, is(empty()));
+        assertThat(continueTimeout.timedOut, is(empty()));
+    }
+
+    @Test
+    void clientChannelClosedCancelsContinueTimeout() {
+        final List<Object> events = newContinueTimeoutSubscriber();
+        writeAndFlush("Hello1");
+
+        subscriber.channelClosed(DELIBERATE_EXCEPTION);
+        assertThat(channel.runScheduledPendingTasks(), is(-1L));
+
+        channel.advanceTimeBy(CONTINUE_TIMEOUT_MS, MILLISECONDS);
+        channel.runPendingTasks();
+        assertThat(events, is(empty()));
+        assertThat(continueTimeout.timedOut, is(empty()));
+    }
+
+    @Test
+    void clientContinueWritingAfterContinueTimeoutDoesNotRequestAgain() {
+        newContinueTimeoutSubscriber();
+        writeAndFlush("Hello1");
+        channel.advanceTimeBy(CONTINUE_TIMEOUT_MS, MILLISECONDS);
+        channel.runPendingTasks();
+        verify(subscription).request(10L);
+
+        subscriber.continueWriting();
+        verifyNoMoreInteractions(subscription);
+    }
+
+    private List<Object> newContinueTimeoutSubscriber() {
+        channel.freezeTime();
+        final List<Object> events = new ArrayList<>();
+        channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+            @Override
+            public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+                events.add(evt);
+                if (evt == ContinueUserEvent.INSTANCE) {
+                    subscriber.continueWriting();
+                }
+            }
+        });
+        when(demandEstimator.estimateRequestN(anyLong())).thenReturn(10L);
+        subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber, closeHandler,
+                NoopWriteObserver.INSTANCE, identity(), true, __ -> true,
+                continueTimeout);
+        subscriber.onSubscribe(subscription);
+        verify(subscription).request(1L);
+        return events;
+    }
+
     private void failingWriteClosesChannel(Runnable enableWriteFailure) throws InterruptedException {
         WriteInfo info1 = writeAndFlush("Hello1");
         verify(completableSubscriber).onSubscribe(any());
@@ -408,5 +528,24 @@ class WriteStreamSubscriberTest extends AbstractWriteTest {
     private void assertChannelClose() throws InterruptedException {
         channel.closeFuture().sync();
         assertThat("Channel not closed on write failure.", channel.isActive(), is(false));
+    }
+
+    private static final class RecordingContinueTimeout implements ExpectContinueTimeout {
+        final List<Channel> timedOut = new ArrayList<>();
+        private final long timeoutNanos;
+
+        RecordingContinueTimeout(final long timeoutNanos) {
+            this.timeoutNanos = timeoutNanos;
+        }
+
+        @Override
+        public long timeoutNanos() {
+            return timeoutNanos;
+        }
+
+        @Override
+        public void onTimeout(final Channel channel) {
+            timedOut.add(channel);
+        }
     }
 }
