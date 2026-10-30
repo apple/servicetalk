@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.RedirectConfig;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.HostAndPort;
@@ -38,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
@@ -122,6 +122,8 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
             }
         }
 
+        // The outer catch drains the response before failing, including for an invalid location.
+        @SuppressWarnings("PMD.ExceptionAsFlowControl")
         @Override
         public void onSuccess(@Nullable final StreamingHttpResponse response) {
             if (response == null) {
@@ -138,43 +140,34 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                     return;
                 }
 
-                StreamingHttpRequest newRequest = prepareRedirectRequest(request, redirectSingle.requester, location);
-                if (newRequest == null) {
+                final UriReference reference;
+                final HostAndPort locationHostAndPort;
+                try {
+                    reference = UriReference.parse(location);
+                    locationHostAndPort = reference.hostAndPort();
+                } catch (IllegalArgumentException e) {
+                    // TODO: fail with an exception type that identifies the server as the cause.
+                    throw new IllegalArgumentException(
+                            "Server returned an invalid redirect location: " + e.getMessage(), e);
+                }
+                // https://datatracker.ietf.org/doc/html/rfc9112#section-3.3: an asterisk-form request's target URI has
+                // an empty path.
+                final String basePath = "*".equals(request.requestTarget()) ? "" : request.rawPath();
+                final UriReference base = new UriReference(scheme, authority(request), basePath, request.rawQuery());
+                final UriReference redirectUri = base.resolve(reference);
+                final boolean relative = isRelative(base, reference, locationHostAndPort, redirectUri);
+                final String redirectTarget = redirectTarget(redirectUri, relative, request);
+                if (redirectTarget == null ||
+                        !redirectSingle.config.redirectPredicate().test(relative, redirectCount, request, response)) {
                     terminalDelivered = true;
                     target.onSuccess(response);
                     return;
                 }
 
-                final String newScheme = newRequest.scheme();
-                final boolean relative = isRelative(request, scheme, newRequest);
-                if (!relative && !redirectSingle.allowNonRelativeRedirects) {
-                    LOGGER.debug(
-                        "Ignoring non-relative redirect to '{}' for request '{}': Only relative redirects are allowed",
-                        newRequest.requestTarget(), request);
-                    terminalDelivered = true;
-                    target.onSuccess(response);
-                    return;
-                }
-
-                if (!redirectSingle.config.redirectPredicate().test(relative, redirectCount, request, response)) {
-                    terminalDelivered = true;
-                    target.onSuccess(response);
-                    return;
-                }
-
-                if (relative) {
-                    if (redirectSingle.allowNonRelativeRedirects && newScheme == null && scheme != null) {
-                        // Rewrite origin-form location to absolute-form request-target for multi-address client:
-                        newRequest.requestTarget(scheme + "://" + newRequest.headers().get(HOST) +
-                                newRequest.requestTarget());
-                    }
-                    if (!redirectSingle.allowNonRelativeRedirects && newScheme != null) {
-                        // Rewrite absolute-form location to origin-form request-target in case only relative redirects
-                        // are supported:
-                        newRequest.requestTarget(
-                                absoluteToRelativeFormRequestTarget(newRequest.requestTarget(), newScheme));
-                    }
-                }
+                StreamingHttpRequest newRequest = redirectSingle.requester.newRequest(request.method(), redirectTarget)
+                        .version(request.version());
+                // Carry forward the full context:
+                newRequest.context(request.context());
 
                 newRequest = redirectSingle.config.redirectRequestTransformer()
                         .apply(relative, request, response, newRequest);
@@ -200,20 +193,6 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                     LOGGER.info("Ignoring exception from onSuccess of Subscriber {}.", target, cause);
                 }
             }
-        }
-
-        // This code is similar to
-        // io.servicetalk.http.netty.DefaultMultiAddressHttpClientBuilder#absoluteToRelativeFormRequestTarget
-        // but cannot be shared because we don't have an internal module for http
-        private static String absoluteToRelativeFormRequestTarget(final String requestTarget,
-                                                                  final String scheme) {
-            final int fromIndex = scheme.length() + 3;  // +3 because of "://" delimiter after scheme
-            final int relativeReferenceIdx = requestTarget.indexOf('/', fromIndex);
-            if (relativeReferenceIdx >= 0) {
-                return requestTarget.substring(relativeReferenceIdx);
-            }
-            final int questionMarkIdx = requestTarget.indexOf('?', fromIndex);
-            return questionMarkIdx < 0 ? "/" : '/' + requestTarget.substring(questionMarkIdx);
         }
 
         @Override
@@ -258,59 +237,75 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
             return location;
         }
 
+        /**
+         * Returns the request-target to follow a redirect to {@code redirectUri}, or {@code null} if it can not be
+         * followed.
+         */
         @Nullable
-        private StreamingHttpRequest prepareRedirectRequest(final StreamingHttpRequest request,
-                                                            final StreamingHttpRequestFactory requestFactory,
-                                                            final String redirectLocation) {
-            final StreamingHttpRequest redirectRequest =
-                    requestFactory.newRequest(request.method(), redirectLocation).version(request.version());
-
-            String redirectHost = redirectRequest.host();
-            if (redirectHost == null && redirectSingle.allowNonRelativeRedirects) {
-                // origin-form request-target in Location header, extract host & port info from the previous request:
-                HostAndPort requestHostAndPort = request.effectiveHostAndPort();
-                if (requestHostAndPort == null) {
-                    // abort, no HOST header found on the previous request but required for the multi-address client.
-                    // this is unlikely to happen but still possible for HTTP/1.0
-                    return null;
+        private String redirectTarget(final UriReference redirectUri, final boolean relative,
+                                      final HttpRequestMetaData request) {
+            if (!relative && !redirectSingle.allowNonRelativeRedirects) {
+                LOGGER.debug(
+                    "Ignoring non-relative redirect to '{}' for request '{}': Only relative redirects are allowed",
+                    redirectUri, request);
+                return null;
+            }
+            if (redirectSingle.allowNonRelativeRedirects && redirectUri.scheme != null) {
+                final HostAndPort hostAndPort = redirectUri.hostAndPort();
+                if (hostAndPort != null && !hostAndPort.hostName().isEmpty()) {
+                    return redirectUri.toString();
                 }
-                final int redirectPort = requestHostAndPort.port();
-                redirectRequest.setHeader(HOST, redirectPort < 0 ? requestHostAndPort.hostName() :
-                        requestHostAndPort.hostName() + ':' + redirectPort);
             }
-            // nothing to do if non-relative redirects are not allowed
-
-            // Carry forward the full context:
-            redirectRequest.context(request.context());
-
-            return redirectRequest;
+            if (!relative) {
+                LOGGER.debug("Ignoring non-relative redirect to '{}' for request '{}': Unknown scheme or host",
+                        redirectUri, request);
+                return null;
+            }
+            if (redirectSingle.allowNonRelativeRedirects && redirectUri.authority == null) {
+                // The multi-address client requires a host, but the previous request had none. This is unlikely to
+                // happen but still possible for HTTP/1.0.
+                return null;
+            }
+            return redirectUri.originForm();
         }
 
-        private static boolean isRelative(final HttpRequestMetaData originalRequest,
-                                          @Nullable final String originalScheme,
-                                          final HttpRequestMetaData redirectRequest) {
-            final String toHost = redirectRequest.host();
-            if (toHost == null) {
-                return true;
+        // Same precedence as HttpRequestMetaData#effectiveHostAndPort(), but the Host header is left unparsed: a
+        // location without an authority doesn't need it.
+        @Nullable
+        private static String authority(final HttpRequestMetaData request) {
+            final String host = request.host();
+            if (host != null) {
+                final int port = request.port();
+                return port < 0 ? host : host + ':' + port;
             }
-            final HostAndPort original = originalRequest.effectiveHostAndPort();
-            if (original == null) {
-                return false;   // Can not extract host and port from the original request => no guarantee it's relative
-            }
-            return toHost.equalsIgnoreCase(original.hostName()) &&
-                    inferPort(redirectRequest.port(), redirectRequest.scheme(), original.port()) ==
-                            inferPort(original.port(), originalScheme, original.port());
+            final CharSequence hostHeader = request.headers().get(HOST);
+            return hostHeader == null || hostHeader.length() == 0 ? null : hostHeader.toString();
         }
 
-        private static int inferPort(final int parsedPort, @Nullable final String scheme,
-                                     final int fallbackPort) {
-            if (parsedPort >= 0) {
+        private static boolean isRelative(final UriReference base, final UriReference reference,
+                                          @Nullable final HostAndPort to, final UriReference redirectUri) {
+            if (reference.scheme == null && reference.authority == null) {
+                return true;    // Resolution copies the scheme and authority of the previous request
+            }
+            final HostAndPort original = base.hostAndPort();
+            if (original == null || to == null) {
+                return false;
+            }
+            if (base.scheme != null && redirectUri.scheme != null &&
+                    !contentEqualsIgnoreCase(base.scheme, redirectUri.scheme)) {
+                return false;
+            }
+            // ASCII-only comparison: Unicode case folding matches distinct hosts, e.g. U+0131 (dotless i) matches 'i'.
+            return contentEqualsIgnoreCase(to.hostName(), original.hostName()) &&
+                    inferPort(to.port(), redirectUri.scheme) == inferPort(original.port(), base.scheme);
+        }
+
+        // Without a scheme there is no default port, so a missing port only matches another missing port.
+        private static int inferPort(final int parsedPort, @Nullable final String scheme) {
+            if (parsedPort >= 0 || scheme == null) {
                 return parsedPort;
             }
-            if (scheme == null) {
-                return fallbackPort;
-            }
-            return "https".equalsIgnoreCase(scheme) ? 443 : 80;
+            return contentEqualsIgnoreCase("https", scheme) ? 443 : 80;
         }
     }
 }
