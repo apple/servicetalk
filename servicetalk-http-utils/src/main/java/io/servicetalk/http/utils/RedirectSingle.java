@@ -150,8 +150,10 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                     throw new IllegalArgumentException(
                             "Server returned an invalid redirect location: " + e.getMessage(), e);
                 }
-                final UriReference base = new UriReference(scheme, authority(request), request.rawPath(),
-                        request.rawQuery());
+                // https://datatracker.ietf.org/doc/html/rfc9112#section-3.3: an asterisk-form request's target URI has
+                // an empty path.
+                final String basePath = "*".equals(request.requestTarget()) ? "" : request.rawPath();
+                final UriReference base = new UriReference(scheme, authority(request), basePath, request.rawQuery());
                 final UriReference redirectUri = base.resolve(reference);
                 final boolean relative = isRelative(base, reference, locationHostAndPort, redirectUri);
                 final String redirectTarget = redirectTarget(redirectUri, relative, request);

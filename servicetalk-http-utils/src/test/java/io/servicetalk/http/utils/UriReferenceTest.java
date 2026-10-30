@@ -84,7 +84,7 @@ class UriReferenceTest {
             "http:g,        http:g",
     })
     void resolveRfc3986Examples(String reference, String expected) {
-        assertThat(BASE.resolve(reference).toString(), is(expected.replaceFirst("#.*", "")));
+        assertThat(BASE.resolve(UriReference.parse(reference)).toString(), is(expected.replaceFirst("#.*", "")));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] \"{0}\" -> \"{1}\"")
@@ -95,17 +95,17 @@ class UriReferenceTest {
             "//x/a/../../b,   http://x/b",
     })
     void resolveRemovesDotSegmentsFromAbsoluteAndNetworkPathReferences(String reference, String expected) {
-        assertThat(BASE.resolve(reference).toString(), is(expected));
+        assertThat(BASE.resolve(UriReference.parse(reference)).toString(), is(expected));
     }
 
     @Test
     void resolveKeepsPercentEncodedDotSegments() {
-        assertThat(BASE.resolve("/a/%2e%2e/b").toString(), is("http://a/a/%2e%2e/b"));
+        assertThat(BASE.resolve(UriReference.parse("/a/%2e%2e/b")).toString(), is("http://a/a/%2e%2e/b"));
     }
 
     @Test
     void resolveRelativePathAgainstEmptyBasePathWithAuthority() {
-        assertThat(UriReference.parse("http://a").resolve("g").toString(), is("http://a/g"));
+        assertThat(UriReference.parse("http://a").resolve(UriReference.parse("g")).toString(), is("http://a/g"));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] \"{0}\"")

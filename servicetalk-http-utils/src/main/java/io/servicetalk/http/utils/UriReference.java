@@ -85,16 +85,6 @@ final class UriReference {
     }
 
     /**
-     * Parses {@code reference} and {@linkplain #resolve(UriReference) resolves} it against this base URI.
-     *
-     * @param reference the reference to resolve.
-     * @return the target URI.
-     */
-    UriReference resolve(final String reference) {
-        return resolve(parse(reference));
-    }
-
-    /**
      * Resolves a reference against this base URI.
      *
      * @param r the reference to resolve.

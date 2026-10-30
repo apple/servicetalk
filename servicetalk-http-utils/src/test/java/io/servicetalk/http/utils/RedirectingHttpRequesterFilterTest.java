@@ -80,6 +80,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
+import static io.servicetalk.http.api.HttpRequestMethod.OPTIONS;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.CONTINUE;
@@ -638,6 +639,23 @@ class RedirectingHttpRequesterFilterTest {
         assertThat(response.status(), is(OK));
         verify(httpClient, times(2)).request(requestCaptor.capture());
         return requestCaptor.getValue().requestTarget();
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] location={0} expectedTarget={1}")
+    @CsvSource({
+            "g,    /g",
+            "../g, /g",
+            "?q,   /?q",
+            "/x,   /x",
+    })
+    void asteriskFormRequestResolvesLocationAgainstEmptyPath(String location, String expectedTarget)
+            throws Exception {
+        when(httpClient.request(any())).thenReturn(redirectResponseWithLocation(MOVED_PERMANENTLY, location),
+                okResponse());
+        StreamingHttpClient client = newClient(new RedirectConfigBuilder().allowedMethods(OPTIONS).build());
+
+        StreamingHttpRequest request = client.newRequest(OPTIONS, "*").setHeader(HOST, "servicetalk.io");
+        assertThat(followedRedirectTarget(client, request), is(expectedTarget));
     }
 
     @Test
