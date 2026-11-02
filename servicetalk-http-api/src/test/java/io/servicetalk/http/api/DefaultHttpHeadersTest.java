@@ -26,6 +26,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.stream.Stream;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
+import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
 import static java.lang.System.clearProperty;
 import static java.lang.System.getProperty;
 import static java.lang.System.setProperty;
@@ -176,6 +177,44 @@ class DefaultHttpHeadersTest extends AbstractHttpHeadersTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {0}")
+    @MethodSource("illegalCookieFragments")
+    void addCookieValueWithIllegalCharacterThrows(String ignoredName, String illegal) {
+        final HttpHeaders headers = newHeaders();
+        headers.addCookie("sess", "abc123");
+
+        assertThrows(IllegalCharacterException.class, () -> headers.addCookie("evil", "benign" + illegal));
+        assertThat("A rejected cookie must not modify the header", String.valueOf(headers.get(COOKIE)),
+                is("sess=abc123"));
+    }
+
+    @Test
+    void addCookieNameWithIllegalCharacterThrows() {
+        final HttpHeaders headers = newHeaders();
+        headers.addCookie("sess", "abc123");
+
+        assertThrows(IllegalCharacterException.class,
+                () -> headers.addCookie("evil\r\nX-Injected-Header: pwned", "value"));
+        assertThat("A rejected cookie must not modify the header", String.valueOf(headers.get(COOKIE)),
+                is("sess=abc123"));
+    }
+
+    @Test
+    void addCookieWithIllegalCharacterAndValidationDisabledAppendsCookie() {
+        final DefaultHttpHeaders headers = newHeaders(true, false);
+        headers.addCookie("sess", "abc123");
+        headers.addCookie("evil", "benign\0");
+        assertThat(String.valueOf(headers.get(COOKIE)), is("sess=abc123; evil=benign\0"));
+    }
+
+    @Test
+    void addCookieCombinesValidCookiesIntoSingleHeader() {
+        final HttpHeaders headers = newHeaders();
+        headers.addCookie("a", "1").addCookie("b", "2").addCookie(new DefaultHttpCookiePair("c", "3", true));
+        assertThat(headers.size(), is(1));
+        assertThat(String.valueOf(headers.get(COOKIE)), is("a=1; b=2; c=\"3\""));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] {0}")
     @MethodSource("mutators")
     void invalidHeaderNameMessage(String mutatorName, HeaderMutator mutator) {
         assertInvalidNameMessage("0x3d ('=') at index=5 of length=9 in header name 'x-foo=bar'",
@@ -208,6 +247,13 @@ class DefaultHttpHeadersTest extends AbstractHttpHeadersTest {
         source.add("x foo", "value");
         assertInvalidNameMessage("0x20 (SP) at index=1 of length=5 in header name 'x foo'",
                 () -> newHeaders(true, false).add(source));
+    }
+
+    private static Stream<Arguments> illegalCookieFragments() {
+        return Stream.of(
+                arguments("CRLF and injected header", "\r\nX-Injected-Header: pwned"),
+                arguments("NUL", "\0"),
+                arguments("DEL", "\u007f"));
     }
 
     private static Stream<Arguments> mutators() {

@@ -226,7 +226,8 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
             assert e != null;
             do {
                 if (e.keyHash == keyHash && contentEqualsIgnoreCase(COOKIE, e.getKey())) {
-                    e.value = e.value + "; " + encoded;
+                    // put() below validates the first cookie, so validate the appended ones too.
+                    e.value = e.value + "; " + validateValue(COOKIE, encoded);
                     return this;
                 }
                 e = e.bucketNext;
