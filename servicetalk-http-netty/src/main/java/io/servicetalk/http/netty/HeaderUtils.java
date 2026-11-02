@@ -285,16 +285,15 @@ final class HeaderUtils {
     }
 
     /**
-     * Drops the payload and empties trailers of a HEAD response, which must carry neither (RFC 7231, section 4.3.2).
-     * Trailers are emptied, not removed, so HTTP/2 still gets the terminal item it needs to send {@code END_STREAM}.
+     * Drops the payload and trailers of a HEAD response, which must carry neither (RFC 7231, section 4.3.2).
+     * The empty trailers item that appendTrailersMapper adds on completion becomes END_STREAM on HTTP/2.
      */
     static Publisher<Object> dropHeadPayloadAndTrailers(final HttpRequestMethod requestMethod,
                                                          final Publisher<Object> messageBody) {
         if (!HEAD.equals(requestMethod)) {
             return messageBody;
         }
-        return messageBody.filter(item -> !(item instanceof Buffer))
-                .map(item -> item instanceof HttpHeaders ? EmptyHttpHeaders.INSTANCE : item);
+        return messageBody.ignoreElements().toPublisher();
     }
 
     private static final class ContentLengthList<T> extends ArrayList<T> {
