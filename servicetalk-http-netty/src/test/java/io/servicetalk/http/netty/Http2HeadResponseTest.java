@@ -17,15 +17,9 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseFactory;
-import io.servicetalk.http.api.StatelessTrailersTransformer;
-import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpConnection;
-import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.netty.HeadResponseTestUtils.ServerStarter;
 import io.servicetalk.transport.api.ServerContext;
 
 import io.netty.bootstrap.Bootstrap;
@@ -61,20 +55,25 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.function.Function;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
+import static io.servicetalk.http.netty.HeadResponseTestUtils.BODY;
+import static io.servicetalk.http.netty.HeadResponseTestUtils.TRAILER_NAME;
+import static io.servicetalk.http.netty.HeadResponseTestUtils.TRAILER_VALUE;
+import static io.servicetalk.http.netty.HeadResponseTestUtils.aggregated;
+import static io.servicetalk.http.netty.HeadResponseTestUtils.assertHeadThenGetOnReservedConnection;
+import static io.servicetalk.http.netty.HeadResponseTestUtils.blocking;
+import static io.servicetalk.http.netty.HeadResponseTestUtils.body;
+import static io.servicetalk.http.netty.HeadResponseTestUtils.streaming;
+import static io.servicetalk.http.netty.HeadResponseTestUtils.withTrailer;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
-import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
-import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
 import static io.servicetalk.transport.netty.internal.CloseUtils.safeSync;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
-import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -93,15 +92,7 @@ import static org.hamcrest.Matchers.nullValue;
  */
 class Http2HeadResponseTest {
 
-    private static final String BODY = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz";
     private static final int BODY_BYTES = BODY.length();
-    private static final String TRAILER_NAME = "x-trailer";
-    private static final String TRAILER_VALUE = "tv";
-
-    @FunctionalInterface
-    private interface ServerStarter {
-        ServerContext start() throws Exception;
-    }
 
     private static final class HeadCase {
         final ServerStarter server;
@@ -125,30 +116,30 @@ class Http2HeadResponseTest {
         final Matcher<String> noContentLength = nullValue(String.class);
         final Matcher<String> contentLength52 = is("52");
         return Stream.of(
-                headCase("streaming body+trailer, no framing header", streaming(rf ->
+                headCase("streaming body+trailer, no framing header", streaming(h2Default(), rf ->
                                 withTrailer(rf.ok().payloadBody(Publisher.from(body())))),
                         noContentLength, BODY_BYTES, true),
-                headCase("streaming body, handler-set content-length", streaming(rf ->
+                headCase("streaming body, handler-set content-length", streaming(h2Default(), rf ->
                                 rf.ok().payloadBody(Publisher.from(body())).addHeader("content-length", "52")),
                         contentLength52, BODY_BYTES, false),
-                headCase("streaming 3 buffers", streaming(rf ->
+                headCase("streaming 3 buffers", streaming(h2Default(), rf ->
                                 rf.ok().payloadBody(Publisher.from(body(), body(), body()))),
                         noContentLength, 3 * BODY_BYTES, false),
-                headCase("streaming one empty buffer", streaming(rf ->
+                headCase("streaming one empty buffer", streaming(h2Default(), rf ->
                                 rf.ok().payloadBody(Publisher.from(DEFAULT_ALLOCATOR.newBuffer(0)))),
                         noContentLength, 0, false),
-                headCase("streaming zero items", streaming(rf ->
+                headCase("streaming zero items", streaming(h2Default(), rf ->
                                 rf.ok().payloadBody(Publisher.<Buffer>empty())),
                         noContentLength, 0, false),
-                headCase("streaming no payload at all", streaming(StreamingHttpResponseFactory::ok),
+                headCase("streaming no payload at all", streaming(h2Default(), StreamingHttpResponseFactory::ok),
                         noContentLength, 0, false),
-                headCase("aggregated body", aggregated(rf -> rf.ok().payloadBody(body())),
+                headCase("aggregated body", aggregated(h2Default(), rf -> rf.ok().payloadBody(body())),
                         noContentLength, BODY_BYTES, false),
-                headCase("aggregated no payload at all", aggregated(HttpResponseFactory::ok),
+                headCase("aggregated no payload at all", aggregated(h2Default(), HttpResponseFactory::ok),
                         noContentLength, 0, false),
-                headCase("blocking body", blocking(rf -> rf.ok().payloadBody(body())),
+                headCase("blocking body", blocking(h2Default(), rf -> rf.ok().payloadBody(body())),
                         noContentLength, BODY_BYTES, false),
-                headCase("streaming trailers only", streaming(rf -> withTrailer(rf.ok())),
+                headCase("streaming trailers only", streaming(h2Default(), rf -> withTrailer(rf.ok())),
                         noContentLength, 0, true));
     }
 
@@ -195,56 +186,12 @@ class Http2HeadResponseTest {
     @ParameterizedTest(name = "{displayName} [{index}] client={0}")
     @EnumSource(HttpTestExecutionStrategy.class)
     void reservedConnectionHeadThenGetHasNoLeftoverState(HttpTestExecutionStrategy strategy) throws Exception {
-        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0)).protocols(h2Default())
-                .listenStreamingAndAwait((ctx, request, responseFactory) -> Single.succeeded(
-                        withTrailer(responseFactory.ok().payloadBody(Publisher.from(body())))));
-             StreamingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
-                     .protocols(h2Default()).executionStrategy(strategy.executorSupplier.get()).buildStreaming();
-             StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
-            HttpResponse head = connection.request(connection.head("/")).toFuture().get().toResponse()
-                    .toFuture().get();
-            assertThat(head.payloadBody().readableBytes(), is(0));
-            assertThat(head.trailers().isEmpty(), is(true));
-
-            HttpResponse get = connection.request(connection.get("/")).toFuture().get().toResponse()
-                    .toFuture().get();
-            assertThat(get.payloadBody().toString(ISO_8859_1), is(BODY));
-            assertThat(get.trailers().get(TRAILER_NAME).toString(), is(TRAILER_VALUE));
-        }
-    }
-
-    private static Buffer body() {
-        return DEFAULT_ALLOCATOR.fromAscii(BODY);
-    }
-
-    private static StreamingHttpResponse withTrailer(StreamingHttpResponse response) {
-        return response.transform(new StatelessTrailersTransformer<Buffer>() {
-            @Override
-            protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
-                return trailers.add(TRAILER_NAME, TRAILER_VALUE);
-            }
-        });
+        assertHeadThenGetOnReservedConnection(h2Default(), strategy);
     }
 
     private static Arguments headCase(String name, ServerStarter server, Matcher<String> headContentLength,
                                       int getBodyBytes, boolean getHasTrailer) {
         return Arguments.of(Named.of(name, new HeadCase(server, headContentLength, getBodyBytes, getHasTrailer)));
-    }
-
-    private static ServerStarter streaming(Function<StreamingHttpResponseFactory, StreamingHttpResponse> handler) {
-        return () -> HttpServers.forAddress(localAddress(0)).protocols(h2Default())
-                .listenStreamingAndAwait((ctx, request, responseFactory) ->
-                        Single.succeeded(handler.apply(responseFactory)));
-    }
-
-    private static ServerStarter aggregated(Function<HttpResponseFactory, HttpResponse> handler) {
-        return () -> HttpServers.forAddress(localAddress(0)).protocols(h2Default())
-                .listenAndAwait((ctx, request, responseFactory) -> Single.succeeded(handler.apply(responseFactory)));
-    }
-
-    private static ServerStarter blocking(Function<HttpResponseFactory, HttpResponse> handler) {
-        return () -> HttpServers.forAddress(localAddress(0)).protocols(h2Default())
-                .listenBlockingAndAwait((ctx, request, responseFactory) -> handler.apply(responseFactory));
     }
 
     @Nullable
