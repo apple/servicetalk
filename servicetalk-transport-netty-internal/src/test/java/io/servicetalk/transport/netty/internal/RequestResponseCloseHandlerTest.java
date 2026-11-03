@@ -65,6 +65,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -113,6 +114,7 @@ import static java.lang.Boolean.TRUE;
 import static java.lang.Integer.toHexString;
 import static java.util.Arrays.asList;
 import static java.util.Objects.hash;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
@@ -601,6 +603,121 @@ class RequestResponseCloseHandlerTest {
                     ch.protocolPayloadEndOutbound(channel.pipeline().firstContext(), channel.newPromise()));
             channel.close().sync();
             assertThat("OutboundDataEndEvent not fired", ab.get(), is(true));
+        }
+    }
+
+    /**
+     * Reproduces the hang behind <a href="https://github.com/apple/servicetalk/issues/1915">#1915</a> at the
+     * class level. After a server graceful close (response carries {@code Connection: close}),
+     * {@link RequestResponseCloseHandler} half-closes the outbound side and defers the final
+     * {@code channel.close()} until the transport delivers {@code ChannelInputShutdownReadComplete}, which
+     * {@code DefaultNettyConnection} dispatches as {@code channelClosedInbound}. If that single event never
+     * arrives, nothing else completes the close and the channel is stranded open forever, even when the peer
+     * already signalled the end of its input with a TLS {@code close_notify}.
+     */
+    @Nested
+    class ServerGracefulCloseMissingReadCompleteTest {
+
+        // Mirrors the private state flags of RequestResponseCloseHandler: DISCARDING_SERVER_INPUT (0x04) |
+        // CLOSING_SERVER_GRACEFULLY (0x08) | OUT_CLOSED (0x20). This is the state the handler is frozen in
+        // when the only event that can complete a server graceful close never arrives; the CI thread dumps
+        // captured for #1915 show the server side stuck in exactly this state (0x2c).
+        private static final int STATE_WAITING_FOR_PEER_FIN = 0x04 | 0x08 | 0x20;
+
+        // Every signal in this harness is delivered synchronously on the test thread, so a correct
+        // implementation completes the close while the last signal is processed. The bound only tolerates an
+        // implementation that dispatches the close asynchronously; it is not a timing guess, and it keeps the
+        // failure fast instead of surfacing as a global test timeout the way #1915 does in CI.
+        private static final long CLOSE_COMPLETION_TIMEOUT_SECONDS = 5L;
+
+        private ChannelHandlerContext ctx;
+        private SocketChannel channel;
+        private RequestResponseCloseHandler h;
+        private final CountDownLatch channelClosed = new CountDownLatch(1);
+        private final List<CloseEvent> observedEvents = new CopyOnWriteArrayList<>();
+
+        @BeforeEach
+        void setUp() {
+            ctx = mock(ChannelHandlerContext.class);
+            channel = mock(SocketChannel.class, "[id: 0xmocked, L:mocked - R:mocked]");
+            when(ctx.channel()).thenReturn(channel);
+            when(ctx.newPromise()).thenReturn(new DefaultChannelPromise(channel));
+            when(channel.newPromise()).thenReturn(new DefaultChannelPromise(channel));
+            EventExecutor exec = mock(EventExecutor.class);
+            when(ctx.executor()).thenReturn(exec);
+            when(exec.inEventLoop()).thenReturn(true);
+            SocketChannelConfig scc = mock(SocketChannelConfig.class);
+            when(channel.config()).thenReturn(scc);
+            EventLoop loop = mock(EventLoop.class);
+            when(channel.eventLoop()).thenReturn(loop);
+            when(loop.inEventLoop()).thenReturn(true);
+            when(scc.getOption(ALLOW_HALF_CLOSURE)).thenReturn(TRUE);
+            ChannelPipeline pipeline = mock(ChannelPipeline.class);
+            when(pipeline.iterator()).thenReturn(Collections.emptyIterator());
+            when(ctx.pipeline()).thenReturn(pipeline);
+            when(channel.pipeline()).thenReturn(pipeline);
+            ChannelFuture future = mock(ChannelFuture.class);
+            when(channel.close()).then(__ -> {
+                channelClosed.countDown();
+                return future;
+            });
+            when(channel.shutdownOutput()).then(__ -> {
+                // The transport observes the shutdownOutput() call and delivers ChannelOutputShutdownEvent,
+                // which DefaultNettyConnection dispatches to the close handler:
+                h.channelClosedOutbound(ctx);
+                return future;
+            });
+            h = (RequestResponseCloseHandler) forPipelinedRequestResponse(false, channel.config());
+            h.registerEventHandler(channel, observedEvents::add);
+        }
+
+        @Test
+        void serverGracefulCloseReadCompleteEventArrivesClosesChannel() throws Exception {
+            driveServerIntoGracefulClose();
+            // Happy path (control): the peer's FIN is delivered as ChannelInputShutdownReadComplete, which
+            // DefaultNettyConnection dispatches as channelClosedInbound:
+            h.channelClosedInbound(ctx);
+            assertChannelClosed();
+        }
+
+        @Test
+        void serverGracefulClosePeerCloseNotifyWithoutReadCompleteClosesChannel() throws Exception {
+            driveServerIntoGracefulClose();
+            // The peer ended its input and proved it with a TLS close_notify, which DefaultNettyConnection
+            // dispatches as channelCloseNotify. The handler deliberately ignores it while gracefully closing
+            // and keeps waiting for ChannelInputShutdownReadComplete, which the transport never delivers, so
+            // the channel is never closed (#1915):
+            h.channelCloseNotify(ctx);
+            assertChannelClosed();
+        }
+
+        @Test
+        void serverGracefulCloseLostReadCompleteEventClosesChannel() throws Exception {
+            driveServerIntoGracefulClose();
+            // No further signal arrives at all: the single event that can complete the graceful close,
+            // ChannelInputShutdownReadComplete, is lost at the transport (#1915):
+            assertChannelClosed();
+        }
+
+        private void driveServerIntoGracefulClose() {
+            h.protocolPayloadBeginInbound(ctx);   // request headers received
+            h.protocolPayloadEndInbound(ctx);     // request payload fully read
+            h.protocolPayloadBeginOutbound(ctx);  // response metadata written
+            h.protocolClosingOutbound(ctx);       // response carries "Connection: close"
+            ChannelPromise promise = ctx.newPromise();
+            promise.trySuccess();
+            h.protocolPayloadEndOutbound(ctx, promise); // response fully written => serverCloseGracefully()
+            assertThat("Handler did not reach the graceful-close state it gets stuck in for #1915",
+                    h.state(), is(STATE_WAITING_FOR_PEER_FIN));
+            assertThat("Unexpected pending count", h.pending(), is(0));
+            assertThat("Channel closed before the peer finished", channelClosed.getCount(), is(1L));
+        }
+
+        private void assertChannelClosed() throws Exception {
+            assertThat("Channel was not closed, the graceful close never completed (handler state: 0x" +
+                            toHexString(h.state()) + ", pending: " + h.pending() + ", events: " +
+                            observedEvents + ')',
+                    channelClosed.await(CLOSE_COMPLETION_TIMEOUT_SECONDS, SECONDS), is(true));
         }
     }
 
