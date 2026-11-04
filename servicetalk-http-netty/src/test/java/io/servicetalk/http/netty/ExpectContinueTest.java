@@ -1,5 +1,5 @@
 /*
- * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpClient;
@@ -30,37 +31,50 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.RedirectConfigBuilder;
+import io.servicetalk.http.api.ReservedHttpConnection;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
-import io.servicetalk.log4j2.mdc.utils.LoggerStringWriter;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.LinkedBlockingQueue;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
@@ -81,18 +95,23 @@ import static io.servicetalk.http.netty.BuilderUtils.newClientBuilderWithConfigs
 import static io.servicetalk.http.netty.BuilderUtils.newServerBuilderWithConfigs;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static java.lang.Integer.parseInt;
 import static java.lang.String.valueOf;
+import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofMinutes;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class ExpectContinueTest {
@@ -107,20 +126,14 @@ class ExpectContinueTest {
     private static final String PAYLOAD = "hello";
     private static final String FAIL = "fail";
     private static final Duration CONTINUE_TIMEOUT = ofMillis(200);
-    private static final Duration LONG_CONTINUE_TIMEOUT = ofMinutes(5);
-    private static final String TIMEOUT_LOG_REGEX = "No 100 \\(Continue\\) arrived from";
-    private static final int LOG_WAIT_MS = 10_000;
+    // Long enough that the timer never releases the payload body before the server sends 100 (Continue).
+    private static final Duration LONG_CONTINUE_TIMEOUT = ofMinutes(1);
+    private static final String CONTINUE_RESPONSE = "HTTP/1.1 100 Continue\r\n\r\n";
 
     private final CountDownLatch requestReceived = new CountDownLatch(1);
     private final CountDownLatch sendContinue = new CountDownLatch(1);
     private final CountDownLatch returnResponse = new CountDownLatch(1);
     private final BlockingQueue<StreamingHttpResponse> responses = new LinkedBlockingDeque<>();
-    private final LoggerStringWriter loggerStringWriter = new LoggerStringWriter();
-
-    @AfterEach
-    void removeLogAppender() {
-        loggerStringWriter.remove();
-    }
 
     private static List<Arguments> arguments() {
         List<Arguments> list = new ArrayList<>();
@@ -576,7 +589,6 @@ class ExpectContinueTest {
     @MethodSource("arguments")
     void continueTimeoutSendsPayloadAndLateContinueIsHarmless(HttpProtocol protocol, boolean useOtherHeadersFactory,
                                                               boolean withCL) throws Exception {
-        loggerStringWriter.reset();
         try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory);
              StreamingHttpClient client = createClientWithTimeout(serverContext, protocol, useOtherHeadersFactory,
                      CONTINUE_TIMEOUT);
@@ -595,10 +607,6 @@ class ExpectContinueTest {
             sendContinue.countDown();
             returnResponse.countDown();
             assertResponse(OK, PAYLOAD + PAYLOAD);
-            final List<String> lines = timeoutLogLines(serverContext);
-            assertThat(lines, hasSize(1));
-            assertThat(lines.get(0), containsString("[INFO ]"));
-            assertThat(lines.get(0), containsString("1 requests since the last message"));
 
             sendFollowUpRequest(connection, withCL, allocator, OK);
         }
@@ -606,8 +614,8 @@ class ExpectContinueTest {
 
     @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
     @MethodSource("arguments")
-    void continueTimeoutThenFinalErrorResponseWithoutContinue(HttpProtocol protocol, boolean useOtherHeadersFactory,
-                                                              boolean withCL) throws Exception {
+    void continueTimeoutThenLateErrorResponseReachesCaller(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                                           boolean withCL) throws Exception {
         try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory,
                 (ctx, request, response) -> {
             requestReceived.countDown();
@@ -634,8 +642,8 @@ class ExpectContinueTest {
 
     @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
     @MethodSource("arguments")
-    void zeroContinueTimeoutNeverSendsPayloadWithoutContinue(HttpProtocol protocol, boolean useOtherHeadersFactory,
-                                                             boolean withCL) throws Exception {
+    void zeroContinueTimeoutSendsPayloadWithoutWaiting(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                                       boolean withCL) throws Exception {
         try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory);
              StreamingHttpClient client = createClientWithTimeout(serverContext, protocol, useOtherHeadersFactory,
                      Duration.ZERO);
@@ -646,41 +654,14 @@ class ExpectContinueTest {
             connection.request(newRequest(connection, withCL, false, payload)).subscribe(responses::add);
             requestReceived.await();
 
-            // Wait for any signal that could unblock the exchange, none is expected.
-            assertThat(responses.poll(CONTINUE_TIMEOUT.toMillis() * 5, MILLISECONDS), is(nullValue()));
-            assertThat("Unexpected subscribe to payload body before 100 (Continue)",
-                    payload.isSubscribed(), is(false));
+            // The server withholds 100 (Continue) until sendContinue is counted down.
+            sendRequestPayload(payload, allocator);
 
             sendContinue.countDown();
-            sendRequestPayload(payload, allocator);
             returnResponse.countDown();
             assertResponse(OK, PAYLOAD + PAYLOAD);
-        }
-    }
 
-    @Test
-    void continueTimeoutIsNotAppliedToPipelinedH1Connection() throws Exception {
-        try (HttpServerContext serverContext = startServer(HTTP_1, false);
-             StreamingHttpClient client = newClientBuilderWithConfigs(serverContext, CLIENT_CTX,
-                     h1().maxPipelinedRequests(2).build())
-                     .expectContinueTimeout(CONTINUE_TIMEOUT)
-                     .buildStreaming();
-             StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
-            BufferAllocator allocator = connection.executionContext().bufferAllocator();
-
-            TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().singleSubscriber().build();
-            connection.request(newRequest(connection, true, false, payload)).subscribe(responses::add);
-            requestReceived.await();
-
-            // Wait for any signal that could unblock the exchange, none is expected.
-            assertThat(responses.poll(CONTINUE_TIMEOUT.toMillis() * 5, MILLISECONDS), is(nullValue()));
-            assertThat("Unexpected subscribe to payload body before 100 (Continue)",
-                    payload.isSubscribed(), is(false));
-
-            sendContinue.countDown();
-            sendRequestPayload(payload, allocator);
-            returnResponse.countDown();
-            assertResponse(OK, PAYLOAD + PAYLOAD);
+            sendFollowUpRequest(connection, withCL, allocator, OK);
         }
     }
 
@@ -688,7 +669,7 @@ class ExpectContinueTest {
     @EnumSource(HttpProtocol.class)
     void defaultContinueTimeoutSendsPayloadWithoutContinue(HttpProtocol protocol) throws Exception {
         try (HttpServerContext serverContext = startServer(protocol, false);
-             StreamingHttpClient client = createClient(serverContext, protocol, false);
+             StreamingHttpClient client = createClientWithDefaultTimeout(serverContext, protocol, false);
              StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
             BufferAllocator allocator = connection.executionContext().bufferAllocator();
 
@@ -705,38 +686,9 @@ class ExpectContinueTest {
         }
     }
 
-    @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
-    @MethodSource("arguments")
-    void continueBeforeTimeoutDoesNotLog(HttpProtocol protocol, boolean useOtherHeadersFactory,
-                                         boolean withCL) throws Exception {
-        loggerStringWriter.reset();
-        try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory);
-             StreamingHttpClient client = createClientWithTimeout(serverContext, protocol, useOtherHeadersFactory,
-                     LONG_CONTINUE_TIMEOUT);
-             StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
-            BufferAllocator allocator = connection.executionContext().bufferAllocator();
-
-            TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().singleSubscriber().build();
-            connection.request(newRequest(connection, withCL, false, payload)).subscribe(responses::add);
-            requestReceived.await();
-
-            assertThat("Unexpected subscribe to payload body before 100 (Continue)",
-                    payload.isSubscribed(), is(false));
-            sendContinue.countDown();
-            sendRequestPayload(payload, allocator);
-
-            returnResponse.countDown();
-            assertResponse(OK, PAYLOAD + PAYLOAD);
-            assertThat(timeoutLogLines(serverContext), is(empty()));
-
-            sendFollowUpRequest(connection, withCL, allocator, OK);
-        }
-    }
-
     @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
     @EnumSource(HttpProtocol.class)
-    void continueTimeoutOnSameClientLogsOnceAndSendsEveryPayload(HttpProtocol protocol) throws Exception {
-        loggerStringWriter.reset();
+    void continueTimeoutAppliesToEveryRequest(HttpProtocol protocol) throws Exception {
         final BlockingQueue<CountDownLatch> serverGates = new LinkedBlockingDeque<>();
         try (HttpServerContext serverContext = startServer(protocol, false, (ctx, request, response) -> {
             final CountDownLatch gate = new CountDownLatch(1);
@@ -761,22 +713,294 @@ class ExpectContinueTest {
                 gate.countDown();
                 assertResponse(OK, PAYLOAD + PAYLOAD);
             }
-            final List<String> lines = timeoutLogLines(serverContext);
-            assertThat(lines, hasSize(1));
-            assertThat(lines.get(0), containsString("[INFO ]"));
-            assertThat(lines.get(0), containsString("1 requests since the last message"));
         }
     }
 
-    private List<String> timeoutLogLines(HttpServerContext serverContext) throws Exception {
-        final int port = ((InetSocketAddress) serverContext.listenAddress()).getPort();
-        final List<String> lines = new ArrayList<>();
-        for (String line : loggerStringWriter.stableAccumulated(LOG_WAIT_MS).split("\\R")) {
-            if (line.matches(".*" + TIMEOUT_LOG_REGEX + " \\S*:" + port + " within.*")) {
-                lines.add(line);
+    @ParameterizedTest(name = "{displayName} [{index}] maxPipelinedRequests={0}")
+    @ValueSource(ints = {1, 2})
+    void interimResponsesBeforeContinue(int maxPipelinedRequests) throws Exception {
+        try (RawServer server = new RawServer();
+             HttpClient client = newRawServerClient(server, maxPipelinedRequests, LONG_CONTINUE_TIMEOUT);
+             ReservedHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
+            Future<HttpResponse> response = connection.request(newRawServerRequest(connection)).toFuture();
+            RawConnection raw = server.accept();
+            int contentLength = raw.readRequestHeaders();
+            raw.write("HTTP/1.1 102 Processing\r\n\r\nHTTP/1.1 103 Early Hints\r\n\r\n");
+            raw.write(CONTINUE_RESPONSE);
+            raw.respondWithBody(contentLength);
+            assertRawServerResponse(response.get(), OK, PAYLOAD + PAYLOAD);
+
+            sendRawServerFollowUpRequest(connection, raw);
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] maxPipelinedRequests={0}")
+    @ValueSource(ints = {1, 2})
+    void lateContinueAfterTimeout(int maxPipelinedRequests) throws Exception {
+        try (RawServer server = new RawServer();
+             HttpClient client = newRawServerClient(server, maxPipelinedRequests, CONTINUE_TIMEOUT);
+             ReservedHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
+            Future<HttpResponse> response = connection.request(newRawServerRequest(connection)).toFuture();
+            RawConnection raw = server.accept();
+            int contentLength = raw.readRequestHeaders();
+            // Only the timeout releases the payload body, the server has not responded yet.
+            String body = raw.readBody(contentLength);
+            raw.write(CONTINUE_RESPONSE);
+            raw.write(okResponse(body));
+            assertRawServerResponse(response.get(), OK, PAYLOAD + PAYLOAD);
+
+            sendRawServerFollowUpRequest(connection, raw);
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] maxPipelinedRequests={0} status={1}")
+    @CsvSource({"1,413", "1,417", "2,413", "2,417"})
+    void lateRejectionAfterTimeoutReachesCaller(int maxPipelinedRequests, int status) throws Exception {
+        try (RawServer server = new RawServer();
+             HttpClient client = newRawServerClient(server, maxPipelinedRequests, CONTINUE_TIMEOUT);
+             ReservedHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
+            Future<HttpResponse> response = connection.request(newRawServerRequest(connection)).toFuture();
+            RawConnection raw = server.accept();
+            int contentLength = raw.readRequestHeaders();
+            raw.readBody(contentLength);
+            raw.write("HTTP/1.1 " + status + " Rejected\r\ncontent-length: 0\r\n\r\n");
+            assertRawServerResponse(response.get(), HttpResponseStatus.of(status, "Rejected"), "");
+
+            sendRawServerFollowUpRequest(connection, raw);
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] maxPipelinedRequests={0}")
+    @ValueSource(ints = {1, 2})
+    void duplicateContinue(int maxPipelinedRequests) throws Exception {
+        try (RawServer server = new RawServer();
+             HttpClient client = newRawServerClient(server, maxPipelinedRequests, LONG_CONTINUE_TIMEOUT);
+             ReservedHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
+            Future<HttpResponse> response = connection.request(newRawServerRequest(connection)).toFuture();
+            RawConnection raw = server.accept();
+            int contentLength = raw.readRequestHeaders();
+            raw.write(CONTINUE_RESPONSE + CONTINUE_RESPONSE);
+            raw.respondWithBody(contentLength);
+            assertRawServerResponse(response.get(), OK, PAYLOAD + PAYLOAD);
+
+            sendRawServerFollowUpRequest(connection, raw);
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] maxPipelinedRequests={0}")
+    @ValueSource(ints = {1, 2})
+    void continueAndFinalResponseInOneRead(int maxPipelinedRequests) throws Exception {
+        try (RawServer server = new RawServer();
+             HttpClient client = newRawServerClient(server, maxPipelinedRequests, LONG_CONTINUE_TIMEOUT);
+             ReservedHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
+            Future<HttpResponse> response = connection.request(newRawServerRequest(connection)).toFuture();
+            RawConnection raw = server.accept();
+            int contentLength = raw.readRequestHeaders();
+            raw.write(CONTINUE_RESPONSE + okResponse(""));
+            assertThat(raw.readBody(contentLength), equalTo(PAYLOAD + PAYLOAD));
+            assertRawServerResponse(response.get(), OK, "");
+
+            sendRawServerFollowUpRequest(connection, raw);
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] lateFinalStatus={0}")
+    @ValueSource(ints = {200, 417})
+    void pipelinedLateResponsesDoNotAffectNextRequest(int lateFinalStatus) throws Exception {
+        try (RawServer server = new RawServer();
+             HttpClient client = newRawServerClient(server, 2, ofMillis(500));
+             ReservedHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
+            Future<HttpResponse> first = connection.request(newRawServerRequest(connection)).toFuture();
+            Future<HttpResponse> second = connection.request(newRawServerRequest(connection)
+                    .payloadBody(connection.executionContext().bufferAllocator().fromAscii("second"))).toFuture();
+            RawConnection raw = server.accept();
+            int firstContentLength = raw.readRequestHeaders();
+            raw.readBody(firstContentLength);
+            // The second request is written only after the first one completes.
+            int secondContentLength = raw.readRequestHeaders();
+            raw.write(CONTINUE_RESPONSE);
+            raw.write("HTTP/1.1 " + lateFinalStatus + " Late\r\ncontent-length: 0\r\n\r\n");
+            raw.write(CONTINUE_RESPONSE);
+            raw.respondWithBody(secondContentLength);
+            assertRawServerResponse(first.get(), HttpResponseStatus.of(lateFinalStatus, "Late"), "");
+            assertRawServerResponse(second.get(), OK, "second");
+        }
+    }
+
+    @Test
+    void retryExpectationFailedRetriesWithDuplicatedPayloadBody() throws Exception {
+        final Queue<Object> writtenItems = new LinkedBlockingQueue<>();
+        final Buffer body = CLIENT_CTX.bufferAllocator().fromAscii(PAYLOAD + PAYLOAD);
+        try (RawServer server = new RawServer();
+             StreamingHttpClient client = newClientBuilderWithConfigs(serverHostAndPort(server.address()),
+                     CLIENT_CTX, h1Default())
+                     .expectContinueTimeout(LONG_CONTINUE_TIMEOUT)
+                     .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
+                             .retryExpectationFailed(true).build())
+                     .appendConnectionFilter(c -> new StreamingHttpConnectionFilter(c) {
+                         @Override
+                         public Single<StreamingHttpResponse> request(StreamingHttpRequest request) {
+                             return delegate().request(request.transformMessageBody(
+                                     p -> p.beforeOnNext(writtenItems::add)));
+                         }
+                     })
+                     .buildStreaming()) {
+            Future<StreamingHttpResponse> response = client.request(client.post("/")
+                    .setHeader(EXPECT, CONTINUE)
+                    .setHeader(CONTENT_LENGTH, valueOf(body.readableBytes()))
+                    .payloadBody(from(body))).toFuture();
+            RawConnection raw = server.accept();
+            raw.readRequestHeaders();
+            raw.write("HTTP/1.1 417 Expectation Failed\r\ncontent-length: 0\r\n\r\n");
+
+            int contentLength = raw.readRequestHeaders();
+            assertThat(raw.lastRequestHadExpectContinue(), is(false));
+            raw.respondWithBody(contentLength);
+            assertThat(response.get().toResponse().toFuture().get().payloadBody().toString(US_ASCII),
+                    equalTo(PAYLOAD + PAYLOAD));
+            final Object written = writtenItems.poll();
+            assertThat(written, is(instanceOf(Buffer.class)));
+            assertThat(written, is(not(sameInstance(body))));
+        }
+    }
+
+    @Test
+    void retryExpectationFailedDoesNotRetryAfterPayloadBodySent() throws Exception {
+        try (RawServer server = new RawServer();
+             StreamingHttpClient client = newClientBuilderWithConfigs(serverHostAndPort(server.address()),
+                     CLIENT_CTX, h1Default())
+                     .expectContinueTimeout(CONTINUE_TIMEOUT)
+                     .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
+                             .retryExpectationFailed(true).build())
+                     .buildStreaming()) {
+            TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().singleSubscriber().build();
+            Future<StreamingHttpResponse> response = client.request(newRequest(client, true, false, payload))
+                    .toFuture();
+            RawConnection raw = server.accept();
+            int contentLength = raw.readRequestHeaders();
+            // Only the timeout releases the payload body, the server has not responded yet.
+            sendRequestPayload(payload, client.executionContext().bufferAllocator());
+            raw.readBody(contentLength);
+            raw.write("HTTP/1.1 417 Expectation Failed\r\ncontent-length: 0\r\n\r\n");
+
+            ExecutionException e = assertThrows(ExecutionException.class, response::get);
+            assertThat(e.getCause(), is(instanceOf(ExpectationFailedException.class)));
+        }
+    }
+
+    private static HttpClient newRawServerClient(RawServer server, int maxPipelinedRequests,
+                                                 Duration expectContinueTimeout) {
+        return newClientBuilderWithConfigs(serverHostAndPort(server.address()), CLIENT_CTX,
+                h1().maxPipelinedRequests(maxPipelinedRequests).build())
+                .expectContinueTimeout(expectContinueTimeout)
+                .build();
+    }
+
+    private static HttpRequest newRawServerRequest(HttpRequestFactory factory) {
+        return factory.post("/")
+                .setHeader(EXPECT, CONTINUE)
+                .payloadBody(CLIENT_CTX.bufferAllocator().fromAscii(PAYLOAD + PAYLOAD));
+    }
+
+    private static void sendRawServerFollowUpRequest(HttpConnection connection, RawConnection raw) throws Exception {
+        Future<HttpResponse> response = connection.request(newRawServerRequest(connection)).toFuture();
+        int contentLength = raw.readRequestHeaders();
+        raw.write(CONTINUE_RESPONSE);
+        raw.respondWithBody(contentLength);
+        assertRawServerResponse(response.get(), OK, PAYLOAD + PAYLOAD);
+    }
+
+    private static void assertRawServerResponse(HttpResponse response, HttpResponseStatus expectedStatus,
+                                                String expectedPayload) {
+        assertThat(response.status().code(), is(expectedStatus.code()));
+        assertThat(response.payloadBody().toString(US_ASCII), equalTo(expectedPayload));
+    }
+
+    private static String okResponse(String body) {
+        return "HTTP/1.1 200 OK\r\ncontent-length: " + body.length() + "\r\n\r\n" + body;
+    }
+
+    private static final class RawServer implements AutoCloseable {
+        private final ServerSocket serverSocket;
+        @Nullable
+        private Socket socket;
+
+        RawServer() throws IOException {
+            serverSocket = new ServerSocket(0, 50, getLoopbackAddress());
+        }
+
+        SocketAddress address() {
+            return serverSocket.getLocalSocketAddress();
+        }
+
+        RawConnection accept() throws IOException {
+            socket = serverSocket.accept();
+            return new RawConnection(socket);
+        }
+
+        @Override
+        public void close() throws IOException {
+            try {
+                if (socket != null) {
+                    socket.close();
+                }
+            } finally {
+                serverSocket.close();
             }
         }
-        return lines;
+    }
+
+    private static final class RawConnection {
+        private final BufferedReader in;
+        private final OutputStream out;
+        private boolean lastRequestHadExpectContinue;
+
+        RawConnection(Socket socket) throws IOException {
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream(), US_ASCII));
+            out = socket.getOutputStream();
+        }
+
+        int readRequestHeaders() throws IOException {
+            int contentLength = 0;
+            lastRequestHadExpectContinue = false;
+            String line = in.readLine();
+            assertThat(line, startsWith("POST "));
+            while ((line = in.readLine()) != null && !line.isEmpty()) {
+                int colon = line.indexOf(':');
+                String name = line.substring(0, colon);
+                String value = line.substring(colon + 1).trim();
+                if (CONTENT_LENGTH.toString().equalsIgnoreCase(name)) {
+                    contentLength = parseInt(value);
+                } else if (EXPECT.toString().equalsIgnoreCase(name)) {
+                    lastRequestHadExpectContinue = CONTINUE.toString().equalsIgnoreCase(value);
+                }
+            }
+            return contentLength;
+        }
+
+        boolean lastRequestHadExpectContinue() {
+            return lastRequestHadExpectContinue;
+        }
+
+        String readBody(int contentLength) throws IOException {
+            char[] body = new char[contentLength];
+            int read = 0;
+            while (read < contentLength) {
+                int n = in.read(body, read, contentLength - read);
+                assertThat("Unexpected end of stream", n, is(greaterThanOrEqualTo(0)));
+                read += n;
+            }
+            return new String(body);
+        }
+
+        void respondWithBody(int contentLength) throws IOException {
+            write(okResponse(readBody(contentLength)));
+        }
+
+        void write(String response) throws IOException {
+            out.write(response.getBytes(US_ASCII));
+            out.flush();
+        }
     }
 
     private HttpServerContext startServer(HttpProtocol protocol, boolean useOtherHeadersFactory) throws Exception {
@@ -815,7 +1039,13 @@ class ExpectContinueTest {
     private static StreamingHttpClient createClient(HttpServerContext serverContext,
                                                     HttpProtocol protocol, boolean useOtherHeadersFactory,
                                                     @Nullable StreamingHttpClientFilterFactory filterFactory) {
-        return createClient(serverContext, protocol, useOtherHeadersFactory, filterFactory, null);
+        return createClient(serverContext, protocol, useOtherHeadersFactory, filterFactory, LONG_CONTINUE_TIMEOUT);
+    }
+
+    private static StreamingHttpClient createClientWithDefaultTimeout(HttpServerContext serverContext,
+                                                                      HttpProtocol protocol,
+                                                                      boolean useOtherHeadersFactory) {
+        return createClient(serverContext, protocol, useOtherHeadersFactory, null, null);
     }
 
     private static StreamingHttpClient createClientWithTimeout(HttpServerContext serverContext,

@@ -258,12 +258,10 @@ HTTP protocol defines link:https://datatracker.ietf.org/doc/html/rfc7231#section
 responds with link:https://datatracker.ietf.org/doc/html/rfc7231#section-6.2.1[100 Continue] status code signaling that
 it's ready to receive and process the payload body.
 
-If the server does not respond within 3 seconds, the client logs an INFO message and sends the payload body anyway, as
-permitted by link:https://www.rfc-editor.org/rfc/rfc9110#section-10.1.1[RFC 9110]. The message is logged at most once
-every 2 hours per client, with the number of requests that timed out since the previous message. Use
-`SingleAddressHttpClientBuilder.expectContinueTimeout(Duration)` to change this timeout, or pass `Duration.ZERO` to wait
-indefinitely. The timeout does not apply to HTTP/1.1 connections when `maxPipelinedRequests` is greater than 1, where
-the payload body keeps waiting for the server's response.
+If the server does not respond within 1 second, the client sends the payload body anyway, as permitted by
+link:https://datatracker.ietf.org/doc/html/rfc9110#section-10.1.1[RFC 9110]. Use
+`SingleAddressHttpClientBuilder.expectContinueTimeout(Duration)` to change this timeout. `Duration.ZERO` sends the
+payload body immediately, and a very large duration waits for the server's response effectively forever.
 
 NOTE: xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc#client-blocking-and-aggregated[Aggregated]
 client will automatically de-optimize its flush strategy to flush on each element of the request to force flushing of

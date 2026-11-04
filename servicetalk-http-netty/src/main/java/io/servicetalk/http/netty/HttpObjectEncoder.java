@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -191,7 +191,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
             }
 
             if (realResponse) {
-                ctx.write(byteBuf, promise);
+                writeMetaData(ctx, byteBuf, promise);
             } else {
                 // All "interim messages" have to be flushed right away.
                 ctx.writeAndFlush(byteBuf, promise);
@@ -311,6 +311,18 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
      */
     protected void onMetaData(final ChannelHandlerContext ctx, final T metaData) {
         // noop
+    }
+
+    /**
+     * Writes the encoded start line and headers of a non-interim message.
+     *
+     * @param ctx the {@link ChannelHandlerContext} for which the write operation is made.
+     * @param encoded the encoded start line and headers.
+     * @param promise the {@link ChannelPromise} to notify once the operation completes.
+     */
+    protected void writeMetaData(final ChannelHandlerContext ctx, final ByteBuf encoded,
+                                 final ChannelPromise promise) {
+        ctx.write(encoded, promise);
     }
 
     private void sanitizeHeadersBeforeEncode(T msg) {

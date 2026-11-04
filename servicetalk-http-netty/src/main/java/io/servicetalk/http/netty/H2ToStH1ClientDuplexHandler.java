@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2021, 2026 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,12 @@ import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2HeadersFrame;
 import io.netty.handler.codec.http2.Http2StreamChannel;
+import io.netty.util.concurrent.PromiseNotifier;
+import io.netty.util.concurrent.ScheduledFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
@@ -54,18 +59,27 @@ import static io.servicetalk.http.netty.H2ToStH1Utils.invalidPathReason;
 import static io.servicetalk.http.netty.HeaderUtils.REQ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HeaderUtils.responseMayHaveContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.serverMaySendPayloadBodyFor;
+import static io.servicetalk.utils.internal.DurationUtils.toNanos;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(H2ToStH1ClientDuplexHandler.class);
+
     private boolean readHeaders;
     private final HttpScheme scheme;
+    private final Duration expectContinueTimeout;
     @Nullable
     private HttpRequestMethod method;
     private boolean waitForContinuation;
+    @Nullable
+    private ScheduledFuture<?> expectContinueTimer;
 
     H2ToStH1ClientDuplexHandler(boolean sslEnabled, BufferAllocator allocator, HttpHeadersFactory headersFactory,
-                                CloseHandler closeHandler, StreamObserver observer) {
+                                CloseHandler closeHandler, StreamObserver observer,
+                                Duration expectContinueTimeout) {
         super(allocator, headersFactory, closeHandler, observer);
         this.scheme = sslEnabled ? HttpScheme.HTTPS : HttpScheme.HTTP;
+        this.expectContinueTimeout = expectContinueTimeout;
     }
 
     @Override
@@ -101,7 +115,18 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                 h2Headers.path(path);
             }
             try {
-                writeMetaData(ctx, metaData, h2Headers, true, promise);
+                if (waitForContinuation) {
+                    final ChannelPromise headersPromise = ctx.newPromise();
+                    writeMetaData(ctx, metaData, h2Headers, true, headersPromise);
+                    headersPromise.addListener(f -> {
+                        if (f.isSuccess()) {
+                            startExpectContinueTimer(ctx);
+                        }
+                    });
+                    PromiseNotifier.cascade(headersPromise, promise);
+                } else {
+                    writeMetaData(ctx, metaData, h2Headers, true, promise);
+                }
             } finally {
                 final Http2StreamChannel streamChannel = (Http2StreamChannel) ctx.channel();
                 final long streamId = streamChannel.stream().id();
@@ -120,12 +145,33 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
     }
 
     @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
-        // Fired from the head of the pipeline when the wait for 100 (Continue) timed out.
-        if (evt == ContinueUserEvent.INSTANCE) {
-            waitForContinuation = false;
+    public void handlerRemoved(final ChannelHandlerContext ctx) {
+        cancelExpectContinueTimer();
+    }
+
+    private void startExpectContinueTimer(final ChannelHandlerContext ctx) {
+        if (waitForContinuation) {
+            expectContinueTimer = ctx.executor().schedule(() -> expectContinueTimedOut(ctx),
+                    toNanos(expectContinueTimeout), NANOSECONDS);
         }
-        super.userEventTriggered(ctx, evt);
+    }
+
+    private void expectContinueTimedOut(final ChannelHandlerContext ctx) {
+        expectContinueTimer = null;
+        if (waitForContinuation) {
+            waitForContinuation = false;
+            LOGGER.debug("{} No response to Expect: 100-continue from {} within {}, sending the payload body",
+                    ctx.channel(), ctx.channel().remoteAddress(), expectContinueTimeout);
+            ctx.fireUserEventTriggered(ContinueUserEvent.INSTANCE);
+        }
+    }
+
+    private void cancelExpectContinueTimer() {
+        final ScheduledFuture<?> timer = expectContinueTimer;
+        if (timer != null) {
+            expectContinueTimer = null;
+            timer.cancel(false);
+        }
     }
 
     @Override
@@ -150,10 +196,12 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                     if (httpStatus.code() == HttpResponseStatus.CONTINUE.code() ||
                             httpStatus.statusClass() == SUCCESSFUL_2XX) {
                         waitForContinuation = false;
+                        cancelExpectContinueTimer();
                         // Write of payload body can continue for either 100 or 2XX response code:
                         ctx.fireUserEventTriggered(ContinueUserEvent.INSTANCE);
                     } else if (realResponse) {
                         waitForContinuation = false;
+                        cancelExpectContinueTimer();
                         // All other non-interim responses should cancel ongoing write operation when write waits for
                         // continuation.
                         ctx.fireUserEventTriggered(CancelWriteUserEvent.INSTANCE);

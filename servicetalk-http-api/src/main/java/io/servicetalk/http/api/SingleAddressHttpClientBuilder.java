@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -192,23 +192,15 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
     }
 
     /**
-     * Sets how long this client waits for a response to a request carrying an {@code Expect: 100-continue} header
-     * before it sends the request payload body anyway.
+     * Sets how long to wait for a response to a request with an {@code Expect: 100-continue} header before sending the
+     * request payload body anyway, see
+     * <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-10.1.1">RFC 9110, section 10.1.1</a>.
      * <p>
-     * Normally the payload body is withheld until the server answers with {@code 100 (Continue)} or a final response.
-     * If the server never answers, the request stalls until another timeout fires. When this timeout expires the
-     * client logs an INFO message and sends the payload body without waiting further, as permitted by
-     * <a href="https://www.rfc-editor.org/rfc/rfc9110#section-10.1.1">RFC 9110, section 10.1.1</a>. The message is
-     * logged at most once every 2 hours per client, with the number of requests that timed out since the previous
-     * message. A response that arrives afterwards is handled as usual.
-     * <p>
-     * Applies to HTTP/1.1 and HTTP/2, to every request sent by this client; it cannot be set per request. The default
-     * is 3 seconds. {@link Duration#ZERO} disables the timeout, and the client waits indefinitely. The timeout does not
-     * apply to HTTP/1.1 connections when {@code maxPipelinedRequests} is greater than 1, where the payload body keeps
-     * waiting for the server's response.
+     * The default is 1 second. {@link Duration#ZERO} sends the payload body immediately, without waiting. The payload
+     * body may be sent before the server's response arrives, which matters when retrying a request whose payload body
+     * cannot be replayed.
      *
-     * @param expectContinueTimeout the {@link Duration} to wait, must be non-negative; {@link Duration#ZERO} waits
-     * indefinitely
+     * @param expectContinueTimeout the {@link Duration} to wait, must be non-negative
      * @return {@code this}
      * @throws IllegalArgumentException if {@code expectContinueTimeout} is negative
      */

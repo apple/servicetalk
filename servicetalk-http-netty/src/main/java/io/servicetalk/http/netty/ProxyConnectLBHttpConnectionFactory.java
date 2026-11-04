@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,7 +98,8 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
         return new ProxyConnectChannelSingle(channel,
                 new TcpClientChannelInitializer(config.tcpConfig(), observer, executionContext, true)
                         .andThen(new HttpClientChannelInitializer(
-                                getByteBufAllocator(executionContext.bufferAllocator()), h1Config, closeHandler)),
+                                getByteBufAllocator(executionContext.bufferAllocator()), h1Config, closeHandler,
+                                config.expectContinueTimeout())),
                 observer, h1Config.headersFactory(), config.proxyConfig())
                 .flatMap(ProxyConnectLBHttpConnectionFactory::handshake)
                 .flatMap(protocol -> finishConnectionInitialization(protocol, channel, closeHandler, observer))
@@ -142,8 +143,7 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
                 result = showPipeline(DefaultNettyConnection.initChannel(channel,
                             channelExecutionContext(channel, executionContext), closeHandler,
                             tcpConfig.flushStrategy(), tcpConfig.idleTimeoutMs(), tcpConfig.sslConfig(),
-                            NoopChannelInitializer.INSTANCE, HTTP_1_1, connectionObserver, true, OBJ_EXPECT_CONTINUE,
-                            config.h1ExpectContinueTimeout()),
+                            NoopChannelInitializer.INSTANCE, HTTP_1_1, connectionObserver, true, OBJ_EXPECT_CONTINUE),
                         HTTP_1_1, channel)
                         .map(conn -> new PipelinedStreamingHttpConnection(conn, config.h1Config(),
                                 reqRespFactoryFunc.apply(HTTP_1_1), config.allowDropTrailersReadFromTransport(),

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,7 +91,6 @@ import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
 import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalClientFilterFactory;
 import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalConnectionFilterFactory;
 import static io.servicetalk.utils.internal.DurationUtils.ensureNonNegative;
-import static io.servicetalk.utils.internal.DurationUtils.toNanos;
 import static java.lang.Integer.parseInt;
 import static java.net.StandardSocketOptions.SO_KEEPALIVE;
 import static java.time.Duration.ofMinutes;
@@ -594,7 +593,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> expectContinueTimeout(final Duration expectContinueTimeout) {
-        config.expectContinueTimeoutNanos(toNanos(ensureNonNegative(expectContinueTimeout, "expectContinueTimeout")));
+        config.expectContinueTimeout(ensureNonNegative(expectContinueTimeout, "expectContinueTimeout"));
         return this;
     }
 

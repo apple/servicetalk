@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,16 +47,26 @@ import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
-import static io.servicetalk.http.netty.HttpResponseDecoder.Signal.REQUEST_SIGNAL;
-import static io.servicetalk.http.netty.HttpResponseDecoder.Signal.REQUEST_WITH_EXPECT_CONTINUE_SIGNAL;
 import static java.lang.Math.min;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
 final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> {
 
-    enum Signal {
-        REQUEST_SIGNAL, REQUEST_WITH_EXPECT_CONTINUE_SIGNAL
+    /**
+     * Entry of the queue shared with {@link HttpRequestEncoder}, one per request.
+     */
+    static class Signal {
+        static final Signal REQUEST_SIGNAL = new Signal();
+
+        /**
+         * Stops waiting for a response to {@code Expect: 100-continue}, if this request waits for one.
+         *
+         * @return {@code true} if this request was waiting
+         */
+        boolean stopExpectContinue() {
+            return false;
+        }
     }
 
     private static final byte[] FIRST_BYTES = "HTTP/".getBytes(US_ASCII);
@@ -171,23 +181,23 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
 
     @Override
     protected void onMetaDataRead(final ChannelHandlerContext ctx, final HttpResponseMetaData msg) {
-        final Object signal = signalsQueue.poll();
-        assert signal != null;
-        if (signal != REQUEST_WITH_EXPECT_CONTINUE_SIGNAL) {
+        final HttpResponseStatus status = msg.status();
+        if (isInterim(msg)) {
+            // Only a final response completes the request at the head of the queue.
+            if (status.code() == CONTINUE.code()) {
+                final Signal signal = signalsQueue.peek();
+                if (signal != null && signal.stopExpectContinue()) {
+                    ctx.fireUserEventTriggered(ContinueUserEvent.INSTANCE);
+                }
+            }
             return;
         }
-        // Process a response for "Expect: 100-continue" request.
-        final HttpResponseStatus status = msg.status();
-        if (status.code() == CONTINUE.code()) {
-            ctx.fireUserEventTriggered(ContinueUserEvent.INSTANCE);
-            // Offer REQUEST_SIGNAL to suppress any events for the final response.
-            signalsQueue.offerLast(REQUEST_SIGNAL);
-        } else if (status.statusClass() == SUCCESSFUL_2XX) {
-            // Write of payload body can continue for either 100 or 2XX response code:
-            ctx.fireUserEventTriggered(ContinueUserEvent.INSTANCE);
-        } else if (!isInterim(msg)) {
-            // All other non-interim responses should cancel ongoing write operation when write waits for continuation.
-            ctx.fireUserEventTriggered(CancelWriteUserEvent.INSTANCE);
+        final Signal signal = signalsQueue.poll();
+        if (signal != null && signal.stopExpectContinue()) {
+            // Write of payload body can continue for 2XX response code. All other final responses should cancel
+            // ongoing write operation that waits for continuation.
+            ctx.fireUserEventTriggered(status.statusClass() == SUCCESSFUL_2XX ?
+                    ContinueUserEvent.INSTANCE : CancelWriteUserEvent.INSTANCE);
         }
     }
 

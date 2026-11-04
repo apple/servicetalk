@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,6 @@ import io.servicetalk.transport.netty.internal.ChannelCloseUtils;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
-import io.servicetalk.transport.netty.internal.ExpectContinueTimeout;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopMultiplexedObserver;
@@ -70,6 +69,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.LongConsumer;
 import javax.annotation.Nullable;
@@ -121,7 +121,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                                         ConnectionObserver observer,
                                                         boolean allowDropTrailersReadFromTransport,
                                                         LongConsumer payloadSizeLimiter,
-                                                        ExpectContinueTimeout expectContinueTimeout) {
+                                                        Duration expectContinueTimeout) {
         return showPipeline(new SubscribableSingle<H2ClientParentConnection>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super H2ClientParentConnection> subscriber) {
@@ -181,7 +181,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         private final Publisher<ConsumableEvent<Integer>> maxConcurrencyPublisher;
         private final boolean allowDropTrailersReadFromTransport;
         private final LongConsumer payloadSizeLimiter;
-        private final ExpectContinueTimeout expectContinueTimeout;
+        private final Duration expectContinueTimeout;
         @Nullable
         private Subscriber<? super H2ClientParentConnection> subscriber;
         private MultiplexedObserver multiplexedObserver = NoopMultiplexedObserver.INSTANCE;
@@ -195,7 +195,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                         StreamingHttpRequestResponseFactory reqRespFactory,
                                         ConnectionObserver observer,
                                         LongConsumer payloadSizeLimiter,
-                                        ExpectContinueTimeout expectContinueTimeout) {
+                                        Duration expectContinueTimeout) {
             super(connection, delayedCancellable, waitForSslHandshake, observer);
             this.subscriber = requireNonNull(subscriber);
             this.headersFactory = requireNonNull(headersFactory);
@@ -382,7 +382,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     final CloseHandler closeHandler = forNonPipelined(true, streamChannel.config());
                     streamChannel.pipeline().addLast(new H2ToStH1ClientDuplexHandler(parentContext.sslConfig() != null,
                             parentContext.executionContext().bufferAllocator(), headersFactory,
-                            closeHandler, streamObserver));
+                            closeHandler, streamObserver, expectContinueTimeout));
                     DefaultNettyConnection<Object, Object> nettyConnection =
                             DefaultNettyConnection.initChildChannel(streamChannel,
                                     parentContext,
@@ -392,7 +392,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                     HTTP_2_0,
                                     parentContext.nettyChannel().config(),
                                     streamObserver,
-                                    true, OBJ_EXPECT_CONTINUE, expectContinueTimeout,
+                                    true, OBJ_EXPECT_CONTINUE,
                                     NettyHttp2ExceptionUtils::wrapIfNecessary);
 
                     // In h2 a stream is 1 to 1 with a request/response life cycle. This means there is no concept of

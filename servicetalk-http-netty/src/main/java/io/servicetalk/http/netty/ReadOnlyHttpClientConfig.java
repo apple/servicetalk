@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021, 2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.ProxyConfig;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
-import io.servicetalk.transport.netty.internal.ExpectContinueTimeout;
 
+import java.time.Duration;
 import java.util.function.LongConsumer;
 import javax.annotation.Nullable;
 
@@ -32,8 +32,7 @@ final class ReadOnlyHttpClientConfig {
     private final ProxyConfig<String> proxyConfig;
     private final boolean allowDropTrailers;
     private final LongConsumer payloadSizeLimiter;
-    private final ExpectContinueTimeout expectContinueTimeout;
-    private final ExpectContinueTimeout h1ExpectContinueTimeout;
+    private final Duration expectContinueTimeout;
 
     ReadOnlyHttpClientConfig(final HttpClientConfig from, @Nullable final Object owner) {
         final HttpConfig configs = from.protocolConfigs();
@@ -43,9 +42,7 @@ final class ReadOnlyHttpClientConfig {
         proxyConfig = from.proxyConfig();
         allowDropTrailers = configs.allowDropTrailersReadFromTransport();
         payloadSizeLimiter = configs.newAggregatedPayloadSizeLimiter(owner);
-        expectContinueTimeout = new ExpectContinueTimeoutLogger(from.expectContinueTimeoutNanos());
-        h1ExpectContinueTimeout = from.isExpectContinueTimeoutIgnoredByH1() ?
-                ExpectContinueTimeout.NONE : expectContinueTimeout;
+        expectContinueTimeout = from.expectContinueTimeout();
     }
 
     ReadOnlyTcpClientConfig tcpConfig() {
@@ -70,15 +67,8 @@ final class ReadOnlyHttpClientConfig {
         return payloadSizeLimiter;
     }
 
-    ExpectContinueTimeout expectContinueTimeout() {
+    Duration expectContinueTimeout() {
         return expectContinueTimeout;
-    }
-
-    /**
-     * {@link ExpectContinueTimeout} for HTTP/1.1 connections, {@link ExpectContinueTimeout#NONE} when pipelining.
-     */
-    ExpectContinueTimeout h1ExpectContinueTimeout() {
-        return h1ExpectContinueTimeout;
     }
 
     boolean isH2PriorKnowledge() {
