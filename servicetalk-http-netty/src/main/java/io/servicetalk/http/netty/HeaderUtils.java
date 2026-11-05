@@ -460,6 +460,10 @@ final class HeaderUtils {
             throw multipleCL(firstValue, iterator);
         }
 
+        if (firstValue.length() == 0) {
+            throw malformedCL(firstValue);
+        }
+
         char firstChar = firstValue.charAt(0);
         if (firstChar < '0' || firstChar > '9') {   // allow numbers only in ASCII or ISO-8859-1 encoding
             // prevent signed content-length values: -digit or +digit
