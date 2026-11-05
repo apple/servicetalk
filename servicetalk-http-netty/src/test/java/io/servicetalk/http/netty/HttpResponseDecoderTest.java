@@ -52,6 +52,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 
@@ -366,6 +367,22 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
         assertStandardHeaders(metaData.headers());
         assertEmptyTrailers(channel);
         assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
+    void multipleHostHeadersAllowedInResponse() {
+        writeMsg("HTTP/1.1 200 OK" + "\r\n" +
+                "Host: a.servicetalk.io" + "\r\n" +
+                "Host: b.servicetalk.io" + "\r\n" +
+                "Content-Length: 0" + "\r\n" + "\r\n");
+
+        HttpMetaData metaData = assertStartLineForContent();
+        Iterator<? extends CharSequence> hosts = metaData.headers().valuesIterator(HOST);
+        assertThat(hosts.next().toString(), is("a.servicetalk.io"));
+        assertThat(hosts.next().toString(), is("b.servicetalk.io"));
+        assertFalse(hosts.hasNext());
+        assertEmptyTrailers(channel());
+        assertFalse(channel().finishAndReleaseAll());
     }
 
     @Test
