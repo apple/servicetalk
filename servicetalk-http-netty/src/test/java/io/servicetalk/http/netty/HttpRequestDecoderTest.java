@@ -397,4 +397,15 @@ class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     void smuggleBeforeTransferEncodingHeader(boolean crlf) {
         smuggleTransferEncoding(true, crlf);
     }
+
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void multipleHostHeaders(boolean crlf) {
+        EmbeddedChannel channel = channel(crlf);
+        String br = br(crlf);
+        DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLine() + br +
+                "Host:" + br +
+                "Host: servicetalk.io" + br + br, channel));
+        assertThat(e.getMessage(), startsWith("Multiple Host header field lines found"));
+    }
 }
