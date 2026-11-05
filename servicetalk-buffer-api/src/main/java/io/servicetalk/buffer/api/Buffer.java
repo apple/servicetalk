@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,8 @@ import java.nio.ByteBuffer;
 import java.nio.ReadOnlyBufferException;
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
+
+import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 
 /**
  * An arbitrary and sequential accessible sequence of zero or more bytes (octets). This interface provides an abstract
@@ -1892,6 +1894,82 @@ public interface Buffer {
      * @see #toNioBuffer(int, int)
      */
     ByteBuffer[] toNioBuffers(int index, int length);
+
+    /**
+     * Copies this buffer's readable bytes into a byte array without modifying its reader or writer index.
+     * An empty buffer returns a shared empty array.
+     *
+     * @return an array containing exactly the readable bytes
+     * @see #toByteArray(boolean)
+     * @see #toByteArray(int, int)
+     */
+    default byte[] toByteArray() {
+        return toByteArray(true);
+    }
+
+    /**
+     * Returns this buffer's readable bytes as a byte array without modifying its reader or writer index.
+     *
+     * @param forceCopy {@code true} to copy the bytes; {@code false} to allow sharing the backing array when it
+     * exactly matches the readable bytes. An empty buffer returns a shared empty array in either case.
+     * @return an array containing exactly the readable bytes
+     * @see #toByteArray(int, int, boolean)
+     */
+    default byte[] toByteArray(boolean forceCopy) {
+        return toByteArray(readerIndex(), readableBytes(), forceCopy);
+    }
+
+    /**
+     * Copies the specified region of this buffer into a byte array without modifying its reader or writer index.
+     * The region is relative to the start of this buffer and may include bytes outside the readable region.
+     * A zero-length region returns a shared empty array.
+     *
+     * @param index the absolute start index
+     * @param length the number of bytes to copy
+     * @return an array containing exactly the specified bytes
+     * @throws IndexOutOfBoundsException if {@code index} or {@code length} is negative, or if the region exceeds
+     * this buffer's {@link #capacity()}
+     * @see #toByteArray(int, int, boolean)
+     */
+    default byte[] toByteArray(int index, int length) {
+        return toByteArray(index, length, true);
+    }
+
+    /**
+     * Returns the specified region of this buffer as a byte array without modifying its reader or writer index.
+     * The region is relative to the start of this buffer and may include bytes outside the readable region.
+     * <p>
+     * If {@code forceCopy} is {@code false}, the backing array may be returned when the specified region exactly
+     * matches the entire array. Changes to a shared array affect the buffer and vice versa. If the buffer changes
+     * its capacity, the returned array may no longer share its content. Otherwise, the bytes are copied.
+     * A zero-length region returns a shared empty array regardless of {@code forceCopy}.
+     *
+     * @param index the absolute start index
+     * @param length the number of bytes to return
+     * @param forceCopy {@code true} to copy the bytes; {@code false} to allow sharing the backing array
+     * @return an array containing exactly the specified bytes
+     * @throws IndexOutOfBoundsException if {@code index} or {@code length} is negative, or if the region exceeds
+     * this buffer's {@link #capacity()}
+     */
+    default byte[] toByteArray(int index, int length, boolean forceCopy) {
+        final int capacity = capacity();
+        if (index < 0 || length < 0 || index > capacity - length) {
+            throw new IndexOutOfBoundsException("index: " + index + ", length: " + length +
+                    " (expected: 0 <= index <= index + length <= capacity(" + capacity + "))");
+        }
+        if (length == 0) {
+            return EMPTY_BUFFER.array();
+        }
+        if (!forceCopy && hasArray() && index == 0 && arrayOffset() == 0) {
+            final byte[] array = array();
+            if (array.length == length) {
+                return array;
+            }
+        }
+        final byte[] bytes = new byte[length];
+        getBytes(index, bytes);
+        return bytes;
+    }
 
     /**
      * Determine if this buffer is read-only.

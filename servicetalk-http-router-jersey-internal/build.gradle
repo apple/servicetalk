@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,4 +33,9 @@ dependencies {
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-transport-api")
   implementation "org.glassfish.jersey.core:jersey-common"
+
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+  testImplementation project(":servicetalk-buffer-netty")
+  testImplementation "org.junit.jupiter:junit-jupiter-api"
+  testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
 }

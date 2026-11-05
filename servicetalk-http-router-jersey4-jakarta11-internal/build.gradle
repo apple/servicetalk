@@ -56,6 +56,7 @@ tasks.processResources.dependsOn(copySourcesForJersey4)
 tasks.sourcesJar.dependsOn(copySourcesForJersey4)
 tasks.compileJava.dependsOn(copySourcesForJersey4)
 tasks.processTestResources.dependsOn(copySourcesForJersey4)
+tasks.compileTestJava.dependsOn(copySourcesForJersey4)
 afterEvaluate {
   if (tasks.findByName("projectHealth")) {
     tasks.withType(com.autonomousapps.tasks.CodeSourceExploderTask) {
@@ -81,4 +82,9 @@ dependencies {
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-transport-api")
   implementation "org.glassfish.jersey.core:jersey-common"
+
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+  testImplementation project(":servicetalk-buffer-netty")
+  testImplementation "org.junit.jupiter:junit-jupiter-api"
+  testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
 }

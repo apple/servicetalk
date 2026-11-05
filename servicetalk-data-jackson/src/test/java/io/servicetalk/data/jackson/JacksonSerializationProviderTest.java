@@ -16,6 +16,7 @@
 package io.servicetalk.data.jackson;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.api.EmptyBuffer;
 import io.servicetalk.serialization.api.SerializationException;
 import io.servicetalk.serialization.api.StreamingDeserializer;
@@ -24,13 +25,18 @@ import io.servicetalk.serialization.api.TypeHolder;
 import com.fasterxml.jackson.core.JsonParseException;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Iterator;
 import java.util.List;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_DIRECT_ALLOCATOR;
+import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_HEAP_ALLOCATOR;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -95,6 +101,19 @@ class JacksonSerializationProviderTest {
         Iterator<TestPojo> pojoItr = pojos.iterator();
         assertFalse(pojoItr.hasNext());
         assertThat("Unexpected data remaining in deserializer", deserializer.hasData(), is(false));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: direct={0}")
+    @ValueSource(booleans = {false, true})
+    void deserializeSliceRespectsReaderIndex(boolean direct) {
+        BufferAllocator allocator = direct ? PREFER_DIRECT_ALLOCATOR : PREFER_HEAP_ALLOCATOR;
+        Buffer buffer = allocator.fromUtf8("xx\"value\"yy").slice(1, 8).skipBytes(1);
+
+        try (StreamingDeserializer<String> deserializer = serializationProvider.getDeserializer(String.class)) {
+            assertThat(deserializer.deserialize(buffer), contains("value"));
+        }
+        assertThat(buffer.readerIndex(), is(direct ? 8 : 1));
+        assertThat(buffer.writerIndex(), is(8));
     }
 
     @Test
