@@ -672,6 +672,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         }
     }
 
+    @SuppressWarnings("PMD.PreserveStackTrace") // the cause is dropped for lines without a colon, see below
     private void parseHeaderLine(final HttpHeaders headers, final ByteBuf buffer, final int lfIndex,
                                  final int nonControlIndex) throws DecoderException {
         // https://tools.ietf.org/html/rfc7230#section-3.2
