@@ -72,6 +72,7 @@ import static io.servicetalk.http.api.HeaderUtils.isConnectionClose;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY1;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY2;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_LOCATION;
@@ -750,6 +751,11 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             return null;
         }
 
+        if (isDecodingRequest()) {
+            // RFC 9112 section 3.2: a server MUST respond with 400 to a request with more than one Host field line.
+            validateSingleHost(message.headers().valuesIterator(HOST));
+        }
+
         // Determine content-length here to apply validation as soon as header are read:
         final long contentLength = contentLength();
         if (isContentAlwaysEmpty(message)) {
@@ -791,6 +797,15 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             return State.READ_FIXED_LENGTH_CONTENT;
         } else {
             return State.READ_VARIABLE_LENGTH_CONTENT;
+        }
+    }
+
+    private static void validateSingleHost(final Iterator<? extends CharSequence> hosts) {
+        if (hosts.hasNext()) {
+            hosts.next();
+            if (hosts.hasNext()) {
+                throw new StacklessDecoderException("Multiple Host header field lines found");
+            }
         }
     }
 

@@ -27,6 +27,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.DecoderException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayDeque;
@@ -396,5 +397,16 @@ class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     @ValueSource(booleans = {true, false})
     void smuggleBeforeTransferEncodingHeader(boolean crlf) {
         smuggleTransferEncoding(true, crlf);
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] firstHost={0} crlf={1}")
+    @CsvSource({"'', true", "'', false", "a.servicetalk.io, true", "a.servicetalk.io, false"})
+    void multipleHostHeaders(String firstHost, boolean crlf) {
+        EmbeddedChannel channel = channel(crlf);
+        String br = br(crlf);
+        DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLine() + br +
+                "Host:" + (firstHost.isEmpty() ? "" : " ") + firstHost + br +
+                "Host: servicetalk.io" + br + br, channel));
+        assertThat(e.getMessage(), startsWith("Multiple Host header field lines found"));
     }
 }
