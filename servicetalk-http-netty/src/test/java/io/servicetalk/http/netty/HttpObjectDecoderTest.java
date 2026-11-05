@@ -1188,6 +1188,7 @@ abstract class HttpObjectDecoderTest {
             arguments.add(Arguments.of("1 2", crlf)); // malformed content length with SP
             arguments.add(Arguments.of("1a2", crlf)); // malformed content length with letter
             arguments.add(Arguments.of("1-2", crlf)); // malformed content length with symbol
+            arguments.add(Arguments.of("", crlf)); // malformed content length with empty value
         }
         return arguments;
     }
