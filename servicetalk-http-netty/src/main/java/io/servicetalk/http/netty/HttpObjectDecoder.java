@@ -727,6 +727,11 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         try {
             headers.add(name, value);
         } catch (IllegalCharacterException cause) {
+            if (colonIndex < 0) {
+                // Without a colon the name is the whole line, which may contain a value. Keep it out of the message
+                // and drop the cause, its message includes the name too.
+                throw newDecoderExceptionAtLine("Invalid header line without a colon in line ", parsingLine);
+            }
             throw invalidHeaderNameOrValue(name, parsingLine, cause);
         }
         // Consume the header line bytes from the buffer.

@@ -68,6 +68,7 @@ import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -475,8 +476,11 @@ abstract class HttpObjectDecoderTest {
         EmbeddedChannel channel = channelAllowHeaderWithoutColon(crlf);
         String br = br(crlf);
         try {
-            assertDecoderExceptionWithCause(startLine() + br +
-                    lines.replace("\n", br) + br + br, "Invalid header name", channel);
+            DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLine() + br +
+                    lines.replace("\n", br) + br + br, channel));
+            // The line may contain a value, so neither the message nor a cause may include it.
+            assertThat(e.getMessage(), matchesPattern("Invalid header line without a colon in line \\d+"));
+            assertThat(e.getCause(), is(nullValue()));
         } finally {
             channel.close().get();
             channel.releaseInbound();
@@ -521,9 +525,10 @@ abstract class HttpObjectDecoderTest {
         EmbeddedChannel channel = channelAllowHeaderWithoutColon(crlf);
         String br = br(crlf);
         try {
-            assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + br +
+            DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + br +
                     "Host: servicetalk.io" + br +
                     "Content-Length" + br + br, channel));
+            assertThat(e.getMessage(), not(startsWith("Unable to find end of a header name")));
         } finally {
             channel.close().get();
             channel.releaseInbound();
