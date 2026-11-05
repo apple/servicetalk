@@ -318,6 +318,17 @@ public final class HeaderUtils {
         }
     }
 
+    static void validateReasonPhrase(final CharSequence reasonPhrase) {
+        // reason-phrase = *( HTAB / SP / VCHAR / obs-text ), see RFC 7230, section 3.1.2. This is exactly the
+        // set of characters allowed in a header field-value, so reuse that validation to reject CR, LF, and
+        // other control characters that would otherwise split the HTTP response status-line.
+        final int idx = forEachByte(reasonPhrase, HeaderUtils::isFieldValueChar);
+        if (idx >= 0) {
+            throw new IllegalCharacterException(
+                    invalidMessage(reasonPhrase, idx, "reason-phrase", reasonPhrase, FIELD_VALUE_EXPECTED));
+        }
+    }
+
     private static IllegalCharacterException invalidToken(final CharSequence token, final String what,
                                                           final int idx) {
         return new IllegalCharacterException(invalidMessage(token, idx, what, token, TOKEN_EXPECTED));

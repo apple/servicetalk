@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
 import static io.servicetalk.http.api.HttpResponseStatus.of;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -81,5 +82,22 @@ class HttpResponseStatusTest {
     @Test
     void test4DigitStatusCodeIsNotAllowed() {
         assertThrows(IllegalArgumentException.class, () -> HttpResponseStatus.of(1000, "My Own Status Code"));
+    }
+
+    @Test
+    void ofWithCrlfInReasonPhraseThrows() {
+        // A CR or LF in the reason-phrase would split the response status-line, allowing response
+        // splitting / header injection. See RFC 7230, section 3.1.2.
+        assertThrows(IllegalArgumentException.class, () -> of(590, "Server Error\r\nInjected: header"));
+    }
+
+    @Test
+    void ofWithControlCharInReasonPhraseThrows() {
+        assertThrows(IllegalArgumentException.class, () -> of(590, "Server\u0000Error"));
+    }
+
+    @Test
+    void ofWithValidReasonPhraseDoesNotThrow() {
+        assertDoesNotThrow(() -> of(590, "My Own Status Code"));
     }
 }
