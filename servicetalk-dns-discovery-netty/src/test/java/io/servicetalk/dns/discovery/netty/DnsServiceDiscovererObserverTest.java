@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,17 @@
  */
 package io.servicetalk.dns.discovery.netty;
 
+import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.TestExecutor;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.DnsDiscoveryObserver;
 import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.DnsResolutionObserver;
 import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.ResolutionResult;
+import io.servicetalk.dns.discovery.netty.DnsTestUtils.NettyIoExecutorWithTestTimer;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,7 +33,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
@@ -36,24 +44,38 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.lang.Math.min;
+import static java.net.InetAddress.getByName;
+import static java.time.Duration.ofMillis;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.directory.server.dns.messages.RecordType.A;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -76,7 +98,15 @@ class DnsServiceDiscovererObserverTest {
     private static final String DISCOVERER_ID = DnsServiceDiscovererObserverTest.class.getSimpleName();
 
     private final TestRecordStore recordStore = new TestRecordStore();
-    private final TestDnsServer dnsServer = new TestDnsServer(recordStore);
+    @Nullable
+    private volatile Runnable beforeAddressResponse;
+    private final TestDnsServer dnsServer = new TestDnsServer(question -> {
+        Runnable callback = beforeAddressResponse;
+        if (callback != null && question.getRecordType() == A) {
+            callback.run();
+        }
+        return recordStore.getRecords(question);
+    });
     private final CompositeCloseable toClose = newCompositeCloseable();
 
     @BeforeEach
@@ -96,15 +126,18 @@ class DnsServiceDiscovererObserverTest {
     }
 
     private DnsClient dnsClient(DnsServiceDiscovererObserver observer) {
-        return toClose.append(new DefaultDnsServiceDiscovererBuilder(DISCOVERER_ID)
+        return toClose.append(dnsClientBuilder(observer).build());
+    }
+
+    private DefaultDnsServiceDiscovererBuilder dnsClientBuilder(DnsServiceDiscovererObserver observer) {
+        return new DefaultDnsServiceDiscovererBuilder(DISCOVERER_ID)
                 .observer(observer)
                 .dnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_PREFERRED)
                 .optResourceEnabled(false)
                 .dnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(dnsServer.localAddress()))
                 .ndots(1)
                 .ttl(DEFAULT_TTL, MAX_TTL)
-                .localAddress(localAddress(0))
-                .build());
+                .localAddress(localAddress(0));
     }
 
     @Test
@@ -337,6 +370,65 @@ class DnsServiceDiscovererObserverTest {
         aQueryResolutionResult(results -> assertResolutionResult(results.take(), 3, MAX_TTL, 3, 0));
     }
 
+    @Test
+    void aQueryAcrossSecondBoundaryReportsOriginalTtl() throws Exception {
+        SecondBoundaryTestContext context = new SecondBoundaryTestContext(0);
+
+        Collection<ServiceDiscovererEvent<InetAddress>> events =
+                context.client.dnsQuery(HOST_NAME).takeAtMost(1).firstOrError().toFuture().get();
+
+        assertThat(events, contains(new DefaultServiceDiscovererEvent<>(getByName(context.ip), AVAILABLE)));
+        assertResolutionResult(context.addressResults.take(), 1, 1, 0);
+        assertThat(context.timer.currentTime(NANOSECONDS), is(MILLISECONDS.toNanos(1001)));
+    }
+
+    @Test
+    void srvQueryAcrossSecondBoundaryReportsOriginalAddressTtl() throws Exception {
+        SecondBoundaryTestContext context = new SecondBoundaryTestContext(0);
+
+        Collection<ServiceDiscovererEvent<InetSocketAddress>> events =
+                context.client.dnsSrvQuery(SERVICE_NAME).takeAtMost(1).firstOrError().toFuture().get();
+
+        assertThat(events, contains(new DefaultServiceDiscovererEvent<>(
+                new InetSocketAddress(getByName(context.ip), 443), AVAILABLE)));
+        assertThat(context.results.entrySet(), hasSize(2));
+        assertResolutionResult(context.results.get(SERVICE_NAME), 1, 1, 0);
+        assertResolutionResult(context.results.get(HOST_NAME + '.'), 1, 1, 0);
+        assertThat(context.timer.currentTime(NANOSECONDS), is(MILLISECONDS.toNanos(1001)));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] jitterMillis={0}")
+    @ValueSource(ints = {0, 250})
+    void aQueryAcrossSecondBoundarySchedulesPollingAfterTtl(int jitterMillis) throws Exception {
+        SecondBoundaryTestContext context = new SecondBoundaryTestContext(jitterMillis);
+        TestPublisherSubscriber<Collection<ServiceDiscovererEvent<InetAddress>>> subscriber =
+                new TestPublisherSubscriber<>();
+        toSource(context.client.dnsQuery(HOST_NAME)).subscribe(subscriber);
+        subscriber.awaitSubscription().request(Long.MAX_VALUE);
+        try {
+            assertThat(subscriber.takeOnNext(),
+                    contains(new DefaultServiceDiscovererEvent<>(getByName(context.ip), AVAILABLE)));
+            long delayNanos = context.timer.pollingDelays.take();
+            assertThat("Polling delay must include the TTL", delayNanos,
+                    allOf(greaterThanOrEqualTo(SECONDS.toNanos(DEFAULT_TTL)),
+                            lessThanOrEqualTo(SECONDS.toNanos(DEFAULT_TTL) + MILLISECONDS.toNanos(jitterMillis))));
+
+            // Advance on the same EventLoop so all work from the previous resolution has completed.
+            context.ioExecutor.submit(() -> context.timer.advanceTimeBy(delayNanos - 1, NANOSECONDS))
+                    .toFuture().get();
+            assertThat(context.timer.scheduledTasksExecuted(), is(0));
+            assertThat(context.addressResolutions.get(), is(1));
+            assertResolutionResult(context.addressResults.take(), 1, 1, 0);
+
+            context.ioExecutor.submit(() -> context.timer.advanceTimeBy(1, NANOSECONDS)).toFuture().get();
+            assertResolutionResult(context.addressResults.take(), 1, 0, 0);
+            assertThat(context.timer.scheduledTasksExecuted(), is(1));
+            assertThat(context.addressResolutions.get(), is(2));
+        } finally {
+            subscriber.awaitSubscription().cancel();
+        }
+    }
+
     private void aQueryResolutionResult(ResultsVerifier<BlockingQueue<ResolutionResult>> verifier) throws Exception {
         BlockingQueue<ResolutionResult> results = new LinkedBlockingDeque<>();
         DnsClient client = dnsClient(__ -> name -> new NoopDnsResolutionObserver() {
@@ -475,6 +567,87 @@ class DnsServiceDiscovererObserverTest {
         verify(observer).onNewDiscovery(startsWith(DISCOVERER_ID), eq(HOST_NAME));
         verify(discoveryObserver).onNewResolution(HOST_NAME);
         verify(resolutionObserver).resolutionCompleted(any());
+    }
+
+    private final class SecondBoundaryTestContext {
+        final String ip = nextIp();
+        final SecondBoundaryTestExecutor timer = new SecondBoundaryTestExecutor();
+        final NettyIoExecutorWithTestTimer ioExecutor;
+        final Map<String, ResolutionResult> results = new ConcurrentHashMap<>();
+        final BlockingQueue<ResolutionResult> addressResults = new LinkedBlockingQueue<>();
+        final AtomicInteger addressResolutions = new AtomicInteger();
+        final DnsClient client;
+
+        SecondBoundaryTestContext(int jitterMillis) {
+            recordStore.removeIPv4Addresses(HOST_NAME);
+            recordStore.addIPv4Address(HOST_NAME, DEFAULT_TTL, ip);
+            toClose.append(timer);
+            ioExecutor = toClose.append(new NettyIoExecutorWithTestTimer(createIoExecutor(1), timer));
+            client = toClose.prepend(dnsClientBuilder(__ -> name -> {
+                boolean addressResolution = HOST_NAME.equals(name) || (HOST_NAME + '.').equals(name);
+                if (addressResolution) {
+                    addressResolutions.incrementAndGet();
+                }
+                return new NoopDnsResolutionObserver() {
+                    @Override
+                    public void resolutionCompleted(final ResolutionResult result) {
+                        results.put(name, result);
+                        if (addressResolution) {
+                            addressResults.add(result);
+                        }
+                    }
+                };
+            })
+                    .ioExecutor(ioExecutor)
+                    .dnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_ONLY)
+                    .ttl(DEFAULT_TTL, MAX_TTL, 0, 0)
+                    .ttlJitter(ofMillis(jitterMillis))
+                    .build());
+            AtomicBoolean firstAddressResponse = new AtomicBoolean(true);
+            beforeAddressResponse = () -> {
+                if (firstAddressResponse.compareAndSet(true, false)) {
+                    // SRV processing can read the clock for backpressure before the A response arrives.
+                    // Arm on the client EventLoop before sending that response, after prior work completes.
+                    try {
+                        ioExecutor.submit(() -> {
+                            timer.advanceAfterNextRead = true;
+                        }).toFuture().get();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new AssertionError(e);
+                    } catch (ExecutionException e) {
+                        throw new AssertionError(e);
+                    }
+                }
+            };
+        }
+    }
+
+    private static final class SecondBoundaryTestExecutor extends TestExecutor {
+        final BlockingQueue<Long> pollingDelays = new LinkedBlockingQueue<>();
+        boolean advanceAfterNextRead;
+
+        SecondBoundaryTestExecutor() {
+            super(MILLISECONDS.toNanos(999));
+        }
+
+        @Override
+        public long currentTime(final TimeUnit unit) {
+            long now = super.currentTime(unit);
+            if (advanceAfterNextRead) {
+                advanceAfterNextRead = false;
+                // Cache at 999ms, then read the remaining TTL at 1001ms, without running any timers.
+                advanceTimeByNoExecuteTasks(2, MILLISECONDS);
+            }
+            return now;
+        }
+
+        @Override
+        public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
+            Cancellable cancellable = super.schedule(task, delay, unit);
+            pollingDelays.add(unit.toNanos(delay));
+            return cancellable;
+        }
     }
 
     private static class NoopDnsResolutionObserver implements DnsResolutionObserver {
