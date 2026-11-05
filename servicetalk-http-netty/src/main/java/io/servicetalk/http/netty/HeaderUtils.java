@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -282,6 +282,18 @@ final class HeaderUtils {
         return propagateCancel ?
                 flatMessage.concatPropagateCancel(messageBody.ignoreElements().shareContextOnSubscribe()) :
                 flatMessage.concat(messageBody.ignoreElements().shareContextOnSubscribe());
+    }
+
+    /**
+     * Drops the payload and trailers of a HEAD response, which must carry neither (RFC 7231, section 4.3.2).
+     * The empty trailers item that appendTrailersMapper adds on completion becomes END_STREAM on HTTP/2.
+     */
+    static Publisher<Object> dropHeadPayloadAndTrailers(final HttpRequestMethod requestMethod,
+                                                         final Publisher<Object> messageBody) {
+        if (!HEAD.equals(requestMethod)) {
+            return messageBody;
+        }
+        return messageBody.ignoreElements().toPublisher();
     }
 
     private static final class ContentLengthList<T> extends ArrayList<T> {
