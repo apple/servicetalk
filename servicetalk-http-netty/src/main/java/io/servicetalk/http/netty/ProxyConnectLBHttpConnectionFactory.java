@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,7 +98,8 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
         return new ProxyConnectChannelSingle(channel,
                 new TcpClientChannelInitializer(config.tcpConfig(), observer, executionContext, true)
                         .andThen(new HttpClientChannelInitializer(
-                                getByteBufAllocator(executionContext.bufferAllocator()), h1Config, closeHandler)),
+                                getByteBufAllocator(executionContext.bufferAllocator()), h1Config, closeHandler,
+                                config.expectContinueTimeout())),
                 observer, h1Config.headersFactory(), config.proxyConfig())
                 .flatMap(ProxyConnectLBHttpConnectionFactory::handshake)
                 .flatMap(protocol -> finishConnectionInitialization(protocol, channel, closeHandler, observer))
@@ -155,7 +156,8 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
                 result = H2ClientParentConnectionContext.initChannel(channel, executionContext, h2Config,
                         reqRespFactoryFunc.apply(HTTP_2_0), tcpConfig.flushStrategy(), tcpConfig.idleTimeoutMs(),
                         tcpConfig.sslConfig(), new H2ClientParentChannelInitializer(h2Config), connectionObserver,
-                        config.allowDropTrailersReadFromTransport(), config.payloadSizeLimiter());
+                        config.allowDropTrailersReadFromTransport(), config.payloadSizeLimiter(),
+                        config.expectContinueTimeout());
                 break;
             default:
                 result = unknownAlpnProtocol(protocol);

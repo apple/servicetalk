@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,6 +69,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.LongConsumer;
 import javax.annotation.Nullable;
@@ -119,7 +120,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                                         ChannelInitializer initializer,
                                                         ConnectionObserver observer,
                                                         boolean allowDropTrailersReadFromTransport,
-                                                        LongConsumer payloadSizeLimiter) {
+                                                        LongConsumer payloadSizeLimiter,
+                                                        Duration expectContinueTimeout) {
         return showPipeline(new SubscribableSingle<H2ClientParentConnection>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super H2ClientParentConnection> subscriber) {
@@ -146,7 +148,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     parentChannelInitializer = new DefaultH2ClientParentConnection(connection, subscriber,
                             delayedCancellable, shouldWaitForSslHandshake(sslSession, sslConfig),
                             allowDropTrailersReadFromTransport, config.headersFactory(), reqRespFactory, observer,
-                            payloadSizeLimiter);
+                            payloadSizeLimiter, expectContinueTimeout);
                 } catch (Throwable cause) {
                     ChannelCloseUtils.close(channel, cause);
                     deliverErrorFromSource(subscriber, cause);
@@ -179,6 +181,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         private final Publisher<ConsumableEvent<Integer>> maxConcurrencyPublisher;
         private final boolean allowDropTrailersReadFromTransport;
         private final LongConsumer payloadSizeLimiter;
+        private final Duration expectContinueTimeout;
         @Nullable
         private Subscriber<? super H2ClientParentConnection> subscriber;
         private MultiplexedObserver multiplexedObserver = NoopMultiplexedObserver.INSTANCE;
@@ -191,13 +194,15 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                         HttpHeadersFactory headersFactory,
                                         StreamingHttpRequestResponseFactory reqRespFactory,
                                         ConnectionObserver observer,
-                                        LongConsumer payloadSizeLimiter) {
+                                        LongConsumer payloadSizeLimiter,
+                                        Duration expectContinueTimeout) {
             super(connection, delayedCancellable, waitForSslHandshake, observer);
             this.subscriber = requireNonNull(subscriber);
             this.headersFactory = requireNonNull(headersFactory);
             this.reqRespFactory = requireNonNull(reqRespFactory);
             this.allowDropTrailersReadFromTransport = allowDropTrailersReadFromTransport;
             this.payloadSizeLimiter = payloadSizeLimiter;
+            this.expectContinueTimeout = expectContinueTimeout;
             // Set maxConcurrency to the initial value recommended by the HTTP/2 spec
             maxConcurrencyProcessor.onNext(DEFAULT_H2_MAX_CONCURRENCY_EVENT);
             bs = new Http2StreamChannelBootstrap(connection.channel());
@@ -377,7 +382,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     final CloseHandler closeHandler = forNonPipelined(true, streamChannel.config());
                     streamChannel.pipeline().addLast(new H2ToStH1ClientDuplexHandler(parentContext.sslConfig() != null,
                             parentContext.executionContext().bufferAllocator(), headersFactory,
-                            closeHandler, streamObserver));
+                            closeHandler, streamObserver, expectContinueTimeout));
                     DefaultNettyConnection<Object, Object> nettyConnection =
                             DefaultNettyConnection.initChildChannel(streamChannel,
                                     parentContext,

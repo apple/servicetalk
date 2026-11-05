@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.DelegatingClientSslConfig;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
@@ -30,9 +31,12 @@ import static io.netty.handler.codec.http2.Http2CodecUtil.SETTINGS_ENABLE_PUSH;
 import static io.servicetalk.http.netty.HttpServerConfig.httpAlpnProtocols;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV4Address;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
+import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 
 final class HttpClientConfig {
+
+    static final Duration DEFAULT_EXPECT_CONTINUE_TIMEOUT = ofSeconds(1);
 
     private final TcpClientConfig tcpConfig;
     private final HttpConfig protocolConfigs;
@@ -47,6 +51,7 @@ final class HttpClientConfig {
     @Nullable
     private String fallbackProxyPeerHost;
     private int fallbackProxyPeerPort = -1;
+    private Duration expectContinueTimeout = DEFAULT_EXPECT_CONTINUE_TIMEOUT;
 
     HttpClientConfig() {
         tcpConfig = new TcpClientConfig();
@@ -76,6 +81,7 @@ final class HttpClientConfig {
         inferSniHostname = from.inferSniHostname;
         fallbackProxyPeerHost = from.fallbackProxyPeerHost;
         fallbackProxyPeerPort = from.fallbackProxyPeerPort;
+        expectContinueTimeout = from.expectContinueTimeout;
     }
 
     TcpClientConfig tcpConfig() {
@@ -126,6 +132,14 @@ final class HttpClientConfig {
 
     void fallbackProxyPeerPort(int fallbackProxyPeerPort) {
         this.fallbackProxyPeerPort = fallbackProxyPeerPort;
+    }
+
+    Duration expectContinueTimeout() {
+        return expectContinueTimeout;
+    }
+
+    void expectContinueTimeout(final Duration expectContinueTimeout) {
+        this.expectContinueTimeout = expectContinueTimeout;
     }
 
     ReadOnlyHttpClientConfig asReadOnly(@Nullable final Object owner) {

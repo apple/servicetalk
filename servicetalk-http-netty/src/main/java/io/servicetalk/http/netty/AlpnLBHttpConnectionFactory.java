@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
                     final H1ProtocolConfig h1Config = config.h1Config();
                     assert h1Config != null;
                     return StreamingConnectionFactory.createConnection(channel, executionContext, h1Config, tcpConfig,
-                            NoopChannelInitializer.INSTANCE, connectionObserver)
+                            NoopChannelInitializer.INSTANCE, connectionObserver, config.expectContinueTimeout())
                             .map(conn -> new PipelinedStreamingHttpConnection(conn, h1Config,
                                     reqRespFactoryFunc.apply(HttpProtocolVersion.HTTP_1_1),
                                     config.allowDropTrailersReadFromTransport(),
@@ -89,7 +89,7 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
                             tcpConfig.idleTimeoutMs(), tcpConfig.sslConfig(),
                             new H2ClientParentChannelInitializer(h2Config),
                             connectionObserver, config.allowDropTrailersReadFromTransport(),
-                            config.payloadSizeLimiter());
+                            config.payloadSizeLimiter(), config.expectContinueTimeout());
                 default:
                     return unknownAlpnProtocol(protocol);
             }

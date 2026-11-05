@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,10 @@ import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
+import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
+import io.servicetalk.http.netty.HttpResponseDecoder.Signal;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
@@ -39,6 +41,8 @@ import io.servicetalk.transport.api.ConnectionInfo.Protocol;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection.CancelWriteUserEvent;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ContinueUserEvent;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
@@ -46,12 +50,16 @@ import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.socket.ChannelInputShutdownReadComplete;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.ReferenceCountUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -59,12 +67,18 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
@@ -72,18 +86,27 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.USER_AGENT;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
+import static io.servicetalk.http.api.HttpHeaderValues.CONTINUE;
 import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
+import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
+import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
+import static io.servicetalk.http.netty.H1ProtocolConfigBuilder.DEFAULT_MAX_HEADER_FIELD_LENGTH;
+import static io.servicetalk.http.netty.H1ProtocolConfigBuilder.DEFAULT_MAX_START_LINE_LENGTH;
+import static io.servicetalk.http.netty.H1ProtocolConfigBuilder.DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH;
+import static io.servicetalk.http.netty.HttpClientConfig.DEFAULT_EXPECT_CONTINUE_TIMEOUT;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -93,10 +116,15 @@ import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlu
 import static java.lang.Integer.toHexString;
 import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.time.Duration.ofDays;
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
@@ -111,6 +139,9 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
     private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
     private static final StreamingHttpRequestResponseFactory reqRespFactory =
             new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1);
+    private static final Duration EXPECT_CONTINUE_TIMEOUT = ofDays(1);
+
+    private final List<Object> userEvents = new ArrayList<>();
 
     @RegisterExtension
     static final ExecutionContextExtension SEC =
@@ -125,7 +156,7 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
     @Override
     EmbeddedChannel newEmbeddedChannel() {
         return new EmbeddedChannel(new HttpRequestEncoder(new ArrayDeque<>(), new ArrayDeque<>(), 256, 256,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, DEFAULT_EXPECT_CONTINUE_TIMEOUT));
     }
 
     @Override
@@ -478,7 +509,8 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
                                                 connectionObserver, CEC, false)
                                                 .andThen(new HttpClientChannelInitializer(
                                                         getByteBufAllocator(CEC.bufferAllocator()),
-                                                        cConfig.h1Config(), closeHandler))
+                                                        cConfig.h1Config(), closeHandler,
+                                                        cConfig.expectContinueTimeout()))
                                                 .andThen(channel2 -> channel2.pipeline()
                                                         .addLast(new ChannelInboundHandlerAdapter() {
                                                             @Override
@@ -538,5 +570,144 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
             metaData.contains(CONTENT_LENGTH),
             "Unexpected content-length header in meta-data while chunked encoding is used: " + metaData);
         assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
+    void expectContinueTimerStartsWhenHeadersAreWritten() {
+        EmbeddedChannel channel = newClientChannel(EXPECT_CONTINUE_TIMEOUT);
+        channel.freezeTime();
+        channel.write(newExpectContinueRequest());
+        channel.advanceTimeBy(EXPECT_CONTINUE_TIMEOUT.toNanos() * 2, NANOSECONDS);
+        assertEquals(-1, channel.runScheduledPendingTasks());
+        assertTrue(userEvents.isEmpty());
+
+        channel.flush();
+        assertTrue(channel.releaseOutbound());
+        assertNotEquals(-1, channel.runScheduledPendingTasks());
+        assertTrue(userEvents.isEmpty());
+        channel.advanceTimeBy(EXPECT_CONTINUE_TIMEOUT.toNanos(), NANOSECONDS);
+        assertEquals(-1, channel.runScheduledPendingTasks());
+        assertEquals(singletonList(ContinueUserEvent.INSTANCE), userEvents);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
+    void expectContinueTimerNotStartedWhenHeadersWriteFails() {
+        EmbeddedChannel channel = newClientChannel(EXPECT_CONTINUE_TIMEOUT);
+        channel.pipeline().addFirst(new ChannelOutboundHandlerAdapter() {
+            @Override
+            public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
+                ReferenceCountUtil.release(msg);
+                promise.setFailure(DELIBERATE_EXCEPTION);
+            }
+        });
+        ChannelFuture future = channel.writeAndFlush(newExpectContinueRequest());
+        assertSame(DELIBERATE_EXCEPTION, future.cause());
+        assertEquals(-1, channel.runScheduledPendingTasks());
+        assertTrue(userEvents.isEmpty());
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] response={0}")
+    @ValueSource(strings = {
+            "HTTP/1.1 100 Continue\r\n\r\n",
+            "HTTP/1.1 200 OK\r\ncontent-length: 0\r\n\r\n",
+            "HTTP/1.1 417 Expectation Failed\r\ncontent-length: 0\r\n\r\n"})
+    void expectContinueTimerCancelledByResponse(String response) {
+        EmbeddedChannel channel = newClientChannel(EXPECT_CONTINUE_TIMEOUT);
+        writeExpectContinueRequest(channel);
+        assertNotEquals(-1, channel.runScheduledPendingTasks());
+        channel.writeInbound(wrappedBuffer(response.getBytes(US_ASCII)));
+        assertEquals(-1, channel.runScheduledPendingTasks());
+        assertEquals(1, userEvents.size());
+        channel.finishAndReleaseAll();
+    }
+
+    @Test
+    void expectContinueTimerCancelledByClose() {
+        EmbeddedChannel channel = newClientChannel(EXPECT_CONTINUE_TIMEOUT);
+        writeExpectContinueRequest(channel);
+        assertNotEquals(-1, channel.runScheduledPendingTasks());
+        channel.close();
+        assertEquals(-1, channel.runScheduledPendingTasks());
+        assertTrue(userEvents.isEmpty());
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
+    void expectContinueTimeoutIgnoresLateResponses() {
+        EmbeddedChannel channel = newClientChannel(EXPECT_CONTINUE_TIMEOUT);
+        channel.freezeTime();
+        writeExpectContinueRequest(channel);
+        channel.advanceTimeBy(EXPECT_CONTINUE_TIMEOUT.toNanos(), NANOSECONDS);
+        channel.runScheduledPendingTasks();
+        assertEquals(singletonList(ContinueUserEvent.INSTANCE), userEvents);
+
+        channel.writeInbound(wrappedBuffer(("HTTP/1.1 100 Continue\r\n\r\n" +
+                "HTTP/1.1 417 Expectation Failed\r\ncontent-length: 0\r\n\r\n").getBytes(US_ASCII)));
+        assertEquals(singletonList(ContinueUserEvent.INSTANCE), userEvents);
+        HttpResponseMetaData response = channel.readInbound();
+        assertEquals(EXPECTATION_FAILED, response.status());
+        channel.finishAndReleaseAll();
+    }
+
+    @Test
+    void expectContinueTimeoutLateResponsesDoNotAffectPipelinedRequest() {
+        EmbeddedChannel channel = newClientChannel(EXPECT_CONTINUE_TIMEOUT);
+        channel.freezeTime();
+        writeExpectContinueRequest(channel);
+        channel.advanceTimeBy(EXPECT_CONTINUE_TIMEOUT.toNanos(), NANOSECONDS);
+        channel.runScheduledPendingTasks();
+        assertEquals(singletonList(ContinueUserEvent.INSTANCE), userEvents);
+
+        writeExpectContinueRequest(channel);
+        channel.writeInbound(wrappedBuffer(("HTTP/1.1 100 Continue\r\n\r\n" +
+                "HTTP/1.1 417 Expectation Failed\r\ncontent-length: 0\r\n\r\n").getBytes(US_ASCII)));
+        assertEquals(singletonList(ContinueUserEvent.INSTANCE), userEvents);
+        assertNotEquals(-1, channel.runScheduledPendingTasks());
+
+        channel.writeInbound(wrappedBuffer("HTTP/1.1 100 Continue\r\n\r\n".getBytes(US_ASCII)));
+        assertEquals(asList(ContinueUserEvent.INSTANCE, ContinueUserEvent.INSTANCE), userEvents);
+        assertEquals(-1, channel.runScheduledPendingTasks());
+        channel.finishAndReleaseAll();
+    }
+
+    @Test
+    void zeroExpectContinueTimeoutReleasesBodyWithoutWaiting() {
+        EmbeddedChannel channel = newClientChannel(Duration.ZERO);
+        channel.freezeTime();
+        writeExpectContinueRequest(channel);
+        channel.runScheduledPendingTasks();
+        assertEquals(singletonList(ContinueUserEvent.INSTANCE), userEvents);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    private EmbeddedChannel newClientChannel(Duration expectContinueTimeout) {
+        final Queue<HttpRequestMethod> methods = new ArrayDeque<>();
+        final Deque<Signal> signals = new ArrayDeque<>();
+        return new EmbeddedChannel(new HttpResponseDecoder(methods, signals,
+                getByteBufAllocator(DEFAULT_ALLOCATOR), INSTANCE, DEFAULT_MAX_START_LINE_LENGTH,
+                DEFAULT_MAX_HEADER_FIELD_LENGTH, DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH, false, false,
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER),
+                new HttpRequestEncoder(methods, signals, 256, 256, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
+                        expectContinueTimeout),
+                new ChannelInboundHandlerAdapter() {
+                    @Override
+                    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+                        if (evt == ContinueUserEvent.INSTANCE || evt == CancelWriteUserEvent.INSTANCE) {
+                            userEvents.add(evt);
+                        }
+                    }
+                });
+    }
+
+    private static HttpRequestMetaData newExpectContinueRequest() {
+        return newRequestMetaData(HTTP_1_1, POST, "/",
+                INSTANCE.newHeaders().set(EXPECT, CONTINUE).set(CONTENT_LENGTH, ZERO));
+    }
+
+    private static void writeExpectContinueRequest(EmbeddedChannel channel) {
+        assertTrue(channel.writeOutbound(newExpectContinueRequest()));
+        assertTrue(channel.releaseOutbound());
     }
 }

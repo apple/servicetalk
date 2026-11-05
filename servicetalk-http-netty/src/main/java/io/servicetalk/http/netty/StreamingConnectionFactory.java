@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import io.netty.channel.Channel;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import javax.net.ssl.SNIHostName;
 
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
@@ -62,20 +63,21 @@ final class StreamingConnectionFactory {
         return TcpConnector.connect(null, resolvedAddress, tcpConfig, false, executionContext,
                 (channel, connectionObserver) -> createConnection(channel, executionContext, h1Config, tcpConfig,
                         new TcpClientChannelInitializer(tcpConfig, connectionObserver, executionContext, false),
-                        connectionObserver),
+                        connectionObserver, roConfig.expectContinueTimeout()),
                 observer);
     }
 
     static Single<? extends NettyConnection<Object, Object>> createConnection(final Channel channel,
             final HttpExecutionContext builderExecutionContext, final H1ProtocolConfig h1Config,
             final ReadOnlyTcpClientConfig tcpConfig, final ChannelInitializer initializer,
-            final ConnectionObserver connectionObserver) {
+            final ConnectionObserver connectionObserver, final Duration expectContinueTimeout) {
         final CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
         return showPipeline(DefaultNettyConnection.initChannel(channel,
                 channelExecutionContext(channel, builderExecutionContext), closeHandler,
                 tcpConfig.flushStrategy(), tcpConfig.idleTimeoutMs(), tcpConfig.sslConfig(),
                 initializer.andThen(new HttpClientChannelInitializer(
-                        getByteBufAllocator(builderExecutionContext.bufferAllocator()), h1Config, closeHandler)),
+                        getByteBufAllocator(builderExecutionContext.bufferAllocator()), h1Config, closeHandler,
+                        expectContinueTimeout)),
                 HTTP_1_1, connectionObserver, true, OBJ_EXPECT_CONTINUE),
                 HTTP_1_1, channel);
     }

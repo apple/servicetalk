@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
+import java.time.Duration;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -187,6 +188,25 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
     // FIXME: 0.43 - consider removing default impl
     default SingleAddressHttpClientBuilder<U, R> maxAggregatedPayloadSize(int maxAggregatedPayloadSize) {
         throw new UnsupportedOperationException("Setting maxAggregatedPayloadSize is not yet supported by " +
+                getClass().getName());
+    }
+
+    /**
+     * Sets how long to wait for a response to a request with an {@code Expect: 100-continue} header before sending the
+     * request payload body anyway, see
+     * <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-10.1.1">RFC 9110, section 10.1.1</a>.
+     * <p>
+     * The default is 1 second. {@link Duration#ZERO} sends the payload body immediately, without waiting. The payload
+     * body may be sent before the server's response arrives, which matters when retrying a request whose payload body
+     * cannot be replayed.
+     *
+     * @param expectContinueTimeout the {@link Duration} to wait, must be non-negative
+     * @return {@code this}
+     * @throws IllegalArgumentException if {@code expectContinueTimeout} is negative
+     */
+    // FIXME: 0.43 - consider removing default impl
+    default SingleAddressHttpClientBuilder<U, R> expectContinueTimeout(Duration expectContinueTimeout) {
+        throw new UnsupportedOperationException("Setting expectContinueTimeout is not yet supported by " +
                 getClass().getName());
     }
 
