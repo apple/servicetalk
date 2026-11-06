@@ -19,12 +19,13 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherOperator;
+import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.FlowControlUtils;
 
 import org.testng.annotations.Test;
 
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
@@ -37,17 +38,17 @@ public class PublisherSwitchMapTckTest extends AbstractPublisherOperatorTckTest<
     @Override
     protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
         return defer(() -> {
-            final SingleUpstreamDemandOperator<Integer> demandOperator = new SingleUpstreamDemandOperator<>();
+            final OneUpstreamDemandOperator<Integer> demandOperator = new OneUpstreamDemandOperator<>();
             return publisher.liftAsync(demandOperator)
                     .switchMap(i -> from(i).afterOnNext(x -> demandOperator.subscriberRef.get().decrementDemand()));
         });
     }
 
-    static final class SingleUpstreamDemandOperator<T> implements PublisherOperator<T, T> {
-        final AtomicReference<SingleUpstreamDemandSubscriber<T>> subscriberRef = new AtomicReference<>();
+    static final class OneUpstreamDemandOperator<T> implements PublisherOperator<T, T> {
+        final AtomicReference<OneUpstreamDemandSubscriber<T>> subscriberRef = new AtomicReference<>();
         @Override
         public PublisherSource.Subscriber<? super T> apply(final PublisherSource.Subscriber<? super T> subscriber) {
-            SingleUpstreamDemandSubscriber<T> sub = new SingleUpstreamDemandSubscriber<>(subscriber);
+            OneUpstreamDemandSubscriber<T> sub = new OneUpstreamDemandSubscriber<>(subscriber);
             if (subscriberRef.compareAndSet(null, sub)) {
                 return sub;
             } else {
@@ -73,25 +74,29 @@ public class PublisherSwitchMapTckTest extends AbstractPublisherOperatorTckTest<
             }
         }
 
-        static final class SingleUpstreamDemandSubscriber<T> implements PublisherSource.Subscriber<T> {
-            private final AtomicLong demand = new AtomicLong();
+        static final class OneUpstreamDemandSubscriber<T> implements PublisherSource.Subscriber<T> {
+            @SuppressWarnings("rawtypes")
+            private static final AtomicLongFieldUpdater<OneUpstreamDemandSubscriber> demandUpdater =
+                    AtomicLongFieldUpdater.newUpdater(OneUpstreamDemandSubscriber.class, "demand");
             private final PublisherSource.Subscriber<? super T> subscriber;
+            private volatile long demand;
             @Nullable
             private Subscription subscription;
 
-            SingleUpstreamDemandSubscriber(final PublisherSource.Subscriber<? super T> subscriber) {
+            OneUpstreamDemandSubscriber(final PublisherSource.Subscriber<? super T> subscriber) {
                 this.subscriber = subscriber;
             }
 
             @Override
             public void onSubscribe(final Subscription s) {
-                this.subscription = s;
+                this.subscription = ConcurrentSubscription.wrap(s);
                 subscriber.onSubscribe(new Subscription() {
                     @Override
                     public void request(final long n) {
                         if (n <= 0) {
                             subscription.request(n);
-                        } else if (demand.getAndAccumulate(n, FlowControlUtils::addWithOverflowProtection) == 0) {
+                        } else if (demandUpdater.getAndAccumulate(OneUpstreamDemandSubscriber.this, n,
+                                FlowControlUtils::addWithOverflowProtection) == 0) {
                             subscription.request(1);
                         }
                     }
@@ -119,7 +124,7 @@ public class PublisherSwitchMapTckTest extends AbstractPublisherOperatorTckTest<
             }
 
             void decrementDemand() {
-                if (demand.decrementAndGet() > 0) {
+                if (demandUpdater.decrementAndGet(this) > 0) {
                     assert subscription != null;
                     subscription.request(1);
                 }
