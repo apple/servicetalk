@@ -55,6 +55,7 @@ import static io.servicetalk.http.api.UriUtils.TCHAR_HMASK;
 import static io.servicetalk.http.api.UriUtils.TCHAR_LMASK;
 import static io.servicetalk.http.api.UriUtils.isBitSet;
 import static io.servicetalk.utils.internal.CharsetUtils.standardCharsets;
+import static io.servicetalk.utils.internal.HttpGrammarUtils.isFieldValueByte;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV4Address;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
 import static java.lang.Boolean.parseBoolean;
@@ -109,9 +110,7 @@ public final class HeaderUtils {
     }
 
     // ASCII symbols:
-    private static final byte HT = 9;
     private static final byte DEL = 127;
-    private static final byte CONTROL_CHARS_MASK = (byte) 0xE0;
 
     private static final String TOKEN_EXPECTED = "TCHAR (any VCHAR except delimiters)";
     private static final String FIELD_VALUE_EXPECTED = "(VCHAR / obs-text) [ 1*(SP / HTAB) (VCHAR / obs-text) ]";
@@ -315,6 +314,17 @@ public final class HeaderUtils {
         final int idx = forEachByte(value, HeaderUtils::isFieldValueChar);
         if (idx >= 0) {
             throw invalidHeaderValue(name, value, idx);
+        }
+    }
+
+    static void validateReasonPhrase(final CharSequence reasonPhrase) {
+        // reason-phrase = *( HTAB / SP / VCHAR / obs-text ), see RFC 7230, section 3.1.2. This is exactly the
+        // set of characters allowed in a header field-value, so reuse that validation to reject CR, LF, and
+        // other control characters that would otherwise split the HTTP response status-line.
+        final int idx = forEachByte(reasonPhrase, HeaderUtils::isFieldValueChar);
+        if (idx >= 0) {
+            throw new IllegalCharacterException(
+                    invalidMessage(reasonPhrase, idx, "reason-phrase", reasonPhrase, FIELD_VALUE_EXPECTED));
         }
     }
 
@@ -992,7 +1002,7 @@ public final class HeaderUtils {
         //                ; see Section 3.2.4
         //
         // Note: we do not support obs-fold.
-        // Illegal chars are control chars (0-31) except HT (9), and DEL (127):
-        return ((value & CONTROL_CHARS_MASK) != 0 || value == HT) && value != DEL;
+        // Delegate to the single source of truth so the reason-phrase decoder and this check cannot drift apart.
+        return isFieldValueByte(value);
     }
 }

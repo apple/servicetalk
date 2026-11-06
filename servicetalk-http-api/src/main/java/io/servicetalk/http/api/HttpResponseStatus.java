@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.buffer.api.CharSequences.parseLong;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_HEAP_RO_ALLOCATOR;
 import static io.servicetalk.http.api.BufferUtils.writeReadOnlyBuffer;
+import static io.servicetalk.http.api.HeaderUtils.validateReasonPhrase;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.fromStatusCode;
 import static java.util.Objects.requireNonNull;
 
@@ -479,6 +480,7 @@ public final class HttpResponseStatus {
     private HttpResponseStatus(final int statusCode, final String reasonPhrase) {
         this.statusCode = statusCode;
         this.reasonPhrase = requireNonNull(reasonPhrase);
+        validateReasonPhrase(reasonPhrase);
 
         statusClass = fromStatusCode(statusCode);
         encodedAsBuffer = PREFER_HEAP_RO_ALLOCATOR.fromAscii(statusCode + " " + reasonPhrase);
