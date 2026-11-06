@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@ import io.netty.util.ByteProcessor;
 import java.util.Deque;
 import java.util.Queue;
 
-import static io.netty.handler.codec.http.HttpConstants.HT;
 import static io.netty.util.internal.StringUtil.EMPTY_STRING;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_ACCEPT;
 import static io.servicetalk.http.api.HttpHeaderNames.UPGRADE;
@@ -49,6 +48,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATION
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
 import static io.servicetalk.http.netty.HttpResponseDecoder.Signal.REQUEST_SIGNAL;
 import static io.servicetalk.http.netty.HttpResponseDecoder.Signal.REQUEST_WITH_EXPECT_CONTINUE_SIGNAL;
+import static io.servicetalk.utils.internal.HttpGrammarUtils.isFieldValueByte;
 import static java.lang.Math.min;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
@@ -60,11 +60,10 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     }
 
     private static final byte[] FIRST_BYTES = "HTTP/".getBytes(US_ASCII);
-    private static final byte DEL = 127;
 
     private static final ByteProcessor ENSURE_REASON_PHRASE = value -> {
-        // Any control character (0x00-0x1F) except HT
-        if (((value & 0xE0) == 0 && value != HT) || value == DEL) {
+        // reason-phrase = *( HTAB / SP / VCHAR / obs-text ), see RFC 7230, section 3.1.2.
+        if (!isFieldValueByte(value)) {
             throw new IllegalCharacterException(value, "HTAB / SP / VCHAR / obs-text");
         }
         return true;
