@@ -1,0 +1,40 @@
+# OpenTelemetry Collector configuration with mTLS support
+#
+# This collector receives OTLP data over HTTPS with mutual TLS authentication
+# and forwards it to Jaeger for visualization.
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+        tls:
+          cert_file: /certs/server-cert.pem
+          key_file: /certs/server-key.pem
+          ca_file: /certs/ca-cert.pem
+          client_ca_file: /certs/ca-cert.pem
+          # Require client certificates (mutual TLS)
+          client_ca_file_reload: false
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+
+exporters:
+  # Forward to Jaeger
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true  # Jaeger doesn't use TLS in this setup
+  
+  # Debug exporter for debugging (replaces deprecated logging exporter)
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/jaeger, debug]
