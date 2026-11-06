@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -164,6 +164,11 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
      * </pre>
      */
     private final boolean allowLFWithoutCR;
+    /**
+     * Parse a header field line without a colon as a header field with an empty value.
+     * See {@link H1SpecExceptions#allowHeaderWithoutColon()}.
+     */
+    private final boolean allowHeaderWithoutColon;
     @Nullable
     private T message;
     @Nullable
@@ -203,7 +208,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                       final int maxStartLineLength, final int maxHeaderFieldLength,
                       final int maxTotalHeaderFieldsLength,
                       final boolean allowPrematureClosureBeforePayloadBody, final boolean allowLFWithoutCR,
-                      final CloseHandler closeHandler) {
+                      final boolean allowHeaderWithoutColon, final CloseHandler closeHandler) {
         super(alloc);
         this.closeHandler = requireNonNull(closeHandler);
         this.headersFactory = requireNonNull(headersFactory);
@@ -212,6 +217,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         this.maxTotalHeaderFieldsLength = ensurePositive(maxTotalHeaderFieldsLength, "maxTotalHeaderFieldsLength");
         this.allowPrematureClosureBeforePayloadBody = allowPrematureClosureBeforePayloadBody;
         this.allowLFWithoutCR = allowLFWithoutCR;
+        this.allowHeaderWithoutColon = allowHeaderWithoutColon;
     }
 
     final HttpHeadersFactory headersFactory() {
@@ -667,6 +673,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         }
     }
 
+    @SuppressWarnings("PMD.PreserveStackTrace") // the cause is dropped for lines without a colon, see below
     private void parseHeaderLine(final HttpHeaders headers, final ByteBuf buffer, final int lfIndex,
                                  final int nonControlIndex) throws DecoderException {
         // https://tools.ietf.org/html/rfc7230#section-3.2
@@ -689,8 +696,14 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         // Additional checks will be done by header validator
 
         final int nameStart = buffer.readerIndex();
-        final int nameEnd = buffer.forEachByte(nameStart, nonControlIndex - nameStart + 1, FIND_COLON);
-        if (nameEnd < 0) {
+        final int colonIndex = buffer.forEachByte(nameStart, nonControlIndex - nameStart + 1, FIND_COLON);
+        final int nameEnd;
+        if (colonIndex >= 0) {
+            nameEnd = colonIndex;
+        } else if (allowHeaderWithoutColon) {
+            // The whole line is the field-name, and the field-value is empty: same as "<line>:".
+            nameEnd = nonControlIndex + 1;
+        } else {
             throw newDecoderExceptionAtLine("Unable to find end of a header name in line ", parsingLine);
         }
         if (nameEnd == nameStart) {
@@ -716,6 +729,11 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         try {
             headers.add(name, value);
         } catch (IllegalCharacterException cause) {
+            if (colonIndex < 0) {
+                // Without a colon the name is the whole line, which may contain a value. Keep it out of the message
+                // and drop the cause, its message includes the name too.
+                throw newDecoderExceptionAtLine("Invalid header line without a colon in line ", parsingLine);
+            }
             throw invalidHeaderNameOrValue(name, parsingLine, cause);
         }
         // Consume the header line bytes from the buffer.

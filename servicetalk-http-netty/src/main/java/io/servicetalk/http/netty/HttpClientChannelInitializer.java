@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,8 @@ final class HttpClientChannelInitializer implements ChannelInitializer {
             pipeline.addLast(new HttpResponseDecoder(methodQueue, signalsQueue, alloc, config.headersFactory(),
                     config.maxStartLineLength(), config.maxHeaderFieldLength(), config.maxTotalHeaderFieldsLength(),
                     config.specExceptions().allowPrematureClosureBeforePayloadBody(),
-                    config.specExceptions().allowLFWithoutCR(), closeHandler));
+                    config.specExceptions().allowLFWithoutCR(),
+                    config.specExceptions().allowHeaderWithoutColon(), closeHandler));
             pipeline.addLast(new HttpRequestEncoder(methodQueue, signalsQueue,
                     config.headersEncodedSizeEstimate(), config.trailersEncodedSizeEstimate(), closeHandler));
         });

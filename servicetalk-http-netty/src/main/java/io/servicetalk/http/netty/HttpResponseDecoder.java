@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,9 +77,9 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
                         final ByteBufAllocator alloc, final HttpHeadersFactory headersFactory,
                         final int maxStartLineLength, int maxHeaderFieldLength, final int maxTotalHeaderLength,
                         final boolean allowPrematureClosureBeforePayloadBody, final boolean allowLFWithoutCR,
-                        final CloseHandler closeHandler) {
+                        final boolean allowHeaderWithoutColon, final CloseHandler closeHandler) {
         super(alloc, headersFactory, maxStartLineLength, maxHeaderFieldLength, maxTotalHeaderLength,
-                allowPrematureClosureBeforePayloadBody, allowLFWithoutCR, closeHandler);
+                allowPrematureClosureBeforePayloadBody, allowLFWithoutCR, allowHeaderWithoutColon, closeHandler);
         this.methodQueue = requireNonNull(methodQueue);
         this.signalsQueue = requireNonNull(signalsQueue);
     }

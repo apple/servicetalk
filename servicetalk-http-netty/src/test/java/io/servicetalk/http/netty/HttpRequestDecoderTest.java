@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2020, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,13 +59,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class HttpRequestDecoderTest extends HttpObjectDecoderTest {
 
-    private final EmbeddedChannel channel = newChannel(false);
-    private final EmbeddedChannel channelSpecException = newChannel(true);
+    private final EmbeddedChannel channel = newChannel(false, false);
+    private final EmbeddedChannel channelSpecException = newChannel(true, false);
 
-    private static EmbeddedChannel newChannel(boolean allowLFWithoutCR) {
+    private static EmbeddedChannel newChannel(boolean allowLFWithoutCR, boolean allowHeaderWithoutColon) {
         return new EmbeddedChannel(new HttpRequestDecoder(new ArrayDeque<>(), getByteBufAllocator(DEFAULT_ALLOCATOR),
                 DefaultHttpHeadersFactory.INSTANCE, DEFAULT_MAX_START_LINE_LENGTH, DEFAULT_MAX_HEADER_FIELD_LENGTH,
-                DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH, false, allowLFWithoutCR, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
+                DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH, false, allowLFWithoutCR, allowHeaderWithoutColon,
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
     }
 
     @Override
@@ -76,6 +77,11 @@ class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     @Override
     EmbeddedChannel channelSpecException() {
         return channelSpecException;
+    }
+
+    @Override
+    EmbeddedChannel channelAllowHeaderWithoutColon(boolean crlf) {
+        return newChannel(!crlf, true);
     }
 
     @Override
@@ -118,6 +124,7 @@ class HttpRequestDecoderTest extends HttpObjectDecoderTest {
                 maxTotalHeaderFieldsLength,
                 false,  // allowPrematureClosureBeforePayloadBody
                 false,  // allowLFWithoutCR
+                false,  // allowHeaderWithoutColon
                 UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
     }
 
@@ -125,7 +132,7 @@ class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     EmbeddedChannel channelWithCloseHandler(CloseHandler closeHandler) {
         return new EmbeddedChannel(new HttpRequestDecoder(new ArrayDeque<>(), getByteBufAllocator(DEFAULT_ALLOCATOR),
                 DefaultHttpHeadersFactory.INSTANCE, DEFAULT_MAX_START_LINE_LENGTH, DEFAULT_MAX_HEADER_FIELD_LENGTH,
-                DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH, false, false, closeHandler));
+                DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH, false, false, false, closeHandler));
     }
 
     @Test

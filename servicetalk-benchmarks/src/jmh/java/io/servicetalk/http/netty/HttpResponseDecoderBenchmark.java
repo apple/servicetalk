@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,7 +88,7 @@ public class HttpResponseDecoderBenchmark {
 
         channel = new EmbeddedChannel(new HttpResponseDecoder(new ArrayDeque<>(), new PollLikePeakArrayDeque<>(),
                 getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE, 8192, 8192, 8192,
-                false, false, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
+                false, false, false, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
     }
 
     @Benchmark
