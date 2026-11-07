@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2020, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 
@@ -98,16 +99,16 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
 
     private final Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>();
 
-    private final EmbeddedChannel channel = newChannel(false);
-    private final EmbeddedChannel channelSpecException = newChannel(true);
+    private final EmbeddedChannel channel = newChannel(false, false);
+    private final EmbeddedChannel channelSpecException = newChannel(true, false);
 
-    private EmbeddedChannel newChannel(boolean allowLFWithoutCR) {
+    private EmbeddedChannel newChannel(boolean allowLFWithoutCR, boolean allowHeaderWithoutColon) {
         final Deque<Signal> signalsQueue = new PollLikePeakArrayDeque<>();
         signalsQueue.offer(REQUEST_SIGNAL);
         return new EmbeddedChannel(new HttpResponseDecoder(methodQueue, signalsQueue,
                 getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE,
                 DEFAULT_MAX_START_LINE_LENGTH, DEFAULT_MAX_HEADER_FIELD_LENGTH, DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH,
-                false, allowLFWithoutCR, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
+                false, allowLFWithoutCR, allowHeaderWithoutColon, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
     }
 
     @Override
@@ -118,6 +119,11 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     @Override
     EmbeddedChannel channelSpecException() {
         return channelSpecException;
+    }
+
+    @Override
+    EmbeddedChannel channelAllowHeaderWithoutColon(boolean crlf) {
+        return newChannel(!crlf, true);
     }
 
     @Override
@@ -162,6 +168,7 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
                 maxTotalHeaderFieldsLength,
                 false,  // allowPrematureClosureBeforePayloadBody
                 false,  // allowLFWithoutCR
+                false,  // allowHeaderWithoutColon
                 UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
     }
 
@@ -172,7 +179,7 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
         return new EmbeddedChannel(new HttpResponseDecoder(methodQueue, signalsQueue,
                 getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE,
                 DEFAULT_MAX_START_LINE_LENGTH, DEFAULT_MAX_HEADER_FIELD_LENGTH, DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH,
-                false, false, closeHandler));
+                false, false, false, closeHandler));
     }
 
     @Test
@@ -366,6 +373,22 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
         assertStandardHeaders(metaData.headers());
         assertEmptyTrailers(channel);
         assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
+    void multipleHostHeadersAllowedInResponse() {
+        writeMsg("HTTP/1.1 200 OK" + "\r\n" +
+                "Host: a.servicetalk.io" + "\r\n" +
+                "Host: b.servicetalk.io" + "\r\n" +
+                "Content-Length: 0" + "\r\n" + "\r\n");
+
+        HttpMetaData metaData = assertStartLineForContent();
+        Iterator<? extends CharSequence> hosts = metaData.headers().valuesIterator(HOST);
+        assertThat(hosts.next().toString(), is("a.servicetalk.io"));
+        assertThat(hosts.next().toString(), is("b.servicetalk.io"));
+        assertFalse(hosts.hasNext());
+        assertEmptyTrailers(channel());
+        assertFalse(channel().finishAndReleaseAll());
     }
 
     @Test

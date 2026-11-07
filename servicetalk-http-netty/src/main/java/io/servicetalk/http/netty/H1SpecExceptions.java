@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,14 @@ public final class H1SpecExceptions {
 
     private final boolean allowPrematureClosureBeforePayloadBody;
     private final boolean allowLFWithoutCR;
+    private final boolean allowHeaderWithoutColon;
 
     private H1SpecExceptions(final boolean allowPrematureClosureBeforePayloadBody,
-                             final boolean allowLFWithoutCR) {
+                             final boolean allowLFWithoutCR,
+                             final boolean allowHeaderWithoutColon) {
         this.allowPrematureClosureBeforePayloadBody = allowPrematureClosureBeforePayloadBody;
         this.allowLFWithoutCR = allowLFWithoutCR;
+        this.allowHeaderWithoutColon = allowHeaderWithoutColon;
     }
 
     /**
@@ -54,11 +57,33 @@ public final class H1SpecExceptions {
         return allowLFWithoutCR;
     }
 
+    /**
+     * Allow a header line without a colon, such as a bare {@code Host}, in headers and trailers. The whole line is
+     * parsed as the field name with an empty value, the same as {@code Host:}.
+     * <p>
+     * Every HTTP/1.x specification requires the colon, from
+     * <a href="https://tools.ietf.org/html/rfc1945#section-4.2">RFC 1945</a> to
+     * <a href="https://tools.ietf.org/html/rfc9112#section-5">RFC 9112, section 5</a>:
+     * <pre>
+     *   field-line   = field-name ":" OWS field-value OWS
+     * </pre>
+     * Enable this only to interoperate with legacy peers that omit it. Intermediaries that parse such a line
+     * differently may interpret the same message differently. This option relies on header name validation to reject
+     * lines with whitespace or control characters; with validation disabled such lines are accepted as names.
+     * Jetty offers a similar opt-in as {@code HttpCompliance.Violation.NO_COLON_AFTER_FIELD_NAME}.
+     *
+     * @return {@code true} to allow a header line without a colon.
+     */
+    public boolean allowHeaderWithoutColon() {
+        return allowHeaderWithoutColon;
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName() +
                 "{allowPrematureClosureBeforePayloadBody=" + allowPrematureClosureBeforePayloadBody +
                 ", allowLFWithoutCR=" + allowLFWithoutCR +
+                ", allowHeaderWithoutColon=" + allowHeaderWithoutColon +
                 '}';
     }
 
@@ -69,6 +94,7 @@ public final class H1SpecExceptions {
 
         private boolean allowPrematureClosureBeforePayloadBody;
         private boolean allowLFWithoutCR;
+        private boolean allowHeaderWithoutColon;
 
         /**
          * Allows interpreting connection closures as the end of HTTP/1.1 messages if the receiver did not receive any
@@ -99,12 +125,36 @@ public final class H1SpecExceptions {
         }
 
         /**
+         * Allow a header line without a colon, such as a bare {@code Host}, in headers and trailers. The whole line is
+         * parsed as the field name with an empty value, the same as {@code Host:}.
+         * <p>
+         * Every HTTP/1.x specification requires the colon, from
+         * <a href="https://tools.ietf.org/html/rfc1945#section-4.2">RFC 1945</a> to
+         * <a href="https://tools.ietf.org/html/rfc9112#section-5">RFC 9112, section 5</a>:
+         * <pre>
+         *   field-line   = field-name ":" OWS field-value OWS
+         * </pre>
+         * Enable this only to interoperate with legacy peers that omit it. Intermediaries that parse such a line
+         * differently may interpret the same message differently. This option relies on header name validation to
+         * reject lines with whitespace or control characters; with validation disabled such lines are accepted as
+         * names. Jetty offers a similar opt-in as {@code HttpCompliance.Violation.NO_COLON_AFTER_FIELD_NAME}.
+         *
+         * @param allow {@code true} to allow a header line without a colon.
+         * @return {@code this}
+         */
+        public Builder allowHeaderWithoutColon(boolean allow) {
+            this.allowHeaderWithoutColon = allow;
+            return this;
+        }
+
+        /**
          * Builds {@link H1SpecExceptions}.
          *
          * @return a new {@link H1SpecExceptions}
          */
         public H1SpecExceptions build() {
-            return new H1SpecExceptions(allowPrematureClosureBeforePayloadBody, allowLFWithoutCR);
+            return new H1SpecExceptions(allowPrematureClosureBeforePayloadBody, allowLFWithoutCR,
+                    allowHeaderWithoutColon);
         }
     }
 }

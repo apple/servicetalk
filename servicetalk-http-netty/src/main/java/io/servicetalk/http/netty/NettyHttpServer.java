@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2024 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -203,7 +203,8 @@ final class NettyHttpServer {
             final HttpRequestDecoder decoder = new HttpRequestDecoder(methodQueue, alloc, config.headersFactory(),
                     config.maxStartLineLength(), config.maxHeaderFieldLength(), config.maxTotalHeaderFieldsLength(),
                     config.specExceptions().allowPrematureClosureBeforePayloadBody(),
-                    config.specExceptions().allowLFWithoutCR(), closeHandler);
+                    config.specExceptions().allowLFWithoutCR(),
+                    config.specExceptions().allowHeaderWithoutColon(), closeHandler);
             pipeline.addLast(decoder);
             pipeline.addLast(new HttpResponseEncoder(methodQueue, config.headersEncodedSizeEstimate(),
                     config.trailersEncodedSizeEstimate(), closeHandler, decoder));
@@ -433,7 +434,8 @@ final class NettyHttpServer {
                     flatResponse = flatEmptyMessage(protocolVersion, response, messageBody, /* propagateCancel */ true);
                 } else {
                     flatResponse = Single.<Object>succeeded(response)
-                            .concatPropagateCancel(messageBody.shareContextOnSubscribe());
+                            .concatPropagateCancel(HeaderUtils.dropHeadPayloadAndTrailers(requestMethod, messageBody)
+                                    .shareContextOnSubscribe());
                     if (shouldAppendTrailers(protocolVersion, response)) {
                         flatResponse = flatResponse.scanWithMapper(HeaderUtils::appendTrailersMapper);
                     }
