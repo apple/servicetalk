@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -193,7 +193,8 @@ final class DefaultHostAndPort implements HostAndPort {
             final char c = rawIp.charAt(i);
             switch (c) {
                 case '0':
-                    if (zerosBegin < 0 || i == end - 1) {
+                    // Preserve a zero first octet in a dotted IPv4 tail.
+                    if (zerosBegin < 0 || i == end - 1 || rawIp.charAt(i + 1) == '.') {
                         compressedIPv6Builder.append('0');
                     }
                     break;

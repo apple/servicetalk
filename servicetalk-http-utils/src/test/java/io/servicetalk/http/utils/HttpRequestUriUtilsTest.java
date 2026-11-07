@@ -81,7 +81,8 @@ class HttpRequestUriUtilsTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}]: scheme={0}, authority={1}")
-    @CsvSource({"http, [::1]", "https, [::1]", "http, [::1]:8080", "https, [::1]:8443"})
+    @CsvSource({"http, [::1]", "https, [::1]", "http, [::1]:8080", "https, [::1]:8443",
+            "https, [2001:db8::0.0.0.1]:8443"})
     void originFormWithIpv6HostPreservesBrackets(String scheme, String authority) {
         StreamingHttpRequest request = reqRespFactory.get("/resource?query=value").setHeader(HOST, authority);
         assertThat(getEffectiveRequestUri(ctx, request, scheme, null, false),

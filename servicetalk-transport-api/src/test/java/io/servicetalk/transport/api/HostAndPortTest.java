@@ -1,5 +1,5 @@
 /*
- * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,6 +72,12 @@ final class HostAndPortTest {
     @Test
     void IPv6MappedIPv4() {
         assertIP("[::FFFF:129.144.52.38]:443", "::FFFF:129.144.52.38", 443);
+    }
+
+    @Test
+    void ipv6PreservesZeroAtStartOfDottedTail() {
+        assertIP("[2001:db8:0:0:0:0:0.0.0.1]:8443", "2001:db8::0.0.0.1", 8443);
+        assertIP("[::FFFF:0.0.0.1]:443", "::FFFF:0.0.0.1", 443);
     }
 
     @Test

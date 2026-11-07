@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethod.OPTIONS;
+import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
 
 /**
  * Helper methods for computing effective request URIs according
@@ -282,7 +283,7 @@ public final class HttpRequestUriUtils {
             sb.append(userInfo).append('@');
         }
         if (host != null) {
-            if (host.indexOf(':') >= 0 && host.charAt(0) != '[') {
+            if (isValidIpV6Address(host) && host.charAt(0) != '[') {
                 sb.append('[').append(host).append(']');
             } else {
                 sb.append(host);
