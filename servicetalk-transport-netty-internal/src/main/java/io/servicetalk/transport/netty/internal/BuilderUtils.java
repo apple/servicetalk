@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2020-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,7 @@ import static io.netty.util.NetUtil.toAddressString;
 import static io.servicetalk.transport.netty.internal.NativeTransportUtils.useEpoll;
 import static io.servicetalk.transport.netty.internal.NativeTransportUtils.useIoUring;
 import static io.servicetalk.transport.netty.internal.NativeTransportUtils.useKQueue;
+import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
 import static java.net.InetAddress.getByAddress;
 
 /**
@@ -177,11 +178,15 @@ public final class BuilderUtils {
      * @return {@link InetSocketAddress} from the passed resolved {@link HostAndPort}.
      */
     public static InetSocketAddress toResolvedInetSocketAddress(final HostAndPort resolvedAddress) {
+        final String host = resolvedAddress.hostName();
+        final byte[] bytes = createByteArrayFromIpAddressString(host);
         try {
-            return new InetSocketAddress(getByAddress(createByteArrayFromIpAddressString(
-                    resolvedAddress.hostName())), resolvedAddress.port());
+            // Netty rejects some mixed IPv6 literals. The JDK parses validated literals without DNS.
+            final InetAddress address = bytes == null && isValidIpV6Address(host) ?
+                    InetAddress.getByName(host) : getByAddress(bytes);
+            return new InetSocketAddress(address, resolvedAddress.port());
         } catch (UnknownHostException e) {
-            throw new IllegalArgumentException("Invalid resolved address: " + resolvedAddress.hostName() +
+            throw new IllegalArgumentException("Invalid resolved address: " + host +
                     ", expected IP-address.", e);
         }
     }
