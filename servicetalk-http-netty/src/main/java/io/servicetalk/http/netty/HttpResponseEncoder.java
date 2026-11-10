@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,9 +42,11 @@ import io.netty.channel.ChannelHandlerContext;
 import java.util.Queue;
 
 import static io.netty.handler.codec.http.HttpConstants.SP;
+import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_VERSION;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
+import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.HttpResponseStatus.NOT_MODIFIED;
@@ -55,7 +57,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_
 import static java.util.Objects.requireNonNull;
 
 final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> {
-    static final OnResponse NOOP_ON_RESPONSE = (ctx, status) -> { /* noop */ };
+    static final OnResponse NOOP_ON_RESPONSE = (ctx, status) -> false;
 
     private final Queue<HttpRequestMethod> methodQueue;
     private final OnResponse onResponse;
@@ -89,7 +91,14 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
         stBuffer.writeByte(SP);
         message.status().writeTo(stBuffer);
         stBuffer.writeShort(CRLF_SHORT);
-        onResponse.onResponse(ctx, message.status());
+    }
+
+    @Override
+    protected void onMetaData(final ChannelHandlerContext ctx, final HttpResponseMetaData metaData) {
+        // Invoked before the encoder checks the Connection header, so a requested close is also signaled to the peer.
+        if (onResponse.onResponse(ctx, metaData.status())) {
+            metaData.headers().set(CONNECTION, CLOSE);
+        }
     }
 
     @Override
@@ -170,8 +179,10 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
         /**
          * Notifies which {@link HttpResponseStatus.StatusClass} a response belongs to.
          *
+         * @param ctx the {@link ChannelHandlerContext}
          * @param status returned status code of the response
+         * @return {@code true} if the connection must be closed after this response
          */
-        void onResponse(ChannelHandlerContext ctx, HttpResponseStatus status);
+        boolean onResponse(ChannelHandlerContext ctx, HttpResponseStatus status);
     }
 }

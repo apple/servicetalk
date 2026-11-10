@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -189,7 +189,16 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
                 // Reset the flag after receiving 100 (Continue).
                 expectContinue = false;
             } else if (evt == CancelWriteUserEvent.INSTANCE) {
-                // Mark as content consumed and reset the flag to prepare for the next request on the same connection.
+                // The server responded before the declared request payload body was sent. HTTP/1.1 has no way to skip
+                // the rest of a message, and a server must either read the whole body or close the connection after
+                // it responds (https://tools.ietf.org/html/rfc9112#section-9.3). Because the body will not be
+                // sent, the connection can not be reused for another request: its framing is out of sync with the
+                // server's view. A request that declared no payload body has nothing left unsent, so its connection
+                // stays usable.
+                if (payloadBodyOutstanding()) {
+                    closeHandler.protocolClosingOutbound(ctx);
+                }
+                // Mark as content consumed to complete the request from the CloseHandler's point of view.
                 contentLenConsumed(ctx, null);
                 expectContinue = false;
             }

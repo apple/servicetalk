@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -154,19 +154,23 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> im
     }
 
     @Override
-    public void onResponse(final ChannelHandlerContext ctx, final HttpResponseStatus status) {
+    public boolean onResponse(final ChannelHandlerContext ctx, final HttpResponseStatus status) {
         if (expectContinue && !seenPayloadBody) {
             if (status == CONTINUE) {
-                // If server responds with 100 (Continue), no need to trigger resetNow() anymore because server expects
-                // to receive a payload body.
+                // If server responds with 100 (Continue), the client is expected to send the payload body.
                 onStateReset();
             } else if (status.statusClass() != SUCCESSFUL_2XX && status.statusClass() != INFORMATIONAL_1XX) {
                 // If a request expects continuation, but server responds with an error or redirect before it sees a
-                // request payload body, notify CloseHandler and reset the state to prepare for receiving a new request
-                // on the same connection.
+                // request payload body, the client may still send the declared payload body at any time
+                // (https://tools.ietf.org/html/rfc9110#section-10.1.1), and HTTP/1.1 has no way to skip it. The
+                // decoder must never resume parsing requests at this position: the unread body would be parsed as a
+                // new request. Instead, stop reading the current request and close the connection after the response
+                // (https://tools.ietf.org/html/rfc9112#section-9.3). The CloseHandler discards further inbound
+                // data until the client closes its side.
                 closeHandler.protocolPayloadEndInbound(ctx);
-                resetNow();
+                return true;
             }
         }
+        return false;
     }
 }
