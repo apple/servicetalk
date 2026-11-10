@@ -24,7 +24,6 @@ import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_HEAP_RO_
 import static io.servicetalk.http.api.BufferUtils.writeReadOnlyBuffer;
 import static io.servicetalk.http.api.HeaderUtils.validateReasonPhrase;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.fromStatusCode;
-import static java.util.Objects.requireNonNull;
 
 /**
  * <a href="https://tools.ietf.org/html/rfc7231#section-6">Response Status Code</a>.
@@ -479,8 +478,7 @@ public final class HttpResponseStatus {
 
     private HttpResponseStatus(final int statusCode, final String reasonPhrase) {
         this.statusCode = statusCode;
-        this.reasonPhrase = requireNonNull(reasonPhrase);
-        validateReasonPhrase(reasonPhrase);
+        this.reasonPhrase = validateReasonPhrase(reasonPhrase);
 
         statusClass = fromStatusCode(statusCode);
         encodedAsBuffer = PREFER_HEAP_RO_ALLOCATOR.fromAscii(statusCode + " " + reasonPhrase);

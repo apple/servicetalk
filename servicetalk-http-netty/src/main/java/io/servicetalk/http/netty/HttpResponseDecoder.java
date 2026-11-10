@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
@@ -28,12 +29,10 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
-import io.netty.util.ByteProcessor;
 
 import java.util.Deque;
 import java.util.Queue;
 
-import static io.netty.handler.codec.http.HttpConstants.HT;
 import static io.netty.util.internal.StringUtil.EMPTY_STRING;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_ACCEPT;
 import static io.servicetalk.http.api.HttpHeaderNames.UPGRADE;
@@ -60,15 +59,6 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     }
 
     private static final byte[] FIRST_BYTES = "HTTP/".getBytes(US_ASCII);
-    private static final byte DEL = 127;
-
-    private static final ByteProcessor ENSURE_REASON_PHRASE = value -> {
-        // Any control character (0x00-0x1F) except HT
-        if (((value & 0xE0) == 0 && value != HT) || value == DEL) {
-            throw new IllegalCharacterException(value, "HTAB / SP / VCHAR / obs-text");
-        }
-        return true;
-    };
 
     private final Queue<HttpRequestMethod> methodQueue;
     private final Deque<Signal> signalsQueue;
@@ -107,24 +97,26 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     protected HttpResponseMetaData createMessage(final ByteBuf buffer, final int firstStart, final int firstLength,
                                                  final int secondStart, final int secondLength,
                                                  final int thirdStart, final int thirdLength) {
-        return newResponseMetaData(nettyBufferToHttpVersion(buffer, firstStart, firstLength),
-                HttpResponseStatus.of(nettyBufferToStatusCode(buffer, secondStart, secondLength),
-                        reasonPhrase(buffer, thirdStart, thirdLength)),
-                headersFactory().newHeaders());
+        // Preserve the original left-to-right validation order of the start-line: version, then status-code.
+        final HttpProtocolVersion version = nettyBufferToHttpVersion(buffer, firstStart, firstLength);
+        final HttpResponseStatus status;
+        try {
+            status = HttpResponseStatus.of(nettyBufferToStatusCode(buffer, secondStart, secondLength),
+                    reasonPhrase(buffer, thirdStart, thirdLength));
+        } catch (IllegalCharacterException cause) {
+            // HttpResponseStatus.of validates the reason-phrase; surface a bad phrase on the wire as an invalid
+            // start-line rather than an IllegalArgumentException.
+            throw new StacklessDecoderException("Invalid start-line: HTTP reason-phrase contains an illegal character",
+                    cause);
+        }
+        return newResponseMetaData(version, status, headersFactory().newHeaders());
     }
 
     private static String reasonPhrase(final ByteBuf buffer, final int start, final int length) {
         if (length <= 0) {
             return EMPTY_STRING;
         }
-        final String reasonPhrase = buffer.toString(start, length, US_ASCII);
-        try {
-            buffer.forEachByte(start, length, ENSURE_REASON_PHRASE);
-        } catch (IllegalCharacterException cause) {
-            throw new StacklessDecoderException("Invalid start-line: HTTP reason-phrase contains an illegal character",
-                    cause);
-        }
-        return reasonPhrase;
+        return buffer.toString(start, length, US_ASCII);
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.transport.api.IoThreadFactory;
+import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import org.glassfish.jersey.server.ContainerException;
 import org.glassfish.jersey.server.ContainerRequest;
@@ -273,8 +274,19 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
 
     private static HttpResponseStatus getStatus(final ContainerResponse containerResponse) {
         final StatusType statusInfo = containerResponse.getStatusInfo();
-        return statusInfo instanceof Status ? RESPONSE_STATUSES.get(statusInfo) :
-                HttpResponseStatus.of(statusInfo.getStatusCode(), statusInfo.getReasonPhrase());
+        if (statusInfo instanceof Status) {
+            return RESPONSE_STATUSES.get(statusInfo);
+        }
+        final int statusCode = statusInfo.getStatusCode();
+        try {
+            return HttpResponseStatus.of(statusCode, statusInfo.getReasonPhrase());
+        } catch (IllegalCharacterException e) {
+            // A JAX-RS resource supplied a reason-phrase with an illegal character (e.g. CR/LF). We are already
+            // writing the response, so exception mappers can no longer run; fall back to the status code without the
+            // custom phrase rather than failing the connection.
+            LOGGER.warn("Ignoring illegal reason-phrase for status code {}", statusCode, e);
+            return HttpResponseStatus.of(statusCode, "");
+        }
     }
 
     private static CharSequence asCharSequence(final Object o) {
