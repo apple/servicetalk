@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api.single;
 
+import io.servicetalk.concurrent.api.TestSingle;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
@@ -22,6 +24,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static io.servicetalk.concurrent.api.Single.collectInOrder;
 import static io.servicetalk.concurrent.api.Single.collectUnordered;
 import static io.servicetalk.concurrent.api.Single.collectUnorderedDelayError;
 import static io.servicetalk.concurrent.api.Single.failed;
@@ -29,11 +32,51 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CollectTest {
+
+    @Test
+    void collectInOrderVarArgsPreservesOrderWhenResultsCompleteOutOfOrder() throws Exception {
+        TestSingle<Integer> first = new TestSingle<>();
+        TestSingle<Integer> second = new TestSingle<>();
+        Future<? extends Collection<Integer>> future = collectInOrder(2, first, second).toFuture();
+
+        first.awaitSubscribed();
+        second.awaitSubscribed();
+        second.onSuccess(2);
+        first.onSuccess(1);
+
+        assertThat("Unexpected result.", future.get(), contains(1, 2));
+    }
+
+    @Test
+    void collectInOrderIterableSuccess() throws Exception {
+        Collection<Integer> integers = collectInOrder(asList(succeeded(1), succeeded(2))).toFuture().get();
+        assertThat("Unexpected result.", integers, contains(1, 2));
+    }
+
+    @Test
+    void collectInOrderIterableMaxConcurrency() throws Exception {
+        TestSingle<Integer> first = new TestSingle<>();
+        TestSingle<Integer> second = new TestSingle<>();
+        TestSingle<Integer> third = new TestSingle<>();
+        Future<? extends Collection<Integer>> future = collectInOrder(asList(first, second, third), 1).toFuture();
+
+        first.awaitSubscribed();
+        assertThat("Second source subscribed before the first completed.", second.isSubscribed(), is(false));
+        first.onSuccess(1);
+        second.awaitSubscribed();
+        assertThat("Third source subscribed before the second completed.", third.isSubscribed(), is(false));
+        second.onSuccess(2);
+        third.awaitSubscribed();
+        third.onSuccess(3);
+
+        assertThat("Unexpected result.", future.get(), contains(1, 2, 3));
+    }
 
     @Test
     void collectVarArgSuccess() throws Exception {

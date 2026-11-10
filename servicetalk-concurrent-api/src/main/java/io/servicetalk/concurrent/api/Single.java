@@ -2025,6 +2025,96 @@ public abstract class Single<T> {
 
     /**
      * Asynchronously collects results of individual {@link Single}s returned by the passed {@link Iterable} into a
+     * single {@link Collection}, preserving the order of {@code singles}. <p>
+     * The {@link Single}s may be subscribed to concurrently, but results are added to the collection in the same order
+     * as the {@link Single}s are returned by the {@link Iterable}. If any {@link Single} terminates with an error, the
+     * returned {@link Single} terminates with that error and any in-progress {@link Single}s are cancelled.
+     * <p>
+     * To control the maximum number of concurrent {@link Single}s, use
+     * {@link #collectInOrder(Iterable, int)}.
+     *
+     * @param singles {@link Iterable} of {@link Single}s, results of which are to be collected.
+     * @param <T> Type of the result of the individual {@link Single}s.
+     * @return A {@link Single} producing a {@link Collection} containing all values produced by the individual
+     * {@link Single}s in the order they are returned by the {@link Iterable}.
+     */
+    public static <T> Single<Collection<T>> collectInOrder(Iterable<? extends Single<? extends T>> singles) {
+        return fromIterable(singles).flatMapConcatSingle(identity()).collect(ArrayList::new, (ts, t) -> {
+            ts.add(t);
+            return ts;
+        });
+    }
+
+    /**
+     * Asynchronously collects results of the passed {@link Single}s into a single {@link Collection}, preserving the
+     * order of {@code singles}. <p>
+     * The {@link Single}s may be subscribed to concurrently, but results are added to the collection in the same order
+     * as the {@link Single}s are passed to this method. If any {@link Single} terminates with an error, the returned
+     * {@link Single} terminates with that error and any in-progress {@link Single}s are cancelled.
+     * <p>
+     * To control the maximum number of concurrent {@link Single}s, use
+     * {@link #collectInOrder(int, Single[])}.
+     *
+     * @param singles {@link Single}s, results of which are to be collected.
+     * @param <T> Type of the result of the individual {@link Single}s.
+     * @return A {@link Single} producing a {@link Collection} containing all values produced by the individual
+     * {@link Single}s in the order they are passed to this method.
+     */
+    @SafeVarargs
+    public static <T> Single<Collection<T>> collectInOrder(Single<? extends T>... singles) {
+        return from(singles).<T>flatMapConcatSingle(identity()).collect(() -> new ArrayList<>(singles.length),
+                (ts, t) -> {
+                    ts.add(t);
+                    return ts;
+                });
+    }
+
+    /**
+     * Asynchronously collects results of individual {@link Single}s returned by the passed {@link Iterable} into a
+     * single {@link Collection}, preserving the order of {@code singles}. <p>
+     * At most {@code maxConcurrency} {@link Single}s are subscribed to concurrently. If any {@link Single}
+     * terminates with an error, the returned {@link Single} terminates with that error and any
+     * in-progress {@link Single}s are cancelled.
+     *
+     * @param singles {@link Iterable} of {@link Single}s, results of which are to be collected.
+     * @param maxConcurrency Maximum number of {@link Single}s that will be active at any point in time.
+     * @param <T> Type of the result of the individual {@link Single}s.
+     * @return A {@link Single} producing a {@link Collection} containing all values produced by the individual
+     * {@link Single}s in the order they are returned by the {@link Iterable}.
+     */
+    public static <T> Single<Collection<T>> collectInOrder(Iterable<? extends Single<? extends T>> singles,
+                                                           int maxConcurrency) {
+        return fromIterable(singles).flatMapConcatSingle(identity(), maxConcurrency)
+                .collect(ArrayList::new, (ts, t) -> {
+                    ts.add(t);
+                    return ts;
+                });
+    }
+
+    /**
+     * Asynchronously collects results of the passed {@link Single}s into a single {@link Collection}, preserving the
+     * order of {@code singles}. <p>
+     * At most {@code maxConcurrency} {@link Single}s are subscribed to concurrently. If any {@link Single}
+     * terminates with an error, the returned {@link Single} terminates with that error and any
+     * in-progress {@link Single}s are cancelled.
+     *
+     * @param maxConcurrency Maximum number of {@link Single}s that will be active at any point in time.
+     * @param singles {@link Single}s, results of which are to be collected.
+     * @param <T> Type of the result of the individual {@link Single}s.
+     * @return A {@link Single} producing a {@link Collection} containing all values produced by the individual
+     * {@link Single}s in the order they are passed to this method.
+     */
+    @SafeVarargs
+    public static <T> Single<Collection<T>> collectInOrder(int maxConcurrency, Single<? extends T>... singles) {
+        return from(singles).<T>flatMapConcatSingle(identity(), maxConcurrency)
+                .collect(() -> new ArrayList<>(singles.length), (ts, t) -> {
+                    ts.add(t);
+                    return ts;
+                });
+    }
+
+    /**
+     * Asynchronously collects results of individual {@link Single}s returned by the passed {@link Iterable} into a
      * single {@link Collection}. <p>
      * This will actively subscribe to a limited number of {@link Single}s concurrently, in order to alter the defaults,
      * {@link #collectUnordered(Iterable, int)} should be used. <p>
