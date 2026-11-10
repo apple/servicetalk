@@ -189,12 +189,9 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
                 // Reset the flag after receiving 100 (Continue).
                 expectContinue = false;
             } else if (evt == CancelWriteUserEvent.INSTANCE) {
-                // The server responded before the declared request payload body was sent. HTTP/1.1 has no way to skip
-                // the rest of a message, and a server must either read the whole body or close the connection after
-                // it responds (https://tools.ietf.org/html/rfc9112#section-9.3). Because the body will not be
-                // sent, the connection can not be reused for another request: its framing is out of sync with the
-                // server's view. A request that declared no payload body has nothing left unsent, so its connection
-                // stays usable.
+                // The server responded before the declared body was sent. HTTP/1.1 can not skip the rest of a message
+                // and a server must read it or close the connection (https://tools.ietf.org/html/rfc9112#section-9.3),
+                // so the connection can not be reused. A request with no declared payload body keeps its connection.
                 if (payloadBodyOutstanding()) {
                     closeHandler.protocolClosingOutbound(ctx);
                 }

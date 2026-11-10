@@ -160,13 +160,10 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> im
                 // If server responds with 100 (Continue), the client is expected to send the payload body.
                 onStateReset();
             } else if (status.statusClass() != SUCCESSFUL_2XX && status.statusClass() != INFORMATIONAL_1XX) {
-                // If a request expects continuation, but server responds with an error or redirect before it sees a
-                // request payload body, the client may still send the declared payload body at any time
-                // (https://tools.ietf.org/html/rfc9110#section-10.1.1), and HTTP/1.1 has no way to skip it. The
-                // decoder must never resume parsing requests at this position: the unread body would be parsed as a
-                // new request. Instead, stop reading the current request and close the connection after the response
-                // (https://tools.ietf.org/html/rfc9112#section-9.3). The CloseHandler discards further inbound
-                // data until the client closes its side.
+                // The client may still send the declared body at any time and HTTP/1.1 can not skip it, so never resume
+                // parsing requests here (https://tools.ietf.org/html/rfc9110#section-10.1.1). Close after the response
+                // (https://tools.ietf.org/html/rfc9112#section-9.3): the CloseHandler discards inbound data until the
+                // client closes its side.
                 closeHandler.protocolPayloadEndInbound(ctx);
                 return true;
             }
