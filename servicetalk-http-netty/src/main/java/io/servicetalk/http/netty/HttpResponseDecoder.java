@@ -194,7 +194,7 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
         }
         final Signal signal = signalsQueue.poll();
         assert signal != null;
-        if (signal.stopExpectContinue()) {
+        if (signal != null && signal.stopExpectContinue()) {
             // Write of payload body can continue for 2XX response code. All other final responses should cancel
             // ongoing write operation that waits for continuation.
             ctx.fireUserEventTriggered(status.statusClass() == SUCCESSFUL_2XX ?
