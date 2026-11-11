@@ -20,7 +20,6 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -166,7 +165,7 @@ class PayloadSizeLimitingHttpServiceFilterTest {
     @Test
     void expectContinueWithOversizedContentLengthRejectsWithoutSendingBody() throws Exception {
         // Filter must fail without subscribing to the body so the client never receives 100 Continue.
-        // Connection survives because the body was never sent.
+        // The connection is closed because HTTP/1.1 can not skip the declared body that was never sent.
         try (HttpServerContext server = startServer(HTTP_1);
              // A long timeout keeps the client timer from subscribing to the body before the rejection arrives.
              StreamingHttpClient client = newClientBuilder(server, CLIENT_CTX, HTTP_1)
@@ -188,7 +187,9 @@ class PayloadSizeLimitingHttpServiceFilterTest {
             assertThat(response.status(), is(PAYLOAD_TOO_LARGE));
             assertThat("body was subscribed", body.isSubscribed(), is(false));
 
-            HttpConnection aggregated = conn.asConnection();
+            conn.onClose().toFuture().get();
+
+            HttpClient aggregated = client.asClient();
             HttpResponse follow = aggregated.request(
                     aggregated.post("/").payloadBody(alloc.fromAscii("ok"))).toFuture().get();
             assertThat(follow.status(), is(OK));

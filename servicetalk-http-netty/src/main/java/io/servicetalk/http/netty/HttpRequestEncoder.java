@@ -231,7 +231,13 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
                 // Reset after receiving 100 (Continue), a 2xx response, or when the wait timed out.
                 expectContinue = null;
             } else if (evt == CancelWriteUserEvent.INSTANCE) {
-                // Mark as content consumed and reset to prepare for the next request on the same connection.
+                // The server responded before the declared body was sent. HTTP/1.1 can not skip the rest of a message
+                // and a server must read it or close the connection (https://tools.ietf.org/html/rfc9112#section-9.3),
+                // so the connection can not be reused. A request with no declared payload body keeps its connection.
+                if (payloadBodyOutstanding()) {
+                    closeHandler.protocolClosingOutbound(ctx);
+                }
+                // Mark as content consumed to complete the request from the CloseHandler's point of view.
                 contentLenConsumed(ctx, null);
                 expectContinue = null;
             }

@@ -401,9 +401,12 @@ class ExpectContinueTest {
                              .build()));
              StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
             BufferAllocator allocator = connection.executionContext().bufferAllocator();
+            // HTTP/1.1 closes the connection after a redirect that is sent before the payload body, so the redirect
+            // can not be followed on the same connection.
+            StreamingHttpRequester requester = protocol == HTTP_1 ? client : connection;
 
             TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().singleSubscriber().build();
-            connection.request(newRequest(connection, withCL, false, payload).requestTarget("/redirect"))
+            requester.request(newRequest(requester, withCL, false, payload).requestTarget("/redirect"))
                     .subscribe(responses::add);
             requestReceived.await();
 
@@ -415,7 +418,7 @@ class ExpectContinueTest {
             returnResponse.countDown();
             assertResponse(OK, PAYLOAD + PAYLOAD);
 
-            sendFollowUpRequest(connection, withCL, allocator, OK);
+            sendFollowUpRequest(requester, withCL, allocator, OK);
         }
     }
 
@@ -438,7 +441,8 @@ class ExpectContinueTest {
                     payload.isSubscribed(), is(false));
 
             sendContinue.countDown();
-            sendFollowUpRequest(connection, withCL, connection.executionContext().bufferAllocator(), OK);
+            sendFollowUpRequest(followUpRequester(protocol, client, connection), withCL,
+                    connection.executionContext().bufferAllocator(), OK);
         }
     }
 
@@ -460,7 +464,8 @@ class ExpectContinueTest {
             assertThat(response.status(), is(EXPECTATION_FAILED));
             assertThat(response.payloadBody().toString(US_ASCII), equalTo(""));
 
-            sendFollowUpRequest(connection.asStreamingConnection(), withCL, allocator, OK);
+            sendFollowUpRequest(followUpRequester(protocol, client, connection.asStreamingConnection()), withCL,
+                    allocator, OK);
         }
     }
 
@@ -513,8 +518,9 @@ class ExpectContinueTest {
             returnResponse.countDown();
             assertResponse(INTERNAL_SERVER_ERROR, "");
 
-            // send a follow-up request on the same connection:
-            connection.request(connection.get("/")).subscribe(responses::add);
+            // send a follow-up request on the same connection, if it was not closed:
+            StreamingHttpRequester requester = followUpRequester(protocol, client, connection);
+            requester.request(requester.get("/")).subscribe(responses::add);
             assertResponse(OK, "");
         }
     }
@@ -544,8 +550,9 @@ class ExpectContinueTest {
             assertThat(response.status(), is(INTERNAL_SERVER_ERROR));
             assertThat(response.payloadBody().toString(US_ASCII), equalTo(""));
 
-            // send a follow-up request on the same connection:
-            response = connection.request(connection.get("/")).toFuture().get();
+            // send a follow-up request on the same connection, if it was not closed:
+            StreamingHttpRequester requester = followUpRequester(protocol, client, connection.asStreamingConnection());
+            response = requester.request(requester.get("/")).toFuture().get().toResponse().toFuture().get();
             assertThat(response.status(), is(OK));
             assertThat(response.payloadBody().toString(US_ASCII), equalTo(""));
         }
@@ -920,9 +927,12 @@ class ExpectContinueTest {
             raw.readRequestHeaders();
             raw.write("HTTP/1.1 417 Expectation Failed\r\ncontent-length: 0\r\n\r\n");
 
-            int contentLength = raw.readRequestHeaders();
-            assertThat(raw.lastRequestHadExpectContinue(), is(false));
-            raw.respondWithBody(contentLength);
+            // The declared payload body was not sent, so the first connection can not be reused: the retry arrives on
+            // a new connection.
+            RawConnection retry = server.accept();
+            int contentLength = retry.readRequestHeaders();
+            assertThat(retry.lastRequestHadExpectContinue(), is(false));
+            retry.respondWithBody(contentLength);
             assertThat(response.get().toResponse().toFuture().get().payloadBody().toString(US_ASCII),
                     equalTo(PAYLOAD + PAYLOAD));
             final Object written = writtenItems.poll();
@@ -1006,8 +1016,7 @@ class ExpectContinueTest {
 
     private static final class RawServer implements AutoCloseable {
         private final ServerSocket serverSocket;
-        @Nullable
-        private Socket socket;
+        private final List<Socket> sockets = new ArrayList<>();
 
         RawServer() throws IOException {
             serverSocket = new ServerSocket(0, 50, getLoopbackAddress());
@@ -1018,14 +1027,15 @@ class ExpectContinueTest {
         }
 
         RawConnection accept() throws IOException {
-            socket = serverSocket.accept();
+            final Socket socket = serverSocket.accept();
+            sockets.add(socket);
             return new RawConnection(socket);
         }
 
         @Override
         public void close() throws IOException {
             try {
-                if (socket != null) {
+                for (Socket socket : sockets) {
                     socket.close();
                 }
             } finally {
@@ -1175,6 +1185,19 @@ class ExpectContinueTest {
                         withCL ? valueOf(PAYLOAD.length() * 2) : CHUNKED)
                 .setHeader(FAIL, valueOf(fail))
                 .payloadBody(allocator.fromAscii(payload));
+    }
+
+    /**
+     * HTTP/1.1 can not skip a declared payload body that was not sent after an early final response, so it must close
+     * the connection. HTTP/2 resets only the stream, so the connection can be reused.
+     */
+    private static StreamingHttpRequester followUpRequester(HttpProtocol protocol, StreamingHttpClient client,
+                                                            StreamingHttpConnection connection) throws Exception {
+        if (protocol == HTTP_1) {
+            connection.onClose().toFuture().get();
+            return client;
+        }
+        return connection;
     }
 
     private static void sendRequestPayload(TestPublisher<Buffer> payload, BufferAllocator alloc) {

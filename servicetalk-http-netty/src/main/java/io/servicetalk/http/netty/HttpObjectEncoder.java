@@ -104,7 +104,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
      * a guess for future buffer allocations.
      */
     private float trailersEncodedSizeAccumulator;
-    private final CloseHandler closeHandler;
+    final CloseHandler closeHandler;
     private boolean messageSent;
 
     /**
@@ -332,6 +332,16 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
             msg.headers().remove(CONTENT_LENGTH);
         }
         sanitizeHeadersBeforeEncode(msg, state == CONTENT_LEN_EMPTY);
+    }
+
+    /**
+     * Determines if the encoded message declared a payload body that has not been completely written yet.
+     *
+     * @return {@code true} if the payload body is declared as chunked or with a positive or unknown length, and the
+     * writer did not complete it.
+     */
+    final boolean payloadBodyOutstanding() {
+        return state == CONTENT_LEN_CHUNKED || state > CONTENT_LEN_LARGEST_VALUE;
     }
 
     /**
