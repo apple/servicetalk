@@ -2026,12 +2026,13 @@ public abstract class Single<T> {
     /**
      * Asynchronously collects results of individual {@link Single}s returned by the passed {@link Iterable} into a
      * single {@link Collection}, preserving the order of {@code singles}. <p>
-     * The {@link Single}s may be subscribed to concurrently, but results are added to the collection in the same order
-     * as the {@link Single}s are returned by the {@link Iterable}. If any {@link Single} terminates with an error, the
-     * returned {@link Single} terminates with that error and any in-progress {@link Single}s are cancelled.
+     * Results, including errors, are delivered in order: if a {@link Single} terminates with an error, the returned
+     * {@link Single} terminates with that error once all preceding {@link Single}s have succeeded. A later error is
+     * therefore not delivered until earlier {@link Single}s terminate. When an error is delivered, any other
+     * in-progress {@link Single}s are cancelled.
      * <p>
-     * To control the maximum number of concurrent {@link Single}s, use
-     * {@link #collectInOrder(Iterable, int)}.
+     * This method actively subscribes to a limited number of {@link Single}s concurrently. To alter the default
+     * limit, use {@link #collectInOrder(Iterable, int)}.
      *
      * @param singles {@link Iterable} of {@link Single}s, results of which are to be collected.
      * @param <T> Type of the result of the individual {@link Single}s.
@@ -2048,12 +2049,13 @@ public abstract class Single<T> {
     /**
      * Asynchronously collects results of the passed {@link Single}s into a single {@link Collection}, preserving the
      * order of {@code singles}. <p>
-     * The {@link Single}s may be subscribed to concurrently, but results are added to the collection in the same order
-     * as the {@link Single}s are passed to this method. If any {@link Single} terminates with an error, the returned
-     * {@link Single} terminates with that error and any in-progress {@link Single}s are cancelled.
+     * Results, including errors, are delivered in order: if a {@link Single} terminates with an error, the returned
+     * {@link Single} terminates with that error once all preceding {@link Single}s have succeeded. A later error is
+     * therefore not delivered until earlier {@link Single}s terminate. When an error is delivered, any other
+     * in-progress {@link Single}s are cancelled.
      * <p>
-     * To control the maximum number of concurrent {@link Single}s, use
-     * {@link #collectInOrder(int, Single[])}.
+     * This method actively subscribes to a limited number of {@link Single}s concurrently. To alter the default
+     * limit, use {@link #collectInOrder(int, Single[])}.
      *
      * @param singles {@link Single}s, results of which are to be collected.
      * @param <T> Type of the result of the individual {@link Single}s.

@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api.single;
 
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestSingle;
 
 import org.junit.jupiter.api.Test;
@@ -54,9 +56,63 @@ class CollectTest {
     }
 
     @Test
+    void collectInOrderVarArgsMaxConcurrency() throws Exception {
+        TestSingle<Integer> first = new TestSingle<>();
+        TestSingle<Integer> second = new TestSingle<>();
+        TestSingle<Integer> third = new TestSingle<>();
+        Future<? extends Collection<Integer>> future = collectInOrder(2, first, second, third).toFuture();
+
+        first.awaitSubscribed();
+        second.awaitSubscribed();
+        assertThat("Third source subscribed before a slot was available.", third.isSubscribed(), is(false));
+        second.onSuccess(2);
+        assertThat("Third source subscribed before the preceding source completed.", third.isSubscribed(), is(false));
+        first.onSuccess(1);
+        third.awaitSubscribed();
+        third.onSuccess(3);
+
+        assertThat("Unexpected result.", future.get(), contains(1, 2, 3));
+    }
+
+    @Test
     void collectInOrderIterableSuccess() throws Exception {
         Collection<Integer> integers = collectInOrder(asList(succeeded(1), succeeded(2))).toFuture().get();
         assertThat("Unexpected result.", integers, contains(1, 2));
+    }
+
+    @Test
+    void collectInOrderEmptyIterable() throws Exception {
+        Collection<Integer> integers = Single.<Integer>collectInOrder(asList()).toFuture().get();
+        assertThat("Unexpected result.", integers.isEmpty(), is(true));
+    }
+
+    @Test
+    void collectInOrderEmptyVarArgs() throws Exception {
+        Collection<Integer> integers = Single.<Integer>collectInOrder().toFuture().get();
+        assertThat("Unexpected result.", integers.isEmpty(), is(true));
+    }
+
+    @Test
+    void collectInOrderDeliversLaterErrorInOrderAndCancelsRemainingSources() throws Exception {
+        TestSingle<Integer> first = new TestSingle<>();
+        TestSingle<Integer> second = new TestSingle<>();
+        TestCancellable thirdCancellable = new TestCancellable();
+        TestSingle<Integer> third = new TestSingle.Builder<Integer>().disableAutoOnSubscribe().build(subscriber -> {
+            subscriber.onSubscribe(thirdCancellable);
+            return subscriber;
+        });
+        Future<? extends Collection<Integer>> future = collectInOrder(asList(first, second, third), 3).toFuture();
+
+        first.awaitSubscribed();
+        second.awaitSubscribed();
+        third.awaitSubscribed();
+        second.onError(DELIBERATE_EXCEPTION);
+        assertThat("Later error was delivered before the preceding source.", future.isDone(), is(false));
+
+        first.onSuccess(1);
+        ExecutionException e = assertThrows(ExecutionException.class, future::get);
+        assertThat("Unexpected exception.", e.getCause(), is(DELIBERATE_EXCEPTION));
+        thirdCancellable.awaitCancelled();
     }
 
     @Test
