@@ -52,6 +52,7 @@ import static io.servicetalk.http.netty.BuilderUtils.newServerBuilder;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
 import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.time.Duration.ofMinutes;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -166,7 +167,10 @@ class PayloadSizeLimitingHttpServiceFilterTest {
         // Filter must fail without subscribing to the body so the client never receives 100 Continue.
         // The connection is closed because HTTP/1.1 can not skip the declared body that was never sent.
         try (HttpServerContext server = startServer(HTTP_1);
-             StreamingHttpClient client = newClient(server, HTTP_1);
+             // A long timeout keeps the client timer from subscribing to the body before the rejection arrives.
+             StreamingHttpClient client = newClientBuilder(server, CLIENT_CTX, HTTP_1)
+                     .expectContinueTimeout(ofMinutes(1))
+                     .buildStreaming();
              StreamingHttpConnection conn = client.reserveConnection(client.get("/")).toFuture().get()) {
 
             BufferAllocator alloc = conn.executionContext().bufferAllocator();

@@ -191,7 +191,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
             }
 
             if (realResponse) {
-                ctx.write(byteBuf, promise);
+                writeMetaData(ctx, byteBuf, promise);
             } else {
                 // All "interim messages" have to be flushed right away.
                 ctx.writeAndFlush(byteBuf, promise);
@@ -311,6 +311,18 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
      */
     protected void onMetaData(final ChannelHandlerContext ctx, final T metaData) {
         // noop
+    }
+
+    /**
+     * Writes the encoded start line and headers of a non-interim message.
+     *
+     * @param ctx the {@link ChannelHandlerContext} for which the write operation is made.
+     * @param encoded the encoded start line and headers.
+     * @param promise the {@link ChannelPromise} to notify once the operation completes.
+     */
+    protected void writeMetaData(final ChannelHandlerContext ctx, final ByteBuf encoded,
+                                 final ChannelPromise promise) {
+        ctx.write(encoded, promise);
     }
 
     private void sanitizeHeadersBeforeEncode(T msg) {

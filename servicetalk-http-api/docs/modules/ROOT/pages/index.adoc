@@ -258,9 +258,16 @@ HTTP protocol defines link:https://datatracker.ietf.org/doc/html/rfc7231#section
 responds with link:https://datatracker.ietf.org/doc/html/rfc7231#section-6.2.1[100 Continue] status code signaling that
 it's ready to receive and process the payload body.
 
+If the server does not respond within 1 second, the client sends the payload body anyway, as permitted by
+link:https://datatracker.ietf.org/doc/html/rfc9110#section-10.1.1[RFC 9110]. Use
+`SingleAddressHttpClientBuilder.expectContinueTimeout(Duration)` to change this timeout. `Duration.ZERO` sends the
+payload body without waiting, as if the request had no `Expect: 100-continue` header, and a duration longer than any
+other timeout applied to the request, for example `Duration.ofDays(1)`, waits for the server's response.
+
 NOTE: xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc#client-blocking-and-aggregated[Aggregated]
 client will automatically de-optimize its flush strategy to flush on each element of the request to force flushing of
-the request meta-data and deffer flushing payload body until after a `100 Continue` response is received.
+the request meta-data and deffer flushing payload body until after a `100 Continue` response is received. It does not
+de-optimize if `expectContinueTimeout` is `Duration.ZERO`.
 
 Server-side users should subscribe to the request payload body when they are ready to consume it. It will generate
 link:https://datatracker.ietf.org/doc/html/rfc7231#section-6.2.1[100 Continue] interim response. After the request is

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2020, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,12 @@ import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.netty.HttpResponseDecoder.Signal;
 import io.servicetalk.transport.netty.internal.CloseHandler;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection.CancelWriteUserEvent;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ContinueUserEvent;
 import io.servicetalk.utils.internal.IllegalCharacterException;
 
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.DecoderException;
 import org.junit.jupiter.api.Test;
@@ -52,6 +56,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 
@@ -60,12 +65,18 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
+import static io.servicetalk.http.api.HttpHeaderValues.CONTINUE;
+import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
+import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
+import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.H1ProtocolConfigBuilder.DEFAULT_MAX_HEADER_FIELD_LENGTH;
@@ -75,7 +86,9 @@ import static io.servicetalk.http.netty.HttpResponseDecoder.Signal.REQUEST_SIGNA
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.lang.Integer.toHexString;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.time.Duration.ofDays;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -87,6 +100,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class HttpResponseDecoderTest extends HttpObjectDecoderTest {
 
+    private static final String CONTINUE_RESPONSE = "HTTP/1.1 100 Continue\r\n\r\n";
+    private static final String OK_RESPONSE = "HTTP/1.1 200 OK\r\ncontent-length: 0\r\n\r\n";
+    private static final String EXPECTATION_FAILED_RESPONSE =
+            "HTTP/1.1 417 Expectation Failed\r\ncontent-length: 0\r\n\r\n";
+
     private static final class PollLikePeakArrayDeque<T> extends ArrayDeque<T> {
         private static final long serialVersionUID = -8160337336374186819L;
 
@@ -97,17 +115,18 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     }
 
     private final Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>();
+    private final List<Object> userEvents = new ArrayList<>();
 
-    private final EmbeddedChannel channel = newChannel(false);
-    private final EmbeddedChannel channelSpecException = newChannel(true);
+    private final EmbeddedChannel channel = newChannel(false, false);
+    private final EmbeddedChannel channelSpecException = newChannel(true, false);
 
-    private EmbeddedChannel newChannel(boolean allowLFWithoutCR) {
+    private EmbeddedChannel newChannel(boolean allowLFWithoutCR, boolean allowHeaderWithoutColon) {
         final Deque<Signal> signalsQueue = new PollLikePeakArrayDeque<>();
         signalsQueue.offer(REQUEST_SIGNAL);
         return new EmbeddedChannel(new HttpResponseDecoder(methodQueue, signalsQueue,
                 getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE,
                 DEFAULT_MAX_START_LINE_LENGTH, DEFAULT_MAX_HEADER_FIELD_LENGTH, DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH,
-                false, allowLFWithoutCR, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
+                false, allowLFWithoutCR, allowHeaderWithoutColon, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
     }
 
     @Override
@@ -118,6 +137,11 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     @Override
     EmbeddedChannel channelSpecException() {
         return channelSpecException;
+    }
+
+    @Override
+    EmbeddedChannel channelAllowHeaderWithoutColon(boolean crlf) {
+        return newChannel(!crlf, true);
     }
 
     @Override
@@ -162,6 +186,7 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
                 maxTotalHeaderFieldsLength,
                 false,  // allowPrematureClosureBeforePayloadBody
                 false,  // allowLFWithoutCR
+                false,  // allowHeaderWithoutColon
                 UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
     }
 
@@ -172,7 +197,7 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
         return new EmbeddedChannel(new HttpResponseDecoder(methodQueue, signalsQueue,
                 getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE,
                 DEFAULT_MAX_START_LINE_LENGTH, DEFAULT_MAX_HEADER_FIELD_LENGTH, DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH,
-                false, false, closeHandler));
+                false, false, false, closeHandler));
     }
 
     @Test
@@ -369,6 +394,22 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
+    void multipleHostHeadersAllowedInResponse() {
+        writeMsg("HTTP/1.1 200 OK" + "\r\n" +
+                "Host: a.servicetalk.io" + "\r\n" +
+                "Host: b.servicetalk.io" + "\r\n" +
+                "Content-Length: 0" + "\r\n" + "\r\n");
+
+        HttpMetaData metaData = assertStartLineForContent();
+        Iterator<? extends CharSequence> hosts = metaData.headers().valuesIterator(HOST);
+        assertThat(hosts.next().toString(), is("a.servicetalk.io"));
+        assertThat(hosts.next().toString(), is("b.servicetalk.io"));
+        assertFalse(hosts.hasNext());
+        assertEmptyTrailers(channel());
+        assertFalse(channel().finishAndReleaseAll());
+    }
+
+    @Test
     void variableWithContent() {
         int contentLength = 128;
         writeMsg("HTTP/1.1 200 OK" + "\r\n" +
@@ -535,5 +576,127 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
         HttpHeaders trailers = assertPayloadSize(contentLength);
         assertThat("Trailers are not empty", trailers, nullValue());
         assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] interimStatus={0}")
+    @ValueSource(strings = {"102 Processing", "103 Early Hints"})
+    void interimResponseBeforeContinueKeepsExpectContinueEntry(String interimStatus) {
+        EmbeddedChannel channel = newClientChannel();
+        writeRequest(channel, true);
+        writeResponse(channel, "HTTP/1.1 " + interimStatus + "\r\n\r\n");
+        assertThat(userEvents, is(empty()));
+        writeResponse(channel, CONTINUE_RESPONSE);
+        assertThat(userEvents, contains(ContinueUserEvent.INSTANCE));
+        writeResponse(channel, OK_RESPONSE);
+        assertThat(userEvents, contains(ContinueUserEvent.INSTANCE));
+        assertResponseLine(HTTP_1_1, OK, channel);
+        assertEmptyTrailers(channel);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
+    void duplicateContinueFiresOneEvent() {
+        EmbeddedChannel channel = newClientChannel();
+        writeRequest(channel, true);
+        writeResponse(channel, CONTINUE_RESPONSE);
+        writeResponse(channel, CONTINUE_RESPONSE);
+        writeResponse(channel, OK_RESPONSE);
+        assertThat(userEvents, contains(ContinueUserEvent.INSTANCE));
+        assertResponseLine(HTTP_1_1, OK, channel);
+        assertEmptyTrailers(channel);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
+    void continueAndFinalResponseInOneReadFireOneEvent() {
+        EmbeddedChannel channel = newClientChannel();
+        writeRequest(channel, true);
+        writeResponse(channel, CONTINUE_RESPONSE + OK_RESPONSE);
+        assertThat(userEvents, contains(ContinueUserEvent.INSTANCE));
+        assertResponseLine(HTTP_1_1, OK, channel);
+        assertEmptyTrailers(channel);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
+    void successfulFinalResponseWithoutContinueFiresContinue() {
+        EmbeddedChannel channel = newClientChannel();
+        writeRequest(channel, true);
+        writeResponse(channel, OK_RESPONSE);
+        assertThat(userEvents, contains(ContinueUserEvent.INSTANCE));
+        assertResponseLine(HTTP_1_1, OK, channel);
+        assertEmptyTrailers(channel);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
+    void unsuccessfulFinalResponseWithoutContinueFiresCancelWrite() {
+        EmbeddedChannel channel = newClientChannel();
+        writeRequest(channel, true);
+        writeResponse(channel, EXPECTATION_FAILED_RESPONSE);
+        assertThat(userEvents, contains(CancelWriteUserEvent.INSTANCE));
+        assertResponseLine(HTTP_1_1, EXPECTATION_FAILED, channel);
+        assertEmptyTrailers(channel);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
+    void continueWithoutRequestFiresNothing() {
+        EmbeddedChannel channel = newClientChannel();
+        writeResponse(channel, CONTINUE_RESPONSE);
+        assertThat(userEvents, is(empty()));
+        assertThat(channel.inboundMessages(), is(empty()));
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
+    void continueForPlainRequestDoesNotReleasePipelinedRequest() {
+        EmbeddedChannel channel = newClientChannel();
+        writeRequest(channel, false);
+        writeRequest(channel, true);
+        writeResponse(channel, CONTINUE_RESPONSE);
+        writeResponse(channel, OK_RESPONSE);
+        assertThat(userEvents, is(empty()));
+        assertResponseLine(HTTP_1_1, OK, channel);
+        assertEmptyTrailers(channel);
+
+        writeResponse(channel, CONTINUE_RESPONSE);
+        assertThat(userEvents, contains(ContinueUserEvent.INSTANCE));
+        writeResponse(channel, OK_RESPONSE);
+        assertThat(userEvents, contains(ContinueUserEvent.INSTANCE));
+        assertResponseLine(HTTP_1_1, OK, channel);
+        assertEmptyTrailers(channel);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    private EmbeddedChannel newClientChannel() {
+        final Queue<HttpRequestMethod> methods = new ArrayDeque<>();
+        final Deque<Signal> signals = new ArrayDeque<>();
+        return new EmbeddedChannel(new HttpResponseDecoder(methods, signals,
+                getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE,
+                DEFAULT_MAX_START_LINE_LENGTH, DEFAULT_MAX_HEADER_FIELD_LENGTH, DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH,
+                false, false, false, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER),
+                new HttpRequestEncoder(methods, signals, 256, 256, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, ofDays(1)),
+                new ChannelInboundHandlerAdapter() {
+                    @Override
+                    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+                        if (evt == ContinueUserEvent.INSTANCE || evt == CancelWriteUserEvent.INSTANCE) {
+                            userEvents.add(evt);
+                        }
+                    }
+                });
+    }
+
+    private static void writeRequest(EmbeddedChannel channel, boolean expectContinue) {
+        HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders().set(CONTENT_LENGTH, ZERO);
+        if (expectContinue) {
+            headers.set(EXPECT, CONTINUE);
+        }
+        assertThat(channel.writeOutbound(newRequestMetaData(HTTP_1_1, POST, "/", headers)), is(true));
+        assertThat(channel.releaseOutbound(), is(true));
+    }
+
+    private static void writeResponse(EmbeddedChannel channel, String response) {
+        channel.writeInbound(wrappedBuffer(response.getBytes(US_ASCII)));
     }
 }

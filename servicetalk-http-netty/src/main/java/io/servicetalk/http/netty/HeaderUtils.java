@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 
 import io.netty.util.AsciiString;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.function.Predicate;
@@ -75,8 +76,20 @@ final class HeaderUtils {
     static final Predicate<Object> OBJ_EXPECT_CONTINUE = msg ->
             msg instanceof HttpRequestMetaData && REQ_EXPECT_CONTINUE.test((HttpRequestMetaData) msg);
 
+    private static final Predicate<Object> NEVER_WAIT = msg -> false;
+
     private HeaderUtils() {
         // no instances
+    }
+
+    /**
+     * Predicate that tells when a request payload body waits for a continuation signal.
+     *
+     * @param expectContinueTimeout the client's {@code Expect: 100-continue} timeout
+     * @return a predicate that never matches if the timeout is zero
+     */
+    static Predicate<Object> expectContinueWaitPredicate(final Duration expectContinueTimeout) {
+        return expectContinueTimeout.isZero() ? NEVER_WAIT : OBJ_EXPECT_CONTINUE;
     }
 
     static int indexOf(CharSequence sequence, char c, int fromIndex) {
@@ -284,6 +297,18 @@ final class HeaderUtils {
                 flatMessage.concat(messageBody.ignoreElements().shareContextOnSubscribe());
     }
 
+    /**
+     * Drops the payload and trailers of a HEAD response, which must carry neither (RFC 7231, section 4.3.2).
+     * The empty trailers item that appendTrailersMapper adds on completion becomes END_STREAM on HTTP/2.
+     */
+    static Publisher<Object> dropHeadPayloadAndTrailers(final HttpRequestMethod requestMethod,
+                                                         final Publisher<Object> messageBody) {
+        if (!HEAD.equals(requestMethod)) {
+            return messageBody;
+        }
+        return messageBody.ignoreElements().toPublisher();
+    }
+
     private static final class ContentLengthList<T> extends ArrayList<T> {
         private static final long serialVersionUID = -6593491776432933503L;
         int contentLength;
@@ -458,6 +483,10 @@ final class HeaderUtils {
         CharSequence firstValue = iterator.next();
         if (iterator.hasNext()) {
             throw multipleCL(firstValue, iterator);
+        }
+
+        if (firstValue.length() == 0) {
+            throw malformedCL(firstValue);
         }
 
         char firstChar = firstValue.charAt(0);

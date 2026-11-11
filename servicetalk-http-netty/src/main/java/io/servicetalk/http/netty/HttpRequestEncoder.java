@@ -40,19 +40,31 @@ import io.servicetalk.transport.netty.internal.DefaultNettyConnection.CancelWrit
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ContinueUserEvent;
 import io.servicetalk.utils.internal.IllegalCharacterException;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
+import io.netty.util.concurrent.PromiseNotifier;
+import io.netty.util.concurrent.ScheduledFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.Queue;
+import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpConstants.SP;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.HeaderUtils.REQ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HeaderUtils.shouldAddZeroContentLength;
 import static io.servicetalk.http.netty.HttpResponseDecoder.Signal.REQUEST_SIGNAL;
-import static io.servicetalk.http.netty.HttpResponseDecoder.Signal.REQUEST_WITH_EXPECT_CONTINUE_SIGNAL;
+import static io.servicetalk.utils.internal.DurationUtils.toNanos;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpRequestEncoder.class);
     private static final char SLASH = '/';
     private static final char QUESTION_MARK = '?';
     private static final char DEL = 0x7f;
@@ -61,11 +73,13 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
 
     private final Queue<HttpRequestMethod> methodQueue;
     private final Queue<Signal> signalsQueue;
+    private final Duration expectContinueTimeout;
 
     /**
-     * Used to remember when an outgoing request has "Expect: 100-continue" header.
+     * The outgoing request with "Expect: 100-continue" header whose payload body waits for a response.
      */
-    private boolean expectContinue;
+    @Nullable
+    private ExpectContinueSignal expectContinue;
 
     /**
      * Create a new instance.
@@ -76,13 +90,16 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
      * @param trailersEncodedSizeAccumulator  Used to calculate an exponential moving average of the encoded size of
      * the trailers for a guess for future buffer allocations.
      * @param closeHandler observes protocol state events
+     * @param expectContinueTimeout how long a request with "Expect: 100-continue" header waits for a response before
+     * its payload body is sent
      */
     HttpRequestEncoder(final Queue<HttpRequestMethod> methodQueue, final Queue<Signal> signalsQueue,
                        final int headersEncodedSizeAccumulator, final int trailersEncodedSizeAccumulator,
-                       final CloseHandler closeHandler) {
+                       final CloseHandler closeHandler, final Duration expectContinueTimeout) {
         super(headersEncodedSizeAccumulator, trailersEncodedSizeAccumulator, closeHandler);
         this.methodQueue = requireNonNull(methodQueue);
         this.signalsQueue = requireNonNull(signalsQueue);
+        this.expectContinueTimeout = requireNonNull(expectContinueTimeout);
     }
 
     @Override
@@ -174,20 +191,45 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
 
     @Override
     protected void onMetaData(final ChannelHandlerContext ctx, final HttpRequestMetaData metaData) {
-        expectContinue = REQ_EXPECT_CONTINUE.test(metaData);
+        if (expectContinue != null) {
+            // The write of the previous request ended while its payload body waited for a response.
+            expectContinue.stopExpectContinue();
+        }
+        final Signal signal;
+        if (!expectContinueTimeout.isZero() && REQ_EXPECT_CONTINUE.test(metaData)) {
+            signal = expectContinue = new ExpectContinueSignal(ctx);
+        } else {
+            expectContinue = null;
+            signal = REQUEST_SIGNAL;
+        }
         // Offer signals for all request types. Otherwise, decoder may receive a wrong signal if client sends multiple
         // pipelined requests.
-        if (!signalsQueue.offer(expectContinue ? REQUEST_WITH_EXPECT_CONTINUE_SIGNAL : REQUEST_SIGNAL)) {
+        if (!signalsQueue.offer(signal)) {
             throw new QueueFullException("Can not enqueue a request type for the decoder");
         }
     }
 
     @Override
+    protected void writeMetaData(final ChannelHandlerContext ctx, final ByteBuf encoded,
+                                 final ChannelPromise promise) {
+        final ExpectContinueSignal signal = expectContinue;
+        if (signal == null) {
+            ctx.write(encoded, promise);
+        } else {
+            // The promise is shared by all writes of the request, so it can't tell when the headers were written.
+            final ChannelPromise headersPromise = ctx.newPromise();
+            headersPromise.addListener(signal);
+            PromiseNotifier.cascade(headersPromise, promise);
+            ctx.write(encoded, headersPromise);
+        }
+    }
+
+    @Override
     public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
-        if (expectContinue) {
+        if (expectContinue != null) {
             if (evt == ContinueUserEvent.INSTANCE) {
-                // Reset the flag after receiving 100 (Continue).
-                expectContinue = false;
+                // Reset after receiving 100 (Continue), a 2xx response, or when the wait timed out.
+                expectContinue = null;
             } else if (evt == CancelWriteUserEvent.INSTANCE) {
                 // The server responded before the declared body was sent. HTTP/1.1 can not skip the rest of a message
                 // and a server must read it or close the connection (https://tools.ietf.org/html/rfc9112#section-9.3),
@@ -197,9 +239,73 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
                 }
                 // Mark as content consumed to complete the request from the CloseHandler's point of view.
                 contentLenConsumed(ctx, null);
-                expectContinue = false;
+                expectContinue = null;
             }
         }
         ctx.fireUserEventTriggered(evt);
+    }
+
+    @Override
+    public void handlerRemoved(final ChannelHandlerContext ctx) {
+        if (expectContinue != null) {
+            expectContinue.cancelTimer();
+        }
+    }
+
+    /**
+     * {@link Signal} of a request with "Expect: 100-continue" header. Owns the timer that sends the payload body if no
+     * response arrives within {@code expectContinueTimeout}.
+     */
+    private final class ExpectContinueSignal extends Signal implements ChannelFutureListener, Runnable {
+        private final ChannelHandlerContext ctx;
+        @Nullable
+        private ScheduledFuture<?> timer;
+        private boolean waiting = true;
+
+        ExpectContinueSignal(final ChannelHandlerContext ctx) {
+            this.ctx = ctx;
+        }
+
+        @Override
+        boolean stopExpectContinue() {
+            if (!waiting) {
+                return false;
+            }
+            waiting = false;
+            cancelTimer();
+            return true;
+        }
+
+        void cancelTimer() {
+            final ScheduledFuture<?> future = timer;
+            if (future != null) {
+                timer = null;
+                future.cancel(false);
+            }
+        }
+
+        /**
+         * Starts the timer when the headers are written.
+         */
+        @Override
+        public void operationComplete(final ChannelFuture future) {
+            if (future.isSuccess() && waiting) {
+                timer = ctx.executor().schedule(this, toNanos(expectContinueTimeout), NANOSECONDS);
+            }
+        }
+
+        /**
+         * Sends the payload body when the timer fires.
+         */
+        @Override
+        public void run() {
+            timer = null;
+            if (waiting) {
+                waiting = false;
+                LOGGER.debug("{} No response to Expect: 100-continue within {}ms, sending the payload body",
+                        ctx.channel(), expectContinueTimeout.toMillis());
+                userEventTriggered(ctx, ContinueUserEvent.INSTANCE);
+            }
+        }
     }
 }

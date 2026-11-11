@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.AlpnLBHttpConnectionFactory.unknownAlpnProtocol;
-import static io.servicetalk.http.netty.HeaderUtils.OBJ_EXPECT_CONTINUE;
+import static io.servicetalk.http.netty.HeaderUtils.expectContinueWaitPredicate;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.http.netty.HttpExecutionContextUtils.channelExecutionContext;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
@@ -98,7 +98,8 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
         return new ProxyConnectChannelSingle(channel,
                 new TcpClientChannelInitializer(config.tcpConfig(), observer, executionContext, true)
                         .andThen(new HttpClientChannelInitializer(
-                                getByteBufAllocator(executionContext.bufferAllocator()), h1Config, closeHandler)),
+                                getByteBufAllocator(executionContext.bufferAllocator()), h1Config, closeHandler,
+                                config.expectContinueTimeout())),
                 observer, h1Config.headersFactory(), config.proxyConfig())
                 .flatMap(ProxyConnectLBHttpConnectionFactory::handshake)
                 .flatMap(protocol -> finishConnectionInitialization(protocol, channel, closeHandler, observer))
@@ -142,11 +143,12 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
                 result = showPipeline(DefaultNettyConnection.initChannel(channel,
                             channelExecutionContext(channel, executionContext), closeHandler,
                             tcpConfig.flushStrategy(), tcpConfig.idleTimeoutMs(), tcpConfig.sslConfig(),
-                            NoopChannelInitializer.INSTANCE, HTTP_1_1, connectionObserver, true, OBJ_EXPECT_CONTINUE),
+                            NoopChannelInitializer.INSTANCE, HTTP_1_1, connectionObserver, true,
+                            expectContinueWaitPredicate(config.expectContinueTimeout())),
                         HTTP_1_1, channel)
                         .map(conn -> new PipelinedStreamingHttpConnection(conn, config.h1Config(),
                                 reqRespFactoryFunc.apply(HTTP_1_1), config.allowDropTrailersReadFromTransport(),
-                                config.payloadSizeLimiter()));
+                                config.payloadSizeLimiter(), config.expectContinueTimeout().isZero()));
                 break;
             case AlpnIds.HTTP_2:
                 removeH1Handlers(channel);
@@ -155,7 +157,8 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
                 result = H2ClientParentConnectionContext.initChannel(channel, executionContext, h2Config,
                         reqRespFactoryFunc.apply(HTTP_2_0), tcpConfig.flushStrategy(), tcpConfig.idleTimeoutMs(),
                         tcpConfig.sslConfig(), new H2ClientParentChannelInitializer(h2Config), connectionObserver,
-                        config.allowDropTrailersReadFromTransport(), config.payloadSizeLimiter());
+                        config.allowDropTrailersReadFromTransport(), config.payloadSizeLimiter(),
+                        config.expectContinueTimeout());
                 break;
             default:
                 result = unknownAlpnProtocol(protocol);

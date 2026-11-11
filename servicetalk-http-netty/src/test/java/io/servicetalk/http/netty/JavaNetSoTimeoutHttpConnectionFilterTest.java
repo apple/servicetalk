@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2023-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -151,6 +151,8 @@ class JavaNetSoTimeoutHttpConnectionFilterTest {
             });
         });
         client = newClientBuilder(server, CLIENT_CTX)
+                // Longer than READ_TIMEOUT_VALUE, so continueTimeout() times out while waiting for 100 (Continue).
+                .expectContinueTimeout(READ_TIMEOUT_VALUE.multipliedBy(10))
                 .appendConnectionFilter(new JavaNetSoTimeoutHttpConnectionFilter(
                         (metaData, timeSource) -> metaData.context().get(READ_TIMEOUT_KEY)))
                 .buildBlocking();

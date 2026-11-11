@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ final class H2LBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpCon
                         tcpConfig.flushStrategy(), tcpConfig.idleTimeoutMs(), tcpConfig.sslConfig(),
                         new TcpClientChannelInitializer(tcpConfig, connectionObserver, executionContext, false).andThen(
                                 new H2ClientParentChannelInitializer(config.h2Config())), connectionObserver,
-                        config.allowDropTrailersReadFromTransport(), config.payloadSizeLimiter()), observer);
+                        config.allowDropTrailersReadFromTransport(), config.payloadSizeLimiter(),
+                        config.expectContinueTimeout()), observer);
     }
 }
