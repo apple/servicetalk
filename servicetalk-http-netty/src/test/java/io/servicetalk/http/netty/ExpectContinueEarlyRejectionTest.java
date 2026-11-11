@@ -53,6 +53,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static java.lang.Integer.toHexString;
 import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.time.Duration.ofMinutes;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -113,7 +114,8 @@ class ExpectContinueEarlyRejectionTest {
     void clientClosesConnectionAfterEarlyRejection(boolean chunked) throws Exception {
         try (ServerSocket serverSocket = new ServerSocket(0, 50, getLoopbackAddress());
              StreamingHttpClient client = HttpClients.forSingleAddress(
-                     serverHostAndPort(serverSocket.getLocalSocketAddress())).buildStreaming()) {
+                     serverHostAndPort(serverSocket.getLocalSocketAddress()))
+                     .expectContinueTimeout(ofMinutes(1)).buildStreaming()) {
             TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().singleSubscriber().build();
             Future<StreamingHttpResponse> responseFuture = client.request(client.post("/")
                     .setHeader(EXPECT, CONTINUE)
@@ -144,7 +146,8 @@ class ExpectContinueEarlyRejectionTest {
     void clientKeepsConnectionAfterEarlyRejectionWithoutPayloadBody() throws Exception {
         try (ServerSocket serverSocket = new ServerSocket(0, 50, getLoopbackAddress());
              StreamingHttpClient client = HttpClients.forSingleAddress(
-                     serverHostAndPort(serverSocket.getLocalSocketAddress())).buildStreaming();
+                     serverHostAndPort(serverSocket.getLocalSocketAddress()))
+                     .expectContinueTimeout(ofMinutes(1)).buildStreaming();
              StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
             // No payload body is declared, so nothing is left unsent when the server rejects the expectation.
             Future<StreamingHttpResponse> rejected = connection.request(connection.post("/")
