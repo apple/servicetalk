@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api.test;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.CancelEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.NoSignalForDurationEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnCancellableConsumerEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalCompleteEvent;
@@ -25,7 +25,6 @@ import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalEr
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalErrorEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalErrorNonNullChecker;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalErrorPredicate;
-import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.SubscriptionEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.VerifyThreadAwaitEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.VerifyThreadRunEvent;
 
@@ -108,17 +107,7 @@ final class InlineCompletableFirstStep implements CompletableFirstStep {
 
     @Override
     public StepVerifier thenCancel() {
-        events.add(new SubscriptionEvent() {
-            @Override
-            void subscription(Subscription subscription) {
-                subscription.cancel();
-            }
-
-            @Override
-            String description() {
-                return "thenCancel()";
-            }
-        });
+        events.add(new CancelEvent());
         return new CompletableInlineStepVerifier(source, timeSource, events);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorExtension;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.api.test.InlineStepVerifier.PublisherEvent.StepAssertionError;
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -39,6 +41,7 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
@@ -485,6 +488,56 @@ class PublisherStepVerifierTest {
     }
 
     @Test
+    void thenCancelAfterNoSignalsWaitsForQuietPeriod() {
+        DefaultModifiableTimeSource timeSource = new DefaultModifiableTimeSource();
+        Duration quietPeriod = ofMillis(100);
+        long start = timeSource.currentTime();
+        AtomicReference<Duration> cancelledAt = new AtomicReference<>();
+        Publisher<String> source = Publisher.<String>never().beforeCancel(
+                () -> cancelledAt.set(timeSource.timeElapsed(start)));
+
+        Duration elapsed = new InlinePublisherFirstStep<>(toSource(source), timeSource)
+                .thenRequest(Long.MAX_VALUE)
+                .expectNoSignals(quietPeriod)
+                .thenCancel()
+                .verify();
+
+        assertThat(elapsed, is(quietPeriod));
+        assertThat(cancelledAt.get(), is(quietPeriod));
+    }
+
+    @Test
+    void thenCancelDuringQuietPeriodRejectsTerminalSignal() {
+        verifyException(() -> new InlinePublisherFirstStep<>(toSource(failed(DELIBERATE_EXCEPTION)),
+                new DefaultModifiableTimeSource())
+                .expectNoSignals(ofDays(1))
+                .thenCancel()
+                .verify(), "expectNoSignals");
+    }
+
+    @Test
+    void thenCancelQuietPeriodRespectsVerificationTimeout() {
+        verifyException(() -> StepVerifiers.create(never())
+                .expectNoSignals(ofDays(1))
+                .thenCancel()
+                .verify(ofMillis(100)), "thenCancel");
+    }
+
+    @Test
+    void thenCancelRunsAfterPreviousAction() {
+        TestSubscription subscription = new TestSubscription();
+        TestPublisher<String> publisher = new TestPublisher.Builder<String>()
+                .disableAutoOnSubscribe().build();
+        StepVerifiers.create(publisher)
+                .then(() -> publisher.onSubscribe(subscription))
+                .then(() -> assertThat(subscription.isCancelled(), is(false)))
+                .thenCancel()
+                .verify();
+
+        assertThat(subscription.isCancelled(), is(true));
+    }
+
+    @Test
     void noSignalsAfterNextThenCancelSucceeds() {
         StepVerifiers.create(from("foo").concat(never()))
                 .expectNext("foo")
@@ -503,17 +556,17 @@ class PublisherStepVerifierTest {
 
     @Test
     void noSignalsSubscriptionCancelSucceeds() {
-        // expectNoSignals and subscription event are dequeued/processed sequentially on the Subscriber thread
-        // and the scenario isn't instructed to expect the subscription so we pass the test.
         TestSubscription subscription = new TestSubscription();
         TestPublisher<String> publisher = new TestPublisher.Builder<String>()
                 .disableAutoOnSubscribe().build();
-        StepVerifiers.create(publisher)
+        Duration quietPeriod = ofDays(1);
+        Duration elapsed = new InlinePublisherFirstStep<>(toSource(publisher), new DefaultModifiableTimeSource())
                 .then(() -> publisher.onSubscribe(subscription))
-                .expectNoSignals(ofDays(1))
+                .expectNoSignals(quietPeriod)
                 .thenCancel()
                 .verify();
-        assertTrue(subscription.isCancelled());
+        assertThat(subscription.isCancelled(), is(true));
+        assertThat(elapsed, is(quietPeriod));
     }
 
     @Test
