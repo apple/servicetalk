@@ -32,6 +32,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 
 import io.netty.util.AsciiString;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.function.Predicate;
@@ -75,8 +76,20 @@ final class HeaderUtils {
     static final Predicate<Object> OBJ_EXPECT_CONTINUE = msg ->
             msg instanceof HttpRequestMetaData && REQ_EXPECT_CONTINUE.test((HttpRequestMetaData) msg);
 
+    private static final Predicate<Object> NEVER_WAIT = msg -> false;
+
     private HeaderUtils() {
         // no instances
+    }
+
+    /**
+     * Predicate that tells when a request payload body waits for a continuation signal.
+     *
+     * @param expectContinueTimeout the client's {@code Expect: 100-continue} timeout
+     * @return a predicate that never matches if the timeout is zero
+     */
+    static Predicate<Object> expectContinueWaitPredicate(final Duration expectContinueTimeout) {
+        return expectContinueTimeout.isZero() ? NEVER_WAIT : OBJ_EXPECT_CONTINUE;
     }
 
     static int indexOf(CharSequence sequence, char c, int fromIndex) {

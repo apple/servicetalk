@@ -26,6 +26,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelPipeline;
 
+import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
@@ -46,9 +47,11 @@ final class HttpClientChannelInitializer implements ChannelInitializer {
      * Creates a new instance.
      * @param config {@link H1ProtocolConfig}
      * @param closeHandler observes protocol state events
+     * @param expectContinueTimeout how long a request with {@code Expect: 100-continue} waits for a response before
+     * its payload body is sent
      */
     HttpClientChannelInitializer(final ByteBufAllocator alloc, final H1ProtocolConfig config,
-                                 final CloseHandler closeHandler) {
+                                 final CloseHandler closeHandler, final Duration expectContinueTimeout) {
         // H1 slices passed memory chunks into headers and payload body without copying and will emit them to the
         // user-code. Therefore, ByteBufs must be copied to unpooled memory before HttpObjectDecoder.
         this.delegate = new CopyByteBufHandlerChannelInitializer(alloc).andThen(channel -> {
@@ -62,7 +65,8 @@ final class HttpClientChannelInitializer implements ChannelInitializer {
                     config.specExceptions().allowLFWithoutCR(),
                     config.specExceptions().allowHeaderWithoutColon(), closeHandler));
             pipeline.addLast(new HttpRequestEncoder(methodQueue, signalsQueue,
-                    config.headersEncodedSizeEstimate(), config.trailersEncodedSizeEstimate(), closeHandler));
+                    config.headersEncodedSizeEstimate(), config.trailersEncodedSizeEstimate(), closeHandler,
+                    expectContinueTimeout));
         });
     }
 

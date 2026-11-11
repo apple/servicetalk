@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,10 +32,11 @@ final class PipelinedStreamingHttpConnection
                                      final H1ProtocolConfig config,
                                      final StreamingHttpRequestResponseFactory reqRespFactory,
                                      final boolean allowDropTrailersReadFromTransport,
-                                     final LongConsumer payloadSizeLimiter) {
+                                     final LongConsumer payloadSizeLimiter,
+                                     final boolean expectContinueNoWait) {
         super(new NettyPipelinedConnection<>(connection, config.maxPipelinedRequests()),
                 config.maxPipelinedRequests(), reqRespFactory, config.headersFactory(),
-                allowDropTrailersReadFromTransport, payloadSizeLimiter);
+                allowDropTrailersReadFromTransport, payloadSizeLimiter, expectContinueNoWait);
     }
 
     @Override

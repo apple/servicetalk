@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,7 +86,7 @@ final class AbstractHttpConnectionTest {
         MockStreamingHttpConnection(final NettyConnection<Object, Object> connection,
                                     final int maxPipelinedRequests) {
             super(connection, maxPipelinedRequests, reqRespFactory, DefaultHttpHeadersFactory.INSTANCE, false,
-                    AggregatedPayloadSizeLimiter.NONE);
+                    AggregatedPayloadSizeLimiter.NONE, false);
         }
 
         @Override

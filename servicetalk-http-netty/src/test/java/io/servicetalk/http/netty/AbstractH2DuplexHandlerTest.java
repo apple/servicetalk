@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021, 2026 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,6 +70,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
+import static io.servicetalk.http.netty.HttpClientConfig.DEFAULT_EXPECT_CONTINUE_TIMEOUT;
 import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -110,7 +111,7 @@ class AbstractH2DuplexHandlerTest {
             @Override
             ChannelDuplexHandler handler(CloseHandler closeHandler) {
                 return new H2ToStH1ClientDuplexHandler(false, DEFAULT_ALLOCATOR, HEADERS_FACTORY,
-                        closeHandler, NoopStreamObserver.INSTANCE);
+                        closeHandler, NoopStreamObserver.INSTANCE, DEFAULT_EXPECT_CONTINUE_TIMEOUT);
             }
 
             @Override

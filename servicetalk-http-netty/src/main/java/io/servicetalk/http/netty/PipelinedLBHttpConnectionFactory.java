@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,6 @@ final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLB
         return buildStreaming(executionContext, resolvedAddress, config, observer)
                 .map(conn -> new PipelinedStreamingHttpConnection(conn, config.h1Config(),
                         reqRespFactoryFunc.apply(HTTP_1_1), config.allowDropTrailersReadFromTransport(),
-                        config.payloadSizeLimiter()));
+                        config.payloadSizeLimiter(), config.expectContinueTimeout().isZero()));
     }
 }

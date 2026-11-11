@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021-2024 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,7 @@ import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBac
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffDeltaJitter;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffFullJitter;
 import static io.servicetalk.http.api.HeaderUtils.DEFAULT_HEADER_FILTER;
+import static io.servicetalk.http.api.HttpApiConversions.isSafeToAggregate;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
 import static io.servicetalk.http.api.HttpHeaderValues.CONTINUE;
@@ -177,6 +178,10 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
              * discounts the former so the ladder strategies only count actual request attempts.
              */
             private int lbNotReadyCount;
+            /**
+             * Whether the current attempt of a request with "Expect: 100-continue" subscribed to the payload body.
+             */
+            private volatile boolean payloadBodySubscribed;
 
             private OuterRetryStrategy(final Executor executor,
                                        final HttpRequestMetaData requestMetaData,
@@ -243,6 +248,11 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
                             sdStatus == null ? Completable.never() : sdStatus)), count, t);
                 }
 
+                if (payloadBodySubscribed && t instanceof ExpectationFailedException) {
+                    // The payload body was already sent and may not support another subscribe.
+                    return failed(t);
+                }
+
                 try {
                     BackOffPolicy backOffPolicy = retryFor.apply(requestMetaData, t);
                     if (backOffPolicy != NO_RETRIES) {
@@ -297,6 +307,12 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
         BiIntFunction<Throwable, Completable> retryStrategy(final HttpRequestMetaData requestMetaData,
                                                             final ExecutionContext<HttpExecutionStrategy> context,
                                                             final boolean forRequest) {
+            return newRetryStrategy(requestMetaData, context, forRequest);
+        }
+
+        private OuterRetryStrategy newRetryStrategy(final HttpRequestMetaData requestMetaData,
+                                                    final ExecutionContext<HttpExecutionStrategy> context,
+                                                    final boolean forRequest) {
             final HttpExecutionStrategy strategy = requestMetaData.context()
                     .getOrDefault(HTTP_EXECUTION_STRATEGY_KEY, context.executionStrategy());
             assert strategy != null;
@@ -315,13 +331,22 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
         @Override
         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final StreamingHttpRequest request) {
+            final OuterRetryStrategy retryStrategy = newRetryStrategy(request, executionContext(), true);
             // State intentionally outside the defer because the request state is shared across subscribes. If
             // re-applying operators duplicates logic that isn't desirable and lead to StackOverflowException.
             final Publisher<Object> originalMessageBody = request.messageBody();
             Single<StreamingHttpResponse> single = Single.defer(() -> {
+                UnaryOperator<Publisher<?>> transformer = mayReplayRequestPayload ?
+                        messageBodyDuplicator(originalMessageBody) : p -> originalMessageBody;
+                retryStrategy.payloadBodySubscribed = false;
+                // A safe to aggregate body is in memory, so it can be replayed after it was sent.
+                if (!isSafeToAggregate(request) && request.headers().containsIgnoreCase(EXPECT, CONTINUE)) {
+                    final UnaryOperator<Publisher<?>> bodyTransformer = transformer;
+                    transformer = p -> bodyTransformer.apply(p)
+                            .beforeOnSubscribe(__ -> retryStrategy.payloadBodySubscribed = true);
+                }
                 final Single<StreamingHttpResponse> reqSingle = delegate.request(
-                        request.transformMessageBody(mayReplayRequestPayload ?
-                                messageBodyDuplicator(originalMessageBody) : p -> originalMessageBody));
+                        request.transformMessageBody(transformer));
                 return reqSingle.shareContextOnSubscribe();
             });
 
@@ -351,7 +376,7 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
             // 1. Metadata is shared across retries
             // 2. Publisher state is restored to original state for each retry
             // duplicatedRequest isn't used below because retryWhen must be applied outside the defer operator for (2).
-            single = single.retryWhen(retryStrategy(request, executionContext(), true));
+            single = single.retryWhen(retryStrategy);
             if (returnOriginalResponses) {
                 single = single.onErrorResume(HttpResponseException.class, t -> {
                     HttpResponseMetaData metaData = t.metaData();
@@ -965,6 +990,9 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
 
         /**
          * Retries {@link HttpResponseStatus#EXPECTATION_FAILED} response without {@link HttpHeaderNames#EXPECT} header.
+         * <p>
+         * A {@link HttpResponseStatus#EXPECTATION_FAILED} response received after the request payload body was sent is
+         * not retried.
          *
          * @param retryExpectationFailed if {@code true}, filter will automatically map
          * {@link HttpResponseStatus#EXPECTATION_FAILED} into {@link ExpectationFailedException} and retry a request
@@ -1136,7 +1164,8 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
                     this.retryResponses;
             final BiFunction<HttpRequestMetaData, Throwable, BackOffPolicy> retryOther = this.retryOther;
             // This assumes RetryableExceptions are never written/consumed.
-            final boolean mayReplayRequestPayload = retryIdempotentRequests != null ||
+            final boolean mayReplayRequestPayload = retryExpectationFailed ||
+                    retryIdempotentRequests != null ||
                     retryDelayedRetryExceptions != null ||
                     retryDelayedRetries != null ||
                     retryResponses != null ||
