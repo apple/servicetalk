@@ -926,8 +926,9 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             }
         }
         try {
-            // chunk-size = 1*HEXDIG, but parseUnsignedLong also accepts a leading '+'. Reject it like a signed
-            // content-length: a peer that reads "+0" as 0 disagrees with us on where the message ends.
+            // chunk-size = 1*HEXDIG (RFC 9112, section 7.1), but parseUnsignedLong also accepts a leading '+'.
+            // Reject it, as we do for a signed content-length: if we read "+0" as the last chunk and a proxy in
+            // front of us does not, the two disagree on where the message ends (request smuggling).
             if (!hex.isEmpty() && hex.charAt(0) == '+') {
                 throw new NumberFormatException("Chunk size must not have a sign");
             }
