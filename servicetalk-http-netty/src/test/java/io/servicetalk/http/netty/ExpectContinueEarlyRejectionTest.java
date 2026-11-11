@@ -42,6 +42,8 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
+import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
+import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.CONTINUE;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -106,15 +108,17 @@ class ExpectContinueEarlyRejectionTest {
         }
     }
 
-    @Test
-    void clientClosesConnectionAfterEarlyRejection() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] chunked={0}")
+    @ValueSource(booleans = {false, true})
+    void clientClosesConnectionAfterEarlyRejection(boolean chunked) throws Exception {
         try (ServerSocket serverSocket = new ServerSocket(0, 50, getLoopbackAddress());
              StreamingHttpClient client = HttpClients.forSingleAddress(
                      serverHostAndPort(serverSocket.getLocalSocketAddress())).buildStreaming()) {
             TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().singleSubscriber().build();
             Future<StreamingHttpResponse> responseFuture = client.request(client.post("/")
                     .setHeader(EXPECT, CONTINUE)
-                    .setHeader(CONTENT_LENGTH, String.valueOf(SMUGGLED.length()))
+                    .setHeader(chunked ? TRANSFER_ENCODING : CONTENT_LENGTH,
+                            chunked ? CHUNKED : String.valueOf(SMUGGLED.length()))
                     .payloadBody(payload)).toFuture();
 
             try (Socket socket = serverSocket.accept()) {
