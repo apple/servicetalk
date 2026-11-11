@@ -179,4 +179,11 @@
     <Field name="waiting"/>
     <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
   </Match>
+
+  <!-- The assert catches an out-of-sync queue in tests. The null check keeps production safe. -->
+  <Match>
+    <Class name="io.servicetalk.http.netty.HttpResponseDecoder"/>
+    <Method name="onMetaDataRead"/>
+    <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
+  </Match>
 </FindBugsFilter>
