@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,11 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterator;
+import io.servicetalk.concurrent.api.AsyncContext;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.HttpDataSourceTransformations.HttpBufferFilterIterable;
 
 import org.junit.jupiter.api.Test;
@@ -27,10 +31,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
+import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
+import static io.servicetalk.http.api.HttpDataSourceTransformations.eagerForFirstSubscribe;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -38,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class HttpDataSourceTransformationsTest {
 
     private static final Buffer BUFFER_1 = DEFAULT_RO_ALLOCATOR.fromAscii("1");
+    private static final ContextMap.Key<String> KEY = newKey("eager-for-first-subscribe", String.class);
 
 
 
@@ -87,6 +98,43 @@ class HttpDataSourceTransformationsTest {
             assertThat(future.get(), is(false));
         } finally {
             executor.shutdownNow();
+        }
+    }
+
+    @Test
+    void eagerForFirstSubscribeGivesFirstSubscriberTheEagerChainAndLaterSubscribersNewChains() throws Exception {
+        final AtomicInteger chainsBuilt = new AtomicInteger();
+        final Publisher<Integer> publisher = eagerForFirstSubscribe(() -> from(chainsBuilt.getAndIncrement()));
+        assertThat(chainsBuilt.get(), is(1));
+
+        assertThat(publisher.toFuture().get(), contains(0));
+        assertThat(chainsBuilt.get(), is(1));
+        assertThat(publisher.toFuture().get(), contains(1));
+        assertThat(publisher.toFuture().get(), contains(2));
+        assertThat(chainsBuilt.get(), is(3));
+    }
+
+    @Test
+    void eagerForFirstSubscribeSharesContextWithEagerAndLaterChains() {
+        final Publisher<String> publisher = eagerForFirstSubscribe(() ->
+                from("a").beforeOnNext(__ -> AsyncContext.put(KEY, "chain")));
+
+        assertChainSharesSubscriberContext(publisher);
+        assertChainSharesSubscriberContext(publisher);
+    }
+
+    private static void assertChainSharesSubscriberContext(final Publisher<String> publisher) {
+        AsyncContext.put(KEY, "subscriber");
+        try {
+            final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
+            // toFuture() would subscribe through a conversion that doesn't share the context.
+            toSource(publisher.shareContextOnSubscribe()).subscribe(subscriber);
+            subscriber.awaitSubscription().request(1);
+            assertThat(subscriber.takeOnNext(), is("a"));
+            subscriber.awaitOnComplete();
+            assertThat(AsyncContext.get(KEY), is("chain"));
+        } finally {
+            AsyncContext.remove(KEY);
         }
     }
 }

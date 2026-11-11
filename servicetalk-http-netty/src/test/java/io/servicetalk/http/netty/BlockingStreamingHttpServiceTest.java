@@ -27,6 +27,7 @@ import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpMessageBodyIterable;
 import io.servicetalk.http.api.HttpMessageBodyIterator;
 import io.servicetalk.http.api.HttpOutputStream;
 import io.servicetalk.http.api.HttpPayloadWriter;
@@ -41,6 +42,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -50,6 +52,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.TRAILER;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
@@ -308,11 +311,96 @@ class BlockingStreamingHttpServiceTest {
                 .collect(Collectors.toList()), emptyIterable());
     }
 
+    @Test
+    void setRequestMessageBodyWithSerializer() throws Exception {
+        BlockingStreamingHttpClient client = context((ctx, request, response) -> {
+            response.setHeader(TRAILER, X_TOTAL_LENGTH);
+            HttpMessageBodyIterator<String> reqItr = request.messageBody(appSerializerUtf8FixLen()).iterator();
+            try (HttpPayloadWriter<String> pw = response.sendMetaData(appSerializerUtf8FixLen())) {
+                while (reqItr.hasNext()) {
+                    pw.write(requireNonNull(reqItr.next()));
+                }
+                HttpHeaders trailers = reqItr.trailers();
+                if (trailers != null) {
+                    pw.setTrailers(trailers);
+                }
+            }
+        });
+        BlockingStreamingHttpRequest req = client.post("/");
+        req.setHeader(TRAILER, X_TOTAL_LENGTH);
+        req.messageBody(messageBodyWithTrailers(asList("Hello\n", "World\n")), appSerializerUtf8FixLen());
+
+        assertPayloadBodyAndTrailers(client.request(req), true);
+    }
+
+    @Test
+    void setResponseMessageBodyWithSerializer() throws Exception {
+        serverContext = HttpServers.forAddress(localAddress(0)).listenStreamingAndAwait((ctx, request, factory) ->
+                succeeded(factory.ok().setHeader(TRAILER, X_TOTAL_LENGTH).toBlockingStreamingResponse()
+                        .messageBody(messageBodyWithTrailers(asList("Hello\n", "World\n")),
+                                appSerializerUtf8FixLen())
+                        .toStreamingResponse()));
+        client = HttpClients.forSingleAddress(serverHostAndPort(serverContext)).buildBlockingStreaming();
+
+        assertPayloadBodyAndTrailers(client.request(client.get("/")), true);
+    }
+
+    private static HttpMessageBodyIterable<String> messageBodyWithTrailers(List<String> body) {
+        return () -> new HttpMessageBodyIterator<String>() {
+            private final BlockingIterator<String> iterator = BlockingIterables.from(body).iterator();
+            private int totalLength;
+
+            @Override
+            public HttpHeaders trailers() {
+                return DefaultHttpHeadersFactory.INSTANCE.newTrailers()
+                        .set(X_TOTAL_LENGTH, String.valueOf(totalLength));
+            }
+
+            @Override
+            public boolean hasNext(final long timeout, final TimeUnit unit) throws TimeoutException {
+                return iterator.hasNext(timeout, unit);
+            }
+
+            @Nullable
+            @Override
+            public String next(final long timeout, final TimeUnit unit) throws TimeoutException {
+                return addTotalLength(iterator.next(timeout, unit));
+            }
+
+            @Override
+            public boolean hasNext() {
+                return iterator.hasNext();
+            }
+
+            @Nullable
+            @Override
+            public String next() {
+                return addTotalLength(iterator.next());
+            }
+
+            @Override
+            public void close() throws Exception {
+                iterator.close();
+            }
+
+            @Nullable
+            private String addTotalLength(@Nullable String item) {
+                if (item != null) {
+                    totalLength += item.length();
+                }
+                return item;
+            }
+        };
+    }
+
     private void respondWithPayloadBodyAndTrailers(BlockingStreamingHttpService handler,
                                                    boolean useDeserializer) throws Exception {
         BlockingStreamingHttpClient client = context(handler);
+        assertPayloadBodyAndTrailers(client.request(client.get("/")), useDeserializer);
+    }
 
-        BlockingStreamingHttpResponse response = client.request(client.get("/"));
+    private static void assertPayloadBodyAndTrailers(BlockingStreamingHttpResponse response,
+                                                     boolean useDeserializer) throws Exception {
         assertResponse(response);
         assertThat(response.headers().get(TRAILER).toString(), is(X_TOTAL_LENGTH));
 

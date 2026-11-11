@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,10 +33,13 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongConsumer;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
+import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -355,6 +358,18 @@ final class HttpDataSourceTransformations {
                 payloadInfo.setMayHaveTrailersAndGenericTypeBuffer(false);
             }
             return pair;
+        });
+    }
+
+    /**
+     * Returns a {@link Publisher} that gives its first subscriber a chain built now, and each later subscriber a newly
+     * built chain, so state created by {@code newChain} is never shared between subscribers.
+     */
+    static <T> Publisher<T> eagerForFirstSubscribe(final Supplier<? extends Publisher<? extends T>> newChain) {
+        final AtomicReference<Publisher<? extends T>> eager = new AtomicReference<>(newChain.get());
+        return defer(() -> {
+            final Publisher<? extends T> claimed = eager.getAndSet(null);
+            return (claimed != null ? claimed : newChain.get()).shareContextOnSubscribe();
         });
     }
 

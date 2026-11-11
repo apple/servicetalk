@@ -33,6 +33,7 @@ import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -70,9 +71,11 @@ import static io.servicetalk.traffic.resilience.http.NoOpTrafficResiliencyObserv
 import static io.servicetalk.traffic.resilience.http.TrafficResilienceHttpClientFilterTest.newRequest;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.CONNECT_TIMEOUT;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.SO_BACKLOG;
+import static io.servicetalk.transport.api.ServiceTalkSocketOptions.TCP_FASTOPEN_BACKLOG;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.utils.internal.PlatformDependent.isLinux;
+import static io.servicetalk.utils.internal.PlatformDependent.isOsx;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -91,12 +94,10 @@ import static org.mockito.Mockito.when;
 
 class TrafficResilienceHttpServiceFilterTest {
 
-    private static final boolean IS_LINUX = isLinux();
-
     // There is an off-by-one behavior difference between macOS & Linux.
     // Linux has a greater-than check
     // (see. https://github.com/torvalds/linux/blob/5bfc75d92efd494db37f5c4c173d3639d4772966/include/net/sock.h#L941)
-    private static final int TCP_BACKLOG = IS_LINUX ? 0 : 1;
+    private static final int TCP_BACKLOG = isLinux() ? 0 : 1;
 
     @Test
     void verifyAsyncContext() throws Exception {
@@ -225,7 +226,7 @@ class TrafficResilienceHttpServiceFilterTest {
         assertThat(rejectedCount.get(), equalTo(1));
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] dryRun={0},protocol={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] dryRun={0} protocol={1}")
     @CsvSource({"true, h1", "true, h2", "false, h1", "false, h2"})
     void testStopAcceptingConnections(final boolean dryRun, final String protocol) throws Exception {
         final HttpProtocolConfig protocolConfig;
@@ -248,9 +249,15 @@ class TrafficResilienceHttpServiceFilterTest {
                 .dryRun(dryRun)
                 .build();
 
-        try (HttpServerContext serverContext = HttpServers.forAddress(localAddress(0))
+        final HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0))
                 .protocols(protocolConfig)
-                .listenSocketOption(SO_BACKLOG, TCP_BACKLOG)
+                .listenSocketOption(SO_BACKLOG, TCP_BACKLOG);
+        if (isOsx()) {
+            // With SYN cookies, macOS resets connections when the accept queue is full instead of dropping SYNs.
+            // XNU doesn't use SYN cookies for TFO listeners, so enable TFO to keep connects timing out.
+            serverBuilder.listenSocketOption(TCP_FASTOPEN_BACKLOG, 1);
+        }
+        try (HttpServerContext serverContext = serverBuilder
                 .appendNonOffloadingServiceFilter(filter)
                 .listenStreamingAndAwait((ctx, request, responseFactory) ->
                         succeeded(responseFactory.ok().payloadBody(Publisher.never())))) {

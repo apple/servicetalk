@@ -295,9 +295,11 @@ public final class SslContextFactory {
      * <p>
      * Note that in addition to the application actually enabling and configuring TLS certificate compression on the
      * {@link SslConfig}, it must also be available in the environment. Right now it is only supported through
-     * BoringSSL and as such the code checks if the {@link OpenSslContextOption} is available at runtime. If it is not,
-     * no error is raised but the feature is not enabled. This is by design, since certificate compression is a pure
-     * optimization instead of a security feature.
+     * BoringSSL and AWS-LC and as such the code checks if the {@link OpenSslContextOption} is available at runtime. If
+     * it is not, no error is raised but the feature is not enabled. This is by design, since certificate compression
+     * is a pure optimization instead of a security feature.
+     * <p>
+     * A {@code null} list keeps netty's default behavior, an empty list explicitly disables certificate compression.
      *
      * @param config the ServiceTalk TLS config which enables and configures cert compression.
      * @param builder netty's builder for the SSL context.
@@ -308,7 +310,8 @@ public final class SslContextFactory {
                                                         @Nullable SslProvider nettySslProvider,
                                                         boolean forServer) {
         final List<CertificateCompressionAlgorithm> algorithms = config.certificateCompressionAlgorithms();
-        if (algorithms == null || algorithms.isEmpty()) {
+        if (algorithms == null) {
+            // Use netty's default behavior.
             return;
         }
 

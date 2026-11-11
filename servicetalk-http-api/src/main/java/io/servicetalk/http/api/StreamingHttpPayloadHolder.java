@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpDataSourceTransformations.aggregatePayloadAndTrailers;
+import static io.servicetalk.http.api.HttpDataSourceTransformations.eagerForFirstSubscribe;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -132,12 +133,12 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
             assert messageBody != null;
             payloadInfo.setEmpty(false);    // transformer may add payload content
             final Publisher<?> oldMessageBody = messageBody;
-            messageBody = defer(() -> {
+            // Apply the transformer now rather than on subscribe: it may serialize, which can update headers that
+            // are sent or checked before the body is subscribed.
+            messageBody = eagerForFirstSubscribe(() -> {
                 final Processor<HttpHeaders, HttpHeaders> trailersProcessor = newSingleProcessor();
-                final Publisher<Buffer> transformedPayloadBody = transformer.apply(oldMessageBody.liftSync(
-                        new PreserveTrailersBufferOperator(trailersProcessor)));
-                payloadInfo.setEmpty(transformedPayloadBody == EMPTY);
-                return merge(transformedPayloadBody, fromSource(trailersProcessor)).shareContextOnSubscribe();
+                return merge(transformer.apply(oldMessageBody.liftSync(
+                        new PreserveTrailersBufferOperator(trailersProcessor))), fromSource(trailersProcessor));
             });
         } else {
             final Publisher<Buffer> transformedPayloadBody = transformer.apply(payloadBody());

@@ -297,6 +297,18 @@ final class HeaderUtils {
                 flatMessage.concat(messageBody.ignoreElements().shareContextOnSubscribe());
     }
 
+    /**
+     * Drops the payload and trailers of a HEAD response, which must carry neither (RFC 7231, section 4.3.2).
+     * The empty trailers item that appendTrailersMapper adds on completion becomes END_STREAM on HTTP/2.
+     */
+    static Publisher<Object> dropHeadPayloadAndTrailers(final HttpRequestMethod requestMethod,
+                                                         final Publisher<Object> messageBody) {
+        if (!HEAD.equals(requestMethod)) {
+            return messageBody;
+        }
+        return messageBody.ignoreElements().toPublisher();
+    }
+
     private static final class ContentLengthList<T> extends ArrayList<T> {
         private static final long serialVersionUID = -6593491776432933503L;
         int contentLength;
@@ -471,6 +483,10 @@ final class HeaderUtils {
         CharSequence firstValue = iterator.next();
         if (iterator.hasNext()) {
             throw multipleCL(firstValue, iterator);
+        }
+
+        if (firstValue.length() == 0) {
+            throw malformedCL(firstValue);
         }
 
         char firstChar = firstValue.charAt(0);

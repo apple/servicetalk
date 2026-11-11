@@ -699,7 +699,7 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
         final Deque<Signal> signals = new ArrayDeque<>();
         return new EmbeddedChannel(new HttpResponseDecoder(methods, signals,
                 getByteBufAllocator(DEFAULT_ALLOCATOR), INSTANCE, DEFAULT_MAX_START_LINE_LENGTH,
-                DEFAULT_MAX_HEADER_FIELD_LENGTH, DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH, false, false,
+                DEFAULT_MAX_HEADER_FIELD_LENGTH, DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH, false, false, false,
                 UNSUPPORTED_PROTOCOL_CLOSE_HANDLER),
                 new HttpRequestEncoder(methods, signals, 256, 256, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
                         expectContinueTimeout),

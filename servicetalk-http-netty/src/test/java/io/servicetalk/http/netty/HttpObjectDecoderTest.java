@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,6 +68,7 @@ import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -128,6 +129,15 @@ abstract class HttpObjectDecoderTest {
 
     /** Channel wired with the supplied {@link CloseHandler} for verifying close-pipeline interactions. */
     abstract EmbeddedChannel channelWithCloseHandler(CloseHandler closeHandler);
+
+    /**
+     * Creates a new channel that allows a header field line without a colon.
+     *
+     * @param crlf {@code true} to expect {@code CRLF} line terminators, {@code false} to also allow a bare {@code LF}
+     * @return a new EmbeddedChannel
+     * @see H1SpecExceptions#allowHeaderWithoutColon()
+     */
+    abstract EmbeddedChannel channelAllowHeaderWithoutColon(boolean crlf);
 
     final HttpMetaData assertStartLineForContent() {
         return assertStartLineForContent(channel());
@@ -426,6 +436,121 @@ abstract class HttpObjectDecoderTest {
         String br = br(crlf);
         assertDecoderException(startLine() + br +
                 "Host" + br + br, "Unable to find end of a header name", channel);
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void headerWithoutColonAllowed(boolean crlf) {
+        EmbeddedChannel channel = channelAllowHeaderWithoutColon(crlf);
+        String br = br(crlf);
+        writeMsg(startLine() + br +
+                "Host" + br +
+                "Connection: keep-alive" + br + br, channel);
+        HttpMetaData metaData = assertStartLine(channel);
+        assertSingleHeaderValue(metaData.headers(), HOST, "");
+        assertSingleHeaderValue(metaData.headers(), CONNECTION, KEEP_ALIVE);
+        assertEmptyTrailers(channel);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void headerWithoutColonAllowedAmongValuesOfSameName(boolean crlf) {
+        EmbeddedChannel channel = channelAllowHeaderWithoutColon(crlf);
+        String br = br(crlf);
+        writeMsg(startLine() + br +
+                "Accept-Encoding: gzip" + br +
+                "Accept-Encoding" + br +
+                "Accept-Encoding: deflate" + br + br, channel);
+        HttpMetaData metaData = assertStartLine(channel);
+        List<String> values = new ArrayList<>();
+        metaData.headers().valuesIterator(ACCEPT_ENCODING).forEachRemaining(value -> values.add(value.toString()));
+        assertThat(values, containsInAnyOrder("gzip", "", "deflate"));
+        assertEmptyTrailers(channel);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={1}")
+    @MethodSource("headerWithoutColonInvalidNameArgs")
+    void headerWithoutColonAllowedStillValidatesName(String lines, boolean crlf) throws Exception {
+        EmbeddedChannel channel = channelAllowHeaderWithoutColon(crlf);
+        String br = br(crlf);
+        try {
+            DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLine() + br +
+                    lines.replace("\n", br) + br + br, channel));
+            // The line may contain a value, so neither the message nor a cause may include it.
+            assertThat(e.getMessage(), matchesPattern("Invalid header line without a colon in line \\d+"));
+            assertThat(e.getCause(), is(nullValue()));
+        } finally {
+            channel.close().get();
+            channel.releaseInbound();
+            channel.releaseOutbound();
+        }
+    }
+
+    private static Collection<Arguments> headerWithoutColonInvalidNameArgs() {
+        final List<Arguments> arguments = new ArrayList<>();
+        for (boolean crlf : new boolean[] {true, false}) {
+            arguments.add(Arguments.of("content length", crlf)); // embedded whitespace
+            arguments.add(Arguments.of("Transfer-Encoding chunked", crlf)); // embedded whitespace
+            arguments.add(Arguments.of("Host ", crlf)); // trailing whitespace
+            arguments.add(Arguments.of("Foo\0Bar", crlf)); // control character
+            arguments.add(Arguments.of(" Host\nHost: servicetalk.io", crlf)); // whitespace after the start-line
+            arguments.add(Arguments.of("Host: servicetalk.io\n folded", crlf)); // obs-fold
+            arguments.add(Arguments.of("Host: servicetalk.io\n\tfolded", crlf)); // obs-fold
+        }
+        return arguments;
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void headerWithoutColonAllowedRejectsBareTransferEncoding(boolean crlf) throws Exception {
+        EmbeddedChannel channel = channelAllowHeaderWithoutColon(crlf);
+        String br = br(crlf);
+        try {
+            assertDecoderException(startLineForContent() + br +
+                    "Host: servicetalk.io" + br +
+                    "Content-Length: 3" + br +
+                    "Transfer-Encoding" + br + br + "abc", "chunked must be the final", channel);
+        } finally {
+            channel.close().get();
+            channel.releaseInbound();
+            channel.releaseOutbound();
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void headerWithoutColonAllowedRejectsBareContentLength(boolean crlf) throws Exception {
+        EmbeddedChannel channel = channelAllowHeaderWithoutColon(crlf);
+        String br = br(crlf);
+        try {
+            DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + br +
+                    "Host: servicetalk.io" + br +
+                    "Content-Length" + br + br, channel));
+            assertThat(e.getMessage(), not(startsWith("Unable to find end of a header name")));
+        } finally {
+            channel.close().get();
+            channel.releaseInbound();
+            channel.releaseOutbound();
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void trailerWithoutColonAllowed(boolean crlf) {
+        EmbeddedChannel channel = channelAllowHeaderWithoutColon(crlf);
+        String br = br(crlf);
+        writeMsg(startLineForContent() + br +
+                "Host: servicetalk.io" + br +
+                "Transfer-Encoding: chunked" + br + br +
+                "0\r\n" +
+                "TrailerStatus" + br + br, channel);
+        HttpMetaData metaData = assertStartLineForContent(channel);
+        assertSingleHeaderValue(metaData.headers(), TRANSFER_ENCODING, CHUNKED);
+        HttpHeaders trailers = channel.readInbound();
+        assertSingleHeaderValue(trailers, "TrailerStatus", "");
+        assertFalse(channel.finishAndReleaseAll());
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
@@ -1188,6 +1313,7 @@ abstract class HttpObjectDecoderTest {
             arguments.add(Arguments.of("1 2", crlf)); // malformed content length with SP
             arguments.add(Arguments.of("1a2", crlf)); // malformed content length with letter
             arguments.add(Arguments.of("1-2", crlf)); // malformed content length with symbol
+            arguments.add(Arguments.of("", crlf)); // malformed content length with empty value
         }
         return arguments;
     }

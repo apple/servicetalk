@@ -112,6 +112,10 @@ final class ZlibOpenSslCertificateCompressionAlgorithm implements OpenSslCertifi
                 throw new CertificateCompressionException("Decompressed certificate length (" + bytesWritten +
                         ") does not match declared uncompressed length (" + uncompressedLen + ")");
             }
+            if (inflater.getRemaining() != 0) {
+                throw new CertificateCompressionException("Compressed certificate has " + inflater.getRemaining() +
+                        " trailing bytes after the end of the ZLIB stream");
+            }
             return output;
         } catch (Exception cause) {
             throw new CertificateCompressionException("Failed to decompress certificate with ZLIB", cause);
