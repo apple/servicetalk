@@ -196,7 +196,7 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
             expectContinue.stopExpectContinue();
         }
         final Signal signal;
-        if (REQ_EXPECT_CONTINUE.test(metaData)) {
+        if (!expectContinueTimeout.isZero() && REQ_EXPECT_CONTINUE.test(metaData)) {
             signal = expectContinue = new ExpectContinueSignal(ctx);
         } else {
             expectContinue = null;
@@ -296,8 +296,8 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
             timer = null;
             if (waiting) {
                 waiting = false;
-                LOGGER.debug("{} No response to Expect: 100-continue from {} within {}, sending the payload body",
-                        ctx.channel(), ctx.channel().remoteAddress(), expectContinueTimeout);
+                LOGGER.debug("{} No response to Expect: 100-continue within {}ms, sending the payload body",
+                        ctx.channel(), expectContinueTimeout.toMillis());
                 userEventTriggered(ctx, ContinueUserEvent.INSTANCE);
             }
         }

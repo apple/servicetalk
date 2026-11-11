@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http2.Http2CodecUtil.SETTINGS_ENABLE_PUSH;
 import static io.servicetalk.http.netty.HttpServerConfig.httpAlpnProtocols;
+import static io.servicetalk.utils.internal.DurationUtils.ensureNonNegative;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV4Address;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
 import static java.time.Duration.ofSeconds;
@@ -139,7 +140,7 @@ final class HttpClientConfig {
     }
 
     void expectContinueTimeout(final Duration expectContinueTimeout) {
-        this.expectContinueTimeout = expectContinueTimeout;
+        this.expectContinueTimeout = ensureNonNegative(expectContinueTimeout, "expectContinueTimeout");
     }
 
     ReadOnlyHttpClientConfig asReadOnly(@Nullable final Object owner) {

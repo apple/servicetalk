@@ -38,7 +38,7 @@ import javax.net.ssl.SNIHostName;
 
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static io.servicetalk.http.netty.HeaderUtils.OBJ_EXPECT_CONTINUE;
+import static io.servicetalk.http.netty.HeaderUtils.expectContinueWaitPredicate;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.http.netty.HttpExecutionContextUtils.channelExecutionContext;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
@@ -78,7 +78,7 @@ final class StreamingConnectionFactory {
                 initializer.andThen(new HttpClientChannelInitializer(
                         getByteBufAllocator(builderExecutionContext.bufferAllocator()), h1Config, closeHandler,
                         expectContinueTimeout)),
-                HTTP_1_1, connectionObserver, true, OBJ_EXPECT_CONTINUE),
+                HTTP_1_1, connectionObserver, true, expectContinueWaitPredicate(expectContinueTimeout)),
                 HTTP_1_1, channel);
     }
 

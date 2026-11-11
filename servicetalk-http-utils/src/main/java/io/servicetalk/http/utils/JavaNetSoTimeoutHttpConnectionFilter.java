@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2023-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,6 +74,10 @@ import static java.util.Objects.requireNonNull;
  * connection level. This restriction ensures that the timeout is applied only for the response read operations
  * (similar to {@link SocketOptions#SO_TIMEOUT} used by Java blocking API), without waiting for selecting or
  * establishing a connection.
+ * <p>
+ * For a request with {@code Expect: 100-continue}, the timeout fails the wait for 100 (Continue) only if it is shorter
+ * than {@link io.servicetalk.http.api.SingleAddressHttpClientBuilder#expectContinueTimeout(Duration)}. Otherwise, the
+ * client sends the payload body first and the timeout applies to the response.
  * <p>
  * {@link SocketTimeoutException} (or its subtype) will be propagated when the timeout is reached.
  *

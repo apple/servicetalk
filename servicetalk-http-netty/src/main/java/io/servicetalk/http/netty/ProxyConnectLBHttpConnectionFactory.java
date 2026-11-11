@@ -49,7 +49,7 @@ import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.AlpnLBHttpConnectionFactory.unknownAlpnProtocol;
-import static io.servicetalk.http.netty.HeaderUtils.OBJ_EXPECT_CONTINUE;
+import static io.servicetalk.http.netty.HeaderUtils.expectContinueWaitPredicate;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.http.netty.HttpExecutionContextUtils.channelExecutionContext;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
@@ -143,11 +143,12 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
                 result = showPipeline(DefaultNettyConnection.initChannel(channel,
                             channelExecutionContext(channel, executionContext), closeHandler,
                             tcpConfig.flushStrategy(), tcpConfig.idleTimeoutMs(), tcpConfig.sslConfig(),
-                            NoopChannelInitializer.INSTANCE, HTTP_1_1, connectionObserver, true, OBJ_EXPECT_CONTINUE),
+                            NoopChannelInitializer.INSTANCE, HTTP_1_1, connectionObserver, true,
+                            expectContinueWaitPredicate(config.expectContinueTimeout())),
                         HTTP_1_1, channel)
                         .map(conn -> new PipelinedStreamingHttpConnection(conn, config.h1Config(),
                                 reqRespFactoryFunc.apply(HTTP_1_1), config.allowDropTrailersReadFromTransport(),
-                                config.payloadSizeLimiter()));
+                                config.payloadSizeLimiter(), config.expectContinueTimeout().isZero()));
                 break;
             case AlpnIds.HTTP_2:
                 removeH1Handlers(channel);

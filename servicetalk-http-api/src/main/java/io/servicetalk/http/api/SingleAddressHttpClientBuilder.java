@@ -196,9 +196,10 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * request payload body anyway, see
      * <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-10.1.1">RFC 9110, section 10.1.1</a>.
      * <p>
-     * The default is 1 second. {@link Duration#ZERO} sends the payload body immediately, without waiting. The payload
-     * body may be sent before the server's response arrives, which matters when retrying a request whose payload body
-     * cannot be replayed.
+     * The default is 1 second. {@link Duration#ZERO} sends the payload body without waiting, as if the request had no
+     * {@code Expect: 100-continue} header. A duration longer than any other timeout applied to the request, for
+     * example {@code Duration.ofDays(1)}, waits for the server's response. The payload body may be sent before the
+     * server's response arrives, which matters when retrying a request whose payload body cannot be replayed.
      *
      * @param expectContinueTimeout the {@link Duration} to wait, must be non-negative
      * @return {@code this}

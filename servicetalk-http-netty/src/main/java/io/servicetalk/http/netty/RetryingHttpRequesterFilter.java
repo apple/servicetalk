@@ -63,6 +63,7 @@ import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBac
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffDeltaJitter;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffFullJitter;
 import static io.servicetalk.http.api.HeaderUtils.DEFAULT_HEADER_FILTER;
+import static io.servicetalk.http.api.HttpApiConversions.isSafeToAggregate;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
 import static io.servicetalk.http.api.HttpHeaderValues.CONTINUE;
@@ -338,7 +339,8 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
                 UnaryOperator<Publisher<?>> transformer = mayReplayRequestPayload ?
                         messageBodyDuplicator(originalMessageBody) : p -> originalMessageBody;
                 retryStrategy.payloadBodySubscribed = false;
-                if (request.headers().containsIgnoreCase(EXPECT, CONTINUE)) {
+                // A safe to aggregate body is in memory, so it can be replayed after it was sent.
+                if (!isSafeToAggregate(request) && request.headers().containsIgnoreCase(EXPECT, CONTINUE)) {
                     final UnaryOperator<Publisher<?>> bodyTransformer = transformer;
                     transformer = p -> bodyTransformer.apply(p)
                             .beforeOnSubscribe(__ -> retryStrategy.payloadBodySubscribed = true);

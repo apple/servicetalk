@@ -80,7 +80,7 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
                             .map(conn -> new PipelinedStreamingHttpConnection(conn, h1Config,
                                     reqRespFactoryFunc.apply(HttpProtocolVersion.HTTP_1_1),
                                     config.allowDropTrailersReadFromTransport(),
-                                    config.payloadSizeLimiter()));
+                                    config.payloadSizeLimiter(), config.expectContinueTimeout().isZero()));
                 case HTTP_2:
                     final H2ProtocolConfig h2Config = config.h2Config();
                     assert h2Config != null;

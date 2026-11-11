@@ -19,9 +19,11 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 
+import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class HttpClientConfigTest {
 
@@ -35,6 +37,17 @@ class HttpClientConfigTest {
         final HttpClientConfig config = new HttpClientConfig();
         config.expectContinueTimeout(Duration.ZERO);
         assertThat(config.asReadOnly(null).expectContinueTimeout(), is(Duration.ZERO));
+    }
+
+    @Test
+    void expectContinueTimeoutRejectsNegative() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new HttpClientConfig().expectContinueTimeout(ofMillis(-1)));
+    }
+
+    @Test
+    void expectContinueTimeoutRejectsNull() {
+        assertThrows(NullPointerException.class, () -> new HttpClientConfig().expectContinueTimeout(null));
     }
 
     @Test

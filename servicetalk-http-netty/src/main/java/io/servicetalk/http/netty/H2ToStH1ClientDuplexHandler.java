@@ -88,7 +88,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
             closeHandler.protocolPayloadBeginOutbound(ctx);
             HttpRequestMetaData metaData = (HttpRequestMetaData) msg;
             HttpHeaders h1Headers = metaData.headers();
-            waitForContinuation = REQ_EXPECT_CONTINUE.test(metaData);
+            waitForContinuation = !expectContinueTimeout.isZero() && REQ_EXPECT_CONTINUE.test(metaData);
             Http2Headers h2Headers = h1HeadersToH2Headers(h1Headers);
             if (!h1Headers.contains(HOST)) {
                 CharSequence host = metaData.host();
@@ -160,8 +160,8 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
         expectContinueTimer = null;
         if (waitForContinuation) {
             waitForContinuation = false;
-            LOGGER.debug("{} No response to Expect: 100-continue from {} within {}, sending the payload body",
-                    ctx.channel(), ctx.channel().remoteAddress(), expectContinueTimeout);
+            LOGGER.debug("{} No response to Expect: 100-continue within {}ms, sending the payload body",
+                    ctx.channel(), expectContinueTimeout.toMillis());
             ctx.fireUserEventTriggered(ContinueUserEvent.INSTANCE);
         }
     }

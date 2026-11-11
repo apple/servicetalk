@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,9 +32,10 @@ final class NonPipelinedStreamingHttpConnection
                                         final StreamingHttpRequestResponseFactory reqRespFactory,
                                         final HttpHeadersFactory headersFactory,
                                         final boolean allowDropTrailersReadFromTransport,
-                                        final LongConsumer payloadSizeLimiter) {
+                                        final LongConsumer payloadSizeLimiter,
+                                        final boolean expectContinueNoWait) {
         super(connection, 1, reqRespFactory, headersFactory, allowDropTrailersReadFromTransport,
-                payloadSizeLimiter);
+                payloadSizeLimiter, expectContinueNoWait);
     }
 
     @Override

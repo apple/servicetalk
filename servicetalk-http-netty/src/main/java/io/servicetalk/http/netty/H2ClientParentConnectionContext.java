@@ -87,7 +87,7 @@ import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.MAX_CONCURRENCY_NO_OFFLOADING;
 import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.ZERO_MAX_CONCURRENCY_EVENT;
-import static io.servicetalk.http.netty.HeaderUtils.OBJ_EXPECT_CONTINUE;
+import static io.servicetalk.http.netty.HeaderUtils.expectContinueWaitPredicate;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forNonPipelined;
@@ -392,7 +392,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                     HTTP_2_0,
                                     parentContext.nettyChannel().config(),
                                     streamObserver,
-                                    true, OBJ_EXPECT_CONTINUE,
+                                    true, expectContinueWaitPredicate(expectContinueTimeout),
                                     NettyHttp2ExceptionUtils::wrapIfNecessary);
 
                     // In h2 a stream is 1 to 1 with a request/response life cycle. This means there is no concept of
@@ -400,7 +400,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     // https://tools.ietf.org/html/rfc7540#section-8.1
                     responseSingle = toSource(new NonPipelinedStreamingHttpConnection(nettyConnection,
                             reqRespFactory, headersFactory, allowDropTrailersReadFromTransport,
-                            payloadSizeLimiter).request(request));
+                            payloadSizeLimiter, expectContinueTimeout.isZero()).request(request));
                 } catch (Throwable cause) {
                     if (streamChannel != null) {
                         try {

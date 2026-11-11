@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021-2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,12 +81,14 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     private final HttpHeadersFactory headersFactory;
     private final boolean allowDropTrailersReadFromTransport;
     private final LongConsumer payloadSizeLimiter;
+    private final boolean expectContinueNoWait;
 
     AbstractStreamingHttpConnection(final CC conn, final int maxPipelinedRequests,
                                     final StreamingHttpRequestResponseFactory reqRespFactory,
                                     final HttpHeadersFactory headersFactory,
                                     final boolean allowDropTrailersReadFromTransport,
-                                    final LongConsumer payloadSizeLimiter) {
+                                    final LongConsumer payloadSizeLimiter,
+                                    final boolean expectContinueNoWait) {
         this.connection = requireNonNull(conn);
         this.connectionContext = new DefaultNettyHttpConnectionContext(conn);
         this.reqRespFactory = requireNonNull(reqRespFactory);
@@ -99,6 +101,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
         this.headersFactory = headersFactory;
         this.allowDropTrailersReadFromTransport = allowDropTrailersReadFromTransport;
         this.payloadSizeLimiter = payloadSizeLimiter;
+        this.expectContinueNoWait = expectContinueNoWait;
     }
 
     @Override
@@ -233,10 +236,11 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     }
 
     @Nullable
-    private static FlushStrategy determineFlushStrategyForApi(final HttpRequestMetaData request) {
-        // For non-aggregated requests or when "Expect: 100-continue" is detected, don't change the flush strategy,
-        // keep the default.
-        return isSafeToAggregateOrEmpty(request) && !REQ_EXPECT_CONTINUE.test(request) ? flushOnEnd() : null;
+    private FlushStrategy determineFlushStrategyForApi(final HttpRequestMetaData request) {
+        // For non-aggregated requests or when the payload body waits for "Expect: 100-continue", don't change the
+        // flush strategy, keep the default.
+        return isSafeToAggregateOrEmpty(request) && (expectContinueNoWait || !REQ_EXPECT_CONTINUE.test(request)) ?
+                flushOnEnd() : null;
     }
 
     static boolean isSafeToAggregateOrEmpty(final HttpMetaData request) {

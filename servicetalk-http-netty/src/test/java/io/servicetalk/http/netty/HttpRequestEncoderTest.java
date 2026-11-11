@@ -673,13 +673,25 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
     }
 
     @Test
-    void zeroExpectContinueTimeoutReleasesBodyWithoutWaiting() {
+    void zeroExpectContinueTimeoutDoesNotStartTimer() {
         EmbeddedChannel channel = newClientChannel(Duration.ZERO);
         channel.freezeTime();
         writeExpectContinueRequest(channel);
-        channel.runScheduledPendingTasks();
-        assertEquals(singletonList(ContinueUserEvent.INSTANCE), userEvents);
+        assertEquals(-1, channel.runScheduledPendingTasks());
+        assertTrue(userEvents.isEmpty());
         assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
+    void zeroExpectContinueTimeoutIgnoresContinueAndDeliversRejection() {
+        EmbeddedChannel channel = newClientChannel(Duration.ZERO);
+        writeExpectContinueRequest(channel);
+        channel.writeInbound(wrappedBuffer(("HTTP/1.1 100 Continue\r\n\r\n" +
+                "HTTP/1.1 417 Expectation Failed\r\ncontent-length: 0\r\n\r\n").getBytes(US_ASCII)));
+        assertTrue(userEvents.isEmpty());
+        HttpResponseMetaData response = channel.readInbound();
+        assertEquals(EXPECTATION_FAILED, response.status());
+        channel.finishAndReleaseAll();
     }
 
     private EmbeddedChannel newClientChannel(Duration expectContinueTimeout) {

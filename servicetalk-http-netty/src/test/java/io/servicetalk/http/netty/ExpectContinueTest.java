@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnection;
@@ -43,6 +44,7 @@ import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.Test;
@@ -75,6 +77,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
@@ -91,11 +94,13 @@ import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.PERMANENT_REDIRECT;
 import static io.servicetalk.http.api.HttpResponseStatus.UNPROCESSABLE_ENTITY;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.BuilderUtils.newClientBuilderWithConfigs;
 import static io.servicetalk.http.netty.BuilderUtils.newServerBuilderWithConfigs;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.valueOf;
@@ -654,7 +659,7 @@ class ExpectContinueTest {
             connection.request(newRequest(connection, withCL, false, payload)).subscribe(responses::add);
             requestReceived.await();
 
-            // The server withholds 100 (Continue) until sendContinue is counted down.
+            // The server withholds 100 (Continue) until sendContinue is counted down. It is ignored when it arrives.
             sendRequestPayload(payload, allocator);
 
             sendContinue.countDown();
@@ -662,6 +667,68 @@ class ExpectContinueTest {
             assertResponse(OK, PAYLOAD + PAYLOAD);
 
             sendFollowUpRequest(connection, withCL, allocator, OK);
+        }
+    }
+
+    @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
+    @MethodSource("arguments")
+    void zeroContinueTimeoutEarlyRejectionReachesCaller(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                                        boolean withCL) throws Exception {
+        try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory);
+             StreamingHttpClient client = createClientWithTimeout(serverContext, protocol, useOtherHeadersFactory,
+                     Duration.ZERO);
+             StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
+            BufferAllocator allocator = connection.executionContext().bufferAllocator();
+
+            TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().singleSubscriber().build();
+            connection.request(newRequest(connection, withCL, true, payload)).subscribe(responses::add);
+            requestReceived.await();
+
+            sendRequestPayload(payload, allocator);
+            returnResponse.countDown();
+            assertResponse(EXPECTATION_FAILED, "");
+            // The server resets its request decoder when it rejects, so the connection can't be reused after the
+            // payload body was sent.
+        }
+    }
+
+    @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
+    @MethodSource("arguments")
+    void zeroContinueTimeoutAggregatedSendsPayloadWithoutWaiting(HttpProtocol protocol,
+                                                                 boolean useOtherHeadersFactory,
+                                                                 boolean withCL) throws Exception {
+        try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory);
+             StreamingHttpClient client = createClientWithTimeout(serverContext, protocol, useOtherHeadersFactory,
+                     Duration.ZERO);
+             HttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get().asConnection()) {
+            BufferAllocator allocator = connection.executionContext().bufferAllocator();
+
+            Future<HttpResponse> responseFuture = connection.request(
+                    newRequest(connection, withCL, false, PAYLOAD + PAYLOAD, allocator)).toFuture();
+            requestReceived.await();
+            // The server withholds 100 (Continue) until sendContinue is counted down.
+            sendContinue.countDown();
+            returnResponse.countDown();
+            HttpResponse response = responseFuture.get();
+            assertThat(response.status(), is(OK));
+            assertThat(response.payloadBody().toString(US_ASCII), equalTo(PAYLOAD + PAYLOAD));
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void zeroContinueTimeoutAggregatedEarlyRejectionReachesCaller(HttpProtocol protocol) throws Exception {
+        try (HttpServerContext serverContext = startServer(protocol, false);
+             StreamingHttpClient client = createClientWithTimeout(serverContext, protocol, false, Duration.ZERO);
+             HttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get().asConnection()) {
+            BufferAllocator allocator = connection.executionContext().bufferAllocator();
+
+            Future<HttpResponse> responseFuture = connection.request(
+                    newRequest(connection, true, true, PAYLOAD + PAYLOAD, allocator)).toFuture();
+            requestReceived.await();
+            returnResponse.countDown();
+            HttpResponse response = responseFuture.get();
+            assertThat(response.status(), is(EXPECTATION_FAILED));
         }
     }
 
@@ -885,6 +952,23 @@ class ExpectContinueTest {
 
             ExecutionException e = assertThrows(ExecutionException.class, response::get);
             assertThat(e.getCause(), is(instanceOf(ExpectationFailedException.class)));
+        }
+    }
+
+    @Test
+    void retryExpectationFailedRetriesEarlyRejectionOfAggregatedRequest() throws Exception {
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .listenStreamingAndAwait((ctx, request, factory) -> succeeded(request.headers().contains(EXPECT) ?
+                        factory.newResponse(EXPECTATION_FAILED) :
+                        factory.ok().payloadBody(request.payloadBody())));
+             BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                     .expectContinueTimeout(ofMinutes(1))
+                     .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
+                             .retryExpectationFailed(true).build())
+                     .buildBlocking()) {
+            HttpResponse response = client.request(client.post("/upload").setHeader(EXPECT, CONTINUE)
+                    .payloadBody("body", textSerializerUtf8()));
+            assertThat(response.status(), is(OK));
         }
     }
 
