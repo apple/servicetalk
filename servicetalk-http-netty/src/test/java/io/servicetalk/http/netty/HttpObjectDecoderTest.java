@@ -139,6 +139,15 @@ abstract class HttpObjectDecoderTest {
      */
     abstract EmbeddedChannel channelAllowHeaderWithoutColon(boolean crlf);
 
+    /**
+     * Prepares the {@code channel} to decode one more message, e.g. a response decoder needs another request.
+     *
+     * @param channel the channel that will decode one more message
+     */
+    void beforeNextMessage(EmbeddedChannel channel) {
+        // noop
+    }
+
     final HttpMetaData assertStartLineForContent() {
         return assertStartLineForContent(channel());
     }
@@ -1479,6 +1488,7 @@ abstract class HttpObjectDecoderTest {
                 "Host: bar\r\n" + // 11 bytes
                 "\r\n";
 
+        beforeNextMessage(testChannel);
         writeMsg(msg2, testChannel);
         HttpMetaData meta2 = assertStartLine(testChannel);
         assertSingleHeaderValue(meta2.headers(), "Host", "bar");

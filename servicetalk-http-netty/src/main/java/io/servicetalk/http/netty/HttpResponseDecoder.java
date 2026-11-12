@@ -118,6 +118,12 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
             throw new StacklessDecoderException("Invalid start-line: HTTP reason-phrase contains an illegal character",
                     cause);
         }
+        if (methodQueue.isEmpty()) {
+            // A response without an outstanding request (e.g. more responses than requests) is not valid and message
+            // delimitation is ambiguous (https://tools.ietf.org/html/rfc9112#section-9.2). Fail before notifying the
+            // CloseHandler to close the connection instead of handing it to the next request.
+            throw new StacklessDecoderException("Received a response without an outstanding request: " + status);
+        }
         return newResponseMetaData(version, status, headersFactory().newHeaders());
     }
 
