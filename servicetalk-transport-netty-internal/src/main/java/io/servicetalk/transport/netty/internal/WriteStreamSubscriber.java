@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -114,6 +114,10 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     private final boolean isClient;
     private final Predicate<Object> shouldWait;
     private boolean shouldWaitFlag;
+    /**
+     * Client requested the meta-data. Accessed only from the event loop.
+     */
+    private boolean metaDataRequested;
 
     WriteStreamSubscriber(Channel channel, WriteDemandEstimator demandEstimator, Subscriber subscriber,
                           CloseHandler closeHandler, WriteObserver observer,
@@ -318,8 +322,11 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
     private void initialRequestN(Subscription subscription) {
         if (isClient) {
-            if (promise.isWritable()) {
-                subscription.request(1L);   // Request meta-data only
+            // Request meta-data only, once. Both onSubscribe and channelWritable may get here before the first write,
+            // and more demand would let the payload body out before the meta-data is written.
+            if (!metaDataRequested && promise.isWritable()) {
+                metaDataRequested = true;
+                subscription.request(1L);
             }
         } else {
             requestMoreIfRequired(subscription, -1L);
