@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
@@ -31,12 +32,15 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.TestStreamingHttpConnection;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
+import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+
+import java.util.function.Supplier;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -104,6 +108,7 @@ class PipelinedHttpConnectionTest {
         });
         when(connection.write(any(), any(), any())).then(inv -> {
             Publisher<Object> publisher = inv.getArgument(0);
+            inv.<Supplier<FlushStrategy>>getArgument(1).get(); // the strategy is resolved when the write starts
             return publisher.ignoreElements(); // simulate write consuming all
         });
         when(connection.read()).thenReturn(readPublisher1, readPublisher2);
@@ -133,6 +138,22 @@ class PipelinedHttpConnectionTest {
         toSource(pipe.request(request)).subscribe(dataSubscriber1);
 
         verify(connection, times(flushOnEnd ? 1 : 0)).updateFlushStrategy(any());
+    }
+
+    @Test
+    void aggregatedRequestOverridesFlushStrategyOnlyWhileItsWriteIsActive() {
+        fullSetup(connection);
+        Cancellable resetFlushStrategy = mock(Cancellable.class);
+        when(connection.updateFlushStrategy(any())).thenReturn(resetFlushStrategy);
+
+        // The first request keeps writing, so the aggregated request is queued.
+        toSource(pipe.request(reqRespFactory.post("/foo").payloadBody(writePublisher1))).subscribe(dataSubscriber1);
+        toSource(pipe.request(reqRespFactory.post("/bar"))).subscribe(dataSubscriber2);
+        verify(connection, times(0)).updateFlushStrategy(any());
+
+        writePublisher1.onComplete();
+        verify(connection).updateFlushStrategy(any());
+        verify(resetFlushStrategy).cancel();
     }
 
     @Test
