@@ -97,7 +97,6 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     protected HttpResponseMetaData createMessage(final ByteBuf buffer, final int firstStart, final int firstLength,
                                                  final int secondStart, final int secondLength,
                                                  final int thirdStart, final int thirdLength) {
-        // Preserve the original left-to-right validation order of the start-line: version, then status-code.
         final HttpProtocolVersion version = nettyBufferToHttpVersion(buffer, firstStart, firstLength);
         final HttpResponseStatus status;
         try {

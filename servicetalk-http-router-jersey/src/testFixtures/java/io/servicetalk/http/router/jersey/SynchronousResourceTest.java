@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,13 @@ class SynchronousResourceTest extends AbstractResourceTest {
     void customResponseStatus(final boolean serverNoOffloads, final RouterApi api) {
         setUp(serverNoOffloads, api);
         sendAndAssertNoResponse(get("/statuses/444"), HttpResponseStatus.of(444, "Three fours!"));
+    }
+
+    @ParameterizedTest(name = "{1} server-no-offloads = {0}")
+    @MethodSource("io.servicetalk.http.router.jersey.AbstractResourceTest#data")
+    void illegalReasonPhraseFallsBackToStatusCode(final boolean serverNoOffloads, final RouterApi api) {
+        setUp(serverNoOffloads, api);
+        sendAndAssertNoResponse(get("/statuses/444-illegal-reason-phrase"), HttpResponseStatus.of(444, ""));
     }
 
     @ParameterizedTest(name = "{1} server-no-offloads = {0}")

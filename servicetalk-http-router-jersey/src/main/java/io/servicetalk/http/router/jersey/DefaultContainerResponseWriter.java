@@ -284,7 +284,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
             // A JAX-RS resource supplied a reason-phrase with an illegal character (e.g. CR/LF). We are already
             // writing the response, so exception mappers can no longer run; fall back to the status code without the
             // custom phrase rather than failing the connection.
-            LOGGER.warn("Ignoring illegal reason-phrase for status code {}", statusCode, e);
+            LOGGER.warn("Ignoring illegal reason-phrase for status code {}: {}", statusCode, e.getMessage());
             return HttpResponseStatus.of(statusCode, "");
         }
     }
