@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2021, 2026 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,22 +25,28 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMetaDataFactory;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.handler.codec.http2.DefaultHttp2ResetFrame;
 import io.netty.handler.codec.http2.Http2DataFrame;
+import io.netty.handler.codec.http2.Http2Error;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2HeadersFrame;
 
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
+import static io.netty.handler.codec.http.HttpHeaderNames.EXPECT;
+import static io.netty.handler.codec.http.HttpHeaderValues.CONTINUE;
 import static io.netty.handler.codec.http.HttpHeaderValues.ZERO;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.METHOD;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
 import static io.servicetalk.http.netty.H2ToStH1ClientDuplexHandler.isInterim;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h2HeadersSanitizeForH1;
@@ -51,6 +57,9 @@ import static io.servicetalk.http.netty.HeaderUtils.shouldAddZeroContentLength;
 final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
     private boolean readHeaders;
     private boolean responseSent;
+    // Whether the client may be waiting for 100 (Continue): it asked for it and the server has not sent it yet.
+    private boolean expectContinue;
+    private boolean rejectedExpectContinue;
 
     H2ToStH1ServerDuplexHandler(BufferAllocator allocator, HttpHeadersFactory headersFactory,
                                 CloseHandler closeHandler, StreamObserver observer) {
@@ -70,6 +79,13 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
             } else if (responseSent) {
                 // Discard an "interim response" if it arrives after a "real response" is already sent.
                 return;
+            } else if (metaData.status().code() == HttpResponseStatus.CONTINUE.code()) {
+                expectContinue = false;
+            }
+            if (realResponse) {
+                // The client may be waiting for 100 (Continue) before it sends the request body. Without it the
+                // request side of the stream may never end.
+                rejectedExpectContinue = expectContinue && metaData.status().statusClass() != SUCCESSFUL_2XX;
             }
             Http2Headers h2Headers = h1HeadersToH2Headers(metaData.headers());
             h2Headers.status(metaData.status().codeAsCharSequence());
@@ -106,6 +122,7 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
                 }
                 path = pathSequence.toString();
                 httpMethod = sequenceToHttpRequestMethod(method);
+                expectContinue = h2Headers.contains(EXPECT, CONTINUE, true);
                 readHeaders = true;
             } else {
                 httpMethod = null;
@@ -119,7 +136,7 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
                 } else {
                     ctx.fireChannelRead(h2TrailersToH1TrailersServer(h2Headers));
                 }
-                closeHandler.protocolPayloadEndInbound(ctx);
+                endInbound(ctx);
             } else if (httpMethod == null) {
                 throw protocolError(ctx, streamId, false,
                         "Incoming request must have '" + METHOD.value() + "' header");
@@ -131,6 +148,23 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
             readDataFrame(ctx, msg);
         } else {
             ctx.fireChannelRead(msg);
+        }
+    }
+
+    @Override
+    void onOutboundEnded(final ChannelHandlerContext ctx, final ChannelPromise promise) {
+        if (rejectedExpectContinue && !inboundEnded) {
+            rejectedExpectContinue = false;
+            // RFC 9113 8.1: a server that has sent a complete response before the client has sent the whole request
+            // MAY ask the client to abort the request by sending RST_STREAM with NO_ERROR. The client was told not to
+            // send the body, and might never end the request, which would hold the stream open for both peers.
+            // Reset only after the frame with END_STREAM is written: a reset discards frames that are still queued
+            // for the stream, which would cut the response short.
+            promise.addListener(future -> {
+                if (future.isSuccess() && !inboundEnded) {
+                    ctx.writeAndFlush(new DefaultHttp2ResetFrame(Http2Error.NO_ERROR));
+                }
+            });
         }
     }
 

@@ -63,11 +63,16 @@ import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
+import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
+import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
+import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
+import static io.servicetalk.http.api.HttpHeaderValues.CONTINUE;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
+import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.http.netty.HttpClientConfig.DEFAULT_EXPECT_CONTINUE_TIMEOUT;
@@ -537,6 +542,74 @@ class AbstractH2DuplexHandlerTest {
         assertThat(frame.headers().scheme(), is(nullValue()));
     }
 
+    @Test
+    void serverResetsStreamWithNoErrorOnlyAfterRejectionIsWritten() {
+        setUp(Variant.SERVER_HANDLER);
+        channel.writeInbound(headersFrame(newExpectContinueRequestHeaders(), false));
+        channel.writeOutbound(newRejection());
+
+        Http2HeadersFrame response = channel.readOutbound();
+        assertThat("Unexpected endStream flag value", response.isEndStream(), is(true));
+        Http2ResetFrame reset = channel.readOutbound();
+        assertThat(reset.errorCode(), is(Http2Error.NO_ERROR.code()));
+        assertThat("Unexpected outbound messages", channel.outboundMessages(), is(empty()));
+    }
+
+    @Test
+    void serverDoesNotResetStreamWhenRequestAlreadyEnded() {
+        setUp(Variant.SERVER_HANDLER);
+        // The whole request arrived, so there is nothing left to abandon.
+        channel.writeInbound(headersFrame(newExpectContinueRequestHeaders(), true));
+        channel.writeOutbound(newRejection());
+
+        Http2HeadersFrame response = channel.readOutbound();
+        assertThat("Unexpected endStream flag value", response.isEndStream(), is(true));
+        assertThat("Unexpected outbound messages", channel.outboundMessages(), is(empty()));
+    }
+
+    @Test
+    void serverDoesNotResetStreamWhenRequestEndsBeforeResponseIsFlushed() {
+        setUp(Variant.SERVER_HANDLER);
+        channel.writeInbound(headersFrame(newExpectContinueRequestHeaders(), false));
+        channel.write(newRejection());
+        // The request ends while the frame with END_STREAM of the response still waits to be written.
+        channel.writeInbound(new DefaultHttp2DataFrame(true));
+        channel.flush();
+
+        Http2HeadersFrame response = channel.readOutbound();
+        assertThat("Unexpected endStream flag value", response.isEndStream(), is(true));
+        assertThat("Unexpected outbound messages", channel.outboundMessages(), is(empty()));
+    }
+
+    @Test
+    void clientResetsStreamWithCancelOnlyAfterRejectionResponseEnds() {
+        setUp(Variant.CLIENT_HANDLER);
+        channel.writeOutbound(newExpectContinueRequest(true));
+        Http2HeadersFrame request = channel.readOutbound();
+        assertThat("Unexpected endStream flag value", request.isEndStream(), is(false));
+
+        // The rest of this response is still to come, and the reset would discard it.
+        channel.writeInbound(headersFrame(newTestHeaders().status("417"), false));
+        assertThat("RST_STREAM before the response ended", channel.outboundMessages(), is(empty()));
+
+        channel.writeInbound(new DefaultHttp2DataFrame(true));
+        Http2ResetFrame reset = channel.readOutbound();
+        assertThat(reset.errorCode(), is(Http2Error.CANCEL.code()));
+        assertThat("Unexpected outbound messages", channel.outboundMessages(), is(empty()));
+    }
+
+    @Test
+    void clientDoesNotResetStreamWhenRequestAlreadyEnded() {
+        setUp(Variant.CLIENT_HANDLER);
+        // No body: the request ends with its HEADERS frame, so there is nothing left to reset.
+        channel.writeOutbound(newExpectContinueRequest(false));
+        Http2HeadersFrame request = channel.readOutbound();
+        assertThat("Unexpected endStream flag value", request.isEndStream(), is(true));
+
+        channel.writeInbound(headersFrame(newTestHeaders().status("417"), true));
+        assertThat("Unexpected outbound messages", channel.outboundMessages(), is(empty()));
+    }
+
     private static Stream<String> illegalPaths() {
         return Stream.of(ILLEGAL_PATHS);
     }
@@ -544,6 +617,27 @@ class AbstractH2DuplexHandlerTest {
     private static Stream<Arguments> illegalPathsAndEndStream() {
         // The rejection sits above the endStream branch in H2ToStH1ServerDuplexHandler#channelRead; pin both flags.
         return illegalPaths().flatMap(p -> Stream.of(Arguments.of(p, true), Arguments.of(p, false)));
+    }
+
+    private static Http2Headers newExpectContinueRequestHeaders() {
+        return newTestHeaders().method(PUT.name()).path("/").add("expect", "100-continue");
+    }
+
+    private static StreamingHttpResponse newRejection() {
+        return newResponse(HttpResponseStatus.EXPECTATION_FAILED, HTTP_2_0, HEADERS_FACTORY.newHeaders(),
+                DEFAULT_ALLOCATOR, HEADERS_FACTORY);
+    }
+
+    private static StreamingHttpRequest newExpectContinueRequest(boolean withBody) {
+        HttpHeaders headers = HEADERS_FACTORY.newHeaders().set(EXPECT, CONTINUE);
+        StreamingHttpRequest request = newRequest(POST, "/", HTTP_2_0, headers, DEFAULT_ALLOCATOR, HEADERS_FACTORY);
+        if (withBody) {
+            headers.set(TRANSFER_ENCODING, CHUNKED);
+            request.payloadBody(from(DEFAULT_ALLOCATOR.fromAscii("body")));
+        } else {
+            headers.set(CONTENT_LENGTH, ZERO);
+        }
+        return request;
     }
 
     /**
