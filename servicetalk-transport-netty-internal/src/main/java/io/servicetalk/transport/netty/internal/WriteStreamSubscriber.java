@@ -60,7 +60,8 @@ import static java.util.Objects.requireNonNull;
  * <ul>
  *     <li>When {@link #onSubscribe(Subscription)} is called.</li>
  *     <li>When a write completes successfully.</li>
- *     <li>When {@link #channelWritable()} is invoked.</li>
+ *     <li>When {@link #channelWritable()} is invoked, unless a client request awaits continuation.</li>
+ *     <li>When {@link #continueWriting()} is invoked.</li>
  * </ul>
  *
  * When there is a need for requesting more items, it tries to determine the capacity in netty's write buffer
@@ -221,7 +222,8 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         if (isClient && subscription != null && subscription != CANCELLED && !promise.written) {
             // If nothing was written, make initial requestN
             initialRequestN(subscription);
-        } else {
+        } else if (!shouldWaitFlag) {
+            // Requests that await continuation request more only after continueWriting()
             requestMoreIfRequired(subscription, -1L);
         }
     }

@@ -347,6 +347,30 @@ class WriteStreamSubscriberTest extends AbstractWriteTest {
     }
 
     @Test
+    void clientChannelWritableWhileAwaitingContinuationDoesNotRequestMore() {
+        when(demandEstimator.estimateRequestN(anyLong())).thenReturn(10L);
+        subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber, closeHandler,
+                NoopWriteObserver.INSTANCE, identity(), true, __ -> true);
+        subscriber.onSubscribe(subscription);
+
+        verify(subscription).request(1L);
+        writeAndFlush("Hello1");
+        subscriber.channelWritable();
+        verifyNoMoreInteractions(subscription);
+
+        subscriber.continueWriting();
+        verify(subscription).request(10L);
+        subscriber.channelWritable();
+        verify(subscription, times(2)).request(10L);
+        writeAndFlush("Hello2");
+
+        verifyWriteSuccessful("Hello1", "Hello2");
+        subscriber.onComplete();
+        verifyListenerSuccessful();
+        verifyNoMoreInteractions(subscription, closeHandler);
+    }
+
+    @Test
     void clientTerminateSource() {
         when(demandEstimator.estimateRequestN(anyLong())).thenReturn(10L);
         subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber, closeHandler,
