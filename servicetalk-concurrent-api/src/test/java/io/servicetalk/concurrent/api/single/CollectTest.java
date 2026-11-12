@@ -36,6 +36,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -83,13 +84,13 @@ class CollectTest {
     @Test
     void collectInOrderEmptyIterable() throws Exception {
         Collection<Integer> integers = Single.<Integer>collectInOrder(asList()).toFuture().get();
-        assertThat("Unexpected result.", integers.isEmpty(), is(true));
+        assertThat("Unexpected result.", integers, is(empty()));
     }
 
     @Test
     void collectInOrderEmptyVarArgs() throws Exception {
         Collection<Integer> integers = Single.<Integer>collectInOrder().toFuture().get();
-        assertThat("Unexpected result.", integers.isEmpty(), is(true));
+        assertThat("Unexpected result.", integers, is(empty()));
     }
 
     @Test

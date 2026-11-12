@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2027,9 +2027,8 @@ public abstract class Single<T> {
      * Asynchronously collects results of individual {@link Single}s returned by the passed {@link Iterable} into a
      * single {@link Collection}, preserving the order of {@code singles}. <p>
      * Results, including errors, are delivered in order: if a {@link Single} terminates with an error, the returned
-     * {@link Single} terminates with that error once all preceding {@link Single}s have succeeded. A later error is
-     * therefore not delivered until earlier {@link Single}s terminate. When an error is delivered, any other
-     * in-progress {@link Single}s are cancelled.
+     * {@link Single} terminates with that error once all preceding {@link Single}s have succeeded. When an error is
+     * delivered, any other in-progress {@link Single}s are cancelled.
      * <p>
      * This method actively subscribes to a limited number of {@link Single}s concurrently. To alter the default
      * limit, use {@link #collectInOrder(Iterable, int)}.
@@ -2050,9 +2049,8 @@ public abstract class Single<T> {
      * Asynchronously collects results of the passed {@link Single}s into a single {@link Collection}, preserving the
      * order of {@code singles}. <p>
      * Results, including errors, are delivered in order: if a {@link Single} terminates with an error, the returned
-     * {@link Single} terminates with that error once all preceding {@link Single}s have succeeded. A later error is
-     * therefore not delivered until earlier {@link Single}s terminate. When an error is delivered, any other
-     * in-progress {@link Single}s are cancelled.
+     * {@link Single} terminates with that error once all preceding {@link Single}s have succeeded. When an error is
+     * delivered, any other in-progress {@link Single}s are cancelled.
      * <p>
      * This method actively subscribes to a limited number of {@link Single}s concurrently. To alter the default
      * limit, use {@link #collectInOrder(int, Single[])}.
@@ -2075,9 +2073,8 @@ public abstract class Single<T> {
      * Asynchronously collects results of individual {@link Single}s returned by the passed {@link Iterable} into a
      * single {@link Collection}, preserving the order of {@code singles}. <p>
      * Results, including errors, are delivered in order: if a {@link Single} terminates with an error, the returned
-     * {@link Single} terminates with that error once all preceding {@link Single}s have succeeded. A later error is
-     * therefore not delivered until earlier {@link Single}s terminate. When an error is delivered, any other
-     * in-progress {@link Single}s are cancelled. <p>
+     * {@link Single} terminates with that error once all preceding {@link Single}s have succeeded. When an error is
+     * delivered, any other in-progress {@link Single}s are cancelled. <p>
      * At most {@code maxConcurrency} {@link Single}s are subscribed to concurrently.
      *
      * @param singles {@link Iterable} of {@link Single}s, results of which are to be collected.
@@ -2099,9 +2096,8 @@ public abstract class Single<T> {
      * Asynchronously collects results of the passed {@link Single}s into a single {@link Collection}, preserving the
      * order of {@code singles}. <p>
      * Results, including errors, are delivered in order: if a {@link Single} terminates with an error, the returned
-     * {@link Single} terminates with that error once all preceding {@link Single}s have succeeded. A later error is
-     * therefore not delivered until earlier {@link Single}s terminate. When an error is delivered, any other
-     * in-progress {@link Single}s are cancelled. <p>
+     * {@link Single} terminates with that error once all preceding {@link Single}s have succeeded. When an error is
+     * delivered, any other in-progress {@link Single}s are cancelled. <p>
      * At most {@code maxConcurrency} {@link Single}s are subscribed to concurrently.
      *
      * @param maxConcurrency Maximum number of {@link Single}s that will be active at any point in time.
