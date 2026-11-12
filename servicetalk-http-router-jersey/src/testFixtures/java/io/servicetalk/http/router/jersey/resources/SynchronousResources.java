@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,6 +102,12 @@ public class SynchronousResources {
     @GET
     public Response get444Status() {
         return status(444, "Three fours!").build();
+    }
+
+    @Path("/statuses/444-illegal-reason-phrase")
+    @GET
+    public Response get444StatusWithIllegalReasonPhrase() {
+        return status(444, "Three\r\nfours!").build();
     }
 
     @Produces(TEXT_PLAIN)
