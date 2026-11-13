@@ -33,6 +33,7 @@ import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.RedirectConfigBuilder;
 import io.servicetalk.http.api.ReservedHttpConnection;
+import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
@@ -78,6 +79,8 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
@@ -108,6 +111,7 @@ import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofMinutes;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -133,6 +137,7 @@ class ExpectContinueTest {
     private static final Duration CONTINUE_TIMEOUT = ofMillis(200);
     // Long enough that the timer never releases the payload body before the server sends 100 (Continue).
     private static final Duration LONG_CONTINUE_TIMEOUT = ofMinutes(1);
+    private static final int RAW_SOCKET_TIMEOUT_MS = (int) SECONDS.toMillis(DEFAULT_TIMEOUT_SECONDS);
     private static final String CONTINUE_RESPONSE = "HTTP/1.1 100 Continue\r\n\r\n";
 
     private final CountDownLatch requestReceived = new CountDownLatch(1);
@@ -902,6 +907,49 @@ class ExpectContinueTest {
     }
 
     @Test
+    void pipelinedExpectRequestIgnoresFlushStrategyOfAggregatedRequestQueuedBehind() throws Exception {
+        final BufferAllocator alloc = CLIENT_CTX.bufferAllocator();
+        try (RawServer server = new RawServer();
+             StreamingHttpClient client = newClientBuilderWithConfigs(serverHostAndPort(server.address()), CLIENT_CTX,
+                     h1().maxPipelinedRequests(3).build())
+                     // Subscribe on the caller thread to queue requests in order.
+                     .executionStrategy(offloadNone())
+                     .expectContinueTimeout(LONG_CONTINUE_TIMEOUT)
+                     .buildStreaming();
+             ReservedStreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
+            // Keeps the first write in progress, so the next two requests are queued.
+            TestPublisher<Buffer> firstPayload = new TestPublisher<>();
+            Future<StreamingHttpResponse> first = connection.request(connection.post("/")
+                    .setHeader(CONTENT_LENGTH, valueOf(PAYLOAD.length()))
+                    .payloadBody(firstPayload)).toFuture();
+            Future<StreamingHttpResponse> second = connection.request(newRequest(connection, true, false,
+                    from(alloc.fromAscii(PAYLOAD), alloc.fromAscii(PAYLOAD)))).toFuture();
+            // Aggregated requests flush on end, which must not apply to the Expect request queued before.
+            HttpConnection aggregated = connection.asConnection();
+            Future<HttpResponse> third = aggregated.request(aggregated.post("/")
+                    .payloadBody(alloc.fromAscii("third"))).toFuture();
+
+            RawConnection raw = server.accept();
+            int contentLength = raw.readRequestHeaders();
+            firstPayload.awaitSubscribed();
+            firstPayload.onNext(alloc.fromAscii(PAYLOAD));
+            firstPayload.onComplete();
+            raw.respondWithBody(contentLength);
+            // Responses are read in order, so consume the first one to let the client read the 100 (Continue).
+            assertRawServerResponse(first.get().toResponse().toFuture().get(), OK, PAYLOAD);
+
+            contentLength = raw.readRequestHeaders();
+            assertThat(raw.lastRequestHadExpectContinue(), is(true));
+            raw.write(CONTINUE_RESPONSE);
+            raw.respondWithBody(contentLength);
+            assertRawServerResponse(second.get().toResponse().toFuture().get(), OK, PAYLOAD + PAYLOAD);
+
+            raw.respondWithBody(raw.readRequestHeaders());
+            assertRawServerResponse(third.get(), OK, "third");
+        }
+    }
+
+    @Test
     void retryExpectationFailedRetriesWithDuplicatedPayloadBody() throws Exception {
         final Queue<Object> writtenItems = new LinkedBlockingQueue<>();
         final Buffer body = CLIENT_CTX.bufferAllocator().fromAscii(PAYLOAD + PAYLOAD);
@@ -1020,6 +1068,8 @@ class ExpectContinueTest {
 
         RawServer() throws IOException {
             serverSocket = new ServerSocket(0, 50, getLoopbackAddress());
+            // Fail instead of hanging: blocking socket operations ignore the test timeout's interrupt.
+            serverSocket.setSoTimeout(RAW_SOCKET_TIMEOUT_MS);
         }
 
         SocketAddress address() {
@@ -1050,6 +1100,7 @@ class ExpectContinueTest {
         private boolean lastRequestHadExpectContinue;
 
         RawConnection(Socket socket) throws IOException {
+            socket.setSoTimeout(RAW_SOCKET_TIMEOUT_MS);
             in = new BufferedReader(new InputStreamReader(socket.getInputStream(), US_ASCII));
             out = socket.getOutputStream();
         }
