@@ -38,8 +38,6 @@ import java.nio.ReadOnlyBufferException;
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
 
-import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
-
 /**
  * An arbitrary and sequential accessible sequence of zero or more bytes (octets). This interface provides an abstract
  * view for one or more primitive byte arrays ({@code byte[]}) and {@link ByteBuffer NIO buffers}.
@@ -1896,10 +1894,13 @@ public interface Buffer {
     ByteBuffer[] toNioBuffers(int index, int length);
 
     /**
-     * Copies this buffer's readable bytes into a byte array without modifying its reader or writer index.
-     * An empty buffer returns a shared empty array.
+     * Returns this buffer's readable bytes as a byte array whose contents are independent of this buffer.
+     * Modifying the content of the returned array or this buffer does not affect the other.
+     * This method does not modify {@code readerIndex} or {@code writerIndex} of
+     * this buffer.
      *
-     * @return an array containing exactly the readable bytes
+     * @return an array containing exactly the readable bytes.
+     *
      * @see #toByteArray(boolean)
      * @see #toByteArray(int, int)
      */
@@ -1908,67 +1909,46 @@ public interface Buffer {
     }
 
     /**
-     * Returns this buffer's readable bytes as a byte array without modifying its reader or writer index.
+     * Returns this buffer's readable bytes as a byte array whose contents are independent of this buffer when
+     * {@code forceCopy} is {@code true}.
+     * This method does not modify {@code readerIndex} or {@code writerIndex} of
+     * this buffer.
+     * <p>
+     * If {@code forceCopy} is {@code false}, the backing array may be returned when it exactly matches the readable
+     * bytes. Otherwise, the bytes are copied.
+     * Modifying the content of a shared array or this buffer affects the other.
+     * If the buffer changes its capacity, the returned array may no longer share its content.
      *
      * @param forceCopy {@code true} to copy the bytes; {@code false} to allow sharing the backing array when it
-     * exactly matches the readable bytes. An empty buffer returns a shared empty array in either case.
-     * @return an array containing exactly the readable bytes
-     * @see #toByteArray(int, int, boolean)
+     * exactly matches the readable bytes.
+     * @return an array containing exactly the readable bytes.
+     *
+     * @see #toByteArray()
+     * @see #toByteArray(int, int)
      */
     default byte[] toByteArray(boolean forceCopy) {
-        return toByteArray(readerIndex(), readableBytes(), forceCopy);
+        return BufferUtils.toByteArray(this, readerIndex(), readableBytes(), forceCopy);
     }
 
     /**
-     * Copies the specified region of this buffer into a byte array without modifying its reader or writer index.
+     * Returns the specified region of this buffer as a byte array whose contents are independent of this buffer.
+     * Modifying the content of the returned array or this buffer does not affect the other.
      * The region is relative to the start of this buffer and may include bytes outside the readable region.
-     * A zero-length region returns a shared empty array.
+     * This method does not modify {@code readerIndex} or {@code writerIndex} of
+     * this buffer.
      *
-     * @param index the absolute start index
-     * @param length the number of bytes to copy
-     * @return an array containing exactly the specified bytes
-     * @throws IndexOutOfBoundsException if {@code index} or {@code length} is negative, or if the region exceeds
-     * this buffer's {@link #capacity()}
-     * @see #toByteArray(int, int, boolean)
+     * @param index the absolute start index.
+     * @param length the number of bytes to copy.
+     * @return an array containing exactly the specified bytes.
+     * @throws IndexOutOfBoundsException
+     *         if {@code index} or {@code length} is negative, or if the region exceeds
+     *         this buffer's {@link #capacity()}
+     *
+     * @see #toByteArray()
+     * @see #toByteArray(boolean)
      */
     default byte[] toByteArray(int index, int length) {
-        return toByteArray(index, length, true);
-    }
-
-    /**
-     * Returns the specified region of this buffer as a byte array without modifying its reader or writer index.
-     * The region is relative to the start of this buffer and may include bytes outside the readable region.
-     * <p>
-     * If {@code forceCopy} is {@code false}, the backing array may be returned when the specified region exactly
-     * matches the entire array. Changes to a shared array affect the buffer and vice versa. If the buffer changes
-     * its capacity, the returned array may no longer share its content. Otherwise, the bytes are copied.
-     * A zero-length region returns a shared empty array regardless of {@code forceCopy}.
-     *
-     * @param index the absolute start index
-     * @param length the number of bytes to return
-     * @param forceCopy {@code true} to copy the bytes; {@code false} to allow sharing the backing array
-     * @return an array containing exactly the specified bytes
-     * @throws IndexOutOfBoundsException if {@code index} or {@code length} is negative, or if the region exceeds
-     * this buffer's {@link #capacity()}
-     */
-    default byte[] toByteArray(int index, int length, boolean forceCopy) {
-        final int capacity = capacity();
-        if (index < 0 || length < 0 || index > capacity - length) {
-            throw new IndexOutOfBoundsException("index: " + index + ", length: " + length +
-                    " (expected: 0 <= index <= index + length <= capacity(" + capacity + "))");
-        }
-        if (length == 0) {
-            return EMPTY_BUFFER.array();
-        }
-        if (!forceCopy && hasArray() && index == 0 && arrayOffset() == 0) {
-            final byte[] array = array();
-            if (array.length == length) {
-                return array;
-            }
-        }
-        final byte[] bytes = new byte[length];
-        getBytes(index, bytes);
-        return bytes;
+        return BufferUtils.toByteArray(this, index, length, true);
     }
 
     /**

@@ -113,10 +113,7 @@ public final class BufferPublisherInputStream extends InputStream {
         if (inputStream == EMPTY_INPUT_STREAM) {
             inputStream = publisher.toInputStream(buffer -> {
                 final byte[] bytes = buffer.toByteArray(false);
-                // Preserve the backing-array fast path, which does not consume the buffer.
-                if (!buffer.hasArray() || bytes != buffer.array()) {
-                    buffer.skipBytes(bytes.length);
-                }
+                buffer.skipBytes(bytes.length);
                 return bytes;
             }, queueCapacity);
         }

@@ -44,10 +44,10 @@ class BufferPublisherInputStreamTest {
     }
 
     @Test
-    void readFullHeapBufferPreservesReaderIndex() throws IOException {
+    void readFullHeapBufferConsumesReadableBytes() throws IOException {
         Buffer buffer = PREFER_HEAP_ALLOCATOR.wrap(BYTES.clone());
         assertStreamBytes(buffer);
-        assertThat(buffer.readerIndex(), is(0));
+        assertThat(buffer.readerIndex(), is(BYTES.length));
         assertThat(buffer.writerIndex(), is(BYTES.length));
     }
 
