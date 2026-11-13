@@ -48,6 +48,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.DecoderException;
+import io.netty.util.AttributeKey;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -102,31 +104,45 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
 
     private static final String CONTINUE_RESPONSE = "HTTP/1.1 100 Continue\r\n\r\n";
     private static final String OK_RESPONSE = "HTTP/1.1 200 OK\r\ncontent-length: 0\r\n\r\n";
+    private static final String NO_OUTSTANDING_REQUEST = "Received data on a connection without an outstanding request";
+    private static final String TIMEOUT_RESPONSE = "HTTP/1.1 408 Request Timeout\r\ncontent-length: 0\r\n\r\n";
     private static final String EXPECTATION_FAILED_RESPONSE =
             "HTTP/1.1 417 Expectation Failed\r\ncontent-length: 0\r\n\r\n";
 
-    private static final class PollLikePeakArrayDeque<T> extends ArrayDeque<T> {
-        private static final long serialVersionUID = -8160337336374186819L;
+    private static final AttributeKey<Runnable> SEND_REQUEST = AttributeKey.valueOf("sendRequest");
 
-        @Override
-        public T poll() {
-            return peek();  // Prevent taking an element out of the queue to allow reuse for multiple tests
-        }
-    }
-
-    private final Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>();
     private final List<Object> userEvents = new ArrayList<>();
+    // Queues shared by the encoder and decoder of newClientChannel()
+    private final Queue<HttpRequestMethod> clientMethodQueue = new ArrayDeque<>();
+    private final Deque<Signal> clientSignalsQueue = new ArrayDeque<>();
 
     private final EmbeddedChannel channel = newChannel(false, false);
     private final EmbeddedChannel channelSpecException = newChannel(true, false);
 
-    private EmbeddedChannel newChannel(boolean allowLFWithoutCR, boolean allowHeaderWithoutColon) {
-        final Deque<Signal> signalsQueue = new PollLikePeakArrayDeque<>();
-        signalsQueue.offer(REQUEST_SIGNAL);
-        return new EmbeddedChannel(new HttpResponseDecoder(methodQueue, signalsQueue,
+    private static EmbeddedChannel newChannel(boolean allowLFWithoutCR, boolean allowHeaderWithoutColon) {
+        return newChannel(POST, DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH, allowLFWithoutCR, allowHeaderWithoutColon,
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
+    }
+
+    /**
+     * Creates a channel with one outstanding request, so the decoder accepts exactly one final response.
+     */
+    private static EmbeddedChannel newChannel(HttpRequestMethod requestMethod, int maxTotalHeaderFieldsLength,
+                                              boolean allowLFWithoutCR, boolean allowHeaderWithoutColon,
+                                              CloseHandler closeHandler) {
+        final Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>();
+        final Deque<Signal> signalsQueue = new ArrayDeque<>();
+        final Runnable sendRequest = () -> {
+            methodQueue.add(requestMethod);
+            signalsQueue.add(REQUEST_SIGNAL);
+        };
+        sendRequest.run();
+        final EmbeddedChannel channel = new EmbeddedChannel(new HttpResponseDecoder(methodQueue, signalsQueue,
                 getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE,
-                DEFAULT_MAX_START_LINE_LENGTH, DEFAULT_MAX_HEADER_FIELD_LENGTH, DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH,
-                false, allowLFWithoutCR, allowHeaderWithoutColon, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
+                DEFAULT_MAX_START_LINE_LENGTH, DEFAULT_MAX_HEADER_FIELD_LENGTH, maxTotalHeaderFieldsLength,
+                false, allowLFWithoutCR, allowHeaderWithoutColon, closeHandler));
+        channel.attr(SEND_REQUEST).set(sendRequest);
+        return channel;
     }
 
     @Override
@@ -142,6 +158,18 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     @Override
     EmbeddedChannel channelAllowHeaderWithoutColon(boolean crlf) {
         return newChannel(!crlf, true);
+    }
+
+    @Override
+    void beforeNextMessage(EmbeddedChannel channel) {
+        channel.attr(SEND_REQUEST).get().run();
+    }
+
+    @AfterEach
+    void clientQueuesAreEmpty() {
+        // Every request written by newClientChannel() must be matched with exactly one final response.
+        assertThat(clientMethodQueue, is(empty()));
+        assertThat(clientSignalsQueue, is(empty()));
     }
 
     @Override
@@ -176,28 +204,12 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
 
     @Override
     EmbeddedChannel channelWithMaxTotalHeaderFieldsLength(int maxTotalHeaderFieldsLength) {
-        final Deque<Signal> signalsQueue = new PollLikePeakArrayDeque<>();
-        signalsQueue.offer(REQUEST_SIGNAL);
-        return new EmbeddedChannel(new HttpResponseDecoder(methodQueue, signalsQueue,
-                getByteBufAllocator(DEFAULT_ALLOCATOR),
-                DefaultHttpHeadersFactory.INSTANCE,
-                DEFAULT_MAX_START_LINE_LENGTH,
-                DEFAULT_MAX_HEADER_FIELD_LENGTH,
-                maxTotalHeaderFieldsLength,
-                false,  // allowPrematureClosureBeforePayloadBody
-                false,  // allowLFWithoutCR
-                false,  // allowHeaderWithoutColon
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
+        return newChannel(POST, maxTotalHeaderFieldsLength, false, false, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
     }
 
     @Override
     EmbeddedChannel channelWithCloseHandler(CloseHandler closeHandler) {
-        final Deque<Signal> signalsQueue = new PollLikePeakArrayDeque<>();
-        signalsQueue.offer(REQUEST_SIGNAL);
-        return new EmbeddedChannel(new HttpResponseDecoder(methodQueue, signalsQueue,
-                getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE,
-                DEFAULT_MAX_START_LINE_LENGTH, DEFAULT_MAX_HEADER_FIELD_LENGTH, DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH,
-                false, false, false, closeHandler));
+        return newChannel(POST, DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH, false, false, closeHandler);
     }
 
     @Test
@@ -524,56 +536,57 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
 
     @Test
     void successfulResponseToConnectRequest() {
-        methodQueue.add(CONNECT);
+        EmbeddedChannel channel = newConnectChannel();
         writeMsg(startLineForContent() + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
-                "Connection: keep-alive" + "\r\n\r\n");
+                "Connection: keep-alive" + "\r\n\r\n", channel);
 
-        assertStartLineForContent();
+        assertStartLineForContent(channel);
         assertEmptyTrailers(channel);
         assertFalse(channel.finishAndReleaseAll());
     }
 
     @Test
     void successfulResponseToConnectRequestWithPayloadBodyFails() {
-        methodQueue.add(CONNECT);
+        EmbeddedChannel channel = newConnectChannel();
         String content = "content";
         writeMsg(startLineForContent() + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
                 "Content-Length: " + content.length() + "\r\n" +
-                "Connection: keep-alive" + "\r\n\r\n");
+                "Connection: keep-alive" + "\r\n\r\n", channel);
 
         // Verify response meta-data received and parsed as a full response:
-        assertStartLineForContent();
+        assertStartLineForContent(channel);
         assertEmptyTrailers(channel);
 
-        // Try to write response content:
-        assertDecoderException(content, "Invalid start-line");
+        // Try to write response content, it's parsed as the next response:
+        beforeNextMessage(channel);
+        assertDecoderException(content, "Invalid start-line", channel);
     }
 
     @Test
     void errorResponseToConnectRequestWithEmptyContent() {
-        methodQueue.add(CONNECT);
+        EmbeddedChannel channel = newConnectChannel();
         writeMsg("HTTP/1.1 400 Bad Request" + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
                 "Content-Length: 0" + "\r\n" +
-                "Connection: keep-alive" + "\r\n\r\n");
-        assertResponseLine(HTTP_1_1, BAD_REQUEST);
+                "Connection: keep-alive" + "\r\n\r\n", channel);
+        assertResponseLine(HTTP_1_1, BAD_REQUEST, channel);
         assertEmptyTrailers(channel);
         assertFalse(channel.finishAndReleaseAll());
     }
 
     @Test
     void errorResponseToConnectRequestWithContent() {
-        methodQueue.add(CONNECT);
+        EmbeddedChannel channel = newConnectChannel();
         int contentLength = 128;
         writeMsg("HTTP/1.1 400 Bad Request" + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
                 "Content-Length: " + contentLength + "\r\n" +
-                "Connection: keep-alive" + "\r\n\r\n");
-        writeContent(contentLength);
-        assertResponseLine(HTTP_1_1, BAD_REQUEST);
-        HttpHeaders trailers = assertPayloadSize(contentLength);
+                "Connection: keep-alive" + "\r\n\r\n", channel);
+        writeContent(contentLength, channel);
+        assertResponseLine(HTTP_1_1, BAD_REQUEST, channel);
+        HttpHeaders trailers = assertPayloadSize(contentLength, channel);
         assertThat("Trailers are not empty", trailers, nullValue());
         assertFalse(channel.finishAndReleaseAll());
     }
@@ -641,12 +654,10 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    void continueWithoutRequestFiresNothing() {
+    void continueWithoutRequestFails() {
         EmbeddedChannel channel = newClientChannel();
-        writeResponse(channel, CONTINUE_RESPONSE);
+        assertDecoderException(CONTINUE_RESPONSE, NO_OUTSTANDING_REQUEST, channel);
         assertThat(userEvents, is(empty()));
-        assertThat(channel.inboundMessages(), is(empty()));
-        assertFalse(channel.finishAndReleaseAll());
     }
 
     @Test
@@ -669,14 +680,41 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
         assertFalse(channel.finishAndReleaseAll());
     }
 
+    @Test
+    void finalResponseWithoutRequestFails() {
+        EmbeddedChannel channel = newClientChannel();
+        assertDecoderException(TIMEOUT_RESPONSE, NO_OUTSTANDING_REQUEST, channel);
+    }
+
+    @Test
+    void partialStartLineWithoutRequestFails() {
+        EmbeddedChannel channel = newClientChannel();
+        assertDecoderException("\r\nHTTP/1.1 408 Req", NO_OUTSTANDING_REQUEST, channel);
+    }
+
+    @Test
+    void secondFinalResponseForOneRequestFails() {
+        EmbeddedChannel channel = newClientChannel();
+        writeRequest(channel, false);
+        writeResponse(channel, OK_RESPONSE);
+        assertResponseLine(HTTP_1_1, OK, channel);
+        assertEmptyTrailers(channel);
+
+        assertDecoderException(TIMEOUT_RESPONSE, NO_OUTSTANDING_REQUEST, channel);
+    }
+
+    private static EmbeddedChannel newConnectChannel() {
+        return newChannel(CONNECT, DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH, false, false,
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
+    }
+
     private EmbeddedChannel newClientChannel() {
-        final Queue<HttpRequestMethod> methods = new ArrayDeque<>();
-        final Deque<Signal> signals = new ArrayDeque<>();
-        return new EmbeddedChannel(new HttpResponseDecoder(methods, signals,
+        return new EmbeddedChannel(new HttpResponseDecoder(clientMethodQueue, clientSignalsQueue,
                 getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE,
                 DEFAULT_MAX_START_LINE_LENGTH, DEFAULT_MAX_HEADER_FIELD_LENGTH, DEFAULT_MAX_TOTAL_HEADER_FIELDS_LENGTH,
                 false, false, false, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER),
-                new HttpRequestEncoder(methods, signals, 256, 256, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, ofDays(1)),
+                new HttpRequestEncoder(clientMethodQueue, clientSignalsQueue, 256, 256,
+                        UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, ofDays(1)),
                 new ChannelInboundHandlerAdapter() {
                     @Override
                     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {

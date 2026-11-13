@@ -104,6 +104,16 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     }
 
     @Override
+    protected void onMessageBegin() {
+        // The method is polled only after the headers are read, so an empty queue on the first byte means there is no
+        // outstanding request. Such data is not a valid response (https://tools.ietf.org/html/rfc9112#section-9.2),
+        // fail to close the connection instead of handing it to the next request.
+        if (methodQueue.isEmpty()) {
+            throw new StacklessDecoderException("Received data on a connection without an outstanding request");
+        }
+    }
+
+    @Override
     protected HttpResponseMetaData createMessage(final ByteBuf buffer, final int firstStart, final int firstLength,
                                                  final int secondStart, final int secondLength,
                                                  final int thirdStart, final int thirdLength) {

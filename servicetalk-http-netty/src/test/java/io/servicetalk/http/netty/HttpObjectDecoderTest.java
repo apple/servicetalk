@@ -139,6 +139,15 @@ abstract class HttpObjectDecoderTest {
      */
     abstract EmbeddedChannel channelAllowHeaderWithoutColon(boolean crlf);
 
+    /**
+     * Prepares the {@code channel} to decode one more message, e.g. a response decoder needs another request.
+     *
+     * @param channel the channel that will decode one more message
+     */
+    void beforeNextMessage(EmbeddedChannel channel) {
+        // noop
+    }
+
     final HttpMetaData assertStartLineForContent() {
         return assertStartLineForContent(channel());
     }
@@ -190,7 +199,7 @@ abstract class HttpObjectDecoderTest {
     final void assertDecoderException(String msg, String expectedExceptionMsg, EmbeddedChannel channel) {
         DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(msg, channel));
         assertThat(e.getMessage(), startsWith(expectedExceptionMsg));
-        assertThat(channel().inboundMessages(), is(empty()));
+        assertThat(channel.inboundMessages(), is(empty()));
     }
 
     final void assertDecoderExceptionWithCause(String msg, String expectedExceptionMsg) {
@@ -208,7 +217,7 @@ abstract class HttpObjectDecoderTest {
         assertThat(e.getMessage(), startsWith(expectedExceptionMsg));
         assertThat(e.getCause(), is(instanceOf(causeType)));
         assertThat(e.getCause().getMessage(), not(is(emptyString())));
-        assertThat(channel().inboundMessages(), is(empty()));
+        assertThat(channel.inboundMessages(), is(empty()));
     }
 
     final HttpMetaData validateWithContent(int expectedContentLength, boolean containsTrailers) {
@@ -1198,6 +1207,7 @@ abstract class HttpObjectDecoderTest {
         writeContent(contentLength, channel);
         // Note that trailers are not allowed when content-length is specified
         // https://tools.ietf.org/html/rfc7230#section-3.3
+        beforeNextMessage(channel);
         DecoderException e = assertThrows(DecoderException.class,
                 () -> writeMsg("TrailerStatus: good" + br + br, channel));
         assertThat(e.getMessage(), startsWith(isDecodingRequest() ? "Invalid start-line" : "Invalid HTTP version"));
@@ -1209,6 +1219,8 @@ abstract class HttpObjectDecoderTest {
     void smuggleZeroContentLength(boolean smuggleBeforeContentLength, boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
+        // The smuggled message is parsed as the next one.
+        beforeNextMessage(channel);
         DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLine() + br +
                 "Host: servicetalk.io" + br +
                 // Smuggled requests injected into a header will terminate the current request due to valid \r\n\r\n
@@ -1479,6 +1491,7 @@ abstract class HttpObjectDecoderTest {
                 "Host: bar\r\n" + // 11 bytes
                 "\r\n";
 
+        beforeNextMessage(testChannel);
         writeMsg(msg2, testChannel);
         HttpMetaData meta2 = assertStartLine(testChannel);
         assertSingleHeaderValue(meta2.headers(), "Host", "bar");

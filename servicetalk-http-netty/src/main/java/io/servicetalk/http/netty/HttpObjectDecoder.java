@@ -241,6 +241,12 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     protected abstract void handlePartialInitialLine(ChannelHandlerContext ctx, ByteBuf buffer);
 
     /**
+     * Invoked on the first byte of a new message after skipping preface control characters, before the initial line is
+     * parsed. Throwing a {@link DecoderException} rejects the message and leaves the input unconsumed.
+     */
+    protected abstract void onMessageBegin();
+
+    /**
      * Create a new {@link HttpMetaData} because a new request/response
      * <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1">start line</a> has been parsed.
      *
@@ -265,6 +271,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 if (!skipControlCharacters(buffer)) {
                     return;
                 }
+                // Before the state change, so if it throws, a later decode with the same bytes throws again.
+                onMessageBegin();
                 currentState = State.READ_INITIAL;
             }
             // fallthrough to the next state
