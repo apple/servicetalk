@@ -87,6 +87,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     private static final byte CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION = 1 << 2;
     private static final byte SUBSCRIBER_TERMINATED = 1 << 3;
     private static final byte SOURCE_OUTBOUND_CLOSED = 1 << 4;
+    private static final byte SOURCE_CANCELLED = 1 << 5;
     private static final byte SUBSCRIBER_OR_SOURCE_TERMINATED = SOURCE_TERMINATED | SUBSCRIBER_TERMINATED;
     private static final Subscription CANCELLED = newEmptySubscription();
     private static final AtomicReferenceFieldUpdater<WriteStreamSubscriber, Subscription> subscriptionUpdater =
@@ -143,7 +144,10 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             s.cancel();
             return;
         }
-        subscriber.onSubscribe(concurrentSubscription);
+        subscriber.onSubscribe(isClient ? () -> {
+            sourceCancelled();
+            concurrentSubscription.cancel();
+        } : concurrentSubscription);
         if (eventLoop.inEventLoop()) {
             initialRequestN(concurrentSubscription);
         } else {
@@ -301,6 +305,14 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         promise.close(closedException, closeOutboundIfIdle);
     }
 
+    private void sourceCancelled() {
+        if (eventLoop.inEventLoop()) {
+            promise.sourceCancelled();
+        } else {
+            eventLoop.execute(promise::sourceCancelled);
+        }
+    }
+
     void cancel() {  // Visible only for tests.
         // In order to prevent concurrent access to the subscription, we use the EventLoop. The alternative would be
         // some additional protection around calling subscription.request and subscription.cancel, but since this method
@@ -441,6 +453,21 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             }
             state = set(state, SOURCE_OUTBOUND_CLOSED); // Assign a state to mark the promise as not writable.
             markCancelled();
+        }
+
+        void sourceCancelled() {
+            assert eventLoop.inEventLoop();
+            if (!isWritable()) {
+                // Already terminated or closed, or the protocol has seen the end of this write.
+                return;
+            }
+            // Also drops anything the source emits after the cancel.
+            state = set(state, SOURCE_CANCELLED);
+            if (written) {
+                // Part of the request is on the wire and nothing can end it cleanly. Closing outbound lets the peer
+                // see the truncation, and keeps the next request from being written after it.
+                closeHandler.closeChannelOutbound(channel);
+            }
         }
 
         void sourceTerminated(@Nullable Throwable cause, boolean markCancelled) {
