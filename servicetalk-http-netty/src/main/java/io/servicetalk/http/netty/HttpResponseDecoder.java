@@ -109,7 +109,7 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
         // outstanding request. Such data is not a valid response (https://tools.ietf.org/html/rfc9112#section-9.2),
         // fail to close the connection instead of handing it to the next request.
         if (methodQueue.isEmpty()) {
-            throw new StacklessDecoderException("Received a response without an outstanding request");
+            throw new StacklessDecoderException("Received data on a connection without an outstanding request");
         }
     }
 

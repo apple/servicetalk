@@ -104,6 +104,7 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
 
     private static final String CONTINUE_RESPONSE = "HTTP/1.1 100 Continue\r\n\r\n";
     private static final String OK_RESPONSE = "HTTP/1.1 200 OK\r\ncontent-length: 0\r\n\r\n";
+    private static final String NO_OUTSTANDING_REQUEST = "Received data on a connection without an outstanding request";
     private static final String TIMEOUT_RESPONSE = "HTTP/1.1 408 Request Timeout\r\ncontent-length: 0\r\n\r\n";
     private static final String EXPECTATION_FAILED_RESPONSE =
             "HTTP/1.1 417 Expectation Failed\r\ncontent-length: 0\r\n\r\n";
@@ -655,7 +656,7 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     @Test
     void continueWithoutRequestFails() {
         EmbeddedChannel channel = newClientChannel();
-        assertDecoderException(CONTINUE_RESPONSE, "Received a response without an outstanding request", channel);
+        assertDecoderException(CONTINUE_RESPONSE, NO_OUTSTANDING_REQUEST, channel);
         assertThat(userEvents, is(empty()));
     }
 
@@ -682,13 +683,13 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     @Test
     void finalResponseWithoutRequestFails() {
         EmbeddedChannel channel = newClientChannel();
-        assertDecoderException(TIMEOUT_RESPONSE, "Received a response without an outstanding request", channel);
+        assertDecoderException(TIMEOUT_RESPONSE, NO_OUTSTANDING_REQUEST, channel);
     }
 
     @Test
     void partialStartLineWithoutRequestFails() {
         EmbeddedChannel channel = newClientChannel();
-        assertDecoderException("\r\nHTTP/1.1 408 Req", "Received a response without an outstanding request", channel);
+        assertDecoderException("\r\nHTTP/1.1 408 Req", NO_OUTSTANDING_REQUEST, channel);
     }
 
     @Test
@@ -699,7 +700,7 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
         assertResponseLine(HTTP_1_1, OK, channel);
         assertEmptyTrailers(channel);
 
-        assertDecoderException(TIMEOUT_RESPONSE, "Received a response without an outstanding request", channel);
+        assertDecoderException(TIMEOUT_RESPONSE, NO_OUTSTANDING_REQUEST, channel);
     }
 
     private static EmbeddedChannel newConnectChannel() {

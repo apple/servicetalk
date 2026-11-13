@@ -241,7 +241,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     protected abstract void handlePartialInitialLine(ChannelHandlerContext ctx, ByteBuf buffer);
 
     /**
-     * Invoked when the first byte of a new message is seen, before the initial line is parsed.
+     * Invoked on the first byte of a new message after skipping preface control characters, before the initial line is
+     * parsed. Throwing a {@link DecoderException} rejects the message and leaves the input unconsumed.
      */
     protected abstract void onMessageBegin();
 

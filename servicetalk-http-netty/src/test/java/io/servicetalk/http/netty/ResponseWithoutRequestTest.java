@@ -80,7 +80,7 @@ class ResponseWithoutRequestTest {
             assertThat(channel, is(notNullValue()));
             Throwable cause = channelError(channel);
             assertThat(cause, is(instanceOf(DecoderException.class)));
-            assertThat(cause.getMessage(), startsWith("Received a response without an outstanding request"));
+            assertThat(cause.getMessage(), startsWith("Received data on a connection without an outstanding request"));
         }
     }
 
@@ -94,12 +94,13 @@ class ResponseWithoutRequestTest {
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), US_ASCII));
             assertThat(in.readLine(), startsWith("GET /first "));
 
-            // The request-target can't be encoded. The failed write closes the connection, so the entries it left in
-            // the encoder/decoder queues are never matched with a response.
+            // The request-target can't be encoded after the decoder's signal for it is queued. The failed write closes
+            // the connection, so nothing is matched with that signal.
             ExecutionException e = assertThrows(ExecutionException.class,
                     () -> connection.request(connection.get("/invalid target")).toFuture().get());
             assertThat(hasCause(e, IllegalCharacterException.class), is(true));
 
+            // A response to /first would complete it if the connection stayed open.
             try {
                 socket.getOutputStream().write("HTTP/1.1 200 OK\r\ncontent-length: 0\r\n\r\n".getBytes(US_ASCII));
                 socket.getOutputStream().flush();
