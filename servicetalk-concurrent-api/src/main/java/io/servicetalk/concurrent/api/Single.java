@@ -53,6 +53,7 @@ import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSuccessSupplier;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -2031,14 +2032,16 @@ public abstract class Single<T> {
      * delivered, any other in-progress {@link Single}s are cancelled.
      * <p>
      * This method actively subscribes to a limited number of {@link Single}s concurrently. To alter the default
-     * limit, use {@link #collectInOrder(Iterable, int)}.
+     * limit, use {@link #collectOrdered(Iterable, int)}.
      *
      * @param singles {@link Iterable} of {@link Single}s, results of which are to be collected.
      * @param <T> Type of the result of the individual {@link Single}s.
      * @return A {@link Single} producing a {@link Collection} containing all values produced by the individual
      * {@link Single}s in the order they are returned by the {@link Iterable}.
+     * @see #collectUnordered(Iterable)
+     * @see Publisher#flatMapConcatSingle(Function, int)
      */
-    public static <T> Single<Collection<T>> collectInOrder(Iterable<? extends Single<? extends T>> singles) {
+    public static <T> Single<Collection<T>> collectOrdered(Iterable<? extends Single<? extends T>> singles) {
         return fromIterable(singles).flatMapConcatSingle(identity()).collect(ArrayList::new, (ts, t) -> {
             ts.add(t);
             return ts;
@@ -2053,15 +2056,17 @@ public abstract class Single<T> {
      * delivered, any other in-progress {@link Single}s are cancelled.
      * <p>
      * This method actively subscribes to a limited number of {@link Single}s concurrently. To alter the default
-     * limit, use {@link #collectInOrder(int, Single[])}.
+     * limit, use {@link #collectOrdered(int, Single[])}.
      *
      * @param singles {@link Single}s, results of which are to be collected.
      * @param <T> Type of the result of the individual {@link Single}s.
      * @return A {@link Single} producing a {@link Collection} containing all values produced by the individual
      * {@link Single}s in the order they are passed to this method.
+     * @see #collectUnordered(Iterable)
+     * @see Publisher#flatMapConcatSingle(Function, int)
      */
     @SafeVarargs
-    public static <T> Single<Collection<T>> collectInOrder(Single<? extends T>... singles) {
+    public static <T> Single<Collection<T>> collectOrdered(Single<? extends T>... singles) {
         return from(singles).<T>flatMapConcatSingle(identity()).collect(() -> new ArrayList<>(singles.length),
                 (ts, t) -> {
                     ts.add(t);
@@ -2082,9 +2087,12 @@ public abstract class Single<T> {
      * @param <T> Type of the result of the individual {@link Single}s.
      * @return A {@link Single} producing a {@link Collection} containing all values produced by the individual
      * {@link Single}s in the order they are returned by the {@link Iterable}.
+     * @see #collectUnordered(Iterable)
+     * @see Publisher#flatMapConcatSingle(Function, int)
      */
-    public static <T> Single<Collection<T>> collectInOrder(Iterable<? extends Single<? extends T>> singles,
+    public static <T> Single<Collection<T>> collectOrdered(Iterable<? extends Single<? extends T>> singles,
                                                            int maxConcurrency) {
+        ensurePositive(maxConcurrency, "maxConcurrency");
         return fromIterable(singles).flatMapConcatSingle(identity(), maxConcurrency)
                 .collect(ArrayList::new, (ts, t) -> {
                     ts.add(t);
@@ -2105,9 +2113,12 @@ public abstract class Single<T> {
      * @param <T> Type of the result of the individual {@link Single}s.
      * @return A {@link Single} producing a {@link Collection} containing all values produced by the individual
      * {@link Single}s in the order they are passed to this method.
+     * @see #collectUnordered(Iterable)
+     * @see Publisher#flatMapConcatSingle(Function, int)
      */
     @SafeVarargs
-    public static <T> Single<Collection<T>> collectInOrder(int maxConcurrency, Single<? extends T>... singles) {
+    public static <T> Single<Collection<T>> collectOrdered(int maxConcurrency, Single<? extends T>... singles) {
+        ensurePositive(maxConcurrency, "maxConcurrency");
         return from(singles).<T>flatMapConcatSingle(identity(), maxConcurrency)
                 .collect(() -> new ArrayList<>(singles.length), (ts, t) -> {
                     ts.add(t);
