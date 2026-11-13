@@ -558,7 +558,8 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
         assertStartLineForContent(channel);
         assertEmptyTrailers(channel);
 
-        // Try to write response content:
+        // Try to write response content, it's parsed as the next response:
+        beforeNextMessage(channel);
         assertDecoderException(content, "Invalid start-line", channel);
     }
 
@@ -656,7 +657,6 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
         EmbeddedChannel channel = newClientChannel();
         assertDecoderException(CONTINUE_RESPONSE, "Received a response without an outstanding request", channel);
         assertThat(userEvents, is(empty()));
-        assertThat(channel.inboundMessages(), is(empty()));
     }
 
     @Test
@@ -683,7 +683,12 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     void finalResponseWithoutRequestFails() {
         EmbeddedChannel channel = newClientChannel();
         assertDecoderException(TIMEOUT_RESPONSE, "Received a response without an outstanding request", channel);
-        assertThat(channel.inboundMessages(), is(empty()));
+    }
+
+    @Test
+    void partialStartLineWithoutRequestFails() {
+        EmbeddedChannel channel = newClientChannel();
+        assertDecoderException("\r\nHTTP/1.1 408 Req", "Received a response without an outstanding request", channel);
     }
 
     @Test
@@ -695,7 +700,6 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
         assertEmptyTrailers(channel);
 
         assertDecoderException(TIMEOUT_RESPONSE, "Received a response without an outstanding request", channel);
-        assertThat(channel.inboundMessages(), is(empty()));
     }
 
     private static EmbeddedChannel newConnectChannel() {

@@ -104,6 +104,16 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     }
 
     @Override
+    protected void onMessageBegin() {
+        // The method is polled only after the headers are read, so an empty queue on the first byte means there is no
+        // outstanding request. Such data is not a valid response (https://tools.ietf.org/html/rfc9112#section-9.2),
+        // fail to close the connection instead of handing it to the next request.
+        if (methodQueue.isEmpty()) {
+            throw new StacklessDecoderException("Received a response without an outstanding request");
+        }
+    }
+
+    @Override
     protected HttpResponseMetaData createMessage(final ByteBuf buffer, final int firstStart, final int firstLength,
                                                  final int secondStart, final int secondLength,
                                                  final int thirdStart, final int thirdLength) {
@@ -117,12 +127,6 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
             // start-line rather than an IllegalArgumentException.
             throw new StacklessDecoderException("Invalid start-line: HTTP reason-phrase contains an illegal character",
                     cause);
-        }
-        if (methodQueue.isEmpty()) {
-            // A response without an outstanding request (e.g. more responses than requests) is not valid and message
-            // delimitation is ambiguous (https://tools.ietf.org/html/rfc9112#section-9.2). Fail before notifying the
-            // CloseHandler to close the connection instead of handing it to the next request.
-            throw new StacklessDecoderException("Received a response without an outstanding request: " + status);
         }
         return newResponseMetaData(version, status, headersFactory().newHeaders());
     }

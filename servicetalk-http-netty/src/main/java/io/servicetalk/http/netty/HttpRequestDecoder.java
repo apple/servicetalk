@@ -79,6 +79,11 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> im
         }
     }
 
+    @Override
+    protected void onMessageBegin() {
+        // noop
+    }
+
     private static void ensureVCHAR(final byte value) {
         // As per the RFC, start-line begins with visible characters
         // https://tools.ietf.org/html/rfc7230#section-3.1.1

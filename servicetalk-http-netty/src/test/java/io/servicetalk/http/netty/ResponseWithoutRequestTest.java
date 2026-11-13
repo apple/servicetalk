@@ -20,6 +20,7 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.ReservedHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
+import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import io.netty.channel.Channel;
 import io.netty.handler.codec.DecoderException;
@@ -93,13 +94,30 @@ class ResponseWithoutRequestTest {
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), US_ASCII));
             assertThat(in.readLine(), startsWith("GET /first "));
 
-            // The request-target can't be encoded. The failed write closes the connection, so the decoder never
-            // matches a response with this request.
-            assertThrows(ExecutionException.class,
+            // The request-target can't be encoded. The failed write closes the connection, so the entries it left in
+            // the encoder/decoder queues are never matched with a response.
+            ExecutionException e = assertThrows(ExecutionException.class,
                     () -> connection.request(connection.get("/invalid target")).toFuture().get());
-            connection.onClose().toFuture().get();
+            assertThat(hasCause(e, IllegalCharacterException.class), is(true));
+
+            try {
+                socket.getOutputStream().write("HTTP/1.1 200 OK\r\ncontent-length: 0\r\n\r\n".getBytes(US_ASCII));
+                socket.getOutputStream().flush();
+            } catch (IOException ignored) {
+                // The client may have closed the connection already.
+            }
             assertThrows(ExecutionException.class, first::get);
+            connection.onClose().toFuture().get();
         }
+    }
+
+    private static boolean hasCause(Throwable t, Class<? extends Throwable> type) {
+        for (Throwable cause = t; cause != null; cause = cause.getCause()) {
+            if (type.isInstance(cause)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static ServerSocket newServerSocket() throws IOException {
