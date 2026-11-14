@@ -20,8 +20,6 @@ import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Publisher;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
@@ -30,13 +28,10 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.DefaultHttpRequestMetaData.DEFAULT_MAX_QUERY_PARAMS;
 import static io.servicetalk.http.api.HeaderUtils.checkContentType;
 import static io.servicetalk.http.api.HeaderUtils.hasContentType;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED;
-import static io.servicetalk.http.api.UriUtils.decodeQueryParams;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Collections.emptyMap;
 
 /**
  * An {@link HttpDeserializer} that deserializes a key-values {@link Map} from an urlencoded form.
@@ -102,15 +97,6 @@ final class FormUrlEncodedHttpDeserializer implements HttpDeserializer<Map<Strin
     }
 
     private Map<String, List<String>> deserialize(@Nullable final Buffer buffer) {
-        if (buffer == null || buffer.readableBytes() == 0) {
-            return emptyMap();
-        }
-        return decodeQueryParams(buffer.toString(charset), charset, DEFAULT_MAX_QUERY_PARAMS, (value, charset) -> {
-            try {
-                return URLDecoder.decode(value, charset.name());
-            } catch (UnsupportedEncodingException e) {
-                throw new IllegalStateException("URLDecoder failed to find Charset: " + charset, e);
-            }
-        });
+        return FormUrlEncodedSerializer.deserialize(buffer, charset);
     }
 }

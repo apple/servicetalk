@@ -76,6 +76,17 @@ class FormUrlEncodedHttpDeserializerTest {
     }
 
     @Test
+    void deserializeConsumesReadableBytes() {
+        final Buffer buffer = toBuffer("a=1&b=2");
+        final int writerIndex = buffer.writerIndex();
+
+        final Map<String, List<String>> deserialized = deserializer.deserialize(FE_HEADERS, buffer);
+
+        assertThat("Unexpected parameter count", deserialized, is(aMapWithSize(2)));
+        assertEquals(writerIndex, buffer.readerIndex(), "Unexpected reader index.");
+    }
+
+    @Test
     void invalidContentTypeThrows() {
         final String invalidContentType = "invalid/content/type";
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders()
