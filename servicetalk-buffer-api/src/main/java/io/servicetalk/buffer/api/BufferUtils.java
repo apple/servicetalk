@@ -26,7 +26,7 @@ final class BufferUtils {
 
     static byte[] toByteArray(Buffer buffer, int index, int length, boolean forceCopy) {
         final int capacity = buffer.capacity();
-        if (index < 0 || length < 0 || index > capacity - length) {
+        if (AbstractBuffer.isOutOfBounds(index, length, capacity)) {
             throw new IndexOutOfBoundsException("index: " + index + ", length: " + length +
                     " (expected: 0 <= index <= index + length <= capacity(" + capacity + "))");
         }
