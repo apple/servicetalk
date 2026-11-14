@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -255,6 +255,17 @@ class JacksonSerializerFactoryTest {
                                 BufferAllocators.DEFAULT_ALLOCATOR)
                         .toIterable(),
                 contains("b2", "b1"));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: typeRef={0}, alloc={1}")
+    @MethodSource("params")
+    void streamingDeserializeSliceRespectsReaderIndex(boolean typeRef, BufferAllocator alloc) {
+        Buffer buffer = alloc.fromUtf8("xx\"value\"yy").slice(1, 8).skipBytes(1);
+
+        assertThat(stringStreamingSerializer(typeRef).deserialize(from(EMPTY_BUFFER, buffer, EMPTY_BUFFER), alloc)
+                .toIterable(), contains("value"));
+        assertThat(buffer.readerIndex(), is(buffer.hasArray() ? 1 : 8));
+        assertThat(buffer.writerIndex(), is(8));
     }
 
     private static Stream<Arguments> params() {

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1892,6 +1892,64 @@ public interface Buffer {
      * @see #toNioBuffer(int, int)
      */
     ByteBuffer[] toNioBuffers(int index, int length);
+
+    /**
+     * Returns this buffer's readable bytes as a byte array whose contents are independent of this buffer.
+     * Modifying the content of the returned array or this buffer does not affect the other.
+     * This method does not modify {@code readerIndex} or {@code writerIndex} of
+     * this buffer.
+     *
+     * @return an array containing exactly the readable bytes.
+     *
+     * @see #toByteArray(boolean)
+     * @see #toByteArray(int, int)
+     */
+    default byte[] toByteArray() {
+        return toByteArray(true);
+    }
+
+    /**
+     * Returns this buffer's readable bytes as a byte array whose contents are independent of this buffer when
+     * {@code forceCopy} is {@code true}.
+     * This method does not modify {@code readerIndex} or {@code writerIndex} of
+     * this buffer.
+     * <p>
+     * If {@code forceCopy} is {@code false}, the backing array may be returned when it exactly matches the readable
+     * bytes. Otherwise, the bytes are copied.
+     * Modifying the content of a shared array or this buffer affects the other.
+     * If the buffer changes its capacity, the returned array may no longer share its content.
+     *
+     * @param forceCopy {@code true} to copy the bytes; {@code false} to allow sharing the backing array when it
+     * exactly matches the readable bytes.
+     * @return an array containing exactly the readable bytes.
+     *
+     * @see #toByteArray()
+     * @see #toByteArray(int, int)
+     */
+    default byte[] toByteArray(boolean forceCopy) {
+        return BufferUtils.toByteArray(this, readerIndex(), readableBytes(), forceCopy);
+    }
+
+    /**
+     * Returns the specified region of this buffer as a byte array whose contents are independent of this buffer.
+     * Modifying the content of the returned array or this buffer does not affect the other.
+     * The region is relative to the start of this buffer and may include bytes outside the readable region.
+     * This method does not modify {@code readerIndex} or {@code writerIndex} of
+     * this buffer.
+     *
+     * @param index the absolute start index.
+     * @param length the number of bytes to copy.
+     * @return an array containing exactly the specified bytes.
+     * @throws IndexOutOfBoundsException
+     *         if {@code index} or {@code length} is negative, or if the region exceeds
+     *         this buffer's {@link #capacity()}
+     *
+     * @see #toByteArray()
+     * @see #toByteArray(boolean)
+     */
+    default byte[] toByteArray(int index, int length) {
+        return BufferUtils.toByteArray(this, index, length, true);
+    }
 
     /**
      * Determine if this buffer is read-only.
