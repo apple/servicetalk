@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -139,6 +139,12 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
         };
 
         PublisherEvent event = currEvent();
+        if (event instanceof CancelEvent) {
+            // The quiet period checks data and terminal signals, not the subscription required to cancel.
+            processSubscriptionAggregate();
+            scheduleCancel((CancelEvent) event);
+            return;
+        }
         event = checkNoSignalsExpectation("onSubscribe", subscription, event);
         if (event instanceof OnSubscriptionEvent) {
             try {
@@ -207,7 +213,7 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
             if (++currCount == ((OnNextExpectCountEvent) event).maxOnNext()) {
                 event = pollNextEvent();
             }
-        } else if (event != null) {
+        } else if (event != null && !(event instanceof CancelEvent)) {
             failVerification(new IllegalStateException("expected " + event.description() + ", actual onNext: " + t),
                     event);
         }
@@ -227,7 +233,7 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
             } catch (Throwable cause) {
                 failVerification(cause, event);
             }
-        } else if (event != null) {
+        } else if (event != null && !(event instanceof CancelEvent)) {
             event = failVerification(new IllegalStateException("expected " + event.description() +
                     ", actual onError", t), event);
         }
@@ -247,7 +253,7 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
             } catch (Throwable cause) {
                 failVerification(cause, event);
             }
-        } else if (event != null) {
+        } else if (event != null && !(event instanceof CancelEvent)) {
             event = failVerification(new IllegalStateException("expected " + event.description() +
                     ", actual onComplete"), event);
         }
@@ -329,6 +335,14 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
                 if (subscriptionBeginIndex < 0) {
                     subscriptionBeginIndex = eventIndex;
                 }
+            } else if (currEvent instanceof CancelEvent) {
+                addSubscriptionIndexRange(subscriptionBeginIndex, eventIndex);
+                processVerifyThreadAggregate(verifyThreadEvents);
+                if (subscription != null) {
+                    processSubscriptionAggregate();
+                    scheduleCancel((CancelEvent) currEvent);
+                }
+                return currEvent;
             } else if (currEvent instanceof VerifyThreadEvent) {
                 subscriptionBeginIndex = addSubscriptionIndexRange(subscriptionBeginIndex, eventIndex);
                 if (verifyThreadEvents == null) {
@@ -384,6 +398,11 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
         } else if (event instanceof OnTerminalEvent) {
             subscription.request(Long.MAX_VALUE);
         }
+    }
+
+    private void scheduleCancel(CancelEvent event) {
+        assert subscription != null;
+        verifyThreadProcessor.onNext(new VerifyThreadCancelEvent(event, subscription, noSignalsUntil));
     }
 
     private void processVerifyThreadAggregate(@Nullable Queue<VerifyThreadEvent> verifyThreadEvents) {
@@ -466,6 +485,31 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
         if (subscription == null) {
             throw new IllegalStateException("onSubscribe must be called before any other signals. " +
                     "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.9");
+        }
+    }
+
+    static final class CancelEvent extends PublisherEvent {
+        @Override
+        String description() {
+            return "thenCancel()";
+        }
+    }
+
+    static final class VerifyThreadCancelEvent extends VerifyThreadEvent {
+        final CancelEvent event;
+        final Subscription subscription;
+        @Nullable
+        final Long noSignalsUntil;
+
+        VerifyThreadCancelEvent(CancelEvent event, Subscription subscription, @Nullable Long noSignalsUntil) {
+            this.event = event;
+            this.subscription = subscription;
+            this.noSignalsUntil = noSignalsUntil;
+        }
+
+        @Override
+        String description() {
+            return event.description();
         }
     }
 

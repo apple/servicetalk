@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021-2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -177,13 +177,9 @@ abstract class AbstractTimeoutHttpFilterTest {
         StepVerifiers.create(applyFilter(timeout, false, defaultStrategy(), responseWith(payloadBody))
                     .whenOnSuccess(__ -> responseSucceeded.set(true))
                     .flatMapPublisher(StreamingHttpResponse::payloadBody))
-                .expectSubscriptionConsumed(subscription ->
-                        immediate().schedule(subscription::cancel, timeout.plusMillis(10L)))
                 .thenRequest(MAX_VALUE)
                 .expectNoSignals(timeout.plusMillis(5L))
-                // FIXME: use thenCancel() instead of expectSubscriptionConsumed(...) + expectError()
-                // https://github.com/apple/servicetalk/issues/1492
-                .expectError(IllegalStateException.class)   // should never happen
+                .thenCancel()
                 .verify();
         assertThat("Response did not succeeded", responseSucceeded.get(), is(true));
         assertThat("No subscribe for payload body", payloadBody.isSubscribed(), is(true));
