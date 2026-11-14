@@ -134,7 +134,9 @@ public final class FormUrlEncodedSerializer implements SerializerDeserializer<Ma
         if (buffer == null || buffer.readableBytes() == 0) {
             return emptyMap();
         }
-        return decodeQueryParams(buffer.toString(charset), charset, DEFAULT_MAX_QUERY_PARAMS, (value, charset2) -> {
+        final String encoded = buffer.toString(charset);
+        buffer.skipBytes(buffer.readableBytes());
+        return decodeQueryParams(encoded, charset, DEFAULT_MAX_QUERY_PARAMS, (value, charset2) -> {
             try {
                 return URLDecoder.decode(value, charset2.name());
             } catch (UnsupportedEncodingException e) {
