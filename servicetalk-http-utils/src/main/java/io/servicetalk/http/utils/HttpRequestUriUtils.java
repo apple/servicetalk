@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethod.OPTIONS;
+import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
 
 /**
  * Helper methods for computing effective request URIs according
@@ -198,7 +199,8 @@ public final class HttpRequestUriUtils {
         // https://tools.ietf.org/html/rfc7230#section-5.5
         // If the request-target is in authority-form or asterisk-form, the effective request URI's combined
         // path and query component is empty.
-        if (checkAuthorityOrAsteriskForm && (CONNECT.equals(metaData.method()) || OPTIONS.equals(metaData.method()))) {
+        if (checkAuthorityOrAsteriskForm && (CONNECT.equals(metaData.method()) ||
+                (OPTIONS.equals(metaData.method()) && "*".equals(metaData.requestTarget())))) {
             path = query = null;
         }
 
@@ -281,7 +283,11 @@ public final class HttpRequestUriUtils {
             sb.append(userInfo).append('@');
         }
         if (host != null) {
-            sb.append(host);
+            if (isValidIpV6Address(host) && host.charAt(0) != '[') {
+                sb.append('[').append(host).append(']');
+            } else {
+                sb.append(host);
+            }
         }
         if (port >= 0) {
             sb.append(':').append(port);
