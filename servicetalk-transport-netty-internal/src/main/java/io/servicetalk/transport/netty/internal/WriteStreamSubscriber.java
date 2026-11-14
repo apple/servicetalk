@@ -88,6 +88,8 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     private static final byte SUBSCRIBER_TERMINATED = 1 << 3;
     private static final byte SOURCE_OUTBOUND_CLOSED = 1 << 4;
     private static final byte SUBSCRIBER_OR_SOURCE_TERMINATED = SOURCE_TERMINATED | SUBSCRIBER_TERMINATED;
+    private static final byte SUBSCRIBER_TERMINATED_OR_CHANNEL_CLOSING =
+            SUBSCRIBER_TERMINATED | CHANNEL_CLOSED | CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION;
     private static final Subscription CANCELLED = newEmptySubscription();
     private static final AtomicReferenceFieldUpdater<WriteStreamSubscriber, Subscription> subscriptionUpdater =
             AtomicReferenceFieldUpdater.newUpdater(WriteStreamSubscriber.class, Subscription.class, "subscription");
@@ -259,15 +261,20 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     @Override
     public void terminateSource() {
         assert eventLoop.inEventLoop();
-        // Terminate the source only if it awaits continuation.
+        final Subscription sub = this.subscription;
         if (shouldWaitFlag) {
             assert promise.activeWrites == 0 :
                     channel + " Unexpected activeWrites=" + promise.activeWrites + " while waiting for continuation";
             // Cancel the passed write Publisher to signal transport is not interested in more data.
-            final Subscription sub = this.subscription;
             assert sub != null : channel + " Unexpected subscription=null while waiting for continuation";
             sub.cancel();
             promise.sourceTerminated(null, true);
+        } else if (sub != null && promise.written) {
+            // The source is already writing, e.g. the server rejected the request and closes the connection. Stop it
+            // and complete the write without waiting for in-flight writes, which fail when the connection closes.
+            // If nothing was written yet, the write fails as retryable when the connection closes.
+            sub.cancel();
+            promise.sourceStopped();
         }
     }
 
@@ -455,20 +462,37 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 markCancelled();
             }
             if (activeWrites == 0) {
-                try {
-                    terminateSubscriber(cause);
-                } catch (Throwable t) {
-                    tryFailureOrLog(t);
-                    return;
-                }
-                // We are here because the Publisher that was being written terminated, not the actual channel writes.
-                // Hence, we set the promise result to success to notify the listeners. If the writes fail before the
-                // source terminates, we would have already terminated the Subscriber.
-                //
-                // If we use trySuccess() here then it will reenter sourceTerminated() where it will see the state
-                // as SUBSCRIBER_TERMINATED and do nothing. trySuccess(null) does not reenter.
-                super.trySuccess(null);
+                terminateAfterSource(cause);
             }
+        }
+
+        void sourceStopped() {
+            assert eventLoop.inEventLoop();
+            if (isAnySet(state, SUBSCRIBER_TERMINATED_OR_CHANNEL_CLOSING)) {
+                // A closing channel already decides the result, e.g. writes aborted for pipelined requests.
+                return;
+            }
+            state = set(state, SOURCE_TERMINATED);
+            markCancelled();
+            // Don't wait for in-flight writes, their results are ignored after the subscriber terminates. A source that
+            // already failed still reports its failure.
+            terminateAfterSource(failureCause);
+        }
+
+        private void terminateAfterSource(@Nullable Throwable cause) {
+            try {
+                terminateSubscriber(cause);
+            } catch (Throwable t) {
+                tryFailureOrLog(t);
+                return;
+            }
+            // We are here because the Publisher that was being written terminated, not the actual channel writes.
+            // Hence, we set the promise result to success to notify the listeners. If the writes fail before the
+            // source terminates, we would have already terminated the Subscriber.
+            //
+            // If we use trySuccess() here then it will reenter sourceTerminated() where it will see the state
+            // as SUBSCRIBER_TERMINATED and do nothing. trySuccess(null) does not reenter.
+            super.trySuccess(null);
         }
 
         void markCancelled() {
