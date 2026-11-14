@@ -226,20 +226,26 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
 
     @Override
     public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
-        if (expectContinue != null) {
-            if (evt == ContinueUserEvent.INSTANCE) {
-                // Reset after receiving 100 (Continue), a 2xx response, or when the wait timed out.
-                expectContinue = null;
-            } else if (evt == CancelWriteUserEvent.INSTANCE) {
-                // The server responded before the declared body was sent. HTTP/1.1 can not skip the rest of a message
-                // and a server must read it or close the connection (https://tools.ietf.org/html/rfc9112#section-9.3),
-                // so the connection can not be reused. A request with no declared payload body keeps its connection.
-                if (payloadBodyOutstanding()) {
+        if (evt == ContinueUserEvent.INSTANCE) {
+            // Reset after receiving 100 (Continue), a 2xx response, or when the wait timed out.
+            expectContinue = null;
+        } else if (evt == CancelWriteUserEvent.INSTANCE) {
+            final boolean payloadBodyOutstanding = payloadBodyOutstanding();
+            if (expectContinue != null || payloadBodyOutstanding) {
+                // The server responded before the declared body was sent, or rejected the request and closes the
+                // connection. HTTP/1.1 can not skip the rest of a message and a server must read it or close the
+                // connection (https://tools.ietf.org/html/rfc9112#section-9.3), so the connection can not be reused. A
+                // request with no declared payload body keeps its connection.
+                if (payloadBodyOutstanding) {
                     closeHandler.protocolClosingOutbound(ctx);
                 }
                 // Mark as content consumed to complete the request from the CloseHandler's point of view.
                 contentLenConsumed(ctx, null);
-                expectContinue = null;
+                if (expectContinue != null) {
+                    // A closing response to a previous pipelined request may cancel this request before its wait ends.
+                    expectContinue.stopExpectContinue();
+                    expectContinue = null;
+                }
             }
         }
         ctx.fireUserEventTriggered(evt);
