@@ -922,8 +922,8 @@ abstract class HttpObjectDecoderTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] chunkSize={0} crlf={1}")
-    @MethodSource("signedChunkSizeArgs")
-    void chunkedSignedChunkSize(String chunkSize, boolean crlf) {
+    @MethodSource("chunkSizeNotStartingWithHexDigArgs")
+    void chunkSizeNotStartingWithHexDig(String chunkSize, boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         writeMsg(startLineForContent() + br +
@@ -936,20 +936,23 @@ abstract class HttpObjectDecoderTest {
         assertThat(channel.inboundMessages(), is(not(empty())));
     }
 
-    private static Collection<Arguments> signedChunkSizeArgs() {
+    private static Collection<Arguments> chunkSizeNotStartingWithHexDigArgs() {
         List<Arguments> arguments = new ArrayList<>();
         for (boolean crlf : new boolean[] {true, false}) {
             arguments.add(Arguments.of("+1", crlf));
             // A parser that reads "+0" as 0 sees the last chunk and ends the message here.
             arguments.add(Arguments.of("+0", crlf));
             arguments.add(Arguments.of("-1", crlf));
+            arguments.add(Arguments.of(" 5", crlf));
+            arguments.add(Arguments.of("\t5", crlf));
+            arguments.add(Arguments.of("\u000b5", crlf));
         }
         return arguments;
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] hex={0}")
-    @ValueSource(strings = {"+1", "+0", "+7FFFFFFF", "+1;ext"})
-    void getChunkSizeRejectsSign(String hex) {
+    @ValueSource(strings = {"+1", "+0", "+7FFFFFFF", "+1;ext", " 5", "\t5", "\u000b5", "\u00005"})
+    void getChunkSizeRejectsNonHexDigFirstChar(String hex) {
         DecoderException e = assertThrows(DecoderException.class, () -> HttpObjectDecoder.getChunkSize(hex));
         assertThat(e.getMessage(), startsWith("Cannot parse chunk-size"));
         assertThat(e.getCause(), is(instanceOf(NumberFormatException.class)));
