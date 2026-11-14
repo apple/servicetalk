@@ -34,6 +34,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FormUrlEncodedSerializerTest {
 
@@ -84,5 +85,17 @@ class FormUrlEncodedSerializerTest {
 
         assertThat(result, equalTo(form));
         assertThat(buffer.readableBytes(), is(0));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] direct={0}")
+    @ValueSource(booleans = {false, true})
+    void deserializeFailureDoesNotConsumeBytes(boolean direct) {
+        final byte[] form = "a=%zz".getBytes(UTF_8);
+        final Buffer buffer = DEFAULT_ALLOCATOR.newBuffer(form.length, direct).writeBytes(form);
+        final int readerIndex = buffer.readerIndex();
+
+        assertThrows(IllegalArgumentException.class, () -> SERIALIZER.deserialize(buffer, DEFAULT_ALLOCATOR));
+        assertThat(buffer.readerIndex(), is(readerIndex));
+        assertThat(buffer.readableBytes(), is(form.length));
     }
 }

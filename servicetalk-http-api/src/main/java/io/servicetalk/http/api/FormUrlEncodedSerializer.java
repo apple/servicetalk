@@ -134,15 +134,17 @@ public final class FormUrlEncodedSerializer implements SerializerDeserializer<Ma
         if (buffer == null || buffer.readableBytes() == 0) {
             return emptyMap();
         }
-        final String encoded = buffer.toString(charset);
+        final Map<String, List<String>> result = decodeQueryParams(buffer.toString(charset), charset,
+                DEFAULT_MAX_QUERY_PARAMS, (value, charset2) -> {
+                    try {
+                        return URLDecoder.decode(value, charset2.name());
+                    } catch (UnsupportedEncodingException e) {
+                        throw new IllegalStateException("URLDecoder failed to find Charset: " + charset2, e);
+                    }
+                });
+        // Only consume the bytes after a successful decode, so a failure leaves the buffer untouched.
         buffer.skipBytes(buffer.readableBytes());
-        return decodeQueryParams(encoded, charset, DEFAULT_MAX_QUERY_PARAMS, (value, charset2) -> {
-            try {
-                return URLDecoder.decode(value, charset2.name());
-            } catch (UnsupportedEncodingException e) {
-                throw new IllegalStateException("URLDecoder failed to find Charset: " + charset2, e);
-            }
-        });
+        return result;
     }
 
     private static byte[] urlEncode(final String value, Charset charset) {
