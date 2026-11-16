@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package io.servicetalk.grpc.netty;
 
+import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
@@ -38,6 +39,9 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
+import io.servicetalk.transport.api.ConnectionObserver;
+import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
+import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
@@ -60,6 +64,7 @@ import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
@@ -67,14 +72,19 @@ import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Collections.singleton;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Answers.CALLS_REAL_METHODS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class TrailersOnlyErrorTest {
@@ -142,6 +152,29 @@ class TrailersOnlyErrorTest {
             }
         }
         responseLatch.await();  // Make sure all responses complete
+    }
+
+    @Test
+    void serviceThrowsWithOpenRequestStreamResetsStream() throws Exception {
+        final StreamObserver streamObserver = mock(StreamObserver.class, CALLS_REAL_METHODS);
+        final MultiplexedObserver multiplexedObserver = mock(MultiplexedObserver.class);
+        when(multiplexedObserver.onNewStream()).thenReturn(streamObserver);
+        final ConnectionObserver connectionObserver = mock(ConnectionObserver.class, CALLS_REAL_METHODS);
+        doReturn(multiplexedObserver).when(connectionObserver).multiplexedConnectionEstablished(any());
+        final TesterService service = mockTesterService();
+        setupServiceThrows(service);
+
+        try (ServerContext serverContext = GrpcServers.forAddress(localAddress(0))
+                .initializeHttp(TrailersOnlyErrorTest::applyCtx)
+                .listenAndAwait(new Tester.ServiceFactory(service));
+             TesterClient client = GrpcClients.forAddress(serverHostAndPort(serverContext))
+                     .initializeHttp(builder -> applyCtx(builder).appendConnectionFactoryFilter(
+                             new TransportObserverConnectionFactoryFilter<>((local, remote) -> connectionObserver)))
+                     .build(new Tester.ClientFactory())) {
+            // The request stream never completes, so only the client can end the stream after the Trailers-Only error.
+            verifyException(client.testBiDiStream(never()).toFuture(), UNKNOWN);
+            verify(streamObserver, timeout(SECONDS.toMillis(DEFAULT_TIMEOUT_SECONDS))).streamClosed();
+        }
     }
 
     @Test
