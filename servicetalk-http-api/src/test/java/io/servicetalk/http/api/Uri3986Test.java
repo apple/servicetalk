@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -145,8 +145,13 @@ class Uri3986Test {
     }
 
     @Test
-    void doubleSlashWithEmptyAuthorityThrows() {
-        verifyUri3986("//@foo", null, "", "foo", -1, "", "", null, null, null);
+    void doubleSlashWithAtSignIsPath() {
+        verifyPath("//@foo", "//@foo", null, null);
+    }
+
+    @Test
+    void schemeWithEmptyUserInfo() {
+        verifyUri3986("http://@foo", "http", "", "foo", -1, "", "", null, null, null);
     }
 
     @Test
@@ -210,13 +215,33 @@ class Uri3986Test {
     }
 
     @Test
-    void doubleSlashWithPortLookAlike() {
-        verifyUri3986("//81", null, null, "81", -1, "", "", null, null, null);
+    void doubleSlashWithPortLookAlikeIsPath() {
+        verifyPath("//81", "//81", null, null);
     }
 
     @Test
-    void doubleSlashWithoutScheme() {
-        verifyUri3986("//foo.com/path?query#tag", null, null, "foo.com", -1, "/path", "/path", "query", "query", "tag");
+    void schemeWithPortLookAlikeHost() {
+        verifyUri3986("http://81", "http", null, "81", -1, "", "", null, null, null);
+    }
+
+    @Test
+    void doubleSlashWithoutSchemeIsPath() {
+        verifyPath("//foo.com/path?query#tag", "//foo.com/path", "query", "tag");
+    }
+
+    @Test
+    void doubleSlashWithUserInfoAndPortLookAlikeIsPath() {
+        verifyPath("//user@foo.com:81/path", "//user@foo.com:81/path", null, null);
+    }
+
+    @Test
+    void doubleSlashWithInvalidPortLookAlikeIsPath() {
+        verifyPath("//foo.com:abc/path", "//foo.com:abc/path", null, null);
+    }
+
+    @Test
+    void doubleSlashWithColonIsPath() {
+        verifyPath("//a:b", "//a:b", null, null);
     }
 
     @Test
@@ -252,13 +277,23 @@ class Uri3986Test {
     }
 
     @Test
-    void doubleSlashWithEmptyUserInfoAndAuthority() {
-        verifyUri3986("//", null, null, "", -1, "", "", null, null, null);
+    void doubleSlashOnlyIsPath() {
+        verifyPath("//", "//", null, null);
     }
 
     @Test
-    void doubleSlashWithUserInfo() {
-        verifyUri3986("//user@", null, "user", "", -1, "", "", null, null, null);
+    void schemeWithEmptyAuthority() {
+        verifyUri3986("http://", "http", null, "", -1, "", "", null, null, null);
+    }
+
+    @Test
+    void doubleSlashWithUserInfoIsPath() {
+        verifyPath("//user@", "//user@", null, null);
+    }
+
+    @Test
+    void schemeWithUserInfoAndEmptyHost() {
+        verifyUri3986("http://user@", "http", "user", "", -1, "", "", null, null, null);
     }
 
     @Test
@@ -638,6 +673,13 @@ class Uri3986Test {
                                           @Nullable final String userInfo) {
         verifyUri3986(expectedUri, isSsl ? "https" : "http", userInfo, "apple.com", port, "/path/is/here",
                 "/path/is/here", "queryname=value", "queryname=value", "tag");
+    }
+
+    // Not verifyUri3986: the RFC 3986 regex reads a leading "//" as an authority, which a request-target never has.
+    private static void verifyPath(String uri, String expectedPath, @Nullable String expectedQuery,
+                                   @Nullable String expectedFragment) {
+        verifyUri(new Uri3986(uri), uri, null, null, null, -1, expectedPath, expectedPath, expectedQuery,
+                expectedQuery, expectedFragment);
     }
 
     private static void verifyUri3986(String expectedUri, @Nullable String expectedScheme,

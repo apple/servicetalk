@@ -20,10 +20,12 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.RedirectConfigBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
@@ -43,7 +45,9 @@ import java.net.ServerSocket;
 import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
@@ -310,6 +314,31 @@ class MultiAddressUrlHttpClientTest {
         StreamingHttpRequest request = client.get(format("http://%s/301", hostHeader))
                 .setHeader(X_REQUESTED_LOCATION, format(location, hostHeader));  // Location for redirect
         requestAndValidate(client, request, OK, "/200", hostHeader);
+    }
+
+    @Test
+    void doubleSlashPathKeepsUrlAuthority() throws Exception {
+        BlockingQueue<StreamingHttpRequest> sentRequests = new LinkedBlockingQueue<>();
+        try (StreamingHttpClient client = HttpClients.forMultiAddressUrl(ID)
+                .initializer((scheme, address, builder) -> builder.appendConnectionFilter(connection ->
+                        new StreamingHttpConnectionFilter(connection) {
+                            @Override
+                            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                                sentRequests.add(request);
+                                return delegate().request(request);
+                            }
+                        }))
+                .buildStreaming()) {
+            StreamingHttpRequest request = client.get(format("http://%s//a/200", hostHeader));
+            // httpService maps the path to a status code, and "/a/200" isn't one.
+            requestAndValidate(client, request, BAD_REQUEST, "//a/200", hostHeader);
+            StreamingHttpRequest sent = sentRequests.take();
+            HostAndPort effective = sent.effectiveHostAndPort();
+            assertThat(effective, is(notNullValue()));
+            assertThat(effective.hostName(), is(serverHost));
+            assertThat(effective.port(), is(serverPort));
+            assertThat(sent.path(), is("//a/200"));
+        }
     }
 
     @Test

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -177,9 +177,8 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
         // https://tools.ietf.org/html/rfc3986#section-3.3
         // If a URI contains an authority component, then the path component must either be empty or begin with a
-        // slash ("/") character.
-        final String host = httpUri.host();
-        if ((host != null && !host.isEmpty()) && (!path.isEmpty() && path.charAt(0) != '/')) {
+        // slash ("/") character. That includes an empty authority, or the path would become the authority.
+        if (httpUri.host() != null && !path.isEmpty() && path.charAt(0) != '/') {
             sb.append('/');
         }
         sb.append(path);
@@ -219,9 +218,11 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         // Append the new path segments
         String path = httpUri.path();
         final String segment = encodeComponent(PATH_SEGMENT, segments[0], REQUEST_TARGET_CHARSET, false);
-        if (path.isEmpty() || path.length() == 1 && path.charAt(0) == '/') {
+        final boolean emptyOrRootPath = path.isEmpty() || path.length() == 1 && path.charAt(0) == '/';
+        if (emptyOrRootPath) {
             validateFirstPathSegment(httpUri, segment);
         }
+        final int pathStart = sb.length();
         sb.append(path);
         // relative-path is valid so don't append a '/' in case there is nothing appended thus far.
         // https://tools.ietf.org/html/rfc3986#section-4.2
@@ -231,6 +232,10 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         sb.append(segment);
         for (int i = 1; i < segments.length; i++) {
             sb.append('/').append(encodeComponent(PATH_SEGMENT, segments[i], REQUEST_TARGET_CHARSET, false));
+        }
+        if (emptyOrRootPath) {
+            // An empty first segment makes the joined path start with "//".
+            validateFirstPathSegment(httpUri, sb.substring(pathStart));
         }
 
         // Append the query string
@@ -513,7 +518,8 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     private static void validateFirstPathSegment(final Uri httpUri, final String path) {
         int i = 0;
         final String scheme = httpUri.scheme();
-        if (scheme == null || scheme.isEmpty()) {
+        final boolean hasScheme = scheme != null && !scheme.isEmpty();
+        if (!hasScheme) {
             // https://tools.ietf.org/html/rfc3986#section-3.3
             // In addition, a URI reference (Section 4.1) may be a relative-path reference, in which case the first path
             // segment cannot contain a colon (":") character.
@@ -528,8 +534,9 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         }
         // https://tools.ietf.org/html/rfc3986#section-3.3
         // If a URI does not contain an authority component, then the path cannot begin with two slash characters
-        // ("//").
-        if (httpUri.host() == null && path.length() >= 2 && path.charAt(0) == '/' && path.charAt(1) == '/') {
+        // ("//"). Without a scheme a leading "//" stays part of the path, so only a target with a scheme is at risk.
+        if (httpUri.host() == null && hasScheme &&
+                path.length() >= 2 && path.charAt(0) == '/' && path.charAt(1) == '/') {
             throw new IllegalArgumentException("No authority component, path cannot start with '//'");
         }
         // It is assumed '?'/'#' characters that delimit query/fragment components have been escaped and are therefore
