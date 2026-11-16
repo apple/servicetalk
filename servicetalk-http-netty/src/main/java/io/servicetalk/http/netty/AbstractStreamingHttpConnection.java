@@ -131,10 +131,10 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                 // Handle cancellation for LoadBalancedStreamingHttpClient. We do it here for several reasons:
                 //  1. Intercepting cancel next to the transport layer (after all user-defined filters and internal HTTP
                 //     logic) helps to capture all possible sources of cancellation.
-                //  2. Intercepting cancel on the caller thread before jumping to the event-loop thread helps to notify
-                //     concurrency controller that the channel is going to close before potentially delivering a
-                //     terminal event back to the response Subscriber (e.g. TimeoutHttpRequesterFilter emits "onError"
-                //     right after propagating "cancel").
+                //  2. For HTTP/1.x, intercepting cancel on the caller thread before jumping to the event-loop thread
+                //     helps to notify concurrency controller that the channel is going to close before potentially
+                //     delivering a terminal event back to the response Subscriber (e.g. TimeoutHttpRequesterFilter
+                //     emits "onError" right after propagating "cancel").
                 //  3. Doing it before SpliceFlatStreamToMetaSingle helps to avoid the need for
                 //     BeforeFinallyHttpOperator.
                 //  4. Doing it before offloading of terminal signals helps to reduce the risk of closing a connection

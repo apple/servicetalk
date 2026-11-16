@@ -39,13 +39,11 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
-import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import io.grpc.examples.helloworld.Greeter;
@@ -81,9 +79,12 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Answers.CALLS_REAL_METHODS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class TrailersOnlyErrorTest {
@@ -155,7 +156,11 @@ class TrailersOnlyErrorTest {
 
     @Test
     void serviceThrowsWithOpenRequestStreamResetsStream() throws Exception {
-        final CountDownLatch streamClosed = new CountDownLatch(1);
+        final StreamObserver streamObserver = mock(StreamObserver.class, CALLS_REAL_METHODS);
+        final MultiplexedObserver multiplexedObserver = mock(MultiplexedObserver.class);
+        when(multiplexedObserver.onNewStream()).thenReturn(streamObserver);
+        final ConnectionObserver connectionObserver = mock(ConnectionObserver.class, CALLS_REAL_METHODS);
+        doReturn(multiplexedObserver).when(connectionObserver).multiplexedConnectionEstablished(any());
         final TesterService service = mockTesterService();
         setupServiceThrows(service);
 
@@ -164,11 +169,11 @@ class TrailersOnlyErrorTest {
                 .listenAndAwait(new Tester.ServiceFactory(service));
              TesterClient client = GrpcClients.forAddress(serverHostAndPort(serverContext))
                      .initializeHttp(builder -> applyCtx(builder).appendConnectionFactoryFilter(
-                             new TransportObserverConnectionFactoryFilter<>(onStreamClosed(streamClosed))))
+                             new TransportObserverConnectionFactoryFilter<>((local, remote) -> connectionObserver)))
                      .build(new Tester.ClientFactory())) {
             // The request stream never completes, so only the client can end the stream after the Trailers-Only error.
             verifyException(client.testBiDiStream(never()).toFuture(), UNKNOWN);
-            assertTrue(streamClosed.await(DEFAULT_TIMEOUT_SECONDS, SECONDS));
+            verify(streamObserver, timeout(SECONDS.toMillis(DEFAULT_TIMEOUT_SECONDS))).streamClosed();
         }
     }
 
@@ -286,33 +291,6 @@ class TrailersOnlyErrorTest {
     private static void verifyException(final Executable exchange, final GrpcStatusCode expectedCode) {
         GrpcStatusException e = assertThrows(GrpcStatusException.class, exchange::execute);
         assertThat(e.status().code(), is(expectedCode));
-    }
-
-    private static TransportObserver onStreamClosed(final CountDownLatch latch) {
-        final StreamObserver streamObserver = new StreamObserver() {
-            @Override
-            public void streamClosed(final Throwable error) {
-                latch.countDown();
-            }
-
-            @Override
-            public void streamClosed() {
-                latch.countDown();
-            }
-        };
-        final MultiplexedObserver multiplexedObserver = new MultiplexedObserver() {
-            @Override
-            public StreamObserver onNewStream() {
-                return streamObserver;
-            }
-        };
-        final ConnectionObserver connectionObserver = new ConnectionObserver() {
-            @Override
-            public MultiplexedObserver multiplexedConnectionEstablished(final ConnectionInfo info) {
-                return multiplexedObserver;
-            }
-        };
-        return (localAddress, remoteAddress) -> connectionObserver;
     }
 
     private static TesterService mockTesterService() {

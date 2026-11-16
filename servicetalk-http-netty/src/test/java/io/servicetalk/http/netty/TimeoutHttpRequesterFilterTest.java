@@ -110,7 +110,8 @@ class TimeoutHttpRequesterFilterTest extends AbstractNettyHttpServerTest {
                     c.connectionContext().onClosing().subscribe(() -> connectionClosing.set(true));
                     return new StreamingHttpConnectionFilter(c) { };
                 },
-                new TimeoutHttpRequesterFilter(Duration.ofMillis(100))));
+                new TimeoutHttpRequesterFilter((request, timeSource) ->
+                        SVC_NEVER.equals(request.path()) ? Duration.ofMillis(100) : null, false)));
         setUp(CACHED, CACHED_SERVER);
         // Release the reserved connection so the client reuses it instead of opening another.
         ((ReservedStreamingHttpConnection) streamingHttpConnection()).releaseAsync().toFuture().get();

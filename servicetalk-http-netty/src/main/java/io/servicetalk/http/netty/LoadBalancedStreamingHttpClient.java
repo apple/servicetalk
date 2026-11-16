@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,12 +113,12 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
                             @Override
                             @SuppressWarnings("AssignmentToStaticFieldFromInstanceMethod")
                             public void cancel() {
-                                // For HTTP/1.x cancellation is handled in AbstractStreamingHttpConnection.
-                                // For HTTP/2 cancellation is handled by OnStreamClosedRunnable owned by the actual
-                                // Stream. To avoid leaking the resource in case users wiped/modified the
-                                // request.context() before OnStreamClosedRunnable was propagated to the
-                                // H2ClientParentConnectionContext, we double-check ownership here and mark the request
-                                // as "finished". In normal circumstances, ownership will be taken by
+                                // AbstractStreamingHttpConnection closes the HTTP/1.x connection or the HTTP/2 stream
+                                // on cancel. For HTTP/2 the concurrency controller is updated by OnStreamClosedRunnable
+                                // owned by the actual Stream. To avoid leaking the resource in case users
+                                // wiped/modified the request.context() before OnStreamClosedRunnable was propagated to
+                                // the H2ClientParentConnectionContext, we double-check ownership here and mark the
+                                // request as "finished". In normal circumstances, ownership will be taken by
                                 // H2ClientParentConnectionContext prior propagation of the Cancellable down.
                                 if (onStreamClosed != null && onStreamClosed.own()) {
                                     if (!onStreamClosedWarningLogged) {
