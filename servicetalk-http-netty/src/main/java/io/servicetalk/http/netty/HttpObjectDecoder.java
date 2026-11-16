@@ -1011,7 +1011,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             }
             return -2;
         } else if (lfIndex == buffer.readerIndex()) {
-            // Bytes before readerIndex are already consumed (e.g. chunk-data), so they can't be a CR of this line.
+            // An LF at readerIndex is the first byte of this line, so there is no CR before it. The previous byte
+            // belongs to already-consumed data (e.g. chunk-data ending in CR) and must not count as this line's CR.
             if (allowLFWithoutCR) {
                 return ((long) lfIndex) << 32 | lfIndex;
             }
