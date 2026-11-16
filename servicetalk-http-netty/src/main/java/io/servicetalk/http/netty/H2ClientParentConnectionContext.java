@@ -189,7 +189,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         private Subscriber<? super H2ClientParentConnection> subscriber;
         private MultiplexedObserver multiplexedObserver = NoopMultiplexedObserver.INSTANCE;
         // Confined to the event loop.
-        private final Http2Connection nettyConnection;
+        private final Http2Connection h2Connection;
         // Set before the connection is handed out, so it is non-null whenever a stream exists.
         @Nullable
         private PropertyKey onStreamRemovedKey;
@@ -212,7 +212,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             // Set maxConcurrency to the initial value recommended by the HTTP/2 spec
             maxConcurrencyProcessor.onNext(DEFAULT_H2_MAX_CONCURRENCY_EVENT);
             bs = new Http2StreamChannelBootstrap(connection.channel());
-            nettyConnection = connection.channel().pipeline().get(Http2FrameCodec.class).connection();
+            h2Connection = connection.channel().pipeline().get(Http2FrameCodec.class).connection();
             maxConcurrencyPublisher = fromSource(maxConcurrencyProcessor)
                     .replay(1); // Allow multiple Subscribers to consume, new Subscribers get last signal.
             // Maintain a Subscriber so signals are always delivered to replay and new Subscribers get the latest
@@ -226,7 +226,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                 Subscriber<? super H2ClientParentConnection> subscriberCopy = subscriber;
                 subscriber = null;
                 assert parentContext.nettyChannel().eventLoop().inEventLoop();
-                onStreamRemovedKey = addOnStreamRemovedListener(nettyConnection);
+                onStreamRemovedKey = addOnStreamRemovedListener(h2Connection);
                 multiplexedObserver = observer.multiplexedConnectionEstablished(this);
                 subscriberCopy.onSuccess(this);
             }
@@ -453,7 +453,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         // streams violated".
         private void runWhenNettyRemovesStream(final Http2StreamChannel streamChannel, final Runnable onCloseRunnable) {
             final int streamId = streamChannel.stream().id();
-            final Http2Stream stream = isStreamIdValid(streamId) ? nettyConnection.stream(streamId) : null;
+            final Http2Stream stream = isStreamIdValid(streamId) ? h2Connection.stream(streamId) : null;
             if (stream == null) {
                 // HEADERS were never written, or Netty has already removed the stream.
                 onCloseRunnable.run();
@@ -462,9 +462,9 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             }
         }
 
-        private static PropertyKey addOnStreamRemovedListener(final Http2Connection nettyConnection) {
-            final PropertyKey key = nettyConnection.newKey();
-            nettyConnection.addListener(new Http2ConnectionAdapter() {
+        private static PropertyKey addOnStreamRemovedListener(final Http2Connection h2Connection) {
+            final PropertyKey key = h2Connection.newKey();
+            h2Connection.addListener(new Http2ConnectionAdapter() {
                 @Override
                 public void onStreamRemoved(final Http2Stream stream) {
                     final Runnable onCloseRunnable = stream.removeProperty(key);
