@@ -293,7 +293,6 @@ class HttpRequestDecoderTest extends HttpObjectDecoderTest {
         beforeContent.add(":");
         beforeContent.add(" keep-alive\r");
         beforeContent.add("\n");
-        beforeContent.add("\n");
         beforeContent.add("Host: ");
         beforeContent.add("service");
         beforeContent.add("talk.io");
