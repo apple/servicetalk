@@ -1,5 +1,5 @@
 /*
- * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 class PublisherFlatMapConcatSingleTest {
@@ -66,6 +67,13 @@ class PublisherFlatMapConcatSingleTest {
         subscriber.awaitSubscription().request(expected.length);
         assertThat(subscriber.takeOnNext(expected.length), contains(expected));
         subscriber.awaitOnComplete();
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] maxConcurrency={0} delayError={1}")
+    @CsvSource({"0,false", "-1,false", "0,true", "-1,true"})
+    void nonPositiveMaxConcurrencyThrows(int maxConcurrency, boolean delayError) {
+        assertThrows(IllegalArgumentException.class,
+                () -> concatSingle(Publisher.from(1), Single::succeeded, maxConcurrency, delayError));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] begin={0} end={1} maxConcurrency={2} delayError={3}")

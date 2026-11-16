@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2023-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUncheck
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseLock;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireLock;
+import static io.servicetalk.utils.internal.DurationUtils.ensureNonNegative;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
@@ -54,6 +55,7 @@ public final class ReplayStrategies {
      * @return a {@link ReplayStrategyBuilder} using the history strategy.
      */
     public static <T> ReplayStrategyBuilder<T> historyBuilder(int history) {
+        ensurePositive(history, "history");
         return new ReplayStrategyBuilder<>(() -> new MostRecentReplayAccumulator<>(history));
     }
 
@@ -104,6 +106,9 @@ public final class ReplayStrategies {
      */
     public static <T> ReplayStrategyBuilder<T> historyTtlBuilder(int historyHint, Duration ttl, Executor executor,
                                                                  boolean lazyEviction) {
+        ensurePositive(historyHint, "historyHint");
+        ensureNonNegative(ttl, "ttl");
+        requireNonNull(executor, "executor");
         return new ReplayStrategyBuilder<>(lazyEviction ?
                 () -> new LazyTimeLimitedReplayAccumulator<>(historyHint, ttl, executor) :
                 () -> new EagerTimeLimitedReplayAccumulator<>(historyHint, ttl, executor));
@@ -114,7 +119,7 @@ public final class ReplayStrategies {
         private final Deque<Object> items;
 
         MostRecentReplayAccumulator(final int maxItems) {
-            this.maxItems = ensurePositive(maxItems, "maxItems");
+            this.maxItems = maxItems;
             items = new ArrayDeque<>(min(maxItems, 16));
         }
 
@@ -141,11 +146,8 @@ public final class ReplayStrategies {
         private final Deque<TimeStampSignal<T>> items;
 
         LazyTimeLimitedReplayAccumulator(final int maxItems, final Duration ttl, final Executor executor) {
-            if (ttl.isNegative()) {
-                throw new IllegalArgumentException("ttl: " + ttl + "(expected non-negative)");
-            }
-            this.maxItems = ensurePositive(maxItems, "maxItems");
-            this.executor = requireNonNull(executor);
+            this.maxItems = maxItems;
+            this.executor = executor;
             this.ttlNanos = ttl.toNanos();
             items = new ArrayDeque<>(min(maxItems, 16));
         }
@@ -203,12 +205,9 @@ public final class ReplayStrategies {
         private volatile Cancellable timerCancellable;
 
         EagerTimeLimitedReplayAccumulator(final int maxItems, final Duration ttl, final Executor executor) {
-            if (ttl.isNegative()) {
-                throw new IllegalArgumentException("ttl: " + ttl + "(expected non-negative)");
-            }
-            this.executor = requireNonNull(executor);
+            this.executor = executor;
             this.ttlNanos = ttl.toNanos();
-            this.maxItems = ensurePositive(maxItems, "maxItems");
+            this.maxItems = maxItems;
 
             // SpMc
             // producer = accumulate (no concurrent access on this method)

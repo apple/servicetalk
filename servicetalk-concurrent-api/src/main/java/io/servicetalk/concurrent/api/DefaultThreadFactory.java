@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
+import static java.lang.Thread.MAX_PRIORITY;
+import static java.lang.Thread.MIN_PRIORITY;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.Objects.requireNonNull;
 
@@ -93,6 +95,10 @@ public final class DefaultThreadFactory implements ThreadFactory {
      * @param priority for the created threads.
      */
     public DefaultThreadFactory(String namePrefix, boolean daemon, int priority) {
+        if (priority < MIN_PRIORITY || priority > MAX_PRIORITY) {
+            throw new IllegalArgumentException("priority: " + priority +
+                    " (expected: " + MIN_PRIORITY + "-" + MAX_PRIORITY + ")");
+        }
         this.namePrefix = requireNonNull(namePrefix) + '-' + factoryCount.incrementAndGet() + '-';
         this.daemon = daemon;
         this.priority = priority;

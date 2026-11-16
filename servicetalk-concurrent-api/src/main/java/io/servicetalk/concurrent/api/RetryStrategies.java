@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import java.util.function.Predicate;
 
 import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
+import static io.servicetalk.utils.internal.DurationUtils.ensureNonNegative;
+import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static io.servicetalk.utils.internal.RandomUtils.nextLongInclusive;
 import static java.lang.Long.numberOfLeadingZeros;
 import static java.lang.Math.max;
@@ -58,8 +60,7 @@ public final class RetryStrategies {
         checkMaxRetries(maxRetries);
         requireNonNull(timerExecutor);
         requireNonNull(causeFilter);
-        final long jitterNanos = delay.toNanos();
-        checkFullJitter(jitterNanos);
+        final long jitterNanos = checkFullJitter(delay);
         return (retryCount, cause) -> retryCount <= maxRetries && causeFilter.test(cause) ?
                 timerExecutor.timer(nextLongInclusive(0, jitterNanos), NANOSECONDS) : failed(cause);
     }
@@ -82,8 +83,7 @@ public final class RetryStrategies {
             final Executor timerExecutor) {
         requireNonNull(timerExecutor);
         requireNonNull(causeFilter);
-        final long jitterNanos = delay.toNanos();
-        checkFullJitter(jitterNanos);
+        final long jitterNanos = checkFullJitter(delay);
         return (retryCount, cause) -> causeFilter.test(cause) ?
                 timerExecutor.timer(nextLongInclusive(0, jitterNanos), NANOSECONDS) : failed(cause);
     }
@@ -107,7 +107,7 @@ public final class RetryStrategies {
         requireNonNull(timerExecutor);
         requireNonNull(causeFilter);
         final long delayNanos = delay.toNanos();
-        final long jitterNanos = jitter.toNanos();
+        final long jitterNanos = ensureNonNegative(jitter, "jitter").toNanos();
         checkJitterDelta(jitterNanos, delayNanos);
         final long lowerBound = delayNanos - jitterNanos;
         final long upperBound = addWithOverflowProtection(delayNanos, jitterNanos);
@@ -138,7 +138,7 @@ public final class RetryStrategies {
         requireNonNull(timerExecutor);
         requireNonNull(causeFilter);
         final long delayNanos = delay.toNanos();
-        final long jitterNanos = jitter.toNanos();
+        final long jitterNanos = ensureNonNegative(jitter, "jitter").toNanos();
         checkJitterDelta(jitterNanos, delayNanos);
         final long lowerBound = delayNanos - jitterNanos;
         final long upperBound = addWithOverflowProtection(delayNanos, jitterNanos);
@@ -167,8 +167,8 @@ public final class RetryStrategies {
             final Executor timerExecutor) {
         requireNonNull(timerExecutor);
         requireNonNull(causeFilter);
-        final long initialDelayNanos = initialDelay.toNanos();
-        final long maxDelayNanos = maxDelay.toNanos();
+        final long initialDelayNanos = ensureNonNegative(initialDelay, "initialDelay").toNanos();
+        final long maxDelayNanos = ensureNonNegative(maxDelay, "maxDelay").toNanos();
         final long maxInitialShift = maxShift(initialDelayNanos);
         return (retryCount, cause) -> causeFilter.test(cause) ?
                 timerExecutor.timer(nextLongInclusive(0,
@@ -201,8 +201,8 @@ public final class RetryStrategies {
         checkMaxRetries(maxRetries);
         requireNonNull(timerExecutor);
         requireNonNull(causeFilter);
-        final long initialDelayNanos = initialDelay.toNanos();
-        final long maxDelayNanos = maxDelay.toNanos();
+        final long initialDelayNanos = ensureNonNegative(initialDelay, "initialDelay").toNanos();
+        final long maxDelayNanos = ensureNonNegative(maxDelay, "maxDelay").toNanos();
         final long maxInitialShift = maxShift(initialDelayNanos);
         return (retryCount, cause) -> retryCount <= maxRetries && causeFilter.test(cause) ?
                 timerExecutor.timer(nextLongInclusive(0,
@@ -231,9 +231,9 @@ public final class RetryStrategies {
             final Executor timerExecutor) {
         requireNonNull(timerExecutor);
         requireNonNull(causeFilter);
-        final long initialDelayNanos = initialDelay.toNanos();
-        final long jitterNanos = jitter.toNanos();
-        final long maxDelayNanos = maxDelay.toNanos();
+        final long initialDelayNanos = ensureNonNegative(initialDelay, "initialDelay").toNanos();
+        final long jitterNanos = ensureNonNegative(jitter, "jitter").toNanos();
+        final long maxDelayNanos = ensureNonNegative(maxDelay, "maxDelay").toNanos();
         final long maxInitialShift = maxShift(initialDelayNanos);
         return (retryCount, cause) -> {
             if (!causeFilter.test(cause)) {
@@ -271,9 +271,9 @@ public final class RetryStrategies {
         checkMaxRetries(maxRetries);
         requireNonNull(timerExecutor);
         requireNonNull(causeFilter);
-        final long initialDelayNanos = initialDelay.toNanos();
-        final long jitterNanos = jitter.toNanos();
-        final long maxDelayNanos = maxDelay.toNanos();
+        final long initialDelayNanos = ensureNonNegative(initialDelay, "initialDelay").toNanos();
+        final long jitterNanos = ensureNonNegative(jitter, "jitter").toNanos();
+        final long maxDelayNanos = ensureNonNegative(maxDelay, "maxDelay").toNanos();
         final long maxInitialShift = maxShift(initialDelayNanos);
         return (retryCount, cause) -> {
             if (retryCount > maxRetries || !causeFilter.test(cause)) {
@@ -305,10 +305,8 @@ public final class RetryStrategies {
         }
     }
 
-    static void checkFullJitter(long jitterNanos) {
-        if (jitterNanos <= 0) {
-            throw new IllegalArgumentException("jitter " + jitterNanos + "ns must be >=0.");
-        }
+    static long checkFullJitter(Duration delay) {
+        return ensurePositive(delay, "delay").toNanos();
     }
 
     static long maxShift(long v) {

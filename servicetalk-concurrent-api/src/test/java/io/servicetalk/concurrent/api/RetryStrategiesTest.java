@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,15 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Duration;
 import java.util.function.UnaryOperator;
 
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffDeltaJitter;
+import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffFullJitter;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffDeltaJitter;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffFullJitter;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -34,9 +38,58 @@ import static java.time.Duration.ofNanos;
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 class RetryStrategiesTest extends RedoStrategiesTest {
+
+    @Test
+    void constantBackoffDeltaJitterNegativeJitterThrows() {
+        assertThrows(IllegalArgumentException.class, () -> retryWithConstantBackoffDeltaJitter(
+                cause -> true, ofSeconds(1), ofNanos(-1), timerExecutor));
+        assertThrows(IllegalArgumentException.class, () -> retryWithConstantBackoffDeltaJitter(
+                2, cause -> true, ofSeconds(1), ofNanos(-1), timerExecutor));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] delayNanos={0}")
+    @ValueSource(longs = {0, -1})
+    void constantBackoffFullJitterNonPositiveDelayThrows(long delayNanos) {
+        assertThrows(IllegalArgumentException.class, () -> retryWithConstantBackoffFullJitter(
+                cause -> true, ofNanos(delayNanos), timerExecutor));
+        assertThrows(IllegalArgumentException.class, () -> retryWithConstantBackoffFullJitter(
+                2, cause -> true, ofNanos(delayNanos), timerExecutor));
+    }
+
+    @Test
+    void constantBackoffFullJitterAcceptsSmallestPositiveDelay() throws Exception {
+        RetryStrategy strategy = new RetryStrategy(retryWithConstantBackoffFullJitter(cause -> true, ofNanos(1),
+                timerExecutor));
+        io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber =
+                strategy.invokeAndListen(DELIBERATE_EXCEPTION);
+        verifyDelayWithFullJitter(1, 1);
+        timers.take().verifyListenCalled().onComplete();
+        subscriber.awaitOnComplete();
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] initialDelayNanos={0} maxDelayNanos={1}")
+    @CsvSource({"-1,1000", "-2,1000", "1,-1"})
+    void expBackoffFullJitterNegativeDelayThrows(long initialDelayNanos, long maxDelayNanos) {
+        assertThrows(IllegalArgumentException.class, () -> retryWithExponentialBackoffFullJitter(
+                cause -> true, ofNanos(initialDelayNanos), ofNanos(maxDelayNanos), timerExecutor));
+        assertThrows(IllegalArgumentException.class, () -> retryWithExponentialBackoffFullJitter(
+                2, cause -> true, ofNanos(initialDelayNanos), ofNanos(maxDelayNanos), timerExecutor));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] initialDelayNanos={0} jitterNanos={1} maxDelayNanos={2}")
+    @CsvSource({"-1,1,1000", "-2,1,1000", "1,-1,1000", "1,1,-1"})
+    void expBackoffDeltaJitterNegativeArgumentThrows(long initialDelayNanos, long jitterNanos, long maxDelayNanos) {
+        assertThrows(IllegalArgumentException.class, () -> retryWithExponentialBackoffDeltaJitter(
+                cause -> true, ofNanos(initialDelayNanos), ofNanos(jitterNanos), ofNanos(maxDelayNanos),
+                timerExecutor));
+        assertThrows(IllegalArgumentException.class, () -> retryWithExponentialBackoffDeltaJitter(
+                2, cause -> true, ofNanos(initialDelayNanos), ofNanos(jitterNanos), ofNanos(maxDelayNanos),
+                timerExecutor));
+    }
 
     @Test
     void testBackoff() throws Exception {

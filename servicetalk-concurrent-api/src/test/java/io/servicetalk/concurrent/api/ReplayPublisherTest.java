@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2023-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -51,6 +52,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 final class ReplayPublisherTest extends MulticastPublisherTest {
 
@@ -105,6 +107,59 @@ final class ReplayPublisherTest extends MulticastPublisherTest {
                 .queueLimitHint(queueLimit)
                 .cancelUpstream(cancelUpstream)
                 .minSubscribers(minSubscribers).build());
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] queueLimitHint={0}")
+    @ValueSource(ints = {0, -1})
+    void nonPositiveStrategyQueueLimitHintThrows(int queueLimitHint) {
+        ReplayStrategy<Integer> valid = ReplayStrategies.<Integer>historyBuilder(1).build();
+        ReplayStrategy<Integer> strategy = new ReplayStrategy<Integer>() {
+            @Override
+            public int minSubscribers() {
+                return valid.minSubscribers();
+            }
+
+            @Override
+            public Supplier<ReplayAccumulator<Integer>> accumulatorSupplier() {
+                return valid.accumulatorSupplier();
+            }
+
+            @Override
+            public boolean cancelUpstream() {
+                return valid.cancelUpstream();
+            }
+
+            @Override
+            public int queueLimitHint() {
+                return queueLimitHint;
+            }
+
+            @Override
+            public Function<Throwable, Completable> terminalResubscribe() {
+                return valid.terminalResubscribe();
+            }
+        };
+        assertThrows(IllegalArgumentException.class, () -> source.replay(strategy));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] history={0}")
+    @ValueSource(ints = {0, -1})
+    void historyBuilderNonPositiveHistoryThrows(int history) {
+        assertThrows(IllegalArgumentException.class, () -> ReplayStrategies.historyBuilder(history));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] historyHint={0} lazy={1}")
+    @CsvSource({"0,true", "-1,true", "0,false", "-1,false"})
+    void historyTtlBuilderNonPositiveHistoryHintThrows(int historyHint, boolean lazy) {
+        assertThrows(IllegalArgumentException.class,
+                () -> ReplayStrategies.historyTtlBuilder(historyHint, ofMillis(1), executor, lazy));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] lazy={0}")
+    @ValueSource(booleans = {true, false})
+    void historyTtlBuilderNegativeTtlThrows(boolean lazy) {
+        assertThrows(IllegalArgumentException.class,
+                () -> ReplayStrategies.historyTtlBuilder(1, ofNanos(-1), executor, lazy));
     }
 
     @ParameterizedTest

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUncheck
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseLock;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireLock;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedSpscQueue;
 import static java.lang.Math.min;
 
@@ -52,6 +53,7 @@ final class PublisherFlatMapConcatUtils {
     static <T, R> Publisher<R> flatMapConcatSingle(final Publisher<T> publisher,
                                                    final Function<? super T, ? extends Single<? extends R>> mapper,
                                                    final int maxConcurrency) {
+        ensurePositive(maxConcurrency, "maxConcurrency");
         return defer(() ->
                 publisher.flatMapMergeSingle(new OrderedMapper<>(mapper,
                                 newUnboundedSpscQueue(min(8, maxConcurrency))), maxConcurrency)
@@ -61,6 +63,7 @@ final class PublisherFlatMapConcatUtils {
     static <T, R> Publisher<R> flatMapConcatSingleDelayError(
             final Publisher<T> publisher, final Function<? super T, ? extends Single<? extends R>> mapper,
             final int maxConcurrency) {
+        ensurePositive(maxConcurrency, "maxConcurrency");
         return defer(() ->
                 publisher.flatMapMergeSingleDelayError(new OrderedMapper<>(mapper,
                                 newUnboundedSpscQueue(min(8, maxConcurrency))), maxConcurrency)
