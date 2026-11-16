@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021-2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionLimitReachedException;
 import io.servicetalk.client.api.LimitingConnectionFactoryFilter;
+import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
@@ -25,16 +26,23 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.ReservedHttpConnection;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy;
+import io.servicetalk.transport.api.ConnectionInfo;
+import io.servicetalk.transport.api.ConnectionObserver;
+import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
+import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http2.DefaultHttp2SettingsFrame;
@@ -55,14 +63,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http2.Http2CodecUtil.MAX_UNSIGNED_INT;
 import static io.servicetalk.concurrent.api.BlockingUtils.blockingInvocation;
+import static io.servicetalk.concurrent.api.Publisher.range;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
@@ -101,6 +113,7 @@ class H2ConcurrencyControllerTest {
 
     private final CountDownLatch[] latches = new CountDownLatch[N_ITERATIONS];
     private final AtomicReference<Channel> serverParentChannel = new AtomicReference<>();
+    private final AtomicInteger serverConnections = new AtomicInteger();
     private final AtomicBoolean alwaysEcho = new AtomicBoolean(false);
     @Nullable
     private EventLoopGroup serverEventLoopGroup;
@@ -212,6 +225,141 @@ class H2ConcurrencyControllerTest {
                 assertThat(exceptions, is(empty()));
             }
         }
+    }
+
+    @Test
+    void noMaxActiveStreamsViolatedErrorAfterCancelWhileConnectionUnwritable() throws Exception {
+        bindStallingH2Server();
+        CountDownLatch clientUnwritable = new CountDownLatch(1);
+        Semaphore streamsClosed = new Semaphore(0);
+        try (HttpClient client = newClientBuilder(serverAddress, CLIENT_CTX, HTTP_2)
+                .appendConnectionFactoryFilter(new TransportObserverConnectionFactoryFilter<>(
+                        writabilityAndStreamClosedObserver(clientUnwritable, streamsClosed)))
+                .protocols(HTTP_2.config)
+                .build()) {
+            cancelRequestWhileConnectionUnwritable(client, clientUnwritable, streamsClosed);
+
+            assertThat(client.request(client.get("/")).toFuture().get().status(), is(OK));
+        }
+    }
+
+    @Test
+    void cancelWhileConnectionUnwritableReleasesStreamSlotOnce() throws Exception {
+        bindStallingH2Server();
+        CountDownLatch clientUnwritable = new CountDownLatch(1);
+        Semaphore streamsClosed = new Semaphore(0);
+        try (HttpClient client = configureSingleConnection(newClientBuilder(serverAddress, CLIENT_CTX, HTTP_2)
+                        .appendConnectionFactoryFilter(new TransportObserverConnectionFactoryFilter<>(
+                                writabilityAndStreamClosedObserver(clientUnwritable, streamsClosed))),
+                // Bounded so that a slot that is never released fails the test instead of hanging it.
+                BackOffPolicy.ofConstantBackoffFullJitter(ofMillis(10), 500))
+                .protocols(HTTP_2.config)
+                .build()) {
+            cancelRequestWhileConnectionUnwritable(client, clientUnwritable, streamsClosed);
+
+            Future<HttpResponse> waitingForSlot = client.request(client.get("/")).toFuture();
+            final Channel stalledServerParent = serverParentChannel.get();
+            assertThat(stalledServerParent, is(notNullValue()));
+            stalledServerParent.config().setAutoRead(true);
+            assertThat(waitingForSlot.get().status(), is(OK));
+            // A second release of the cancelled stream's slot would leave the connection looking reserved.
+            assertThat(client.request(client.get("/")).toFuture().get().status(), is(OK));
+            assertThat(serverConnections.get(), is(1));
+        }
+    }
+
+    // The first connection echoes all streams but its second, on which it stops reading.
+    private void bindStallingH2Server() throws Exception {
+        serverEventLoopGroup = createIoExecutor(1, "server-io").eventLoopGroup();
+        AtomicInteger firstConnectionStreams = new AtomicInteger();
+        serverAcceptorChannel = bindH2Server(serverEventLoopGroup, new ChannelInitializer<Http2StreamChannel>() {
+            @Override
+            protected void initChannel(Http2StreamChannel ch) {
+                if (ch.parent() == serverParentChannel.get() && firstConnectionStreams.incrementAndGet() == 2) {
+                    // Stop reading so the client's request body backs up the socket and the client goes unwritable.
+                    ch.parent().config().setAutoRead(false);
+                } else {
+                    ch.pipeline().addLast(new EchoHttp2Handler());
+                }
+            }
+        },
+        parentPipeline -> {
+            serverConnections.incrementAndGet();
+            if (serverParentChannel.compareAndSet(null, parentPipeline.channel())) {
+                // Http2ConnectionHandler keeps reading while auto-read is off, so swallow those reads.
+                parentPipeline.addFirst(new ChannelOutboundHandlerAdapter() {
+                    @Override
+                    public void read(ChannelHandlerContext ctx) {
+                        if (ctx.channel().config().isAutoRead()) {
+                            ctx.read();
+                        }
+                    }
+                });
+            }
+        },
+        h2Builder -> {
+            // A window large enough that the socket, not h2 flow control, is what stops the request body.
+            h2Builder.initialSettings().maxConcurrentStreams(1).initialWindowSize(1 << 26);
+            return h2Builder;
+        });
+        serverAddress = of((InetSocketAddress) serverAcceptorChannel.localAddress());
+    }
+
+    private static TransportObserver writabilityAndStreamClosedObserver(CountDownLatch clientUnwritable,
+                                                                        Semaphore streamsClosed) {
+        return (localAddress, remoteAddress) -> new ConnectionObserver() {
+            @Override
+            public void connectionWritabilityChanged(boolean isWritable) {
+                if (!isWritable) {
+                    clientUnwritable.countDown();
+                }
+            }
+
+            @Override
+            public MultiplexedObserver multiplexedConnectionEstablished(ConnectionInfo info) {
+                return new MultiplexedObserver() {
+                    @Override
+                    public StreamObserver onNewStream() {
+                        return new StreamObserver() {
+                            @Override
+                            public void streamClosed(Throwable error) {
+                                streamsClosed.release();
+                            }
+
+                            @Override
+                            public void streamClosed() {
+                                streamsClosed.release();
+                            }
+                        };
+                    }
+                };
+            }
+        };
+    }
+
+    // Leaves the first connection's only stream held by a cancelled request whose RST_STREAM is queued behind the
+    // unwritable socket.
+    private static void cancelRequestWhileConnectionUnwritable(HttpClient client, CountDownLatch clientUnwritable,
+                                                               Semaphore streamsClosed) throws Exception {
+        BlockingQueue<Integer> maxConcurrentStreams = new LinkedBlockingDeque<>();
+        ReservedHttpConnection connection = client.reserveConnection(client.get("/")).map(conn -> {
+            conn.transportEventStream(MAX_CONCURRENCY_NO_OFFLOADING)
+                    .forEach(event -> maxConcurrentStreams.add(event.event()));
+            return conn;
+        }).toFuture().get();
+        awaitMaxConcurrentStreamsSettingsUpdate(connection, maxConcurrentStreams, 1);
+        connection.releaseAsync().toFuture().get();
+        streamsClosed.acquire();
+
+        StreamingHttpClient streamingClient = client.asStreamingClient();
+        byte[] chunk = new byte[16 * 1024];
+        Cancellable stalledRequest = streamingClient.request(streamingClient.post("/")
+                        .payloadBody(range(0, Integer.MAX_VALUE)
+                                .map(__ -> CLIENT_CTX.bufferAllocator().wrap(chunk))))
+                .subscribe(__ -> { /* response is not expected */ });
+        clientUnwritable.await();
+        stalledRequest.cancel();
+        streamsClosed.acquire();
     }
 
     // Pins the client to a single connection so the concurrency controller (not a second, not-yet-settings-synced
