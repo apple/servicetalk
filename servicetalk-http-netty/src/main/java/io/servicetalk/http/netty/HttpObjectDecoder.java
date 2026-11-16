@@ -925,7 +925,6 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
      */
     @SuppressWarnings("PMD.ExceptionAsFlowControl")
     static int getChunkSize(String hex) {
-        hex = hex.trim();
         for (int i = 0; i < hex.length(); ++i) {
             char c = hex.charAt(i);
             if (c == ';' || isWhitespace(c) || isISOControl(c)) {
@@ -934,6 +933,13 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             }
         }
         try {
+            // chunk-size = 1*HEXDIG (RFC 9112, section 7.1), but parseUnsignedLong also accepts a leading '+'.
+            // Reject anything else up front, as we do for a signed content-length: if we read "+0" or " 0" as the
+            // last chunk and a proxy in front of us does not, the two disagree on where the message ends (request
+            // smuggling).
+            if (hex.isEmpty() || Character.digit(hex.charAt(0), 16) < 0) {
+                throw new NumberFormatException("chunk-size must start with a HEXDIG");
+            }
             final long value = parseUnsignedLong(hex, 16);
             if (value < 0 || value > Integer.MAX_VALUE) {
                 throw new NumberFormatException("Chunk size " + Long.toUnsignedString(value)
