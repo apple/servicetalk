@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSuccessSupplier;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -2021,6 +2022,108 @@ public abstract class Single<T> {
      */
     public static <T> Single<T> fromFuture(Future<? extends T> future) {
         return new FutureToSingle<>(future);
+    }
+
+    /**
+     * Asynchronously collects results of individual {@link Single}s returned by the passed {@link Iterable} into a
+     * single {@link Collection}, preserving the order of {@code singles}. <p>
+     * Results, including errors, are delivered in order: if a {@link Single} terminates with an error, the returned
+     * {@link Single} terminates with that error once all preceding {@link Single}s have succeeded. When an error is
+     * delivered, any other in-progress {@link Single}s are cancelled.
+     * <p>
+     * This method actively subscribes to a limited number of {@link Single}s concurrently. To alter the default
+     * limit, use {@link #collectOrdered(Iterable, int)}.
+     *
+     * @param singles {@link Iterable} of {@link Single}s, results of which are to be collected.
+     * @param <T> Type of the result of the individual {@link Single}s.
+     * @return A {@link Single} producing a {@link Collection} containing all values produced by the individual
+     * {@link Single}s in the order they are returned by the {@link Iterable}.
+     * @see #collectUnordered(Iterable)
+     * @see Publisher#flatMapConcatSingle(Function, int)
+     */
+    public static <T> Single<Collection<T>> collectOrdered(Iterable<? extends Single<? extends T>> singles) {
+        return fromIterable(singles).flatMapConcatSingle(identity()).collect(ArrayList::new, (ts, t) -> {
+            ts.add(t);
+            return ts;
+        });
+    }
+
+    /**
+     * Asynchronously collects results of the passed {@link Single}s into a single {@link Collection}, preserving the
+     * order of {@code singles}. <p>
+     * Results, including errors, are delivered in order: if a {@link Single} terminates with an error, the returned
+     * {@link Single} terminates with that error once all preceding {@link Single}s have succeeded. When an error is
+     * delivered, any other in-progress {@link Single}s are cancelled.
+     * <p>
+     * This method actively subscribes to a limited number of {@link Single}s concurrently. To alter the default
+     * limit, use {@link #collectOrdered(int, Single[])}.
+     *
+     * @param singles {@link Single}s, results of which are to be collected.
+     * @param <T> Type of the result of the individual {@link Single}s.
+     * @return A {@link Single} producing a {@link Collection} containing all values produced by the individual
+     * {@link Single}s in the order they are passed to this method.
+     * @see #collectUnordered(Iterable)
+     * @see Publisher#flatMapConcatSingle(Function, int)
+     */
+    @SafeVarargs
+    public static <T> Single<Collection<T>> collectOrdered(Single<? extends T>... singles) {
+        return from(singles).<T>flatMapConcatSingle(identity()).collect(() -> new ArrayList<>(singles.length),
+                (ts, t) -> {
+                    ts.add(t);
+                    return ts;
+                });
+    }
+
+    /**
+     * Asynchronously collects results of individual {@link Single}s returned by the passed {@link Iterable} into a
+     * single {@link Collection}, preserving the order of {@code singles}. <p>
+     * Results, including errors, are delivered in order: if a {@link Single} terminates with an error, the returned
+     * {@link Single} terminates with that error once all preceding {@link Single}s have succeeded. When an error is
+     * delivered, any other in-progress {@link Single}s are cancelled. <p>
+     * At most {@code maxConcurrency} {@link Single}s are subscribed to concurrently.
+     *
+     * @param singles {@link Iterable} of {@link Single}s, results of which are to be collected.
+     * @param maxConcurrency Maximum number of {@link Single}s that will be active at any point in time.
+     * @param <T> Type of the result of the individual {@link Single}s.
+     * @return A {@link Single} producing a {@link Collection} containing all values produced by the individual
+     * {@link Single}s in the order they are returned by the {@link Iterable}.
+     * @see #collectUnordered(Iterable)
+     * @see Publisher#flatMapConcatSingle(Function, int)
+     */
+    public static <T> Single<Collection<T>> collectOrdered(Iterable<? extends Single<? extends T>> singles,
+                                                           int maxConcurrency) {
+        ensurePositive(maxConcurrency, "maxConcurrency");
+        return fromIterable(singles).flatMapConcatSingle(identity(), maxConcurrency)
+                .collect(ArrayList::new, (ts, t) -> {
+                    ts.add(t);
+                    return ts;
+                });
+    }
+
+    /**
+     * Asynchronously collects results of the passed {@link Single}s into a single {@link Collection}, preserving the
+     * order of {@code singles}. <p>
+     * Results, including errors, are delivered in order: if a {@link Single} terminates with an error, the returned
+     * {@link Single} terminates with that error once all preceding {@link Single}s have succeeded. When an error is
+     * delivered, any other in-progress {@link Single}s are cancelled. <p>
+     * At most {@code maxConcurrency} {@link Single}s are subscribed to concurrently.
+     *
+     * @param maxConcurrency Maximum number of {@link Single}s that will be active at any point in time.
+     * @param singles {@link Single}s, results of which are to be collected.
+     * @param <T> Type of the result of the individual {@link Single}s.
+     * @return A {@link Single} producing a {@link Collection} containing all values produced by the individual
+     * {@link Single}s in the order they are passed to this method.
+     * @see #collectUnordered(Iterable)
+     * @see Publisher#flatMapConcatSingle(Function, int)
+     */
+    @SafeVarargs
+    public static <T> Single<Collection<T>> collectOrdered(int maxConcurrency, Single<? extends T>... singles) {
+        ensurePositive(maxConcurrency, "maxConcurrency");
+        return from(singles).<T>flatMapConcatSingle(identity(), maxConcurrency)
+                .collect(() -> new ArrayList<>(singles.length), (ts, t) -> {
+                    ts.add(t);
+                    return ts;
+                });
     }
 
     /**
