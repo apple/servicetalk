@@ -61,6 +61,9 @@
     <a class="nav-link" href="performance.html">Performance</a>
   </li>
   <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="virtual-threads.html">Virtual Threads</a>
+  </li>
+  <li class="nav-item" data-depth="1">
     <button class="nav-toggle"></button>
     <span class="nav-text">Examples</span>
 <ul class="nav-list">
@@ -124,6 +127,9 @@
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#Files">Files</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#VirtualThreads">Virtual Threads</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/service-composition.html">Service Composition</a>
@@ -1261,9 +1267,9 @@ relatively low.</p>
 <code>java.util.ServiceLoader</code>. This involves creating a
 <code>CapturedContextProvider</code> that will be used as part of the ServiceTalk context capture and restore process. For details
 about how to capture and restore custom context see the example in
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/CapturedContextProvider.java">CapturedContextProvider</a>.
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/CapturedContextProvider.java">CapturedContextProvider</a>.
 ServiceTalk uses this mechanism for its OpenTelemetry integration. See
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-opentelemetry-asynccontext/src/main/java/io/servicetalk/opentelemetry/asynccontext/OtelCapturedContextProvider.java">OtelCapturedContextProvider</a>.
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-opentelemetry-asynccontext/src/main/java/io/servicetalk/opentelemetry/asynccontext/OtelCapturedContextProvider.java">OtelCapturedContextProvider</a>.
 for more details.</p>
 </div>
 </div>

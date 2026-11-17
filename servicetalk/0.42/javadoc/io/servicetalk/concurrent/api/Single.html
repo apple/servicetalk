@@ -330,6 +330,32 @@ loadScripts(document, 'script');</script>
 <div class="block">Cast this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> from type <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> to type <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;T&gt;&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#collectOrdered(int,io.servicetalk.concurrent.api.Single...)" class="member-name-link">collectOrdered</a><wbr>(int&nbsp;maxConcurrency,
+ <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T&gt;...&nbsp;singles)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Asynchronously collects results of the passed <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s into a single <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link"><code>Collection</code></a>, preserving the
+ order of <code>singles</code>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;T&gt;&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#collectOrdered(io.servicetalk.concurrent.api.Single...)" class="member-name-link">collectOrdered</a><wbr>(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T&gt;...&nbsp;singles)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Asynchronously collects results of the passed <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s into a single <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link"><code>Collection</code></a>, preserving the
+ order of <code>singles</code>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;T&gt;&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#collectOrdered(java.lang.Iterable)" class="member-name-link">collectOrdered</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T&gt;&gt;&nbsp;singles)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Asynchronously collects results of individual <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s returned by the passed <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link"><code>Iterable</code></a> into a
+ single <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link"><code>Collection</code></a>, preserving the order of <code>singles</code>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;T&gt;&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#collectOrdered(java.lang.Iterable,int)" class="member-name-link">collectOrdered</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T&gt;&gt;&nbsp;singles,
+ int&nbsp;maxConcurrency)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Asynchronously collects results of individual <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s returned by the passed <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link"><code>Iterable</code></a> into a
+ single <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link"><code>Collection</code></a>, preserving the order of <code>singles</code>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;T&gt;&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#collectUnordered(int,io.servicetalk.concurrent.api.Single...)" class="member-name-link">collectUnordered</a><wbr>(int&nbsp;maxConcurrency,
  <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T&gt;...&nbsp;singles)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
@@ -3375,6 +3401,128 @@ R&gt;</span>&nbsp;<span class="return-type"><a href="Single.html" title="class i
 <dd>
 <ul class="see-list-long">
 <li><a href="#timeout(long,java.util.concurrent.TimeUnit)"><code>timeout(long, TimeUnit)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="collectOrdered(java.lang.Iterable)">
+<h3>collectOrdered</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;T&gt;</span>&nbsp;<span class="return-type"><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;T&gt;&gt;</span>&nbsp;<span class="element-name">collectOrdered</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T&gt;&gt;&nbsp;singles)</span></div>
+<div class="block">Asynchronously collects results of individual <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s returned by the passed <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link"><code>Iterable</code></a> into a
+ single <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link"><code>Collection</code></a>, preserving the order of <code>singles</code>. <p>
+ Results, including errors, are delivered in order: if a <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> terminates with an error, the returned
+ <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> terminates with that error once all preceding <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s have succeeded. When an error is
+ delivered, any other in-progress <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s are cancelled.
+ <p>
+ This method actively subscribes to a limited number of <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s concurrently. To alter the default
+ limit, use <a href="#collectOrdered(java.lang.Iterable,int)"><code>collectOrdered(Iterable, int)</code></a>.</div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>T</code> - Type of the result of the individual <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s.</dd>
+<dt>Parameters:</dt>
+<dd><code>singles</code> - <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link"><code>Iterable</code></a> of <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s, results of which are to be collected.</dd>
+<dt>Returns:</dt>
+<dd>A <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> producing a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link"><code>Collection</code></a> containing all values produced by the individual
+ <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s in the order they are returned by the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link"><code>Iterable</code></a>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="#collectUnordered(java.lang.Iterable)"><code>collectUnordered(Iterable)</code></a></li>
+<li><a href="Publisher.html#flatMapConcatSingle(java.util.function.Function,int)"><code>Publisher.flatMapConcatSingle(Function, int)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="collectOrdered(io.servicetalk.concurrent.api.Single...)">
+<h3>collectOrdered</h3>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/SafeVarargs.html" title="class or interface in java.lang" class="external-link">@SafeVarargs</a>
+</span><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;T&gt;</span>&nbsp;<span class="return-type"><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;T&gt;&gt;</span>&nbsp;<span class="element-name">collectOrdered</span><wbr><span class="parameters">(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T&gt;...&nbsp;singles)</span></div>
+<div class="block">Asynchronously collects results of the passed <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s into a single <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link"><code>Collection</code></a>, preserving the
+ order of <code>singles</code>. <p>
+ Results, including errors, are delivered in order: if a <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> terminates with an error, the returned
+ <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> terminates with that error once all preceding <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s have succeeded. When an error is
+ delivered, any other in-progress <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s are cancelled.
+ <p>
+ This method actively subscribes to a limited number of <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s concurrently. To alter the default
+ limit, use <a href="#collectOrdered(int,io.servicetalk.concurrent.api.Single...)"><code>collectOrdered(int, Single[])</code></a>.</div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>T</code> - Type of the result of the individual <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s.</dd>
+<dt>Parameters:</dt>
+<dd><code>singles</code> - <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s, results of which are to be collected.</dd>
+<dt>Returns:</dt>
+<dd>A <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> producing a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link"><code>Collection</code></a> containing all values produced by the individual
+ <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s in the order they are passed to this method.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="#collectUnordered(java.lang.Iterable)"><code>collectUnordered(Iterable)</code></a></li>
+<li><a href="Publisher.html#flatMapConcatSingle(java.util.function.Function,int)"><code>Publisher.flatMapConcatSingle(Function, int)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="collectOrdered(java.lang.Iterable,int)">
+<h3>collectOrdered</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;T&gt;</span>&nbsp;<span class="return-type"><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;T&gt;&gt;</span>&nbsp;<span class="element-name">collectOrdered</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T&gt;&gt;&nbsp;singles,
+ int&nbsp;maxConcurrency)</span></div>
+<div class="block">Asynchronously collects results of individual <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s returned by the passed <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link"><code>Iterable</code></a> into a
+ single <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link"><code>Collection</code></a>, preserving the order of <code>singles</code>. <p>
+ Results, including errors, are delivered in order: if a <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> terminates with an error, the returned
+ <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> terminates with that error once all preceding <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s have succeeded. When an error is
+ delivered, any other in-progress <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s are cancelled. <p>
+ At most <code>maxConcurrency</code> <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s are subscribed to concurrently.</div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>T</code> - Type of the result of the individual <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s.</dd>
+<dt>Parameters:</dt>
+<dd><code>singles</code> - <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link"><code>Iterable</code></a> of <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s, results of which are to be collected.</dd>
+<dd><code>maxConcurrency</code> - Maximum number of <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s that will be active at any point in time.</dd>
+<dt>Returns:</dt>
+<dd>A <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> producing a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link"><code>Collection</code></a> containing all values produced by the individual
+ <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s in the order they are returned by the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link"><code>Iterable</code></a>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="#collectUnordered(java.lang.Iterable)"><code>collectUnordered(Iterable)</code></a></li>
+<li><a href="Publisher.html#flatMapConcatSingle(java.util.function.Function,int)"><code>Publisher.flatMapConcatSingle(Function, int)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="collectOrdered(int,io.servicetalk.concurrent.api.Single...)">
+<h3>collectOrdered</h3>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/SafeVarargs.html" title="class or interface in java.lang" class="external-link">@SafeVarargs</a>
+</span><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;T&gt;</span>&nbsp;<span class="return-type"><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;T&gt;&gt;</span>&nbsp;<span class="element-name">collectOrdered</span><wbr><span class="parameters">(int&nbsp;maxConcurrency,
+ <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T&gt;...&nbsp;singles)</span></div>
+<div class="block">Asynchronously collects results of the passed <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s into a single <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link"><code>Collection</code></a>, preserving the
+ order of <code>singles</code>. <p>
+ Results, including errors, are delivered in order: if a <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> terminates with an error, the returned
+ <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> terminates with that error once all preceding <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s have succeeded. When an error is
+ delivered, any other in-progress <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s are cancelled. <p>
+ At most <code>maxConcurrency</code> <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s are subscribed to concurrently.</div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>T</code> - Type of the result of the individual <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s.</dd>
+<dt>Parameters:</dt>
+<dd><code>maxConcurrency</code> - Maximum number of <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s that will be active at any point in time.</dd>
+<dd><code>singles</code> - <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s, results of which are to be collected.</dd>
+<dt>Returns:</dt>
+<dd>A <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> producing a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link"><code>Collection</code></a> containing all values produced by the individual
+ <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s in the order they are passed to this method.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="#collectUnordered(java.lang.Iterable)"><code>collectUnordered(Iterable)</code></a></li>
+<li><a href="Publisher.html#flatMapConcatSingle(java.util.function.Function,int)"><code>Publisher.flatMapConcatSingle(Function, int)</code></a></li>
 </ul>
 </dd>
 </dl>

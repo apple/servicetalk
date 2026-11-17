@@ -375,7 +375,10 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="retryExpectationFailed(boolean)">
 <h3>retryExpectationFailed</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.Builder</a></span>&nbsp;<span class="element-name">retryExpectationFailed</span><wbr><span class="parameters">(boolean&nbsp;retryExpectationFailed)</span></div>
-<div class="block">Retries <a href="../api/HttpResponseStatus.html#EXPECTATION_FAILED"><code>HttpResponseStatus.EXPECTATION_FAILED</code></a> response without <a href="../api/HttpHeaderNames.html#EXPECT"><code>HttpHeaderNames.EXPECT</code></a> header.</div>
+<div class="block">Retries <a href="../api/HttpResponseStatus.html#EXPECTATION_FAILED"><code>HttpResponseStatus.EXPECTATION_FAILED</code></a> response without <a href="../api/HttpHeaderNames.html#EXPECT"><code>HttpHeaderNames.EXPECT</code></a> header.
+ <p>
+ A <a href="../api/HttpResponseStatus.html#EXPECTATION_FAILED"><code>HttpResponseStatus.EXPECTATION_FAILED</code></a> response received after the request payload body was sent is
+ not retried.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>retryExpectationFailed</code> - if <code>true</code>, filter will automatically map

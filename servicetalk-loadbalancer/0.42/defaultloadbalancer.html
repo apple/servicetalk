@@ -61,6 +61,9 @@
     <a class="nav-link" href="../../servicetalk/0.42/performance.html">Performance</a>
   </li>
   <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../../servicetalk/0.42/virtual-threads.html">Virtual Threads</a>
+  </li>
+  <li class="nav-item" data-depth="1">
     <button class="nav-toggle"></button>
     <span class="nav-text">Examples</span>
 <ul class="nav-list">
@@ -124,6 +127,9 @@
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#Files">Files</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#VirtualThreads">Virtual Threads</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/service-composition.html">Service Composition</a>
@@ -1242,6 +1248,12 @@ layer). It supports the following xDS compatible outlier detectors:</p>
 failure detection with active probing: when a host is found to be unreachable it is marked as unhealthy until a new
 connection can be established to the host. This probing is done outside the request path.</p>
 </div>
+<div class="paragraph">
+<p>All of the xDS outlier detectors are bounded by <code>maxEjectionPercentage</code>: an ejection only happens if it leaves the
+ejected share of hosts at or below that percentage. Small host sets therefore see no xDS ejection at all, which keeps
+a load balancer over a single endpoint from failing closed. Set <code>alwaysEjectOneHost</code> to permit one ejection
+regardless of the percentage.</p>
+</div>
 </div>
 <div class="sect2">
 <h3 id="connection-selection-with-outlier-detectors"><a class="anchor" href="#connection-selection-with-outlier-detectors"></a><a class="link" href="#connection-selection-with-outlier-detectors">Connection Selection with Outlier Detectors</a></h3>
@@ -1280,7 +1292,7 @@ session acquisition flow is roughly like this:</p>
 <p>Not all hosts are created equal! Due to different underlying hardware platforms, other tenants on the same host, or even
 just a bad cache day, we often find that not all instances of a service have the same capacity. The P2C selection
 algorithm can bias toward better performing hosts, but if the capacity of a backend is known it can be accounted for
-explicitly. With <a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java">ServiceDiscoverer</a>
+explicitly. With <a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java">ServiceDiscoverer</a>
 or control-plane support we can explicitly propagate weight information to ServiceTalk&#8217;s default load balancer. Adding
 weight support to the host selection process will let users leverage this data.</p>
 </div>

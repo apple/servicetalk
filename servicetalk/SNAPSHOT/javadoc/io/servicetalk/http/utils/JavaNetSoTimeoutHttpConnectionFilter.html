@@ -100,6 +100,10 @@ implements <a href="../api/StreamingHttpConnectionFilterFactory.html" title="int
  (similar to <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketOptions.html#SO_TIMEOUT" title="class or interface in java.net" class="external-link"><code>SocketOptions.SO_TIMEOUT</code></a> used by Java blocking API), without waiting for selecting or
  establishing a connection.
  <p>
+ For a request with <code>Expect: 100-continue</code>, the timeout fails the wait for 100 (Continue) only if it is shorter
+ than <a href="../api/SingleAddressHttpClientBuilder.html#expectContinueTimeout(java.time.Duration)"><code>SingleAddressHttpClientBuilder.expectContinueTimeout(Duration)</code></a>. Otherwise, the
+ client sends the payload body first and the timeout applies to the response.
+ <p>
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketTimeoutException.html" title="class or interface in java.net" class="external-link"><code>SocketTimeoutException</code></a> (or its subtype) will be propagated when the timeout is reached.</div>
 <dl class="notes">
 <dt>See Also:</dt>

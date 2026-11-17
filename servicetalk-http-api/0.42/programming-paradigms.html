@@ -61,6 +61,9 @@
     <a class="nav-link" href="../../servicetalk/0.42/performance.html">Performance</a>
   </li>
   <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../../servicetalk/0.42/virtual-threads.html">Virtual Threads</a>
+  </li>
+  <li class="nav-item" data-depth="1">
     <button class="nav-toggle"></button>
     <span class="nav-text">Examples</span>
 <ul class="nav-list">
@@ -124,6 +127,9 @@
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#Files">Files</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#VirtualThreads">Virtual Threads</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/service-composition.html">Service Composition</a>
@@ -1151,6 +1157,16 @@ small compressed body that expands beyond the limit once decoded is therefore st
 purely as a stream are not affected.</p>
 </div>
 <div class="paragraph">
+<p>This limit covers aggregation performed by ServiceTalk. Application or framework code that consumes the
+streaming body and buffers it itself is not covered&#8201;&#8212;&#8201;for example the JAX-RS entity readers of a
+<a href="../../servicetalk-http-router-jersey/0.42/index.html#payload-size-limits" class="page">streaming Jersey router</a>, which
+buffer inside Jersey (an aggregated router is covered, because ServiceTalk aggregates before it runs). To bound
+request payloads regardless of who performs the buffering, add <code>PayloadSizeLimitingHttpServiceFilter</code> (from
+<code>servicetalk-http-utils</code>) to the server. That filter counts bytes where it sits in the filter chain, so it bounds the
+decoded payload only when appended after any content-decoding filter; where it does, this limit can be disabled with
+<code>0</code> to leave a single effective bound.</p>
+</div>
+<div class="paragraph">
 <p>Configure this per client/server via <code>HttpServerBuilder#maxAggregatedPayloadSize(int)</code> /
 <code>SingleAddressHttpClientBuilder#maxAggregatedPayloadSize(int)</code>, where the sign selects the mode and the magnitude
 selects the threshold: a <strong>positive</strong> value enforces the limit (the server responds <code>413 Payload Too Large</code>; the
@@ -1188,7 +1204,7 @@ object and there are no asynchronous primitives involved.</p>
 </div>
 <div class="paragraph">
 <p>See
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java">BlockingHelloWorldServer</a>.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java">BlockingHelloWorldServer</a>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1204,15 +1220,15 @@ object and there are no asynchronous primitives involved.</p>
 <div class="paragraph">
 <p>This programming paradigm exposes the request payload body as an
 <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Iterable.html">Iterable</a> of
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java">Buffer</a>s and the response payload
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java">Buffer</a>s and the response payload
 body is written via an
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpPayloadWriter.java">HttpPayloadWriter</a> or an
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpOutputStream.java">HttpOutputStream</a>. There are no asynchronous primitives
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpPayloadWriter.java">HttpPayloadWriter</a> or an
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpOutputStream.java">HttpOutputStream</a>. There are no asynchronous primitives
 involved.</p>
 </div>
 <div class="paragraph">
 <p>See
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingServer.java">BlockingHelloWorldStreamingServer</a>.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingServer.java">BlockingHelloWorldStreamingServer</a>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1230,12 +1246,12 @@ involved.</p>
 <div class="paragraph">
 <p>This programming paradigm exposes the request payload body as a single aggregated object, and the response payload body
 is also a single aggregated object. The <code>Service</code> provides the response by completing a
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java">Single</a> which is an
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java">Single</a> which is an
 asynchronous primitive.</p>
 </div>
 <div class="paragraph">
 <p>See
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldServer.java">HelloWorldServer</a>.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldServer.java">HelloWorldServer</a>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1250,16 +1266,16 @@ asynchronous primitive.</p>
 <h3 id="svc-asynchronous-and-streaming"><a class="anchor" href="#svc-asynchronous-and-streaming"></a><a class="link" href="#svc-asynchronous-and-streaming">Asynchronous and Streaming</a></h3>
 <div class="paragraph">
 <p>This programming paradigm exposes the request payload body as a
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java">Publisher</a> typically of
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java">Buffer</a>s (although other types like
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java">Publisher</a> typically of
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java">Buffer</a>s (although other types like
 file regions may be added), the response meta-data is provided by completing a
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java">Single</a>, and the response
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java">Single</a>, and the response
 payload body is written via a
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java">Publisher</a>.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java">Publisher</a>.</p>
 </div>
 <div class="paragraph">
 <p>See
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingServer.java">HelloWorldStreamingServer</a>.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingServer.java">HelloWorldStreamingServer</a>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1286,7 +1302,7 @@ object and there are no asynchronous primitives involved.</p>
 </div>
 <div class="paragraph">
 <p>See
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldClient.java">BlockingHelloWorldClient</a></p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldClient.java">BlockingHelloWorldClient</a></p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1302,15 +1318,15 @@ object and there are no asynchronous primitives involved.</p>
 <div class="paragraph">
 <p>This programming paradigm expects the request payload body as an
 <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Iterable.html">Iterable</a> of
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java">Buffer</a>s and the response payload
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java">Buffer</a>s and the response payload
 body is consumed via an
 <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Iterable.html">Iterable</a> of
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java">Buffer</a>s. There are no asynchronous
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java">Buffer</a>s. There are no asynchronous
 primitives involved.</p>
 </div>
 <div class="paragraph">
 <p>See
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingClient.java">BlockingHelloWorldStreamingClient</a></p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingClient.java">BlockingHelloWorldStreamingClient</a></p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1332,12 +1348,12 @@ primitives involved.</p>
 <div class="paragraph">
 <p>This programming paradigm expects the request payload body as a single aggregated object, and the response payload body
 is also a single aggregated object. The <code>HttpClient</code> provides the response via a
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java">Single</a> which is an
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java">Single</a> which is an
 asynchronous primitive.</p>
 </div>
 <div class="paragraph">
 <p>See
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldClient.java">HelloWorldClient</a></p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldClient.java">HelloWorldClient</a></p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1362,16 +1378,16 @@ asynchronous primitive.</p>
 <h4 id="client-asynchronous-and-streaming"><a class="anchor" href="#client-asynchronous-and-streaming"></a><a class="link" href="#client-asynchronous-and-streaming">Asynchronous and Streaming</a></h4>
 <div class="paragraph">
 <p>This programming paradigm expects the request payload body as a
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java">Publisher</a> typically of
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java">Buffer</a>s (although other types like
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java">Publisher</a> typically of
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java">Buffer</a>s (although other types like
 file regions may be added), the response meta-data is provided via a
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java">Single</a>, and the response
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java">Single</a>, and the response
 payload body is written via a
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java">Publisher</a>.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java">Publisher</a>.</p>
 </div>
 <div class="paragraph">
 <p>See
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingClient.java">HelloWorldStreamingClient</a></p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingClient.java">HelloWorldStreamingClient</a></p>
 </div>
 <div class="listingblock">
 <div class="content">

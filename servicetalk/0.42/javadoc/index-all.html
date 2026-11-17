@@ -1087,6 +1087,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Sets <a href="io/servicetalk/http/api/HttpResponseStatus.html" title="class in io.servicetalk.http.api"><code>HttpResponseStatus</code></a>es that are allowed to follow redirects.</div>
 </dd>
+<dt><a href="io/servicetalk/http/netty/H1SpecExceptions.html#allowHeaderWithoutColon()" class="member-name-link">allowHeaderWithoutColon()</a> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H1SpecExceptions.html" title="class in io.servicetalk.http.netty">H1SpecExceptions</a></dt>
+<dd>
+<div class="block">Allow a header line without a colon, such as a bare <code>Host</code>, in headers and trailers.</div>
+</dd>
+<dt><a href="io/servicetalk/http/netty/H1SpecExceptions.Builder.html#allowHeaderWithoutColon(boolean)" class="member-name-link">allowHeaderWithoutColon(boolean)</a> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H1SpecExceptions.Builder.html" title="class in io.servicetalk.http.netty">H1SpecExceptions.Builder</a></dt>
+<dd>
+<div class="block">Allow a header line without a colon, such as a bare <code>Host</code>, in headers and trailers.</div>
+</dd>
 <dt><a href="io/servicetalk/http/netty/H1SpecExceptions.html#allowLFWithoutCR()" class="member-name-link">allowLFWithoutCR()</a> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H1SpecExceptions.html" title="class in io.servicetalk.http.netty">H1SpecExceptions</a></dt>
 <dd>
 <div class="block">Allow <code>LF</code> without a proceeding <code>CR</code> as described in
@@ -4248,6 +4256,26 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Collects all items emitted by this <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> into a single item.</div>
 </dd>
+<dt><a href="io/servicetalk/concurrent/api/Single.html#collectOrdered(int,io.servicetalk.concurrent.api.Single...)" class="member-name-link">collectOrdered(int, Single&lt;? extends T&gt;...)</a> - Static method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a></dt>
+<dd>
+<div class="block">Asynchronously collects results of the passed <a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s into a single <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link"><code>Collection</code></a>, preserving the
+ order of <code>singles</code>.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/Single.html#collectOrdered(io.servicetalk.concurrent.api.Single...)" class="member-name-link">collectOrdered(Single&lt;? extends T&gt;...)</a> - Static method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a></dt>
+<dd>
+<div class="block">Asynchronously collects results of the passed <a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s into a single <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link"><code>Collection</code></a>, preserving the
+ order of <code>singles</code>.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/Single.html#collectOrdered(java.lang.Iterable)" class="member-name-link">collectOrdered(Iterable&lt;? extends Single&lt;? extends T&gt;&gt;)</a> - Static method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a></dt>
+<dd>
+<div class="block">Asynchronously collects results of individual <a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s returned by the passed <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link"><code>Iterable</code></a> into a
+ single <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link"><code>Collection</code></a>, preserving the order of <code>singles</code>.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/Single.html#collectOrdered(java.lang.Iterable,int)" class="member-name-link">collectOrdered(Iterable&lt;? extends Single&lt;? extends T&gt;&gt;, int)</a> - Static method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a></dt>
+<dd>
+<div class="block">Asynchronously collects results of individual <a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s returned by the passed <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link"><code>Iterable</code></a> into a
+ single <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link"><code>Collection</code></a>, preserving the order of <code>singles</code>.</div>
+</dd>
 <dt><a href="io/servicetalk/concurrent/api/Single.html#collectUnordered(int,io.servicetalk.concurrent.api.Single...)" class="member-name-link">collectUnordered(int, Single&lt;? extends T&gt;...)</a> - Static method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a></dt>
 <dd>
 <div class="block">Asynchronously collects results of the passed <a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s into a single <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link"><code>Collection</code></a>.</div>
@@ -6589,6 +6617,8 @@ loadScripts(document, 'script');</script>
  framing.</div>
 </div>
 </dd>
+<dt><a href="io/servicetalk/http/api/FormUrlEncodedSerializer.html#deserialize(io.servicetalk.buffer.api.Buffer,io.servicetalk.buffer.api.BufferAllocator)" class="member-name-link">deserialize(Buffer, BufferAllocator)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/FormUrlEncodedSerializer.html" title="class in io.servicetalk.http.api">FormUrlEncodedSerializer</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/serializer/api/Deserializer.html#deserialize(io.servicetalk.buffer.api.Buffer,io.servicetalk.buffer.api.BufferAllocator)" class="member-name-link">deserialize(Buffer, BufferAllocator)</a> - Method in interface io.servicetalk.serializer.api.<a href="io/servicetalk/serializer/api/Deserializer.html" title="interface in io.servicetalk.serializer.api">Deserializer</a></dt>
 <dd>
 <div class="block">Deserialize the contents from the <a href="io/servicetalk/buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api"><code>Buffer</code></a> parameter.</div>
@@ -7791,6 +7821,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Declare an expectation that <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onComplete()"><code>PublisherSource.Subscriber.onComplete()</code></a> onComplete} will be the next signal.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html#expectContinueTimeout(java.time.Duration)" class="member-name-link">expectContinueTimeout(Duration)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">DelegatingSingleAddressHttpClientBuilder</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#expectContinueTimeout(java.time.Duration)" class="member-name-link">expectContinueTimeout(Duration)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a></dt>
+<dd>
+<div class="block">Sets how long to wait for a response to a request with an <code>Expect: 100-continue</code> header before sending the
+ request payload body anyway, see
+ <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-10.1.1">RFC 9110, section 10.1.1</a>.</div>
+</dd>
 <dt><a href="io/servicetalk/concurrent/api/test/CompletableLastStep.html#expectError()" class="member-name-link">expectError()</a> - Method in interface io.servicetalk.concurrent.api.test.<a href="io/servicetalk/concurrent/api/test/CompletableLastStep.html" title="interface in io.servicetalk.concurrent.api.test">CompletableLastStep</a></dt>
 <dd>
 <div class="block">Declare an expectation that <a href="io/servicetalk/concurrent/CompletableSource.Subscriber.html#onError(java.lang.Throwable)"><code>onError</code></a> will be the next signal.</div>
@@ -8663,6 +8701,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Get a <a href="io/servicetalk/http/api/HttpSerializerDeserializer.html" title="interface in io.servicetalk.http.api"><code>HttpSerializerDeserializer</code></a> that can serialize a key-values <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link"><code>Map</code></a>s
  with <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/charset/StandardCharsets.html#UTF_8" title="class or interface in java.nio.charset" class="external-link"><code>StandardCharsets.UTF_8</code></a> <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/charset/Charset.html" title="class or interface in java.nio.charset" class="external-link"><code>Charset</code></a> to urlencoded forms.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/FormUrlEncodedSerializer.html#formUrlEncodedSerializer(java.nio.charset.Charset)" class="member-name-link">formUrlEncodedSerializer(Charset)</a> - Static method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/FormUrlEncodedSerializer.html" title="class in io.servicetalk.http.api">FormUrlEncodedSerializer</a></dt>
+<dd>
+<div class="block">Create a new instance.</div>
+</dd>
 <dt><a href="io/servicetalk/http/api/HttpSerializationProviders.html#formUrlEncodedSerializer(java.nio.charset.Charset)" class="member-name-link">formUrlEncodedSerializer(Charset)</a> - Static method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpSerializationProviders.html" title="class in io.servicetalk.http.api">HttpSerializationProviders</a></dt>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
@@ -8679,6 +8721,10 @@ loadScripts(document, 'script');</script>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html#formUrlEncodedSerializer(java.nio.charset.Charset)"><code>HttpSerializers.formUrlEncodedSerializer(Charset)</code></a>.</div>
 </div>
+</dd>
+<dt><a href="io/servicetalk/http/api/FormUrlEncodedSerializer.html" class="type-name-link" title="class in io.servicetalk.http.api">FormUrlEncodedSerializer</a> - Class in <a href="io/servicetalk/http/api/package-summary.html">io.servicetalk.http.api</a></dt>
+<dd>
+<div class="block">Serialize/deserialize key-values <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link"><code>Map</code></a>s to/from urlencoded forms.</div>
 </dd>
 <dt><a href="io/servicetalk/http/security/auth/basic/jersey/BasicAuthSecurityContextFilters.html#forNameBinding()" class="member-name-link">forNameBinding()</a> - Static method in class io.servicetalk.http.security.auth.basic.jersey.<a href="io/servicetalk/http/security/auth/basic/jersey/BasicAuthSecurityContextFilters.html" title="class in io.servicetalk.http.security.auth.basic.jersey">BasicAuthSecurityContextFilters</a></dt>
 <dd>
@@ -20382,6 +20428,10 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/serializer/utils/StringSerializer.html#serialize(java.lang.String,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.buffer.api.Buffer)" class="member-name-link">serialize(String, BufferAllocator, Buffer)</a> - Method in class io.servicetalk.serializer.utils.<a href="io/servicetalk/serializer/utils/StringSerializer.html" title="class in io.servicetalk.serializer.utils">StringSerializer</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/api/FormUrlEncodedSerializer.html#serialize(java.util.Map,io.servicetalk.buffer.api.BufferAllocator)" class="member-name-link">serialize(Map&lt;String, List&lt;String&gt;&gt;, BufferAllocator)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/FormUrlEncodedSerializer.html" title="class in io.servicetalk.http.api">FormUrlEncodedSerializer</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/api/FormUrlEncodedSerializer.html#serialize(java.util.Map,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.buffer.api.Buffer)" class="member-name-link">serialize(Map&lt;String, List&lt;String&gt;&gt;, BufferAllocator, Buffer)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/FormUrlEncodedSerializer.html" title="class in io.servicetalk.http.api">FormUrlEncodedSerializer</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/data/jackson/JacksonSerializationProvider.html#serialize(T,io.servicetalk.buffer.api.Buffer)" class="member-name-link">serialize(T, Buffer)</a> - Method in class io.servicetalk.data.jackson.<a href="io/servicetalk/data/jackson/JacksonSerializationProvider.html" title="class in io.servicetalk.data.jackson">JacksonSerializationProvider</a></dt>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
@@ -23094,13 +23144,26 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/health/v1/HealthCheckResponse.html#toBuilder()" class="member-name-link">toBuilder()</a> - Method in class io.servicetalk.health.v1.<a href="io/servicetalk/health/v1/HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/buffer/api/Buffer.html#toByteArray()" class="member-name-link">toByteArray()</a> - Method in interface io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></dt>
+<dd>
+<div class="block">Returns this buffer's readable bytes as a byte array whose contents are independent of this buffer.</div>
+</dd>
 <dt><a href="io/servicetalk/concurrent/api/ByteArrayMapper.html#toByteArray()" class="member-name-link">toByteArray()</a> - Static method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ByteArrayMapper.html" title="interface in io.servicetalk.concurrent.api">ByteArrayMapper</a></dt>
 <dd>
 <div class="block">Mapper from the buffer region to an independent <code>byte[]</code> buffer.</div>
 </dd>
+<dt><a href="io/servicetalk/buffer/api/Buffer.html#toByteArray(boolean)" class="member-name-link">toByteArray(boolean)</a> - Method in interface io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></dt>
+<dd>
+<div class="block">Returns this buffer's readable bytes as a byte array whose contents are independent of this buffer when
+ <code>forceCopy</code> is <code>true</code>.</div>
+</dd>
 <dt><a href="io/servicetalk/concurrent/api/ByteArrayMapper.html#toByteArray(int)" class="member-name-link">toByteArray(int)</a> - Static method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ByteArrayMapper.html" title="interface in io.servicetalk.concurrent.api">ByteArrayMapper</a></dt>
 <dd>
 <div class="block">Mapper from the buffer region to an independent <code>byte[]</code> buffer.</div>
+</dd>
+<dt><a href="io/servicetalk/buffer/api/Buffer.html#toByteArray(int,int)" class="member-name-link">toByteArray(int, int)</a> - Method in interface io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></dt>
+<dd>
+<div class="block">Returns the specified region of this buffer as a byte array whose contents are independent of this buffer.</div>
 </dd>
 <dt><a href="io/servicetalk/buffer/netty/BufferUtils.html#toByteBuf(io.servicetalk.buffer.api.Buffer)" class="member-name-link">toByteBuf(Buffer)</a> - Static method in class io.servicetalk.buffer.netty.<a href="io/servicetalk/buffer/netty/BufferUtils.html" title="class in io.servicetalk.buffer.netty">BufferUtils</a></dt>
 <dd>

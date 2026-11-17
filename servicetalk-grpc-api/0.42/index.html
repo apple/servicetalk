@@ -61,6 +61,9 @@
     <a class="nav-link" href="../../servicetalk/0.42/performance.html">Performance</a>
   </li>
   <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../../servicetalk/0.42/virtual-threads.html">Virtual Threads</a>
+  </li>
+  <li class="nav-item" data-depth="1">
     <button class="nav-toggle"></button>
     <span class="nav-text">Examples</span>
 <ul class="nav-list">
@@ -124,6 +127,9 @@
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#Files">Files</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#VirtualThreads">Virtual Threads</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/service-composition.html">Service Composition</a>
@@ -1164,7 +1170,7 @@ Here is a quick start example of the
 </div>
 <div class="paragraph">
 <p>See
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/BlockingHelloWorldClient.java">BlockingHelloWorldClient</a>.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/BlockingHelloWorldClient.java">BlockingHelloWorldClient</a>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1180,7 +1186,7 @@ Here is a quick start example of the
 </div>
 <div class="paragraph">
 <p>See
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/BlockingHelloWorldServer.java">BlockingHelloWorldServer</a>.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/BlockingHelloWorldServer.java">BlockingHelloWorldServer</a>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1263,9 +1269,9 @@ transport for gRPC. The flow of data from the socket to the gRPC <code>Service</
 </div>
 <div class="paragraph">
 <p>Each <code>Service</code> has access to a
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcServiceContext.java">GrpcServiceContext</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcServiceContext.java">GrpcServiceContext</a>
 which provides additional context
-(via <a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionContext.java">ConnectionContext</a>)
+(via <a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionContext.java">ConnectionContext</a>)
 into the <code>Connection</code>/transport details for each request/response. This means that a <code>GrpcService</code> method may be invoked
 for multiple connections, from different threads, and even concurrently.</p>
 </div>
@@ -1296,7 +1302,7 @@ if decoded protos are required.
 <div class="paragraph">
 <p>In addition to HTTP filters, gRPC users can also add gRPC filters which follow the same interface definition as the
 service and can be composed using the generated
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcServiceFactory.java">GrpcServiceFactory</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcServiceFactory.java">GrpcServiceFactory</a>
 for a particular service definition.</p>
 </div>
 </div>
@@ -1307,7 +1313,7 @@ for a particular service definition.</p>
 <div class="sectionbody">
 <div class="paragraph">
 <p>A <code>Client</code> is created via the
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-grpc-netty/src/main/java/io/servicetalk/grpc/netty/GrpcClients.java">GrpcClients</a> static
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-grpc-netty/src/main/java/io/servicetalk/grpc/netty/GrpcClients.java">GrpcClients</a> static
 factory. It manages multiple <code>Connections</code> via a <a href="../../servicetalk-loadbalancer/0.42/index.html" class="page">LoadBalancer</a>.
 The control flow of a request/response can be visualized in the below diagram:</p>
 </div>
@@ -1357,7 +1363,7 @@ service definition if decoded protos are required.
 <div class="paragraph">
 <p>In addition to HTTP filters, gRPC users can also add gRPC filters which follow the same interface definition as the
 service and can be composed using the generated
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcClientFactory.java">GrpcClientFactory</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcClientFactory.java">GrpcClientFactory</a>
 for a particular service definition.</p>
 </div>
 </div>
@@ -1382,7 +1388,7 @@ instances of the target service similar to the <a href="../../servicetalk-http-a
 <div class="sectionbody">
 <div class="paragraph">
 <p>When a <code>Service</code> fails, ServiceTalk maps the <code>Throwable</code> to a
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcStatus.java">GrpcStatus</a> that is sent
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcStatus.java">GrpcStatus</a> that is sent
 to the client as the <code>grpc-status</code> and (optionally) <code>grpc-message</code> trailers. Well-known exception types are mapped to
 specific status codes; any other exception is mapped to <code>UNKNOWN</code>.</p>
 </div>
@@ -1390,7 +1396,7 @@ specific status codes; any other exception is mapped to <code>UNKNOWN</code>.</p
 <h3 id="returningErrors"><a class="anchor" href="#returningErrors"></a><a class="link" href="#returningErrors">Returning an error from a service</a></h3>
 <div class="paragraph">
 <p>To return a meaningful, client-facing error, a <code>Service</code> should fail with a
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcStatusException.java">GrpcStatusException</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcStatusException.java">GrpcStatusException</a>
 that it constructs explicitly — either by throwing it (blocking APIs) or by completing the <code>Single</code>/<code>Publisher</code>
 with it (asynchronous APIs). The status code and description you put on it are sent <strong>verbatim</strong> on the wire.</p>
 </div>
@@ -1409,7 +1415,7 @@ throw new GrpcStatusException(new GrpcStatus(GrpcStatusCode.INVALID_ARGUMENT, "i
 <a href="https://grpc.io/docs/guides/error/#richer-error-model">richer error model</a>), use
 <code>GrpcStatusException.of(&#8230;&#8203;)</code> with a <code>com.google.rpc.Status</code> — the <code>details</code> (a repeated <code>Any</code>) are carried in the
 <code>grpc-status-details-bin</code> trailer. This is what the
-<a href="https://github.com/apple/servicetalk/blob/0.42.66/servicetalk-examples/grpc/errors/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleServer.java">Application Errors example</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.67/servicetalk-examples/grpc/errors/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleServer.java">Application Errors example</a>
 demonstrates, returning an <code>INVALID_ARGUMENT</code> with a <code>com.google.rpc.BadRequest</code> detail.</p>
 </div>
 <div class="admonitionblock important">

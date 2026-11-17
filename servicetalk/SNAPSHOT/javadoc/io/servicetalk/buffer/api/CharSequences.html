@@ -222,10 +222,14 @@ loadScripts(document, 'script');</script>
 <h3>newAsciiString</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a></span>&nbsp;<span class="element-name">newAsciiString</span><wbr><span class="parameters">(<a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a>&nbsp;input)</span></div>
 <div class="block">Create a new <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link"><code>CharSequence</code></a> from the specified <code>input</code>, supporting only 8-bit ASCII characters, and
- with a case-insensitive <code>hashCode</code>.</div>
+ with a case-insensitive <code>hashCode</code>.
+ <p>
+ Only <a href="Buffer.html#readableBytes()"><code>readable bytes</code></a> of the <code>input</code> are used. Indexes of the returned
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link"><code>CharSequence</code></a> range from <code>0</code> to <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html#length()" title="class or interface in java.lang" class="external-link"><code>length()</code></a> - 1, regardless of the
+ <a href="Buffer.html#readerIndex()"><code>readerIndex</code></a> of the <code>input</code>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>input</code> - a <a href="Buffer.html" title="interface in io.servicetalk.buffer.api"><code>Buffer</code></a> containing</dd>
+<dd><code>input</code> - a <a href="Buffer.html" title="interface in io.servicetalk.buffer.api"><code>Buffer</code></a> containing only 8-bit ASCII characters.</dd>
 <dt>Returns:</dt>
 <dd>a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link"><code>CharSequence</code></a>.</dd>
 </dl>
@@ -270,8 +274,9 @@ loadScripts(document, 'script');</script>
 <dd><code>sequence</code> - the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link"><code>CharSequence</code></a> to operate on.</dd>
 <dd><code>visitor</code> - the <a href="ByteProcessor.html" title="interface in io.servicetalk.buffer.api"><code>ByteProcessor</code></a> visitor of each element.</dd>
 <dt>Returns:</dt>
-<dd><code>-1</code> if the processor iterated to or beyond the end of the readable bytes.
- The last-visited index If the <a href="ByteProcessor.html#process(byte)"><code>ByteProcessor.process(byte)</code></a> returned <code>false</code>.</dd>
+<dd><code>-1</code> if the processor iterated to or beyond the end of the <code>sequence</code>.
+ The index (in range from <code>0</code> to <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html#length()" title="class or interface in java.lang" class="external-link"><code>length()</code></a> - 1) of the last-visited character
+ if the <a href="ByteProcessor.html#process(byte)"><code>ByteProcessor.process(byte)</code></a> returned <code>false</code>.</dd>
 </dl>
 </section>
 </li>

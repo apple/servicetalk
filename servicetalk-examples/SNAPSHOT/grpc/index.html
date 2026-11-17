@@ -1377,11 +1377,28 @@ level error. In this case the application level error type happens to be defined
 <a href="https://github.com/googleapis/googleapis/blob/master/google/rpc/error_details.proto">error_details.proto</a>, but it
 could be any protobuf object.</p>
 </div>
+<div class="paragraph">
+<p>The endpoint uses <code>Single.defer</code> to run validation and response creation lazily when subscribed to. A missing token
+throws an <code>InvalidFieldException</code> carrying the field name and a description that is safe for clients.
+The typed <code>Single.onErrorMap</code> maps only that dedicated exception to a <code>GrpcStatusException</code> with an <code>INVALID_ARGUMENT</code>
+status and a <code>google.rpc.BadRequest</code> detail identifying the field. Both exceptions thrown by the deferred supplier
+and failures from an asynchronous <code>Single</code> returned by that supplier flow through the same mapping.</p>
+</div>
+<div class="paragraph">
+<p>Existing <code>GrpcStatusException</code> instances pass through unchanged, and other exceptions retain ServiceTalk&#8217;s default
+mapping and logging. An unrelated <code>IllegalArgumentException</code> becomes an <code>UNKNOWN</code> status with an opaque description
+while its internal details are logged on the server, avoiding misclassification as a validation failure.</p>
+</div>
+<div class="paragraph">
+<p>The server builder automatically installs <code>GrpcExceptionMapperServiceFilter</code> to handle errors from other filters.
+The service provides application-specific mapping because the default mapper cannot infer the application&#8217;s error
+semantics.</p>
+</div>
 <div class="ulist">
 <ul>
 <li>
 <p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/errors/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleServer.java">ErrorExampleServer</a> - Requires each request has a non-empty <code>token</code> field or else returns an
-error.</p>
+error with application-specific details.</p>
 </li>
 <li>
 <p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/errors/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleClient.java">ErrorExampleClient</a> - Sends a request with missing <code>token</code> field to simulate an error

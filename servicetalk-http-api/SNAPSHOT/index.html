@@ -1469,6 +1469,13 @@ deserialization format and also adding a <code>content-type</code> header identi
 responds with <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.2.1">100 Continue</a> status code signaling that
 it&#8217;s ready to receive and process the payload body.</p>
 </div>
+<div class="paragraph">
+<p>If the server does not respond within 1 second, the client sends the payload body anyway, as permitted by
+<a href="https://datatracker.ietf.org/doc/html/rfc9110#section-10.1.1">RFC 9110</a>. Use
+<code>SingleAddressHttpClientBuilder.expectContinueTimeout(Duration)</code> to change this timeout. <code>Duration.ZERO</code> sends the
+payload body without waiting, as if the request had no <code>Expect: 100-continue</code> header, and a duration longer than any
+other timeout applied to the request, for example <code>Duration.ofDays(1)</code>, waits for the server&#8217;s response.</p>
+</div>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -1478,7 +1485,8 @@ it&#8217;s ready to receive and process the payload body.</p>
 <td class="content">
 <a href="programming-paradigms.html#client-blocking-and-aggregated" class="page">Aggregated</a>
 client will automatically de-optimize its flush strategy to flush on each element of the request to force flushing of
-the request meta-data and deffer flushing payload body until after a <code>100 Continue</code> response is received.
+the request meta-data and deffer flushing payload body until after a <code>100 Continue</code> response is received. It does not
+de-optimize if <code>expectContinueTimeout</code> is <code>Duration.ZERO</code>.
 </td>
 </tr>
 </table>

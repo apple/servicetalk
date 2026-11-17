@@ -763,10 +763,13 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="certificateCompressionAlgorithms(java.util.List)">
 <h3>certificateCompressionAlgorithms</h3>
 <div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></span>&nbsp;<span class="element-name">certificateCompressionAlgorithms</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="CertificateCompressionAlgorithm.html" title="interface in io.servicetalk.transport.api">CertificateCompressionAlgorithm</a>&gt;&nbsp;algorithms)</span></div>
-<div class="block">Sets the certificate compression algorithms to advertise if the feature is supported at runtime.</div>
+<div class="block">Sets the certificate compression algorithms to advertise if the feature is supported at runtime.
+ <p>
+ An empty list disables certificate compression. If not set, the default behavior of the underlying TLS
+ implementation is used.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>algorithms</code> - the certificate compression algorithms to use.</dd>
+<dd><code>algorithms</code> - the certificate compression algorithms to use, or an empty list to disable compression.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
 <dt>See Also:</dt>
@@ -783,10 +786,13 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="certificateCompressionAlgorithms(io.servicetalk.transport.api.CertificateCompressionAlgorithm...)">
 <h3>certificateCompressionAlgorithms</h3>
 <div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></span>&nbsp;<span class="element-name">certificateCompressionAlgorithms</span><wbr><span class="parameters">(<a href="CertificateCompressionAlgorithm.html" title="interface in io.servicetalk.transport.api">CertificateCompressionAlgorithm</a>...&nbsp;algorithms)</span></div>
-<div class="block">Sets the certificate compression algorithms to advertise if the feature is supported at runtime.</div>
+<div class="block">Sets the certificate compression algorithms to advertise if the feature is supported at runtime.
+ <p>
+ No arguments disable certificate compression. If not set, the default behavior of the underlying TLS
+ implementation is used.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>algorithms</code> - the certificate compression algorithms to use.</dd>
+<dd><code>algorithms</code> - the certificate compression algorithms to use, or none to disable compression.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
 <dt>See Also:</dt>
