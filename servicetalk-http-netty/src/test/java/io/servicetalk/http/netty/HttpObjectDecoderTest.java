@@ -400,6 +400,19 @@ abstract class HttpObjectDecoderTest {
         assertFalse(channel.finishAndReleaseAll());
     }
 
+    @Test
+    void validStartLineAfterBareLFBetweenMessages() {
+        EmbeddedChannel channel = channel();
+        writeMsg(startLine() + "\r\n" + "\r\n", channel);
+        assertStartLine(channel);
+        assertEmptyTrailers(channel);
+        beforeNextMessage(channel);
+        writeMsg("\n" + startLine() + "\r\n" + "\r\n", channel);
+        assertStartLine(channel);
+        assertEmptyTrailers(channel);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
     @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
     @ValueSource(booleans = {true, false})
     void tooManyPrefaceCharacters(boolean crlf) {
@@ -1057,6 +1070,86 @@ abstract class HttpObjectDecoderTest {
         assertStandardHeaders(metaData.headers());
         assertEmptyTrailers(channel);
         assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] beforeEmptyLine={0}")
+    @ValueSource(booleans = {true, false})
+    void bareLFAfterHeaderLine(boolean beforeEmptyLine) {
+        assertDecoderException(startLine() + "\r\n" +
+                "Host: servicetalk.io" + "\r\n" +
+                "\n" +
+                (beforeEmptyLine ? "" : "Smuggled: value" + "\r\n") +
+                "\r\n", "Found LF (0x0a) but no CR (0x0d) before");
+    }
+
+    @Test
+    void multipleBareLFsAfterHeaderLine() {
+        assertDecoderException(startLine() + "\r\n" +
+                "Host: servicetalk.io" + "\r\n" +
+                "\n\n\n" +
+                "Smuggled: value" + "\r\n" +
+                "\r\n", "Found LF (0x0a) but no CR (0x0d) before");
+    }
+
+    @Test
+    void bareLFAfterHeaderLineInSeparateFrame() {
+        assertFalse(channel().writeInbound(fromAscii(startLine() + "\r\n" +
+                "Host: servicetalk.io" + "\r\n")));
+        assertDecoderException("\n" +
+                "Smuggled: value" + "\r\n" +
+                "\r\n", "Found LF (0x0a) but no CR (0x0d) before");
+    }
+
+    @Test
+    void bareLFAfterHeaderLineSpecExceptionEndsHeaders() {
+        writeMsg(startLine() + "\r\n" +
+                "Host: servicetalk.io" + "\r\n" +
+                "\n", channelSpecException());
+        HttpMetaData metaData = assertStartLine(channelSpecException());
+        assertSingleHeaderValue(metaData.headers(), "Host", "servicetalk.io");
+        assertThat(metaData.headers().size(), is(1));
+        assertEmptyTrailers(channelSpecException());
+        assertFalse(channelSpecException().finishAndReleaseAll());
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] {0} crlf={2}")
+    @MethodSource("bareLFInChunkedEncodingArgs")
+    void bareLFInChunkedEncoding(String description, String chunks, boolean crlf) {
+        EmbeddedChannel channel = channel(crlf);
+        String br = br(crlf);
+        DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + br +
+                "Host: servicetalk.io" + br +
+                "Transfer-Encoding: chunked" + br + br +
+                chunks, channel));
+        assertThat(e.getMessage(), startsWith("Found LF (0x0a) but no CR (0x0d) before"));
+    }
+
+    private static Collection<Arguments> bareLFInChunkedEncodingArgs() {
+        final List<Arguments> arguments = new ArrayList<>();
+        for (String[] chunks : new String[][] {
+                {"bare LF as chunk-data delimiter", "5\r\nhello\n\r\n0\r\n\r\n"},
+                {"chunk-data ends with CR followed by bare LF", "5\r\nhell\r\n0\r\n\r\n"},
+                {"bare LF before chunk-size line", "5\r\nhello\r\n\n0\r\n\r\n"},
+        }) {
+            for (boolean crlf : new boolean[] {true, false}) {
+                arguments.add(Arguments.of(chunks[0], chunks[1], crlf));
+            }
+        }
+        return arguments;
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] afterTrailerLine={0}")
+    @ValueSource(booleans = {true, false})
+    void bareLFInTrailers(boolean afterTrailerLine) {
+        DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + "\r\n" +
+                "Host: servicetalk.io" + "\r\n" +
+                "Transfer-Encoding: chunked" + "\r\n" + "\r\n" +
+                "0\r\n" +
+                (afterTrailerLine ? "TrailerStatus: good" + "\r\n" : "") +
+                "\n" +
+                "Smuggled: value" + "\r\n" +
+                "\r\n"));
+        assertThat(e.getMessage(), startsWith("Found LF (0x0a) but no CR (0x0d) before"));
     }
 
     /**

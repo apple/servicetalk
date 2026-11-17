@@ -995,38 +995,37 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
      *     <li>Use {@link #crlfIndex(long)} to extract the offset of the [CR]?LF and {@link #crlfBeforeIndex(long)}
      *     to get the index immediately preceding the [CR]?LF</li>
      * </ul>
-     * @throws DecoderException if no LF or found in buffer
+     * @throws DecoderException if a LF without a preceding CR is found and {@code allowLFWithoutCR} is {@code false}
      * @throws TooLongFrameException if the line exceeds the permitted maximum
      */
-    private static long findCRLF(final ByteBuf buffer, int startIndex, final int maxLineSize, final int parsingLine,
-                                final boolean allowLFWithoutCR) {
+    private static long findCRLF(final ByteBuf buffer, final int startIndex, final int maxLineSize,
+                                 final int parsingLine, final boolean allowLFWithoutCR) {
         final int maxToIndex = addWithOverflowProtection(startIndex, maxLineSize);
-        for (;;) {
-            final int toIndex = min(buffer.writerIndex(), maxToIndex);
-            final int lfIndex = findLF(buffer, startIndex, toIndex);
-            final boolean foundCR;
-            if (lfIndex == -1) {
-                if (toIndex - startIndex == maxLineSize) {
-                    throw new TooLongFrameException("Could not find CRLF (0x0d0a) within " + maxLineSize +
-                            " bytes, while parsing line #" + parsingLine);
-                }
-                return -2;
-            } else if (lfIndex == buffer.readerIndex()) {
-                if (allowLFWithoutCR) {
-                    return ((long) lfIndex) << 32 | lfIndex;
-                }
-                buffer.skipBytes(1);
-                ++startIndex;
-            } else if ((foundCR = buffer.getByte(lfIndex - 1) == CR) || allowLFWithoutCR) {
-                return foundCR ? ((long) lfIndex - 1) << 32 | lfIndex : ((long) lfIndex) << 32 | lfIndex;
-            } else if (lfIndex != maxToIndex) {
-                throw new DecoderException("Found LF (0x0a) but no CR (0x0d) before, while parsing line #" +
-                        parsingLine);
-            } else {
-                throw new TooLongFrameException("An HTTP line " + parsingLine + " is larger than " + maxLineSize +
-                        " bytes");
+        final int toIndex = min(buffer.writerIndex(), maxToIndex);
+        final int lfIndex = findLF(buffer, startIndex, toIndex);
+        final boolean foundCR;
+        if (lfIndex == -1) {
+            if (toIndex - startIndex == maxLineSize) {
+                throw new TooLongFrameException("Could not find CRLF (0x0d0a) within " + maxLineSize +
+                        " bytes, while parsing line #" + parsingLine);
             }
+            return -2;
+        } else if (lfIndex == buffer.readerIndex()) {
+            // An LF at readerIndex is the first byte of this line, so there is no CR before it. The previous byte
+            // belongs to already-consumed data (e.g. chunk-data ending in CR) and must not count as this line's CR.
+            if (allowLFWithoutCR) {
+                return ((long) lfIndex) << 32 | lfIndex;
+            }
+            throw bareLF(parsingLine);
+        } else if ((foundCR = buffer.getByte(lfIndex - 1) == CR) || allowLFWithoutCR) {
+            return foundCR ? ((long) lfIndex - 1) << 32 | lfIndex : ((long) lfIndex) << 32 | lfIndex;
+        } else {
+            throw bareLF(parsingLine);
         }
+    }
+
+    private static DecoderException bareLF(final int parsingLine) {
+        return new DecoderException("Found LF (0x0a) but no CR (0x0d) before, while parsing line #" + parsingLine);
     }
 
     private static int crlfIndex(long index) {
