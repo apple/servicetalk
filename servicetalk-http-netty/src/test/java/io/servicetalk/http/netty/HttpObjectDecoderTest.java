@@ -58,6 +58,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
 import static io.servicetalk.http.netty.H1ProtocolConfigBuilder.DEFAULT_MAX_HEADER_FIELD_LENGTH;
 import static io.servicetalk.http.netty.H1ProtocolConfigBuilder.DEFAULT_MAX_START_LINE_LENGTH;
 import static java.lang.Integer.toHexString;
+import static java.lang.Math.min;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -337,6 +338,23 @@ abstract class HttpObjectDecoderTest {
         assertThat(e.getMessage(),
                 is(equalTo("Could not find CRLF (0x0d0a) within 8192 bytes, while parsing line #0")));
         assertThat(channel().inboundMessages(), is(empty()));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] exceed={0}")
+    @ValueSource(booleans = {false, true})
+    void startLineLimitInPieces(boolean exceed) {
+        final int n = DEFAULT_MAX_START_LINE_LENGTH - startLine("").length() - 2 + (exceed ? 1 : 0);
+        final String msg = startLine(repeatChar('x', n)) + "\r\n" + "\r\n";
+        if (exceed) {
+            TooLongFrameException e = assertThrows(TooLongFrameException.class, () -> writeInPieces(msg, 1000));
+            assertThat(e.getMessage(),
+                    is(equalTo("Could not find CRLF (0x0d0a) within 8192 bytes, while parsing line #0")));
+            assertThat(channel().inboundMessages(), is(empty()));
+        } else {
+            writeInPieces(msg, 1000);
+            assertThat(channel().readInbound(), is(instanceOf(HttpMetaData.class)));
+            assertEmptyTrailers(channel());
+        }
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
@@ -1477,6 +1495,74 @@ abstract class HttpObjectDecoderTest {
                 (inHeader ? "2" : "5"))));
     }
 
+    @ParameterizedTest(name = "{displayName} [{index}] inHeader={0} exceed={1}")
+    @MethodSource("biBooleanPermutationSource")
+    void singleHeaderLineLimitInPieces(boolean inHeader, boolean exceed) {
+        final String name = inHeader ? "X-Header" : "X-Trailer";
+        final int n = DEFAULT_MAX_HEADER_FIELD_LENGTH - name.length() - 4 + (exceed ? 1 : 0); // ": " and CRLF
+        final String line = name + ": " + repeatChar('x', n) + "\r\n";
+        final String msg = startLineForContent() + "\r\n" +
+                "Host: servicetalk.io\r\n" +
+                (inHeader ? line : "") +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "0\r\n" +
+                (inHeader ? "" : line) +
+                "\r\n";
+        if (exceed) {
+            TooLongFrameException e = assertThrows(TooLongFrameException.class, () -> writeInPieces(msg, 1000));
+            assertThat(e.getMessage(), is(equalTo("Could not find CRLF (0x0d0a) within 16384 bytes, " +
+                    "while parsing line #" + (inHeader ? "2" : "5"))));
+        } else {
+            writeInPieces(msg, 1000);
+            final HttpMetaData metaData = assertStartLineForContent();
+            final HttpHeaders headers = inHeader ? metaData.headers() : channel().readInbound();
+            final CharSequence value = headers.get(name);
+            assertThat(value, is(notNullValue()));
+            assertThat(value.length(), is(n));
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] exceed={0}")
+    @ValueSource(booleans = {false, true})
+    void chunkSizeLineLimitInPieces(boolean exceed) {
+        writeMsg(startLineForContent() + "\r\n" +
+                "Host: servicetalk.io\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n");
+        // 16 bytes is the limit, including CRLF
+        final String chunkSize = repeatChar('0', exceed ? 14 : 13) + "a";
+        final String msg = chunkSize + "\r\n" + repeatChar('x', 10) + "\r\n" + "0\r\n\r\n";
+        if (exceed) {
+            TooLongFrameException e = assertThrows(TooLongFrameException.class, () -> writeInPieces(msg, 1));
+            assertThat(e.getMessage(),
+                    is(equalTo("Could not find CRLF (0x0d0a) within 16 bytes, while parsing line #4")));
+        } else {
+            writeInPieces(msg, 1);
+            assertStartLineForContent();
+            assertPayloadSize(10);
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] exceed={0}")
+    @ValueSource(booleans = {false, true})
+    void chunkDelimiterLimitInPieces(boolean exceed) {
+        writeMsg(startLineForContent() + "\r\n" +
+                "Host: servicetalk.io\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n");
+        final String msg = "a\r\n" + repeatChar('x', 10) + (exceed ? "x" : "") + "\r\n" + "0\r\n\r\n";
+        if (exceed) {
+            TooLongFrameException e = assertThrows(TooLongFrameException.class, () -> writeInPieces(msg, 1));
+            assertThat(e.getMessage(),
+                    is(equalTo("Could not find CRLF (0x0d0a) within 2 bytes, while parsing line #5")));
+        } else {
+            writeInPieces(msg, 1);
+            assertStartLineForContent();
+            assertPayloadSize(10);
+        }
+    }
+
     @ParameterizedTest(name = "{displayName} [{index}] exceed={0}")
     @ValueSource(booleans = {false, true})
     void totalHeadersLimitForHeaders(boolean exceed) {
@@ -1700,6 +1786,12 @@ abstract class HttpObjectDecoderTest {
             }
         }
         return arguments;
+    }
+
+    private void writeInPieces(String msg, int pieceSize) {
+        for (int i = 0; i < msg.length(); i += pieceSize) {
+            channel().writeInbound(fromAscii(msg.substring(i, min(msg.length(), i + pieceSize))));
+        }
     }
 
     private static String repeatChar(char c, int count) {

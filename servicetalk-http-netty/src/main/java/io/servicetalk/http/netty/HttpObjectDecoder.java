@@ -972,7 +972,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         }
         final long longLFIndex = findCRLF(buffer, cumulationIndex, maxLineSize, parsingLine, allowLFWithoutCR);
         if (longLFIndex < 0) {
-            cumulationIndex = min(buffer.writerIndex(), cumulationIndex + maxLineSize);
+            // findCRLF scanned up to writerIndex, otherwise it would have thrown. Resume from there on the next read.
+            cumulationIndex = buffer.writerIndex();
         } else {
             cumulationIndex = crlfIndex(longLFIndex);
             ++parsingLine;
@@ -981,11 +982,11 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     }
 
     /**
-     * find the next occurrence of CRLF in the buffer beginning at startIndex and looking no further than maxLineSize or
-     * the written portion of the buffer.
+     * find the next occurrence of CRLF in the buffer beginning at startIndex and looking no further than maxLineSize
+     * bytes from the start of the line ({@link ByteBuf#readerIndex()}) or the written portion of the buffer.
      *
-     * @param buffer source buffer
-     * @param startIndex initial scanning index
+     * @param buffer source buffer, its {@link ByteBuf#readerIndex()} must point to the start of the line
+     * @param startIndex initial scanning index, bytes between the start of the line and this index have no LF
      * @param maxLineSize maximum length of a line
      * @param parsingLine line count for error messages.
      * @param allowLFWithoutCR allow a LF without a proceeding CR to signify "end of line".
@@ -1000,17 +1001,19 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
      */
     private static long findCRLF(final ByteBuf buffer, final int startIndex, final int maxLineSize,
                                  final int parsingLine, final boolean allowLFWithoutCR) {
-        final int maxToIndex = addWithOverflowProtection(startIndex, maxLineSize);
+        // A line can arrive across many reads; startIndex only skips what earlier reads already scanned.
+        final int lineStart = buffer.readerIndex();
+        final int maxToIndex = addWithOverflowProtection(lineStart, maxLineSize);
         final int toIndex = min(buffer.writerIndex(), maxToIndex);
         final int lfIndex = findLF(buffer, startIndex, toIndex);
         final boolean foundCR;
         if (lfIndex == -1) {
-            if (toIndex - startIndex == maxLineSize) {
+            if (toIndex - lineStart == maxLineSize) {
                 throw new TooLongFrameException("Could not find CRLF (0x0d0a) within " + maxLineSize +
                         " bytes, while parsing line #" + parsingLine);
             }
             return -2;
-        } else if (lfIndex == buffer.readerIndex()) {
+        } else if (lfIndex == lineStart) {
             // An LF at readerIndex is the first byte of this line, so there is no CR before it. The previous byte
             // belongs to already-consumed data (e.g. chunk-data ending in CR) and must not count as this line's CR.
             if (allowLFWithoutCR) {
