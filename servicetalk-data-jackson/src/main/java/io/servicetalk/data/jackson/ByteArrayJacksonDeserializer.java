@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ final class ByteArrayJacksonDeserializer<T> extends AbstractJacksonDeserializer<
         if (buffer.hasArray()) {
             final int start = buffer.arrayOffset() + buffer.readerIndex();
             feeder.feedInput(buffer.array(), start, start + buffer.readableBytes());
+            buffer.skipBytes(buffer.readableBytes());
         } else {
             int readableBytes = buffer.readableBytes();
             if (readableBytes != 0) {

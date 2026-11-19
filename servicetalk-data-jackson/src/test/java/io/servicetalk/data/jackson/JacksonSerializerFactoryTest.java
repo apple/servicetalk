@@ -264,7 +264,7 @@ class JacksonSerializerFactoryTest {
 
         assertThat(stringStreamingSerializer(typeRef).deserialize(from(EMPTY_BUFFER, buffer, EMPTY_BUFFER), alloc)
                 .toIterable(), contains("value"));
-        assertThat(buffer.readerIndex(), is(buffer.hasArray() ? 1 : 8));
+        assertThat(buffer.readerIndex(), is(8));
         assertThat(buffer.writerIndex(), is(8));
     }
 
