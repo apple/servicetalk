@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,10 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategies;
+import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
@@ -31,6 +33,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -43,11 +46,13 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.assertAsyncContext;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 class HttpClientAsyncContextTest {
     private static final ContextMap.Key<CharSequence> K1 = newKey("k1", CharSequence.class);
@@ -58,6 +63,31 @@ class HttpClientAsyncContextTest {
     @ValueSource(booleans = {true, false})
     void contextPreservedOverFilterBoundariesOffloaded(boolean useImmediate) throws Exception {
         contextPreservedOverFilterBoundaries(useImmediate);
+    }
+
+    @Test
+    void blockingRequestSharesContextWithResponsePayload() throws Exception {
+        String content = "response";
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .listenAndAwait((ctx, request, responseFactory) ->
+                        succeeded(responseFactory.ok().payloadBody(content, textSerializerUtf8())));
+             BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                     .appendClientFilter(delegate -> new StreamingHttpClientFilter(delegate) {
+                         @Override
+                         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester requester,
+                                                                         final StreamingHttpRequest request) {
+                             return requester.request(request).map(response -> {
+                                 ContextMap responseContext = AsyncContext.context();
+                                 return response.transformPayloadBody(payload -> payload.beforeOnNext(ignored ->
+                                         assertSame(responseContext, AsyncContext.context())));
+                             });
+                         }
+                     })
+                     .buildBlocking()) {
+            HttpResponse response = client.request(client.get("/"));
+            assertEquals(OK, response.status());
+            assertEquals(content, response.payloadBody(textSerializerUtf8()));
+        }
     }
 
     private static void contextPreservedOverFilterBoundaries(boolean useImmediate) throws Exception {
