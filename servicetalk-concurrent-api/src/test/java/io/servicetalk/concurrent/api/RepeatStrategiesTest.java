@@ -77,6 +77,28 @@ class RepeatStrategiesTest extends RedoStrategiesTest {
                 2, ofNanos(initialDelayNanos), ofNanos(maxDelayNanos), timerExecutor));
     }
 
+    @ParameterizedTest(name = "{displayName} [{index}] initialDelayNanos={0} maxDelayNanos={1}")
+    @CsvSource({"0,1000", "1,0", "0,0"})
+    void expBackoffFullJitterZeroDelayAccepted(long initialDelayNanos, long maxDelayNanos) throws Exception {
+        RepeatStrategy strategy = new RepeatStrategy(repeatWithExponentialBackoffFullJitter(
+                ofNanos(initialDelayNanos), ofNanos(maxDelayNanos), timerExecutor));
+        io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber = strategy.invokeAndListen();
+        verifyDelayWithFullJitter(0, 1);
+        timers.take().verifyListenCalled().onComplete();
+        subscriber.awaitOnComplete();
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] initialDelayNanos={0} maxDelayNanos={1}")
+    @CsvSource({"0,1000", "1,0", "0,0"})
+    void expBackoffDeltaJitterZeroDelayAccepted(long initialDelayNanos, long maxDelayNanos) throws Exception {
+        RepeatStrategy strategy = new RepeatStrategy(repeatWithExponentialBackoffDeltaJitter(
+                ofNanos(initialDelayNanos), ofNanos(0), ofNanos(maxDelayNanos), timerExecutor));
+        io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber = strategy.invokeAndListen();
+        verifyDelayWithFullJitter(0, 1);
+        timers.take().verifyListenCalled().onComplete();
+        subscriber.awaitOnComplete();
+    }
+
     @ParameterizedTest(name = "{displayName} [{index}] initialDelayNanos={0} jitterNanos={1} maxDelayNanos={2}")
     @CsvSource({"-1,1,1000", "-2,1,1000", "1,-1,1000", "1,1,-1"})
     void expBackoffDeltaJitterNegativeArgumentThrows(long initialDelayNanos, long jitterNanos, long maxDelayNanos) {

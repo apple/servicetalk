@@ -43,6 +43,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.lang.Thread.NORM_PRIORITY;
+import static java.time.Duration.ZERO;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofNanos;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -52,6 +53,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 final class ReplayPublisherTest extends MulticastPublisherTest {
@@ -160,6 +162,13 @@ final class ReplayPublisherTest extends MulticastPublisherTest {
     void historyTtlBuilderNegativeTtlThrows(boolean lazy) {
         assertThrows(IllegalArgumentException.class,
                 () -> ReplayStrategies.historyTtlBuilder(1, ofNanos(-1), executor, lazy));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] lazy={0}")
+    @ValueSource(booleans = {true, false})
+    void historyTtlBuilderZeroTtlAccepted(boolean lazy) {
+        assertDoesNotThrow(() -> source.replay(
+                ReplayStrategies.<Integer>historyTtlBuilder(1, ZERO, executor, lazy).build()));
     }
 
     @ParameterizedTest
