@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,9 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
+import io.servicetalk.http.api.ReservedBlockingHttpConnection;
+import io.servicetalk.http.api.ReservedBlockingStreamingHttpConnection;
+import io.servicetalk.http.api.ReservedHttpConnection;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
@@ -61,6 +64,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.InetSocketAddress;
@@ -342,6 +346,63 @@ class ClientEffectiveStrategyTest {
         }
     }
 
+    @ParameterizedTest(name = "API={0}")
+    @EnumSource(value = ClientApi.class, names = {"ASYNC_AGGREGATED", "BLOCKING_AGGREGATED", "BLOCKING_STREAMING"})
+    void reservedConnectionAppliesExecutionStrategy(final ClientApi clientApi) throws Exception {
+        ClientInvokingThreadRecorder invokingThreadsRecorder = new ClientInvokingThreadRecorder();
+        try (StreamingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(context))
+                .ioExecutor(CLIENT_CTX.ioExecutor())
+                .executor(CLIENT_CTX.executor())
+                .appendClientFilter(invokingThreadsRecorder)
+                .buildStreaming()) {
+            invokingThreadsRecorder.reset(clientApi.strategy());
+            String responseBody = getReservedResponse(clientApi, client);
+            assertThat("Unexpected response: " + responseBody, responseBody, is(not(emptyString())));
+            invokingThreadsRecorder.verifyOffloads(clientApi, client.executionContext().executionStrategy(),
+                    responseBody);
+        }
+    }
+
+    private static String getReservedResponse(final ClientApi clientApi, final StreamingHttpClient client)
+            throws Exception {
+        // Use separate request metadata so reserving the connection cannot assign the strategy to the request.
+        switch (clientApi) {
+            case BLOCKING_AGGREGATED: {
+                BlockingHttpClient blockingClient = client.asBlockingClient();
+                try (ReservedBlockingHttpConnection connection = blockingClient.reserveConnection(
+                        blockingClient.get(PATH))) {
+                    HttpResponse response = connection.request(connection.post(PATH)
+                            .payloadBody(content(connection.executionContext())));
+                    return response.payloadBody().toString(UTF_8);
+                }
+            }
+
+            case BLOCKING_STREAMING: {
+                BlockingStreamingHttpClient blockingClient = client.asBlockingStreamingClient();
+                try (ReservedBlockingStreamingHttpConnection connection = blockingClient.reserveConnection(
+                        blockingClient.get(PATH))) {
+                    BlockingStreamingHttpResponse response = connection.request(connection.post(PATH)
+                            .payloadBody(singleton(content(connection.executionContext()))));
+                    return readBlockingPayload(response, connection.executionContext());
+                }
+            }
+
+            case ASYNC_AGGREGATED: {
+                HttpClient httpClient = client.asClient();
+                try (ReservedHttpConnection connection = httpClient.reserveConnection(httpClient.get(PATH))
+                        .toFuture().get()) {
+                    HttpResponse response = connection.request(connection.post(PATH)
+                                    .payloadBody(content(connection.executionContext())))
+                            .toFuture().get();
+                    return response.payloadBody().toString(UTF_8);
+                }
+            }
+
+            default:
+                throw new AssertionError("Unexpected converted client api " + clientApi);
+        }
+    }
+
     /**
      * Computes the base execution strategy that the client will use based on the selected builder strategy, filter
      * strategy, load balancer strategy, connection factory filter strategy.
@@ -442,13 +503,7 @@ class ClientEffectiveStrategyTest {
                 BlockingStreamingHttpResponse response = blockingStreamingClient.request(
                         blockingStreamingClient.post(requestTarget)
                                 .payloadBody(singleton(content(blockingStreamingClient.executionContext()))));
-                Supplier<CompositeBuffer> supplier =
-                        blockingStreamingClient.executionContext().bufferAllocator()::newCompositeBuffer;
-                return StreamSupport.stream(response.payloadBody().spliterator(), false)
-                        .reduce((Buffer base, Buffer buffer) -> (base instanceof CompositeBuffer ?
-                                (CompositeBuffer) base : supplier.get().addBuffer(base)).addBuffer(buffer))
-                        .map(buffer -> buffer.toString(UTF_8))
-                        .orElseThrow(() -> new AssertionError("No payload in response"));
+                return readBlockingPayload(response, blockingStreamingClient.executionContext());
             }
 
             case ASYNC_AGGREGATED: {
@@ -472,6 +527,16 @@ class ClientEffectiveStrategyTest {
             default:
                 throw new AssertionError("Unexpected client api " + clientApi);
         }
+    }
+
+    private static String readBlockingPayload(final BlockingStreamingHttpResponse response,
+                                              final HttpExecutionContext context) {
+        Supplier<CompositeBuffer> supplier = context.bufferAllocator()::newCompositeBuffer;
+        return StreamSupport.stream(response.payloadBody().spliterator(), false)
+                .reduce((Buffer base, Buffer buffer) -> (base instanceof CompositeBuffer ?
+                        (CompositeBuffer) base : supplier.get().addBuffer(base)).addBuffer(buffer))
+                .map(buffer -> buffer.toString(UTF_8))
+                .orElseThrow(() -> new AssertionError("No payload in response"));
     }
 
     private static Buffer content(HttpExecutionContext ctx) {
