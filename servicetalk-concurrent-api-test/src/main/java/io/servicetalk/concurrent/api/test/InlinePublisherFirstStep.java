@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api.test;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.CancelEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.NoSignalForDurationEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnNextAggregateEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnNextEvent;
@@ -236,17 +237,7 @@ final class InlinePublisherFirstStep<T> implements PublisherFirstStep<T> {
 
     @Override
     public StepVerifier thenCancel() {
-        events.add(new SubscriptionEvent() {
-            @Override
-            void subscription(Subscription subscription) {
-                subscription.cancel();
-            }
-
-            @Override
-            String description() {
-                return "thenCancel()";
-            }
-        });
+        events.add(new CancelEvent());
         return new PublisherInlineStepVerifier<>(source, timeSource, events);
     }
 

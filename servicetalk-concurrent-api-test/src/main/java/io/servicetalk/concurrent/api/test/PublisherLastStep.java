@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ public interface PublisherLastStep {
     StepVerifier expectComplete();
 
     /**
-     * Manually invoke {@link Subscription#cancel()} on the {@link Subscription} from
+     * After all preceding steps finish, invoke {@link Subscription#cancel()} on the {@link Subscription} from
      * {@link PublisherSource.Subscriber#onSubscribe(Subscription)}.
      * @return An object which allows to verify all expectations.
      */

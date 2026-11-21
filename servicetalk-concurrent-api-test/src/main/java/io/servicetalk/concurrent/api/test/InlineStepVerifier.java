@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api.test;
 
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.VerifyThreadAwaitEvent;
+import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.VerifyThreadCancelEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.VerifyThreadEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.VerifyThreadRunEvent;
 
@@ -25,8 +26,10 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
+import java.util.function.LongSupplier;
 import javax.annotation.Nullable;
 
+import static java.lang.System.nanoTime;
 import static java.util.Arrays.copyOfRange;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.function.Function.identity;
@@ -62,9 +65,7 @@ abstract class InlineStepVerifier<Source, Sub extends InlineVerifiableSubscriber
             BlockingIterable<VerifyThreadEvent> iterable = subscriber.verifyThreadEvents()
                     .beforeFinally(doneLatch::countDown)
                     .toIterable();
-            for (VerifyThreadEvent event : iterable) {
-                processVerifyEvent(event, doneLatch);
-            }
+            iterable.forEach(event -> processVerifyEvent(event, doneLatch, () -> Long.MAX_VALUE));
         } catch (RuntimeException t) {
             processRuntimeException(t);
         }
@@ -82,7 +83,10 @@ abstract class InlineStepVerifier<Source, Sub extends InlineVerifiableSubscriber
                     .beforeFinally(doneLatch::countDown)
                     // TODO(scott): use timeSource for test timeout
                     .toIterable();
-            iterable.forEach(event -> processVerifyEvent(event, doneLatch), duration.toNanos(), NANOSECONDS);
+            final long deadline = nanoTime() + duration.toNanos();
+            LongSupplier remainingNanos = () -> deadline - nanoTime();
+            iterable.forEach(event -> processVerifyEvent(event, doneLatch, remainingNanos), remainingNanos,
+                    NANOSECONDS);
         } catch (RuntimeException t) {
             processRuntimeException(t);
         } catch (TimeoutException e) {
@@ -106,22 +110,50 @@ abstract class InlineStepVerifier<Source, Sub extends InlineVerifiableSubscriber
         throw t;
     }
 
-    private void processVerifyEvent(VerifyThreadEvent event, CountDownLatch doneLatch) {
+    private void processVerifyEvent(VerifyThreadEvent event, CountDownLatch doneLatch,
+                                    LongSupplier remainingNanos) {
         if (event instanceof VerifyThreadRunEvent) {
             ((VerifyThreadRunEvent) event).run();
         } else if (event instanceof VerifyThreadAwaitEvent) {
             Duration duration = ((VerifyThreadAwaitEvent) event).duration();
-            if (timeSource instanceof ModifiableTimeSource) {
-                ((ModifiableTimeSource) timeSource).incrementCurrentTime(duration);
-            } else {
-                try {
-                    doneLatch.await(duration.toNanos(), NANOSECONDS);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e); // will be unwrapped in the verify method above
+            await(duration, doneLatch);
+        } else if (event instanceof VerifyThreadCancelEvent) {
+            VerifyThreadCancelEvent cancel = (VerifyThreadCancelEvent) event;
+            if (cancel.noSignalsUntil != null) {
+                Duration remaining = timeSource.timeElapsed(cancel.noSignalsUntil).negated();
+                if (!remaining.isNegative() && !remaining.isZero()) {
+                    long budget = remainingNanos.getAsLong();
+                    if (!(timeSource instanceof ModifiableTimeSource) && remaining.toNanos() > budget) {
+                        if (!await(Duration.ofNanos(budget), doneLatch)) {
+                            TimeoutException cause = new TimeoutException("Timed out waiting to cancel");
+                            throw cancel.event.newException(cause.getMessage(), cause, exceptionPrefixFilter());
+                        }
+                        return;
+                    }
+                    if (await(remaining, doneLatch)) {
+                        return;
+                    }
                 }
+            }
+            try {
+                cancel.subscription.cancel();
+            } catch (Throwable cause) {
+                throw cancel.event.newException(cause.getMessage(), cause, exceptionPrefixFilter());
             }
         } else {
             throw new IllegalStateException("unsupported event type: " + event.getClass());
+        }
+    }
+
+    private boolean await(Duration duration, CountDownLatch doneLatch) {
+        if (timeSource instanceof ModifiableTimeSource) {
+            ((ModifiableTimeSource) timeSource).incrementCurrentTime(duration);
+            return doneLatch.getCount() == 0;
+        }
+        try {
+            return doneLatch.await(duration.toNanos(), NANOSECONDS);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e); // will be unwrapped in the verify method above
         }
     }
 

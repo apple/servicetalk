@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
@@ -181,12 +182,13 @@ class CompletableStepVerifierTest {
 
     @Test
     void noSignalsSubscriptionCancelSucceeds() {
-        // expectNoSignals and subscription event are dequeued/processed sequentially on the Subscriber thread
-        // and the scenario isn't instructed to expect the subscription, so we pass the test.
-        StepVerifiers.create(never())
-                .expectNoSignals(ofDays(1))
+        Duration quietPeriod = ofDays(1);
+        Duration elapsed = new InlineCompletableFirstStep(toSource(never()),
+                new DefaultModifiableTimeSource())
+                .expectNoSignals(quietPeriod)
                 .thenCancel()
                 .verify();
+        assertThat(elapsed, is(quietPeriod));
     }
 
     @Test
