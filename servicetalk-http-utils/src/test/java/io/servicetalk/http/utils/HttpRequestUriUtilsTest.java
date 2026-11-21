@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import io.servicetalk.transport.api.ConnectionContext;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -50,6 +52,55 @@ class HttpRequestUriUtilsTest {
 
     private final StreamingHttpRequestResponseFactory reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
             BufferAllocators.DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1);
+
+    @ParameterizedTest(name = "{displayName} [{index}]: scheme={0}, authority={1}, target={2}")
+    @CsvSource({"http, example.com:8080, /resource?query=value",
+            "https, example.com:8443, /resource?query=value",
+            "http, [::1]:8080, /resource?query=value",
+            "https, [::1]:8443, /resource?query=value",
+            "https, example.com:8443, /a%20b?query=%2F",
+            "http, example.com:8080, /"})
+    void optionsOriginFormPreservesPathAndQuery(String scheme, String authority, String target) {
+        StreamingHttpRequest request = reqRespFactory.newRequest(OPTIONS, target).setHeader(HOST, authority);
+        assertThat(getEffectiveRequestUri(ctx, request, scheme, null, false),
+                is(scheme + "://" + authority + target));
+        assertThat(getEffectiveRequestUri(request, scheme, authority, false),
+                is(scheme + "://" + authority + target));
+        assertThat(getBaseRequestUri(ctx, request, scheme, null, false), is(scheme + "://" + authority + '/'));
+        assertThat(request.requestTarget(), is(target));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: target={0}")
+    @CsvSource({"http://example.com:8080/resource?query=value", "https://example.com:8443/resource?query=value",
+            "https://[::1]:8443/a%20b?query=%2F", "http://example.com/*?query=value"})
+    void optionsAbsoluteFormPreservesPathAndQuery(String target) {
+        StreamingHttpRequest request = reqRespFactory.newRequest(OPTIONS, target);
+        assertThat(getEffectiveRequestUri(ctx, request, null, null, false), is(target));
+        assertThat(getEffectiveRequestUri(request, "https", "proxy.example.com:8443", false), is(target));
+        assertThat(request.requestTarget(), is(target));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: scheme={0}, authority={1}")
+    @CsvSource({"http, [::1]", "https, [::1]", "http, [::1]:8080", "https, [::1]:8443",
+            "https, [2001:db8::0.0.0.1]:8443"})
+    void originFormWithIpv6HostPreservesBrackets(String scheme, String authority) {
+        StreamingHttpRequest request = reqRespFactory.get("/resource?query=value").setHeader(HOST, authority);
+        assertThat(getEffectiveRequestUri(ctx, request, scheme, null, false),
+                is(scheme + "://" + authority + "/resource?query=value"));
+        assertThat(getBaseRequestUri(ctx, request, scheme, null, false), is(scheme + "://" + authority + '/'));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: scheme={0}, host={1}, port={2}, authority={3}")
+    @CsvSource({"http, ::1, 80, [::1]", "https, ::1, 443, [::1]", "http, ::1, 8080, [::1]:8080",
+            "https, ::1, 8443, [::1]:8443", "http, 2001:db8::192.0.2.1, 80, [2001:db8::192.0.2.1]",
+            "https, 2001:db8::192.0.2.1, 8443, [2001:db8::192.0.2.1]:8443"})
+    void originFormWithIpv6LocalAddressPreservesBrackets(String scheme, String host, int port, String authority) {
+        when(ctx.localAddress()).thenReturn(createUnresolved(host, port));
+        StreamingHttpRequest request = reqRespFactory.get("/resource?query=value");
+        assertThat(getEffectiveRequestUri(ctx, request, scheme, null, false),
+                is(scheme + "://" + authority + "/resource?query=value"));
+        assertThat(getBaseRequestUri(ctx, request, scheme, null, false), is(scheme + "://" + authority + '/'));
+    }
 
     @Test
     void originForm() {

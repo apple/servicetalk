@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,9 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -59,8 +60,10 @@ class AbsoluteAddressHttpRequesterFilterTest {
         filter = new AbsoluteAddressHttpRequesterFilter("http", "host:80").create(delegate);
     }
 
-    @Test
-    void shouldAddAuthorityToOriginFormRequestTarget() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: method={0}")
+    @ValueSource(strings = {"GET", "OPTIONS"})
+    void shouldAddAuthorityToOriginFormRequestTarget(String method) throws Exception {
+        request.method(HttpRequestMethod.of(method));
         request.requestTarget("/path?query");
         filter.request(request).toFuture().get();
         verify(delegate).request(requestCapture.capture());
@@ -69,8 +72,10 @@ class AbsoluteAddressHttpRequesterFilterTest {
         MatcherAssert.assertThat(capturedRequest.requestTarget(), is("http://host:80/path?query"));
     }
 
-    @Test
-    void shouldNotAddAuthorityToAbsoluteFormRequestTarget() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: method={0}")
+    @ValueSource(strings = {"GET", "OPTIONS"})
+    void shouldNotAddAuthorityToAbsoluteFormRequestTarget(String method) throws Exception {
+        request.method(HttpRequestMethod.of(method));
         request.requestTarget("https://otherhost:443/otherpath?otherQuery");
         filter.request(request).toFuture().get();
         verify(delegate).request(requestCapture.capture());

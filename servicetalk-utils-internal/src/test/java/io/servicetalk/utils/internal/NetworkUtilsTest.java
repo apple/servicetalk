@@ -1,5 +1,5 @@
 /*
- * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,6 +111,20 @@ class NetworkUtilsTest {
             "0:0:0:0::0:10.0.0.1",
             "0:0:0:0:0:ffff:10.0.0.1",
             "::ffff:192.168.0.1",
+            // RFC 3986 allows a dotted IPv4 tail with any valid IPv6 prefix.
+            "2001:db8::192.0.2.1",
+            "2001:db8:0:0:0:0:0.0.0.1",
+            "0:0:0:0:0:fff:1.0.0.1",
+            "0:0:0:0:0:ff00:1.0.0.1",
+            "0:0:0:0:0:ff:1.0.0.1",
+            "0:0:0:0:ffff::10.0.0.1",
+            "0:0:0:ffff::10.0.0.1",
+            "0:0:ffff::10.0.0.1",
+            "0:ffff::10.0.0.1",
+            "ffff::10.0.0.1",
+            "1:0:0:0:0:ffff:10.0.0.1",
+            "0:0:0:0:ffff:ffff:1.0.0.1",
+            "::1:2:3:4:5:6.7.8.9",
             // Test if various interface names after the percent sign are recognized.
             "[::1%1]",
             "[::1%eth0]",
@@ -329,12 +343,6 @@ class NetworkUtilsTest {
             "::ffff:255.255:255.255.",
             // Invalid IPv4 mapped address - invalid ipv4 separator
             "0:0:0::0:0:00f.0.0.1",
-            // Invalid IPv4 mapped address - not enough f's
-            "0:0:0:0:0:fff:1.0.0.1",
-            // Invalid IPv4 mapped address - not IPv4 mapped, not IPv4 compatible
-            "0:0:0:0:0:ff00:1.0.0.1",
-            // Invalid IPv4 mapped address - not IPv4 mapped, not IPv4 compatible
-            "0:0:0:0:0:ff:1.0.0.1",
             // Invalid IPv4 mapped address - too many f's
             "0:0:0:0:0:fffff:1.0.0.1",
             // Invalid IPv4 mapped address - too many bytes (too many 0's)
@@ -351,22 +359,8 @@ class NetworkUtilsTest {
             "ffff:192.168.0.1",
             // Invalid IPv4 mapped address - 0's after the mapped ffff indicator
             "0:0:0:0:0:ffff::10.0.0.1",
-            // Invalid IPv4 mapped address - 0's after the mapped ffff indicator
-            "0:0:0:0:ffff::10.0.0.1",
-            // Invalid IPv4 mapped address - 0's after the mapped ffff indicator
-            "0:0:0:ffff::10.0.0.1",
-            // Invalid IPv4 mapped address - 0's after the mapped ffff indicator
-            "0:0:ffff::10.0.0.1",
-            // Invalid IPv4 mapped address - 0's after the mapped ffff indicator
-            "0:ffff::10.0.0.1",
-            // Invalid IPv4 mapped address - 0's after the mapped ffff indicator
-            "ffff::10.0.0.1",
-            // Invalid IPv4 mapped address - not all 0's before the mapped separator
-            "1:0:0:0:0:ffff:10.0.0.1",
-            // Address that is similar to IPv4 mapped, but is invalid
-            "0:0:0:0:ffff:ffff:1.0.0.1",
-            // Valid number of separators, but invalid IPv4 format
-            "::1:2:3:4:5:6.7.8.9",
+            "2001:db8::192.0.2.256",
+            "2001:db8:1:2:3:4::192.0.2.1",
             // Too many digits
             "0:0:0:0:0:0:ffff:10.0.0.1",
             // Invalid IPv4 format

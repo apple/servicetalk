@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021-2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -153,27 +153,7 @@ public final class NetworkUtils {
                         return false;
                     }
 
-                    // Verify this address is of the correct structure to contain an IPv4 address.
-                    // It must be IPv4-Mapped or IPv4-Compatible
-                    // (see https://tools.ietf.org/html/rfc4291#section-2.5.5).
                     final int ipv4Start = i - wordLen;
-                    int j = ipv4Start - 2; // index of character before the previous ':'.
-                    if (isValidIPv4MappedChar(ip.charAt(j))) {
-                        if (!isValidIPv4MappedChar(ip.charAt(j - 1)) ||
-                                !isValidIPv4MappedChar(ip.charAt(j - 2)) ||
-                                !isValidIPv4MappedChar(ip.charAt(j - 3))) {
-                            return false;
-                        }
-                        j -= 5;
-                    }
-
-                    for (; j >= start; --j) {
-                        final char tmpChar = ip.charAt(j);
-                        if (tmpChar != '0' && tmpChar != ':') {
-                            return false;
-                        }
-                    }
-
                     // 7 - is minimum IPv4 address length
                     int ipv4End = indexOf(ip, '%', ipv4Start + 7);
                     if (ipv4End < 0) {
@@ -222,9 +202,5 @@ public final class NetworkUtils {
 
     private static boolean isValidNumericChar(final char c) {
         return c >= '0' && c <= '9';
-    }
-
-    private static boolean isValidIPv4MappedChar(final char c) {
-        return c == 'f' || c == 'F';
     }
 }

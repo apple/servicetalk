@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toResolvedInetSocketAddress;
+import static java.net.InetAddress.getByName;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -51,9 +52,18 @@ class BuilderUtilsTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
+    void toResolvedInetSocketAddressFromMixedIpv6() throws UnknownHostException {
+        InetSocketAddress address = toResolvedInetSocketAddress(
+                HostAndPort.ofIpPort("[2001:db8::192.0.2.1]:8080"));
+        assertThat(address.getAddress(), is(getByName("2001:db8::c000:201")));
+        assertThat(address.getPort(), is(8080));
+    }
+
+    @Test
     void toResolvedInetSocketAddressFromUnresolved() {
         Throwable t = assertThrows(IllegalArgumentException.class,
-                () -> toResolvedInetSocketAddress(HostAndPort.of("unresolved-hostname", 8080)));
+                () -> toResolvedInetSocketAddress(HostAndPort.of("localhost", 8080)));
         assertThat(t.getCause(), instanceOf(UnknownHostException.class));
     }
 }
