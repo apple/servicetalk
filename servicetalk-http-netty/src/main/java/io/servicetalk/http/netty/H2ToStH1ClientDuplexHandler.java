@@ -32,7 +32,9 @@ import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ContinueUs
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.HttpScheme;
+import io.netty.handler.codec.http2.DefaultHttp2ResetFrame;
 import io.netty.handler.codec.http2.Http2DataFrame;
+import io.netty.handler.codec.http2.Http2Error;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2HeadersFrame;
 import io.netty.handler.codec.http2.Http2StreamChannel;
@@ -73,6 +75,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
     private boolean waitForContinuation;
     @Nullable
     private ScheduledFuture<?> expectContinueTimer;
+    private boolean resetWhenResponseEnds;
 
     H2ToStH1ClientDuplexHandler(boolean sslEnabled, BufferAllocator allocator, HttpHeadersFactory headersFactory,
                                 CloseHandler closeHandler, StreamObserver observer,
@@ -205,6 +208,10 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                         // All other non-interim responses should cancel ongoing write operation when write waits for
                         // continuation.
                         ctx.fireUserEventTriggered(CancelWriteUserEvent.INSTANCE);
+                        // The request body will never be written, so the request side of the stream can't end. Unless
+                        // the request has already ended, reset the stream to free it for the peer. Defer the reset
+                        // until the response ends: RST_STREAM closes both directions and would discard the response.
+                        resetWhenResponseEnds = !outboundEnded;
                     }
                 }
                 if (!realResponse) {
@@ -236,7 +243,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                 } else {
                     ctx.fireChannelRead(h2HeadersToH1HeadersClient(ctx, h2Headers, null, false, streamId));
                 }
-                closeHandler.protocolPayloadEndInbound(ctx);
+                endInbound(ctx);
             } else if (httpStatus == null) {
                 throw noStatus(ctx, streamId);
             } else {
@@ -247,6 +254,21 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
             readDataFrame(ctx, msg);
         } else {
             ctx.fireChannelRead(msg);
+        }
+    }
+
+    @Override
+    boolean deferNoErrorReset() {
+        return true;
+    }
+
+    @Override
+    void onInboundEnded(final ChannelHandlerContext ctx) {
+        if (resetWhenResponseEnds) {
+            resetWhenResponseEnds = false;
+            // RFC 9113 8.1.1: a request with a declared content-length can't be ended early with END_STREAM, so
+            // CANCEL is the way for a client to stop the request.
+            ctx.writeAndFlush(new DefaultHttp2ResetFrame(Http2Error.CANCEL));
         }
     }
 

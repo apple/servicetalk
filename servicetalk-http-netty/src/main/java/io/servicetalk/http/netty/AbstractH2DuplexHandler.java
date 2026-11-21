@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,13 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
     final HttpHeadersFactory headersFactory;
     final CloseHandler closeHandler;
     final StreamObserver observer;
+    // Whether END_STREAM has been received from the peer.
+    boolean inboundEnded;
+    // Whether END_STREAM has been sent to the peer.
+    boolean outboundEnded;
+    // RST_STREAM(NO_ERROR) received before the complete inbound message.
+    @Nullable
+    private Http2ResetFrame noErrorReset;
 
     AbstractH2DuplexHandler(BufferAllocator allocator, HttpHeadersFactory headersFactory, CloseHandler closeHandler,
                             StreamObserver observer) {
@@ -64,7 +71,14 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
     @Override
     public final void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
         if (evt instanceof Http2ResetFrame) {
-            ctx.fireExceptionCaught(newStreamResetException((Http2ResetFrame) evt));
+            final Http2ResetFrame resetFrame = (Http2ResetFrame) evt;
+            if (resetFrame.errorCode() == Http2Error.NO_ERROR.code() && deferNoErrorReset()) {
+                if (!inboundEnded) {
+                    noErrorReset = resetFrame;
+                }
+            } else {
+                ctx.fireExceptionCaught(newStreamResetException(resetFrame));
+            }
         } else {
             ctx.fireUserEventTriggered(evt);
         }
@@ -74,6 +88,7 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
                              boolean realMessage, ChannelPromise promise) {
         final boolean endStream = realMessage && emptyMessageBody(metaData);
         if (endStream) {
+            outboundEnded = true;
             closeHandler.protocolPayloadEndOutbound(ctx, promise);
         }
         final DefaultHttp2HeadersFrame frame = new DefaultHttp2HeadersFrame(h2Headers, endStream);
@@ -82,6 +97,9 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
         } else {
             // All "interim messages" have to be flushed right away.
             ctx.writeAndFlush(frame, promise);
+        }
+        if (endStream) {
+            onOutboundEnded(ctx, promise);
         }
     }
 
@@ -92,6 +110,7 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
     }
 
     final void writeTrailers(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
+        outboundEnded = true;
         closeHandler.protocolPayloadEndOutbound(ctx, promise);
         HttpHeaders trailers = (HttpHeaders) msg;
         if (trailers.isEmpty()) {
@@ -104,6 +123,7 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
                 ctx.write(new DefaultHttp2HeadersFrame(h2Headers, true), promise);
             }
         }
+        onOutboundEnded(ctx, promise);
     }
 
     private static void writeEmptyEndStream(ChannelHandlerContext ctx, ChannelPromise promise) {
@@ -126,13 +146,49 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
                 toRelease = release(dataFrame);
             }
             if (dataFrame.isEndStream()) {
-                closeHandler.protocolPayloadEndInbound(ctx);
+                endInbound(ctx);
             }
         } finally {
             if (toRelease != null) {
                 ReferenceCountUtil.release(toRelease);
             }
         }
+    }
+
+    final void endInbound(final ChannelHandlerContext ctx) {
+        inboundEnded = true;
+        closeHandler.protocolPayloadEndInbound(ctx);
+        onInboundEnded(ctx);
+    }
+
+    /**
+     * Whether to hold back a received {@code RST_STREAM(NO_ERROR)} until the stream closes, instead of failing the
+     * stream right away.
+     * <p>
+     * RFC 9113 8.1 lets a server follow a complete response with {@code NO_ERROR} to ask the client to stop sending
+     * the request, and the client must not discard that response because of it. Netty delivers RST_STREAM without
+     * waiting for the frames of the response that are still queued behind read demand, so the reset can't be told
+     * apart from an error until the stream closes. The reverse has no meaning: a client that cancels a request sends
+     * {@code CANCEL}, and holding back its reset would leave the service running after the stream is gone.
+     *
+     * @return {@code true} to hold back a {@code NO_ERROR} reset until the stream closes.
+     */
+    boolean deferNoErrorReset() {
+        return false;
+    }
+
+    /**
+     * Invoked after END_STREAM has been received and the {@link CloseHandler} has been notified.
+     */
+    void onInboundEnded(final ChannelHandlerContext ctx) {
+    }
+
+    /**
+     * Invoked after the frame with END_STREAM has been passed to the {@code ctx}.
+     *
+     * @param promise completes when that frame is written, which for flow-controlled frames can be later.
+     */
+    void onOutboundEnded(final ChannelHandlerContext ctx, final ChannelPromise promise) {
     }
 
     /**
@@ -147,6 +203,12 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
 
     @Override
     public final void channelInactive(final ChannelHandlerContext ctx) {
+        final Http2ResetFrame resetFrame = noErrorReset;
+        if (resetFrame != null && !inboundEnded) {
+            // The stream closed without the complete message that RST_STREAM(NO_ERROR) was expected to follow.
+            noErrorReset = null;
+            ctx.fireExceptionCaught(newStreamResetException(resetFrame));
+        }
         final Throwable t = channelError(ctx.channel());
         if (t == null) {
             observer.streamClosed();
