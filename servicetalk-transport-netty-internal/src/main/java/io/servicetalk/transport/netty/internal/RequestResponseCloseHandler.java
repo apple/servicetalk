@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.socket.DuplexChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.ssl.SslHandler;
+import io.netty.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +42,7 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.PR
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.PROTOCOL_CLOSING_OUTBOUND;
 import static java.lang.Boolean.TRUE;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Intercepts request/response protocol level close commands, eg. HTTP header {@code Connection: close} or
@@ -64,6 +66,18 @@ final class RequestResponseCloseHandler extends CloseHandler {
     private static final byte DISCARDING_SERVER_OR_IN_CLOSED = DISCARDING_SERVER_INPUT | IN_CLOSED;
     private static final byte GRACEFUL_SERVER_OR_OUT_CLOSED = OUT_CLOSED | CLOSING_SERVER_GRACEFULLY;
     private static final byte GRACEFUL_SERVER_OR_IN_CLOSED = IN_CLOSED | CLOSING_SERVER_GRACEFULLY;
+
+    /**
+     * How long a server that closes gracefully waits for the peer's FIN before it closes the {@link Channel} anyway.
+     * <p>
+     * Without a bound, a FIN that never arrives (or a {@code ChannelInputShutdownReadComplete} event that is never
+     * delivered) leaves the {@link Channel} open forever, see
+     * <a href="https://github.com/apple/servicetalk/issues/1915">#1915</a>. The response and the outbound FIN are
+     * already written when the wait starts, so closing after the timeout can only reset the connection if the peer
+     * keeps sending data.
+     */
+    // Visible for testing
+    static final long GRACEFUL_CLOSE_TIMEOUT_MS = 5_000;
 
     private final boolean isClient;
 
@@ -91,6 +105,12 @@ final class RequestResponseCloseHandler extends CloseHandler {
      * Feed back events to {@link DefaultNettyConnection} bypassing the pipeline.
      */
     private Consumer<CloseEvent> eventHandler = __ -> { };
+
+    /**
+     * Closes the {@link Channel} if the peer's FIN does not arrive in time after a graceful server close.
+     */
+    @Nullable
+    private Future<?> gracefulCloseTimeout;
 
     RequestResponseCloseHandler(final boolean client) {
         isClient = client;
@@ -253,6 +273,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
 
     @Override
     void channelClose(final Channel channel) {
+        cancelGracefulCloseTimeout();
         // We need to set SO_LINGER before we invoke close if we are not writing and still reading. This forces sending
         // RST (instead of FIN) which the peer will interpret as "full close" and any future writes by the peer will
         // fail (if the peer is half closed, not reading, but still writing). Otherwise, the peer write attempts may
@@ -402,6 +423,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
     private void closeChannel(final Channel channel, @Nullable final CloseEvent evt) {
         if (!isAllSet(state, CLOSED)) {
             state = set(state, ALL_CLOSED);
+            cancelGracefulCloseTimeout();
             LOGGER.debug("{} Closing channel – evt: {}", channel, evt == null ? "FullCloseAfterHalfClose" : evt);
             channel.close();
         }
@@ -413,6 +435,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
                     channel, evt == null ? "FullCloseAfterHalfClose" : evt);
             setSocketResetOnClose(channel);
             state = set(state, ALL_CLOSED); // needs to be set after setting RST
+            cancelGracefulCloseTimeout();
             channel.close();
         }
     }
@@ -458,7 +481,30 @@ final class RequestResponseCloseHandler extends CloseHandler {
             state = set(state, CLOSING_SERVER_GRACEFULLY);
             LOGGER.debug("{} Half-Closing OUTBOUND", channel);
             halfCloseOutbound(channel, false);
-            // Final channel.close() will happen when FIN (ChannelInputShutdownReadComplete) is received
+            // Final channel.close() will happen when FIN (ChannelInputShutdownReadComplete) is received, or when the
+            // peer does not send it in time:
+            scheduleGracefulCloseTimeout(channel);
+        }
+    }
+
+    private void scheduleGracefulCloseTimeout(final Channel channel) {
+        if (gracefulCloseTimeout == null) {
+            gracefulCloseTimeout = channel.eventLoop().schedule(() -> {
+                gracefulCloseTimeout = null;
+                if (!isAllSet(state, CLOSED)) {
+                    LOGGER.debug("{} No FIN from the peer within {}ms of a graceful close, closing the channel",
+                            channel, GRACEFUL_CLOSE_TIMEOUT_MS);
+                    closeChannel(channel, closeEvent);
+                }
+            }, GRACEFUL_CLOSE_TIMEOUT_MS, MILLISECONDS);
+        }
+    }
+
+    private void cancelGracefulCloseTimeout() {
+        final Future<?> timeout = gracefulCloseTimeout;
+        if (timeout != null) {
+            gracefulCloseTimeout = null;
+            timeout.cancel(false);
         }
     }
 
