@@ -73,6 +73,13 @@ public final class HeaderUtils {
     /**
      * Get an encoder from {@code supportedEncoders} that is acceptable as referenced by
      * {@code acceptEncodingHeaderValue}.
+     * <p>
+     * The {@code qvalue} of each entry is taken into account as described in
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-5.3.4">RFC 7231, section 5.3.4</a>: the entry
+     * with the highest {@code qvalue} that matches a supported encoder wins, entries with equal {@code qvalue}s are
+     * prioritized by the order in which they appear in the header, entries without a {@code qvalue} default to
+     * {@code 1}, and entries with {@code q=0} are "not acceptable" and never selected. The {@code '*'} wild card
+     * matches the first supported encoder that is not explicitly listed in the header.
      * @param acceptEncodingHeaderValue The accept encoding header value.
      * @param supportedEncoders The supported encoders.
      * @param messageEncodingFunc Accessor to get the encoder form an element of {@code supportedEncoders}.
@@ -90,55 +97,143 @@ public final class HeaderUtils {
             return null;
         }
 
+        T best = null;
+        int bestQValue = 0;
+        int wildcardQValue = 0;
+        final int length = acceptEncodingHeaderValue.length();
         int i = 0;
-        do {
+        while (i < length) {
             // Find the next comma separated value.
             int j = CharSequences.indexOf(acceptEncodingHeaderValue, ',', i);
             if (j < 0) {
-                j = acceptEncodingHeaderValue.length();
+                j = length;
+            }
+            final int start = skipSpaces(acceptEncodingHeaderValue, i, j);
+            final int end = trimTrailingSpaces(acceptEncodingHeaderValue, start, j);
+            i = j + 1;
+            if (start == end) {
+                // Empty list elements are ignored.
+                continue;
             }
 
-            if (i >= j) {
-                return null;
-            }
-
-            // Trim spaces from end.
-            int jNonTrimmed = j;
-            while (acceptEncodingHeaderValue.charAt(j - 1) == ' ') {
-                if (--j == i) {
-                    return null;
+            final int qValue = qValue(acceptEncodingHeaderValue, start, end);
+            if (acceptEncodingHeaderValue.charAt(start) == '*') {
+                // Match special case '*' wild card, resolved below once all explicitly listed values are known.
+                if (wildcardQValue == 0) {
+                    wildcardQValue = qValue;
                 }
+                continue;
             }
-
-            // Trim spaces from beginning.
-            char firstChar;
-            while ((firstChar = acceptEncodingHeaderValue.charAt(i)) == ' ') {
-                if (++i == j) {
-                    return null;
-                }
+            if (qValue <= bestQValue) {
+                continue;
             }
-            // Match special case '*' wild card, ignore qvalue prioritization for now.
-            if (firstChar == '*') {
-                return supportedEncoders.get(0);
-            }
-
             // If the accepted encoding is supported, use it.
-            int x = 0;
-            do {
-                T supportedEncoding = supportedEncoders.get(x);
-                CharSequence serverSupported = messageEncodingFunc.apply(supportedEncoding);
-                // Use serverSupported.length() as we ignore qvalue prioritization for now.
-                // All content-coding values are case-insensitive [1].
-                // [1] https://datatracker.ietf.org/doc/html/rfc7231#section-3.1.2.1.
-                if (regionMatches(acceptEncodingHeaderValue, true, i, serverSupported, 0, serverSupported.length())) {
+            final T supportedEncoding = findEncoder(supportedEncoders, messageEncodingFunc,
+                    acceptEncodingHeaderValue, start);
+            if (supportedEncoding != null) {
+                best = supportedEncoding;
+                bestQValue = qValue;
+            }
+        }
+
+        if (wildcardQValue > bestQValue) {
+            // The wild card matches any encoding that is not explicitly listed, which includes the ones with q=0.
+            for (int x = 0; x < supportedEncoders.size(); ++x) {
+                final T supportedEncoding = supportedEncoders.get(x);
+                if (!isListed(acceptEncodingHeaderValue, messageEncodingFunc.apply(supportedEncoding))) {
                     return supportedEncoding;
                 }
-            } while (++x < supportedEncoders.size());
+            }
+        }
+        return best;
+    }
 
-            i = jNonTrimmed + 1;
-        } while (i < acceptEncodingHeaderValue.length());
-
+    @Nullable
+    private static <T> T findEncoder(final List<T> supportedEncoders,
+                                     final Function<T, CharSequence> messageEncodingFunc,
+                                     final CharSequence acceptEncodingHeaderValue, final int start) {
+        for (int x = 0; x < supportedEncoders.size(); ++x) {
+            final T supportedEncoding = supportedEncoders.get(x);
+            final CharSequence serverSupported = messageEncodingFunc.apply(supportedEncoding);
+            // Use serverSupported.length() as the value may be followed by parameters.
+            // All content-coding values are case-insensitive [1].
+            // [1] https://datatracker.ietf.org/doc/html/rfc7231#section-3.1.2.1.
+            if (regionMatches(acceptEncodingHeaderValue, true, start, serverSupported, 0, serverSupported.length())) {
+                return supportedEncoding;
+            }
+        }
         return null;
+    }
+
+    private static boolean isListed(final CharSequence acceptEncodingHeaderValue, final CharSequence encoding) {
+        final int length = acceptEncodingHeaderValue.length();
+        int i = 0;
+        while (i < length) {
+            int j = CharSequences.indexOf(acceptEncodingHeaderValue, ',', i);
+            if (j < 0) {
+                j = length;
+            }
+            final int start = skipSpaces(acceptEncodingHeaderValue, i, j);
+            i = j + 1;
+            if (start < j && regionMatches(acceptEncodingHeaderValue, true, start, encoding, 0, encoding.length())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static int skipSpaces(final CharSequence value, int start, final int end) {
+        while (start < end && value.charAt(start) == ' ') {
+            ++start;
+        }
+        return start;
+    }
+
+    private static int trimTrailingSpaces(final CharSequence value, final int start, int end) {
+        while (end > start && value.charAt(end - 1) == ' ') {
+            --end;
+        }
+        return end;
+    }
+
+    /**
+     * Parses the {@code qvalue} of an {@code Accept-Encoding} entry.
+     * <pre>
+     *     weight = OWS ";" OWS "q=" qvalue
+     *     qvalue = ( "0" [ "." 0*3DIGIT ] ) / ( "1" [ "." 0*3("0") ] )
+     * </pre>
+     * @param value The header value.
+     * @param start The start index (inclusive) of the entry.
+     * @param end The end index (exclusive) of the entry.
+     * @return the {@code qvalue} in thousandths ({@code 0} - {@code 1000}), or {@code 1000} if the entry doesn't
+     * have a (valid) {@code qvalue}.
+     */
+    private static int qValue(final CharSequence value, final int start, final int end) {
+        int i = CharSequences.indexOf(value, ';', start);
+        if (i < 0 || i >= end) {
+            return 1000;
+        }
+        i = skipSpaces(value, i + 1, end);
+        if (end - i < 3 || (value.charAt(i) != 'q' && value.charAt(i) != 'Q') || value.charAt(i + 1) != '=') {
+            return 1000;
+        }
+        i += 2;
+        final char first = value.charAt(i++);
+        if (first != '0' && first != '1') {
+            return 1000;
+        }
+        int result = (first - '0') * 1000;
+        if (i < end && value.charAt(i) == '.') {
+            int multiplier = 100;
+            for (++i; i < end && multiplier > 0; ++i, multiplier /= 10) {
+                final char c = value.charAt(i);
+                if (c < '0' || c > '9') {
+                    break;
+                }
+                result += (c - '0') * multiplier;
+            }
+        }
+        return Math.min(result, 1000);
     }
 
     /**
