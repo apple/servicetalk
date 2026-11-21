@@ -127,12 +127,12 @@ final class SingleZipper {
                 }).map(zipper);
     }
 
-    private static final class ZipArg {
-        private final int index;
+    static final class ZipArg {
+        final int index;
         @Nullable
-        private final Object value;
+        final Object value;
 
-        private ZipArg(final int index, final Object value) {
+        ZipArg(final int index, final Object value) {
             this.index = index;
             this.value = value;
         }
