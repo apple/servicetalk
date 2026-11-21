@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2023-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ final class ReplayPublisher<T> extends MulticastPublisher<T> {
             Publisher<T> original, Supplier<ReplayAccumulator<T>> accumulatorSupplier, int minSubscribers,
             boolean cancelUpstream, int maxQueueSize, Function<Throwable, Completable> terminalResubscribe) {
         ReplayPublisher<T> publisher = new ReplayPublisher<>(original, accumulatorSupplier, minSubscribers,
-                cancelUpstream, minSubscribers, terminalResubscribe);
+                cancelUpstream, maxQueueSize, terminalResubscribe);
         publisher.resetState(maxQueueSize, minSubscribers);
         return publisher;
     }

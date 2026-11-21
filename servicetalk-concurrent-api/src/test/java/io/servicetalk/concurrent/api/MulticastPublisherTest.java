@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021-2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -103,6 +104,18 @@ class MulticastPublisherTest {
 
     <T> Publisher<T> applyOperator(Publisher<T> source, int minSubscribers, int queueLimit, boolean cancelUpstream) {
         return source.multicast(minSubscribers, queueLimit, cancelUpstream);
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] queueLimit={0}")
+    @ValueSource(ints = {0, -1})
+    void nonPositiveQueueLimitThrows(int queueLimit) {
+        assertThrows(IllegalArgumentException.class, () -> applyOperator(source, 1, queueLimit));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] minSubscribers={0}")
+    @ValueSource(ints = {0, -1})
+    void nonPositiveMinSubscribersThrows(int minSubscribers) {
+        assertThrows(IllegalArgumentException.class, () -> applyOperator(source, minSubscribers));
     }
 
     @ParameterizedTest

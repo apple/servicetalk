@@ -53,7 +53,6 @@ import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSuccessSupplier;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
-import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -2092,7 +2091,6 @@ public abstract class Single<T> {
      */
     public static <T> Single<Collection<T>> collectOrdered(Iterable<? extends Single<? extends T>> singles,
                                                            int maxConcurrency) {
-        ensurePositive(maxConcurrency, "maxConcurrency");
         return fromIterable(singles).flatMapConcatSingle(identity(), maxConcurrency)
                 .collect(ArrayList::new, (ts, t) -> {
                     ts.add(t);
@@ -2118,7 +2116,6 @@ public abstract class Single<T> {
      */
     @SafeVarargs
     public static <T> Single<Collection<T>> collectOrdered(int maxConcurrency, Single<? extends T>... singles) {
-        ensurePositive(maxConcurrency, "maxConcurrency");
         return from(singles).<T>flatMapConcatSingle(identity(), maxConcurrency)
                 .collect(() -> new ArrayList<>(singles.length), (ts, t) -> {
                     ts.add(t);

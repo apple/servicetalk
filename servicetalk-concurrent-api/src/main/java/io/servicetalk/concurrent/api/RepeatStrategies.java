@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import static io.servicetalk.concurrent.api.RetryStrategies.checkJitterDelta;
 import static io.servicetalk.concurrent.api.RetryStrategies.checkMaxRetries;
 import static io.servicetalk.concurrent.api.RetryStrategies.maxShift;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
+import static io.servicetalk.utils.internal.DurationUtils.ensureNonNegative;
 import static io.servicetalk.utils.internal.RandomUtils.nextLongInclusive;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -71,8 +72,7 @@ public final class RepeatStrategies {
     public static IntFunction<Completable> repeatWithConstantBackoffFullJitter(final Duration delay,
                                                                                final Executor timerExecutor) {
         requireNonNull(timerExecutor);
-        final long delayNanos = delay.toNanos();
-        checkFullJitter(delayNanos);
+        final long delayNanos = checkFullJitter(delay);
         return repeatCount -> timerExecutor.timer(nextLongInclusive(0, delayNanos), NANOSECONDS);
     }
 
@@ -93,8 +93,7 @@ public final class RepeatStrategies {
                                                                                final Executor timerExecutor) {
         checkMaxRetries(maxRepeats);
         requireNonNull(timerExecutor);
-        final long delayNanos = delay.toNanos();
-        checkFullJitter(delayNanos);
+        final long delayNanos = checkFullJitter(delay);
         return repeatCount -> repeatCount <= maxRepeats ?
                 timerExecutor.timer(nextLongInclusive(0, delayNanos), NANOSECONDS) : terminateRepeat();
     }
@@ -115,7 +114,7 @@ public final class RepeatStrategies {
                                                                                 final Executor timerExecutor) {
         requireNonNull(timerExecutor);
         final long delayNanos = delay.toNanos();
-        final long jitterNanos = jitter.toNanos();
+        final long jitterNanos = ensureNonNegative(jitter, "jitter").toNanos();
         checkJitterDelta(jitterNanos, delayNanos);
         final long lowerBound = delayNanos - jitterNanos;
         final long upperBound = delayNanos + jitterNanos;
@@ -142,7 +141,7 @@ public final class RepeatStrategies {
         checkMaxRetries(maxRepeats);
         requireNonNull(timerExecutor);
         final long delayNanos = delay.toNanos();
-        final long jitterNanos = jitter.toNanos();
+        final long jitterNanos = ensureNonNegative(jitter, "jitter").toNanos();
         checkJitterDelta(jitterNanos, delayNanos);
         final long lowerBound = delayNanos - jitterNanos;
         final long upperBound = delayNanos + jitterNanos;
@@ -168,8 +167,8 @@ public final class RepeatStrategies {
                                                                                   final Duration maxDelay,
                                                                                   final Executor timerExecutor) {
         requireNonNull(timerExecutor);
-        final long initialDelayNanos = initialDelay.toNanos();
-        final long maxDelayNanos = maxDelay.toNanos();
+        final long initialDelayNanos = ensureNonNegative(initialDelay, "initialDelay").toNanos();
+        final long maxDelayNanos = ensureNonNegative(maxDelay, "maxDelay").toNanos();
         final long maxInitialShift = maxShift(initialDelayNanos);
         return repeatCount -> timerExecutor.timer(nextLongInclusive(0,
                 baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, repeatCount)), NANOSECONDS);
@@ -197,8 +196,8 @@ public final class RepeatStrategies {
                                                                                   final Executor timerExecutor) {
         checkMaxRetries(maxRepeats);
         requireNonNull(timerExecutor);
-        final long initialDelayNanos = initialDelay.toNanos();
-        final long maxDelayNanos = maxDelay.toNanos();
+        final long initialDelayNanos = ensureNonNegative(initialDelay, "initialDelay").toNanos();
+        final long maxDelayNanos = ensureNonNegative(maxDelay, "maxDelay").toNanos();
         final long maxInitialShift = maxShift(initialDelayNanos);
         return repeatCount -> repeatCount <= maxRepeats ?
                 timerExecutor.timer(nextLongInclusive(0,
@@ -224,9 +223,9 @@ public final class RepeatStrategies {
                                                                                    final Duration maxDelay,
                                                                                    final Executor timerExecutor) {
         requireNonNull(timerExecutor);
-        final long initialDelayNanos = initialDelay.toNanos();
-        final long jitterNanos = jitter.toNanos();
-        final long maxDelayNanos = maxDelay.toNanos();
+        final long initialDelayNanos = ensureNonNegative(initialDelay, "initialDelay").toNanos();
+        final long jitterNanos = ensureNonNegative(jitter, "jitter").toNanos();
+        final long maxDelayNanos = ensureNonNegative(maxDelay, "maxDelay").toNanos();
         final long maxInitialShift = maxShift(initialDelayNanos);
         return repeatCount -> {
             final long baseDelayNanos = baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, repeatCount);
@@ -259,9 +258,9 @@ public final class RepeatStrategies {
                                                                                    final Executor timerExecutor) {
         checkMaxRetries(maxRepeats);
         requireNonNull(timerExecutor);
-        final long initialDelayNanos = initialDelay.toNanos();
-        final long jitterNanos = jitter.toNanos();
-        final long maxDelayNanos = maxDelay.toNanos();
+        final long initialDelayNanos = ensureNonNegative(initialDelay, "initialDelay").toNanos();
+        final long jitterNanos = ensureNonNegative(jitter, "jitter").toNanos();
+        final long maxDelayNanos = ensureNonNegative(maxDelay, "maxDelay").toNanos();
         final long maxInitialShift = maxShift(initialDelayNanos);
         return repeatCount -> {
             if (repeatCount > maxRepeats) {

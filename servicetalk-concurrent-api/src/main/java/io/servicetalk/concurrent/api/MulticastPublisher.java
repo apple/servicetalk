@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedMpscQueue;
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.util.Comparator.comparingLong;
@@ -69,14 +70,9 @@ class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
     MulticastPublisher(Publisher<T> original, int minSubscribers, boolean exactlyMinSubscribers, boolean cancelUpstream,
                        int maxQueueSize, Function<Throwable, Completable> terminalResubscribe) {
-        if (minSubscribers < 1) {
-            throw new IllegalArgumentException("minSubscribers: " + minSubscribers + " (expected >1)");
-        }
-        if (maxQueueSize < 1) {
-            throw new IllegalArgumentException("maxQueueSize: " + maxQueueSize + " (expected >1)");
-        }
+        ensurePositive(maxQueueSize, "maxQueueSize");
         this.original = original;
-        this.minSubscribers = minSubscribers;
+        this.minSubscribers = ensurePositive(minSubscribers, "minSubscribers");
         this.exactlyMinSubscribers = exactlyMinSubscribers;
         this.cancelUpstream = cancelUpstream;
         this.terminalResubscribe = requireNonNull(terminalResubscribe);
@@ -86,7 +82,7 @@ class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             Publisher<T> original, int minSubscribers, boolean exactlyMinSubscribers, boolean cancelUpstream,
             int maxQueueSize, Function<Throwable, Completable> terminalResubscribe) {
         MulticastPublisher<T> publisher = new MulticastPublisher<>(original, minSubscribers, exactlyMinSubscribers,
-                cancelUpstream, minSubscribers, terminalResubscribe);
+                cancelUpstream, maxQueueSize, terminalResubscribe);
         publisher.resetState(maxQueueSize, minSubscribers);
         return publisher;
     }

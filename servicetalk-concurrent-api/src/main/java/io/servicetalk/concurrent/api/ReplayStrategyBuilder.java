@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2023-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,10 +73,7 @@ public final class ReplayStrategyBuilder<T> {
      * @return {@code this}.
      */
     public ReplayStrategyBuilder<T> queueLimitHint(int queueLimitHint) {
-        if (queueLimitHint < 1) {
-            throw new IllegalArgumentException("maxQueueSize: " + queueLimitHint + " (expected >1)");
-        }
-        this.queueLimitHint = queueLimitHint;
+        this.queueLimitHint = ensurePositive(queueLimitHint, "queueLimitHint");
         return this;
     }
 

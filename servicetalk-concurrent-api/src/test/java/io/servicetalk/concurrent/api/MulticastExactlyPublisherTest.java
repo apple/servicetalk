@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,11 +42,25 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Timeout(60)
 class MulticastExactlyPublisherTest {
     private TestPublisher<Integer> source = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build();
     private final TestSubscription subscription = new TestSubscription();
+
+    @ParameterizedTest(name = "{displayName} [{index}] queueLimit={0}")
+    @ValueSource(ints = {0, -1})
+    void nonPositiveQueueLimitThrows(int queueLimit) {
+        assertThrows(IllegalArgumentException.class, () -> source.multicastToExactly(1, queueLimit));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] expectedSubscribers={0}")
+    @ValueSource(ints = {0, -1})
+    void nonPositiveExpectedSubscribersThrows(int expectedSubscribers) {
+        assertThrows(IllegalArgumentException.class, () -> source.multicastToExactly(expectedSubscribers));
+        assertThrows(IllegalArgumentException.class, () -> source.multicastToExactly(expectedSubscribers, 1));
+    }
 
     @Test
     void emitItemsAndThenError() {
