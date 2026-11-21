@@ -93,6 +93,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -493,12 +494,69 @@ class DefaultDnsClientTest {
         // Expect no changes (SERVFAIL should be retried indefinitely)
         assertThat(subscriber.pollOnNext(50, MILLISECONDS), is(nullValue()));
 
-        // Restore functionality for A queries
+        // Restore A queries. The address was never revoked, so resolution resumes with no change event (like a
+        // TTL re-query returning an identical result); prove it resumed by adding a new address.
         recordStore.removeFail(aFail);
         advanceTime();
+        assertThat(subscriber.pollOnNext(50, MILLISECONDS), is(nullValue()));
 
+        final String ip2 = nextIp();
+        recordStore.addIPv4Address(targetDomain1, DEFAULT_TTL, ip2);
+        advanceTime();
         List<ServiceDiscovererEvent<InetSocketAddress>> resumeSignals = subscriber.takeOnNext(1);
-        assertHasEvent(resumeSignals, ip1, targetPort, AVAILABLE);
+        assertHasEvent(resumeSignals, ip2, targetPort, AVAILABLE);
+    }
+
+    @Test
+    void srvRemovalDuringBackoffDoesNotResurrect() throws Exception {
+        // Backoff delay larger than one advanceTime() step, so a failed A resolution stays parked in backoff
+        // while the SRV record is removed.
+        setup(builder -> builder.srvHostNameRepeatDelay(Duration.ofSeconds(10), ofNanos(1)));
+        final String domain = "sd.servicetalk.io";
+        final String targetDomain1 = "target1.mysvc.servicetalk.io";
+        final String targetDomain2 = "target2.mysvc.servicetalk.io";
+        final int targetPort = 9876;
+        final String ip1 = nextIp();
+        final String ip2 = nextIp();
+        // targetDomain2 stays AVAILABLE throughout so the SRV stream does not fail when targetDomain1 leaves.
+        recordStore.addSrv(domain, targetDomain1, targetPort, DEFAULT_TTL);
+        recordStore.addSrv(domain, targetDomain2, targetPort, DEFAULT_TTL);
+        recordStore.addIPv4Address(targetDomain1, DEFAULT_TTL, ip1);
+        recordStore.addIPv4Address(targetDomain2, DEFAULT_TTL, ip2);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> subscriber = dnsSrvQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(Long.MAX_VALUE);
+        List<ServiceDiscovererEvent<InetSocketAddress>> signals = subscriber.takeOnNext(2);
+        assertHasEvent(signals, ip1, targetPort, AVAILABLE);
+        assertHasEvent(signals, ip2, targetPort, AVAILABLE);
+
+        // Fail subsequent targetDomain1 A queries and advance so its resolution enters the (10s) backoff retry.
+        final TestRecordStore.ServFail aFail = new TestRecordStore.ServFail(targetDomain1, RecordType.A);
+        recordStore.addFail(aFail);
+        advanceTime();
+        advanceTime();
+
+        // Remove the targetDomain1 SRV record while its A resolution is parked in backoff, then restore A queries.
+        recordStore.removeSrv(domain, targetDomain1, targetPort, DEFAULT_TTL);
+        recordStore.removeFail(aFail);
+
+        // The removed target's last-known address must be retracted (though resolution was mid-backoff) and must
+        // never reappear as AVAILABLE.
+        final InetSocketAddress ip1Address = new InetSocketAddress(getByName(ip1), targetPort);
+        boolean retracted = false;
+        for (int i = 0; i < 15; i++) {
+            advanceTime();
+            Supplier<ServiceDiscovererEvent<InetSocketAddress>> event;
+            while ((event = subscriber.pollOnNext(20, MILLISECONDS)) != null) {
+                final ServiceDiscovererEvent<InetSocketAddress> e = event.get();
+                if (ip1Address.equals(e.address())) {
+                    assertThat("removed SRV target was resurrected", e.status(), is(not(AVAILABLE)));
+                    retracted = true;
+                }
+            }
+        }
+        assertThat("expected the removed SRV target's address to be retracted", retracted, is(true));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] srvFilterDuplicateEvents={0}")
