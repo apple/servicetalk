@@ -112,7 +112,7 @@ class JacksonSerializationProviderTest {
         try (StreamingDeserializer<String> deserializer = serializationProvider.getDeserializer(String.class)) {
             assertThat(deserializer.deserialize(buffer), contains("value"));
         }
-        assertThat(buffer.readerIndex(), is(direct ? 8 : 1));
+        assertThat(buffer.readerIndex(), is(8));
         assertThat(buffer.writerIndex(), is(8));
     }
 
