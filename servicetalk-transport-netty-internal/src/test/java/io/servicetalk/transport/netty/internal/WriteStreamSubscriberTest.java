@@ -407,6 +407,78 @@ class WriteStreamSubscriberTest extends AbstractWriteTest {
         verifyNoMoreInteractions(subscription, closeHandler, completableSubscriber);
     }
 
+    @Test
+    void clientTerminateSourceAfterContinueWriting() {
+        when(demandEstimator.estimateRequestN(anyLong())).thenReturn(10L);
+        subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber, closeHandler,
+                NoopWriteObserver.INSTANCE, identity(), true, "Hello1"::equals);
+        subscriber.onSubscribe(subscription);
+
+        verify(subscription).request(1L);
+        writeAndFlush("Hello1");
+        subscriber.continueWriting();
+        verify(subscription).request(10L);
+        write("Hello2");
+        verify(subscription, times(2)).request(10L);
+
+        subscriber.terminateSource();
+        verify(subscription).cancel();
+        // The write completes without waiting for the in-flight write:
+        verify(completableSubscriber).onSubscribe(any());
+        verify(completableSubscriber).onComplete();
+
+        // Items delivered after cancel are not written, a failure of the in-flight write is ignored:
+        subscriber.onNext("Hello3");
+        subscriber.onComplete();
+        channel.close();
+        verifyNoMoreInteractions(subscription, closeHandler, completableSubscriber);
+    }
+
+    @Test
+    void clientTerminateSourceAfterAbortKeepsAbort() {
+        when(demandEstimator.estimateRequestN(anyLong())).thenReturn(10L);
+        subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber, closeHandler,
+                NoopWriteObserver.INSTANCE, identity(), true, __ -> false);
+        subscriber.onSubscribe(subscription);
+        write("Hello1");
+
+        // Writes are aborted (e.g. for a pipelined request) while a write is in flight.
+        subscriber.listenerDiscard(new ClosedChannelException());
+        subscriber.terminateSource();
+        verify(completableSubscriber).onSubscribe(any());
+        verify(completableSubscriber, never()).onComplete();
+    }
+
+    @Test
+    void clientTerminateSourceAfterSourceErrorReportsError() {
+        when(demandEstimator.estimateRequestN(anyLong())).thenReturn(10L);
+        subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber, closeHandler,
+                NoopWriteObserver.INSTANCE, identity(), true, __ -> false);
+        subscriber.onSubscribe(subscription);
+        write("Hello1");
+
+        // The source fails while a write is in flight, then the source is stopped.
+        subscriber.onError(DELIBERATE_EXCEPTION);
+        subscriber.terminateSource();
+        verify(completableSubscriber).onSubscribe(any());
+        verify(completableSubscriber).onError(DELIBERATE_EXCEPTION);
+        verifyNoMoreInteractions(completableSubscriber);
+    }
+
+    @Test
+    void clientTerminateSourceBeforeFirstWriteIsNoop() {
+        subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber, closeHandler,
+                NoopWriteObserver.INSTANCE, identity(), true, __ -> false);
+        subscriber.onSubscribe(subscription);
+        verify(subscription).request(1L);
+
+        // Nothing was written, so the write can still fail as retryable when the connection closes.
+        subscriber.terminateSource();
+        verifyNoMoreInteractions(subscription);
+        verify(completableSubscriber).onSubscribe(any());
+        verifyNoMoreInteractions(completableSubscriber);
+    }
+
     private void failingWriteClosesChannel(Runnable enableWriteFailure) throws InterruptedException {
         WriteInfo info1 = writeAndFlush("Hello1");
         verify(completableSubscriber).onSubscribe(any());

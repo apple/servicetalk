@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,8 +42,9 @@ interface ChannelOutboundListener {
     /**
      * Request to terminate the source of data, without affecting a state of the channel.
      * <p>
-     * Could happen if protocol supports termination/cancellation of the data it supposes to send, and the channel can
-     * be reused for next requests.
+     * Could happen if protocol supports termination/cancellation of the data it supposes to send, for example when the
+     * peer responds before the data is sent. If the source is already writing, it is stopped and the write completes
+     * without waiting for in-flight writes. The protocol decides whether the channel can be reused.
      */
     void terminateSource();
 

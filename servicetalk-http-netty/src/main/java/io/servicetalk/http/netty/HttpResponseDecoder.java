@@ -46,6 +46,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
+import static io.servicetalk.http.netty.HttpKeepAlive.shouldClose;
 import static java.lang.Math.min;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
@@ -200,6 +201,10 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
             // ongoing write operation that waits for continuation.
             ctx.fireUserEventTriggered(status.statusClass() == SUCCESSFUL_2XX ?
                     ContinueUserEvent.INSTANCE : CancelWriteUserEvent.INSTANCE);
+        } else if (status.statusClass() != SUCCESSFUL_2XX && shouldClose(msg)) {
+            // The server doesn't want the rest of the payload body and closes the connection, stop sending it:
+            // https://tools.ietf.org/html/rfc9112#section-9.5
+            ctx.fireUserEventTriggered(CancelWriteUserEvent.INSTANCE);
         }
     }
 
