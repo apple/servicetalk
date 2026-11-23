@@ -162,7 +162,7 @@ final class DnsTestUtils {
 
         @Override
         public Executor asExecutor() {
-            return this;
+            return timer;
         }
 
         @Override

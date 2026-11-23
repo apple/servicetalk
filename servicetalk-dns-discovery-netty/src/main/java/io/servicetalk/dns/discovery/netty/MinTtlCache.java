@@ -69,7 +69,8 @@ final class MinTtlCache implements DnsCache {
             return initialTtl;
         } else {
             // Track nanoseconds and round up: subtracting second-truncated timestamps under-reports the TTL by one
-            // second whenever a second boundary falls between caching and this read.
+            // second whenever a second boundary falls between caching and this read, and rounding down could poll
+            // before the resolver's cached entry expires.
             final long remainingNanos = minExpiry - timeSource.currentTime(NANOSECONDS);
             return remainingNanos > 0 ? (remainingNanos + SECONDS.toNanos(1) - 1) / SECONDS.toNanos(1) : initialTtl;
         }
