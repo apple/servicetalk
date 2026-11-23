@@ -519,7 +519,8 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
         final DefaultHttpRequestMetaData that = (DefaultHttpRequestMetaData) o;
 
-        return method.equals(that.method) && requestTarget().equals(that.requestTarget());
+        return method.equals(that.method) && requestTarget().equals(that.requestTarget()) &&
+                Objects.equals(defaultScheme, that.defaultScheme);
     }
 
     @Override
@@ -527,6 +528,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         int result = super.hashCode();
         result = 31 * result + method.hashCode();
         result = 31 * result + requestTarget().hashCode();
+        result = 31 * result + Objects.hashCode(defaultScheme);
         return result;
     }
 

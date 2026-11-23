@@ -27,6 +27,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class DefaultStreamingHttpRequestResponseFactoryTest {
 
@@ -86,5 +87,12 @@ class DefaultStreamingHttpRequestResponseFactoryTest {
         assertThat(converted.scheme(), is("https"));
         assertThat(converted.toBlockingStreamingRequest().scheme(), is("https"));
         assertThat(converted.requestTarget(), is("/hello"));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: default={0}")
+    @CsvSource({"''", "https:", "ftp", "http://"})
+    void newFactoryRejectsInvalidDefaultScheme(String defaultScheme) {
+        assertThrows(IllegalArgumentException.class, () -> new DefaultStreamingHttpRequestResponseFactory(
+                DEFAULT_ALLOCATOR, INSTANCE, HTTP_1_1, defaultScheme));
     }
 }

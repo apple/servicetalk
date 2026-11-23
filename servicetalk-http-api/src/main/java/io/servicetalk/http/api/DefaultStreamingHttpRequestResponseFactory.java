@@ -19,7 +19,6 @@ import io.servicetalk.buffer.api.BufferAllocator;
 
 import javax.annotation.Nullable;
 
-import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -51,7 +50,10 @@ public final class DefaultStreamingHttpRequestResponseFactory implements Streami
      * @param headersFactory The {@link HttpHeadersFactory} to use for request/response creation.
      * @param protocolVersion The {@link HttpProtocolVersion} to use for new requests/responses.
      * @param defaultScheme The default {@link HttpRequestMetaData#scheme() scheme} for requests whose request target
-     * does not contain a scheme, or {@code null} if no default is available. Converted to lower case.
+     * does not contain a scheme, or {@code null} if no default is available. Must be {@code "http"} or
+     * {@code "https"} (case-insensitive).
+     * @throws IllegalArgumentException if {@code defaultScheme} is not {@code null}, {@code "http"}, or
+     * {@code "https"} (case-insensitive).
      */
     public DefaultStreamingHttpRequestResponseFactory(final BufferAllocator allocator,
                                                       final HttpHeadersFactory headersFactory,
@@ -60,7 +62,21 @@ public final class DefaultStreamingHttpRequestResponseFactory implements Streami
         this.allocator = requireNonNull(allocator);
         this.headersFactory = requireNonNull(headersFactory);
         this.protocolVersion = requireNonNull(protocolVersion);
-        this.defaultScheme = defaultScheme == null ? null : defaultScheme.toLowerCase(ENGLISH);
+        this.defaultScheme = validateDefaultScheme(defaultScheme);
+    }
+
+    @Nullable
+    private static String validateDefaultScheme(@Nullable final String defaultScheme) {
+        if (defaultScheme == null) {
+            return null;
+        }
+        if ("http".equalsIgnoreCase(defaultScheme)) {
+            return "http";
+        }
+        if ("https".equalsIgnoreCase(defaultScheme)) {
+            return "https";
+        }
+        throw new IllegalArgumentException("Unsupported default scheme: " + defaultScheme);
     }
 
     @Override

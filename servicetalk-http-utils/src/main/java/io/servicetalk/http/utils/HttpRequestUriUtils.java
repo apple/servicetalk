@@ -38,8 +38,10 @@ public final class HttpRequestUriUtils {
 
     static boolean hasRequestTargetScheme(final HttpRequestMetaData metaData, final String scheme) {
         // A request factory may supply a default scheme even for origin-form request targets.
-        return !CONNECT.equals(metaData.method()) && metaData.requestTarget().regionMatches(true, 0,
-                scheme + ':', 0, scheme.length() + 1);
+        final String target = metaData.requestTarget();
+        final int len = scheme.length();
+        return !CONNECT.equals(metaData.method()) && target.length() > len && target.charAt(len) == ':' &&
+                target.regionMatches(true, 0, scheme, 0, len);
     }
 
     /**
@@ -223,10 +225,15 @@ public final class HttpRequestUriUtils {
         final String scheme;
         if (fixedScheme != null) {
             scheme = fixedScheme.toLowerCase(Locale.ENGLISH);
+        } else if (ctx != null && ctx.sslSession() != null) {
+            // A TLS session on the connection this request is evaluated against is positive evidence for https:
+            // it wins over the factory default in metadataScheme, which describes the client that created the
+            // request and may differ when a request is evaluated against a different connection.
+            scheme = "https";
         } else if (metadataScheme != null) {
             scheme = metadataScheme;
         } else {
-            scheme = ctx.sslSession() != null ? "https" : "http";
+            scheme = "http";
         }
 
         final HostAndPort effectiveHostAndPort;
