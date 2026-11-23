@@ -19,9 +19,15 @@ import io.netty.channel.EventLoop;
 import io.netty.handler.codec.dns.DnsRecord;
 import io.netty.resolver.dns.DnsCache;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.InetAddress;
+import java.util.concurrent.atomic.AtomicLong;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.clearInvocations;
@@ -61,6 +67,38 @@ class MinTtlCacheTest {
 
         assertThat(cache.minTtl(HOSTNAME), is(INITIAL_TTL));
         verifyNoInteractions(delegate);
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] originalTtl={0}")
+    @ValueSource(longs = {1, 5})
+    void minTtlAcrossSecondBoundaryReportsOriginalTtl(long originalTtl) {
+        AtomicLong nanos = new AtomicLong(MILLISECONDS.toNanos(999));
+        MinTtlCache cache = new MinTtlCache(mock(DnsCache.class), 1, unit -> unit.convert(nanos.get(), NANOSECONDS));
+        cache.cache(HOSTNAME, EMPTY_ADDITIONALS, InetAddress.getLoopbackAddress(), originalTtl,
+                mock(EventLoop.class));
+        nanos.set(MILLISECONDS.toNanos(1001));
+        assertThat(cache.minTtl(HOSTNAME), is(originalTtl));
+    }
+
+    @Test
+    void minTtlAfterExpiryReportsInitialTtl() {
+        AtomicLong nanos = new AtomicLong();
+        MinTtlCache cache = new MinTtlCache(mock(DnsCache.class), INITIAL_TTL,
+                unit -> unit.convert(nanos.get(), NANOSECONDS));
+        cacheAddress(cache);
+        nanos.set(SECONDS.toNanos(ORIGINAL_TTL));
+        assertThat(cache.minTtl(HOSTNAME), is(INITIAL_TTL));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] minOriginalTtl={0}")
+    @ValueSource(longs = {1, 3})
+    void minTtlWhenTimeSourceWrapsReportsMinOriginalTtl(long minOriginalTtl) {
+        final long now = Long.MAX_VALUE - SECONDS.toNanos(2);
+        MinTtlCache cache = new MinTtlCache(mock(DnsCache.class), 1, unit -> unit.convert(now, NANOSECONDS));
+        cache.cache(HOSTNAME, EMPTY_ADDITIONALS, InetAddress.getLoopbackAddress(), 5, mock(EventLoop.class));
+        cache.cache(HOSTNAME, EMPTY_ADDITIONALS, InetAddress.getLoopbackAddress(), minOriginalTtl,
+                mock(EventLoop.class));
+        assertThat(cache.minTtl(HOSTNAME), is(minOriginalTtl));
     }
 
     private static MinTtlCache newCache(final DnsCache delegate) {
