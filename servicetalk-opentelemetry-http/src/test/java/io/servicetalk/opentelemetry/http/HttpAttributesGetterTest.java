@@ -107,6 +107,19 @@ class HttpAttributesGetterTest {
     }
 
     @Test
+    void clientUrlExtractionUsesFactoryDefaultScheme() {
+        // Issue #2674: an origin-form request created by a factory with a default scheme must use that scheme
+        // instead of guessing from the port (8443 is not 443, so port-based guessing would produce http).
+        String pathQueryFrag = "/foo?bar=baz#frag";
+        StreamingHttpRequestResponseFactory factory = new DefaultStreamingHttpRequestResponseFactory(
+                DEFAULT_RO_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1, "https");
+        StreamingHttpRequest request = factory.newRequest(HttpRequestMethod.GET, pathQueryFrag);
+        request.addHeader(HOST, "myservice:8443");
+        RequestInfo requestInfo = new RequestInfo(request, null, false);
+        assertThat(CLIENT_INSTANCE.getUrlFull(requestInfo), equalTo("https://myservice:8443" + pathQueryFrag));
+    }
+
+    @Test
     void clientAbsoluteUrl() {
         String requestTarget = "https://myservice/foo?bar=baz#frag";
         StreamingHttpRequest request = newRequest(requestTarget);

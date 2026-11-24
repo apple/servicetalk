@@ -185,6 +185,11 @@ class RedirectingHttpRequesterFilterTest {
 
     private StreamingHttpClient newClient(RedirectConfig config,
                                           StreamingHttpClientFilterFactory... other) {
+        return newClient(reqRespFactory, config, other);
+    }
+
+    private StreamingHttpClient newClient(StreamingHttpRequestResponseFactory requestResponseFactory,
+                                          RedirectConfig config, StreamingHttpClientFilterFactory... other) {
         StreamingHttpClientFilterFactory result = new RedirectingHttpRequesterFilter(config);
         for (StreamingHttpClientFilterFactory next : other) {
             result = appendClientFilterFactory(result, next);
@@ -197,7 +202,24 @@ class RedirectingHttpRequesterFilterTest {
                     }
                 };
 
-        return from(reqRespFactory, mock(HttpExecutionContext.class), appendClientFilterFactory(result, mockResponse));
+        return from(requestResponseFactory, mock(HttpExecutionContext.class),
+                appendClientFilterFactory(result, mockResponse));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: scheme={0}")
+    @ValueSource(strings = {"http", "https"})
+    void requestWithDefaultSchemePreservesRelativeRedirectTarget(String scheme) throws Exception {
+        StreamingHttpRequestResponseFactory factory = new DefaultStreamingHttpRequestResponseFactory(
+                DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1, scheme);
+        when(httpClient.request(any())).thenReturn(redirectResponse(MOVED_PERMANENTLY), okResponse());
+        try (StreamingHttpClient client = newClient(factory, new RedirectConfigBuilder().build())) {
+            assertThat(client.request(client.get("/path")).toFuture().get().status(), is(OK));
+            ArgumentCaptor<StreamingHttpRequest> requests = forClass(StreamingHttpRequest.class);
+            verify(httpClient, times(2)).request(requests.capture());
+            StreamingHttpRequest redirected = requests.getAllValues().get(1);
+            assertThat(redirected.requestTarget(), is("/location-1"));
+            assertThat(redirected.scheme(), is(scheme));
+        }
     }
 
     @Test

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,14 @@ import static io.servicetalk.http.api.HttpRequestMethod.OPTIONS;
 public final class HttpRequestUriUtils {
     private HttpRequestUriUtils() {
         // no instances
+    }
+
+    static boolean hasRequestTargetScheme(final HttpRequestMetaData metaData, final String scheme) {
+        // A request factory may supply a default scheme even for origin-form request targets.
+        final String target = metaData.requestTarget();
+        final int len = scheme.length();
+        return !CONNECT.equals(metaData.method()) && target.length() > len && target.charAt(len) == ':' &&
+                target.regionMatches(true, 0, scheme, 0, len);
     }
 
     /**
@@ -203,7 +211,7 @@ public final class HttpRequestUriUtils {
         }
 
         final String metadataScheme = metaData.scheme();
-        if (metadataScheme != null) {
+        if (metadataScheme != null && hasRequestTargetScheme(metaData, metadataScheme)) {
             // absolute form
             return buildRequestUri(
                     metadataScheme,
@@ -214,8 +222,19 @@ public final class HttpRequestUriUtils {
                     query);
         }
 
-        final String scheme = fixedScheme != null ? fixedScheme.toLowerCase(Locale.ENGLISH) :
-                (ctx.sslSession() != null ? "https" : "http");
+        final String scheme;
+        if (fixedScheme != null) {
+            scheme = fixedScheme.toLowerCase(Locale.ENGLISH);
+        } else if (ctx != null && ctx.sslSession() != null) {
+            // A TLS session on the connection this request is evaluated against is positive evidence for https:
+            // it wins over the factory default in metadataScheme, which describes the client that created the
+            // request and may differ when a request is evaluated against a different connection.
+            scheme = "https";
+        } else if (metadataScheme != null) {
+            scheme = metadataScheme;
+        } else {
+            scheme = "http";
+        }
 
         final HostAndPort effectiveHostAndPort;
         if (fixedAuthority != null) {
