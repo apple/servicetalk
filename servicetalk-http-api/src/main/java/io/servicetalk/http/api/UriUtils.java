@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -149,7 +149,7 @@ final class UriUtils {
             }
         }
         if (nameStart < i) {
-            if (paramCountDown <= 1) {
+            if (paramCountDown == 0) {
                 throw new IllegalStateException("maxParams[" + maxParams + "] exceeded");
             }
             addQueryParam(rawQuery, nameStart, valueStart, i, charset, params, decoder);
