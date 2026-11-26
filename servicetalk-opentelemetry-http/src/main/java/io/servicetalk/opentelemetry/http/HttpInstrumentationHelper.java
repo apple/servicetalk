@@ -1,5 +1,5 @@
 /*
- * Copyright © 2025 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2025-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@ import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
+import io.opentelemetry.instrumentation.api.internal.SpanKey;
+import io.opentelemetry.instrumentation.api.internal.SpanKeyProvider;
 import io.opentelemetry.instrumentation.api.semconv.http.HttpClientAttributesExtractor;
 import io.opentelemetry.instrumentation.api.semconv.http.HttpClientMetrics;
 import io.opentelemetry.instrumentation.api.semconv.http.HttpServerAttributesExtractor;
@@ -148,7 +150,7 @@ final class HttpInstrumentationHelper extends InstrumentationHelper {
     }
 
     private static final class DeferredHttpClientAttributesExtractor implements
-            AttributesExtractor<RequestInfo, HttpResponseMetaData> {
+            AttributesExtractor<RequestInfo, HttpResponseMetaData>, SpanKeyProvider {
 
         private final AttributesExtractor<RequestInfo, HttpResponseMetaData> delegate;
 
@@ -172,6 +174,14 @@ final class HttpInstrumentationHelper extends InstrumentationHelper {
                           @Nullable Throwable error) {
             delegate.onStart(attributes, context, requestInfo);
             delegate.onEnd(attributes, context, requestInfo, responseMetaData, error);
+        }
+
+        @Override
+        public SpanKey internalGetSpanKey() {
+            // Wrapping hides the SpanKeyProvider of HttpClientAttributesExtractor. Without a span key the
+            // Instrumenter can neither store nor check for a client span, so nested HTTP client spans are not
+            // suppressed.
+            return SpanKey.HTTP_CLIENT;
         }
     }
 

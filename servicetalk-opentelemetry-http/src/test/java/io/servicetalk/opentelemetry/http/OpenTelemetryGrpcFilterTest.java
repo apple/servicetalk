@@ -1,5 +1,5 @@
 /*
- * Copyright © 2025 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2025-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ import static io.opentelemetry.api.impl.InstrumentationUtil.suppressInstrumentat
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.INSTRUMENTATION_SCOPE_NAME;
+import static io.servicetalk.opentelemetry.http.TestUtils.awaitOutermostClientAndServerSpans;
 import static io.servicetalk.opentelemetry.http.TestUtils.awaitSpans;
 import static io.servicetalk.opentelemetry.http.TestUtils.sleep;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -61,7 +62,8 @@ class OpenTelemetryGrpcFilterTest {
     private enum ClientFilterPosition {
         LOGICAL,
         CONNECTION,
-        BOTH
+        BOTH,
+        LOGICAL_TWICE
     }
 
     @RegisterExtension
@@ -186,7 +188,7 @@ class OpenTelemetryGrpcFilterTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}]: clientFilterPosition={0}")
-    @EnumSource(ClientFilterPosition.class)
+    @EnumSource(value = ClientFilterPosition.class, mode = EnumSource.Mode.EXCLUDE, names = "LOGICAL_TWICE")
     void grpcSuppressionIsHonored(ClientFilterPosition clientFilterPosition) throws Exception {
         setUp(false, clientFilterPosition);
 
@@ -229,6 +231,21 @@ class OpenTelemetryGrpcFilterTest {
                 ));
     }
 
+    @Test
+    void nestedRequesterFiltersProduceOneClientSpan() throws Exception {
+        setUp(false, ClientFilterPosition.LOGICAL_TWICE);
+
+        client.asBlockingClient().test(newRequest());
+        awaitOutermostClientAndServerSpans(otelTesting);
+
+        assertThat(otelTesting.getSpans()).hasSize(2);
+        // The span of the outermost filter is the one that is kept, and the server span continues from it.
+        assertThat(findSpanByKind(SpanKind.CLIENT).getAttributes().get(AttributeKey.stringKey("peer.service")))
+                .isEqualTo("test-client");
+        assertThat(findSpanByKind(SpanKind.SERVER).getParentSpanId())
+                .isEqualTo(findSpanByKind(SpanKind.CLIENT).getSpanId());
+    }
+
     private void setUp(boolean error, ClientFilterPosition clientFilterPosition) throws Exception {
         // Create gRPC server with unified OpenTelemetry HTTP service filter
         // The filter will automatically detect gRPC requests and handle them appropriately
@@ -250,7 +267,14 @@ class OpenTelemetryGrpcFilterTest {
                     if (clientFilterPosition != ClientFilterPosition.CONNECTION) {
                         builder.appendClientFilter(clientFilter);
                     }
-                    if (clientFilterPosition != ClientFilterPosition.LOGICAL) {
+                    if (clientFilterPosition == ClientFilterPosition.LOGICAL_TWICE) {
+                        // A distinct instance, with its own Instrumenter, like a second library or agent would add.
+                        builder.appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
+                                .openTelemetry(otelTesting.getOpenTelemetry())
+                                .build());
+                    }
+                    if (clientFilterPosition == ClientFilterPosition.CONNECTION ||
+                            clientFilterPosition == ClientFilterPosition.BOTH) {
                         builder.appendConnectionFilter(clientFilter);
                     }
                 })

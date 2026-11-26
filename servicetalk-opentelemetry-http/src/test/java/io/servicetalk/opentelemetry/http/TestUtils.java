@@ -1,5 +1,5 @@
 /*
- * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
+import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,11 +47,13 @@ import java.net.InetSocketAddress;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
+import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.data.jackson.JacksonSerializerFactory.JACKSON;
 import static io.servicetalk.http.api.HttpSerializers.jsonSerializer;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public final class TestUtils {
 
@@ -112,6 +115,47 @@ public final class TestUtils {
         while (otelTesting.getSpans().size() < expectedSpanCount && System.nanoTime() < deadline) {
             Thread.sleep(10);
         }
+    }
+
+    /**
+     * Wait until at least {@code expectedSpanCount} spans have been exported, failing if they do not arrive in time.
+     * Use this when a test expects the spans to exist, so a missing span fails here instead of in a later assertion.
+     */
+    static void awaitAtLeastSpans(OpenTelemetryExtension otelTesting, int expectedSpanCount)
+            throws InterruptedException {
+        final long deadline = System.nanoTime() + SECONDS.toNanos(DEFAULT_TIMEOUT_SECONDS);
+        while (otelTesting.getSpans().size() < expectedSpanCount) {
+            if (System.nanoTime() > deadline) {
+                throw new AssertionError("Timed out waiting for " + expectedSpanCount + " spans: " +
+                        otelTesting.getSpans());
+            }
+            Thread.sleep(10);
+        }
+    }
+
+    /**
+     * Wait until the outermost CLIENT span and a SERVER span have been exported. Nested spans end before the span that
+     * encloses them, so once the outermost CLIENT span is exported no further CLIENT span can follow it. Use this
+     * instead of {@link #awaitSpans} when a test asserts the exact number of CLIENT spans.
+     */
+    static void awaitOutermostClientAndServerSpans(OpenTelemetryExtension otelTesting) throws InterruptedException {
+        final long deadline = System.nanoTime() + SECONDS.toNanos(DEFAULT_TIMEOUT_SECONDS);
+        while (!(hasSpan(otelTesting, SpanKind.SERVER) && hasOutermostClientSpan(otelTesting))) {
+            if (System.nanoTime() > deadline) {
+                throw new AssertionError("Timed out waiting for the CLIENT and SERVER spans: " +
+                        otelTesting.getSpans());
+            }
+            Thread.sleep(10);
+        }
+    }
+
+    private static boolean hasSpan(OpenTelemetryExtension otelTesting, SpanKind kind) {
+        return otelTesting.getSpans().stream().anyMatch(span -> span.getKind() == kind);
+    }
+
+    private static boolean hasOutermostClientSpan(OpenTelemetryExtension otelTesting) {
+        return otelTesting.getSpans().stream().anyMatch(span -> span.getKind() == SpanKind.CLIENT &&
+                !span.getParentSpanContext().isValid());
     }
 
     static final class TestTracingClientLoggerFilter implements StreamingHttpClientFilterFactory {

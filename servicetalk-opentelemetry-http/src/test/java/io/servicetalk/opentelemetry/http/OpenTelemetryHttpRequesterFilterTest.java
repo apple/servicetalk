@@ -1,5 +1,5 @@
 /*
- * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ import io.opentelemetry.sdk.trace.data.ExceptionEventData;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -58,6 +59,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -80,12 +82,15 @@ import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryHttpRequest
 import static io.servicetalk.opentelemetry.http.TestUtils.SPAN_STATE_SERIALIZER;
 import static io.servicetalk.opentelemetry.http.TestUtils.TRACING_TEST_LOG_LINE_PREFIX;
 import static io.servicetalk.opentelemetry.http.TestUtils.TestTracingClientLoggerFilter;
+import static io.servicetalk.opentelemetry.http.TestUtils.awaitAtLeastSpans;
+import static io.servicetalk.opentelemetry.http.TestUtils.awaitOutermostClientAndServerSpans;
 import static io.servicetalk.opentelemetry.http.TestUtils.awaitSpans;
 import static io.servicetalk.opentelemetry.http.TestUtils.clientBuilder;
 import static io.servicetalk.opentelemetry.http.TestUtils.sleep;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -681,6 +686,86 @@ class OpenTelemetryHttpRequesterFilterTest {
             assertThat(contextValueInPipeline).hasValue(true);
             assertThat(contextValueAtResponse).hasNullValue();
         }
+    }
+
+    // Suppression is decided from the OpenTelemetry context before any bytes are written, so the tests below use
+    // one protocol.
+
+    @Test
+    void nestedRequesterFiltersProduceOneClientSpan() throws Exception {
+        OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
+        try (ServerContext context = buildServer(false, true);
+             // Two independent filters, as when an application and a Java agent both instrument the same client.
+             HttpClient client = clientBuilder(false, context)
+                     .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
+                             .openTelemetry(openTelemetry).componentName("outer").build())
+                     .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
+                             .openTelemetry(openTelemetry).componentName("inner").build())
+                     .build()) {
+            client.request(client.get("/client-span-test")).toFuture().get();
+            awaitOutermostClientAndServerSpans(otelTesting);
+
+            assertThat(otelTesting.getSpans()).hasSize(2);
+            // The span of the outermost filter is the one that is kept, and the server span continues from it.
+            SpanData clientSpan = spansOfKind(SpanKind.CLIENT).get(0);
+            assertThat(clientSpan.getAttributes().get(PEER_SERVICE)).isEqualTo("outer");
+            assertThat(spansOfKind(SpanKind.SERVER).get(0).getParentSpanId()).isEqualTo(clientSpan.getSpanId());
+        }
+    }
+
+    @Test
+    void sequentialRequestsAreNotSuppressed() throws Exception {
+        OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
+        try (ServerContext context = buildServer(false, true);
+             HttpClient client = clientBuilder(false, context)
+                     .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
+                             .openTelemetry(openTelemetry).build())
+                     .build()) {
+            // The second request is issued from a continuation of the first one, so it must not see the first
+            // CLIENT span as an enclosing CLIENT span.
+            client.request(client.get("/first"))
+                    .flatMap(response -> client.request(client.get("/second")))
+                    .toFuture().get();
+            awaitAtLeastSpans(otelTesting, 4);
+
+            assertThat(otelTesting.getSpans()).hasSize(4);
+            assertThat(spansOfKind(SpanKind.CLIENT)).hasSize(2)
+                    .allMatch(span -> !span.getParentSpanContext().isValid());
+        }
+    }
+
+    @Test
+    void requestIssuedFromServerSpanIsNotSuppressed() throws Exception {
+        OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
+        try (ServerContext backend = buildServer(false, true);
+             HttpClient backendClient = clientBuilder(false, backend)
+                     .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
+                             .openTelemetry(openTelemetry).build())
+                     .build();
+             ServerContext proxy = TestUtils.httpServerBuilder(false)
+                     .appendServiceFilter(new OpenTelemetryHttpServiceFilter.Builder()
+                             .openTelemetry(openTelemetry).build())
+                     .listenAndAwait((ctx, request, responseFactory) ->
+                             backendClient.request(backendClient.get("/backend")).map(r -> responseFactory.ok()));
+             HttpClient frontClient = clientBuilder(false, proxy)
+                     .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
+                             .openTelemetry(openTelemetry).build())
+                     .build()) {
+            frontClient.request(frontClient.get("/front")).toFuture().get();
+            awaitAtLeastSpans(otelTesting, 4);
+
+            // front client -> proxy server -> backend client -> backend server: a SERVER span does not suppress the
+            // CLIENT span of a request issued while handling it.
+            otelTesting.assertTraces().hasTracesSatisfyingExactly(ta -> ta.hasSpansSatisfyingExactly(
+                    span -> span.hasKind(SpanKind.CLIENT),
+                    span -> span.hasKind(SpanKind.SERVER),
+                    span -> span.hasKind(SpanKind.CLIENT),
+                    span -> span.hasKind(SpanKind.SERVER)));
+        }
+    }
+
+    private static List<SpanData> spansOfKind(SpanKind kind) {
+        return otelTesting.getSpans().stream().filter(span -> span.getKind() == kind).collect(toList());
     }
 
     private static ServerContext buildServer(boolean useHttp2, boolean addFilter) throws Exception {
