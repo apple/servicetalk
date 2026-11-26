@@ -1,5 +1,5 @@
 /*
- * Copyright © 2025 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2025-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,16 +26,19 @@ import io.opentelemetry.instrumentation.api.semconv.http.HttpServerMetrics;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
+@SuppressWarnings("PMD.PublicMemberInNonPublicType") // public methods are exposed via public subclasses
 abstract class OpenTelemetryFilterBuilder<T extends OpenTelemetryFilterBuilder<T>> {
     List<String> capturedRequestHeaders = emptyList();
     List<String> capturedResponseHeaders = emptyList();
     boolean enableMetrics;
-    OpenTelemetry openTelemetry = GlobalOpenTelemetry.get();
+    @Nullable
+    private OpenTelemetry openTelemetry;
 
     abstract T thisInstance();
 
@@ -57,7 +60,7 @@ abstract class OpenTelemetryFilterBuilder<T extends OpenTelemetryFilterBuilder<T
      * @see HttpClientAttributesExtractorBuilder#setCapturedRequestHeaders(List)
      * @see HttpServerAttributesExtractorBuilder#setCapturedRequestHeaders(List)
      */
-    final T capturedRequestHeaders(final List<String> capturedRequestHeaders) {
+    public final T capturedRequestHeaders(final List<String> capturedRequestHeaders) {
         requireNonNull(capturedRequestHeaders, "capturedRequestHeaders");
         this.capturedRequestHeaders =
                 capturedRequestHeaders.isEmpty() ? emptyList() :
@@ -74,7 +77,7 @@ abstract class OpenTelemetryFilterBuilder<T extends OpenTelemetryFilterBuilder<T
      * @see HttpClientAttributesExtractorBuilder#setCapturedResponseHeaders(List)
      * @see HttpServerAttributesExtractorBuilder#setCapturedResponseHeaders(List)
      */
-    final T capturedResponseHeaders(final List<String> capturedResponseHeaders) {
+    public final T capturedResponseHeaders(final List<String> capturedResponseHeaders) {
         requireNonNull(capturedResponseHeaders, "capturedResponseHeaders");
         this.capturedResponseHeaders =
                 capturedResponseHeaders.isEmpty() ? emptyList() :
@@ -85,14 +88,26 @@ abstract class OpenTelemetryFilterBuilder<T extends OpenTelemetryFilterBuilder<T
     /**
      * Set the {@link OpenTelemetry} instance to use for creating spans.
      * <p>
-     * Note that this is deliberately left package private. Beyond testing, there are not any compelling use cases
-     * for an {@link OpenTelemetry} other than {@link GlobalOpenTelemetry#get()}.
+     * If an instance is set, it is used as is and {@link GlobalOpenTelemetry} is never accessed. Otherwise, the
+     * instance is obtained from {@link GlobalOpenTelemetry#get()} when {@code build()} is called, which also
+     * registers a no-op instance as the global one if none has been set yet.
      * @param openTelemetry the {@link OpenTelemetry} instance
      * @return {@code this}
      */
-    final T openTelemetry(OpenTelemetry openTelemetry) {
+    public final T openTelemetry(final OpenTelemetry openTelemetry) {
         this.openTelemetry = requireNonNull(openTelemetry, "openTelemetry");
         return thisInstance();
+    }
+
+    /**
+     * Returns the {@link OpenTelemetry} to use: the configured instance or, if there is none,
+     * {@link GlobalOpenTelemetry#get()}.
+     * <p>
+     * This must only be called when the filter is built, never when the builder is created.
+     */
+    final OpenTelemetry resolveOpenTelemetry() {
+        final OpenTelemetry openTelemetry = this.openTelemetry;
+        return openTelemetry != null ? openTelemetry : GlobalOpenTelemetry.get();
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2025 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2025-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ final class GrpcInstrumentationHelper extends InstrumentationHelper {
      * @return server instrumentation helper
      */
     static GrpcInstrumentationHelper forServer(OpenTelemetryHttpServiceFilter.Builder builder) {
-        OpenTelemetry openTelemetry = builder.openTelemetry;
+        OpenTelemetry openTelemetry = builder.resolveOpenTelemetry();
         SpanNameExtractor<RequestInfo> serverSpanNameExtractor = GrpcSpanNameExtractor.INSTANCE;
         InstrumenterBuilder<RequestInfo, GrpcTelemetryStatus> serverInstrumenterBuilder =
                 Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, serverSpanNameExtractor);
@@ -121,7 +121,7 @@ final class GrpcInstrumentationHelper extends InstrumentationHelper {
      * @return client instrumentation helper
      */
     static GrpcInstrumentationHelper forClient(OpenTelemetryHttpRequesterFilter.Builder builder) {
-        OpenTelemetry openTelemetry = builder.openTelemetry;
+        OpenTelemetry openTelemetry = builder.resolveOpenTelemetry();
         SpanNameExtractor<RequestInfo> clientSpanNameExtractor = GrpcSpanNameExtractor.INSTANCE;
         InstrumenterBuilder<RequestInfo, GrpcTelemetryStatus> clientInstrumenterBuilder =
                 Instrumenter.builder(
