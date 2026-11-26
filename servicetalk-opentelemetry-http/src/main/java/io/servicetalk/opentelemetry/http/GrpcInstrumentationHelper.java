@@ -1,5 +1,5 @@
 /*
- * Copyright © 2025 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2025-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
+import io.opentelemetry.instrumentation.api.internal.SpanKey;
+import io.opentelemetry.instrumentation.api.internal.SpanKeyProvider;
 import io.opentelemetry.instrumentation.api.semconv.http.HttpClientMetrics;
 import io.opentelemetry.instrumentation.api.semconv.http.HttpServerMetrics;
 
@@ -178,7 +180,7 @@ final class GrpcInstrumentationHelper extends InstrumentationHelper {
     }
 
     private static final class DeferredGrpcClientAttributesExtractor
-            implements AttributesExtractor<RequestInfo, GrpcTelemetryStatus> {
+            implements AttributesExtractor<RequestInfo, GrpcTelemetryStatus>, SpanKeyProvider {
 
         private final AttributesExtractor<RequestInfo, GrpcTelemetryStatus> delegate;
 
@@ -201,6 +203,12 @@ final class GrpcInstrumentationHelper extends InstrumentationHelper {
                           @Nullable Throwable error) {
             delegate.onStart(attributes, context, requestInfo);
             delegate.onEnd(attributes, context, requestInfo, telemetryStatus, error);
+        }
+
+        @Override
+        public SpanKey internalGetSpanKey() {
+            // Lets the Instrumenter suppress nested RPC client spans, see DeferredHttpClientAttributesExtractor.
+            return SpanKey.RPC_CLIENT;
         }
     }
 }

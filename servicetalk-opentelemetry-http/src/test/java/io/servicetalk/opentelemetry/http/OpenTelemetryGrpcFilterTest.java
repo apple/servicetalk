@@ -1,5 +1,5 @@
 /*
- * Copyright © 2025 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2025-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,8 @@ import static io.opentelemetry.api.impl.InstrumentationUtil.suppressInstrumentat
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.INSTRUMENTATION_SCOPE_NAME;
+import static io.servicetalk.opentelemetry.http.TestUtils.awaitAtLeastSpans;
+import static io.servicetalk.opentelemetry.http.TestUtils.awaitOutermostClientAndServerSpans;
 import static io.servicetalk.opentelemetry.http.TestUtils.awaitSpans;
 import static io.servicetalk.opentelemetry.http.TestUtils.sleep;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -61,7 +63,8 @@ class OpenTelemetryGrpcFilterTest {
     private enum ClientFilterPosition {
         LOGICAL,
         CONNECTION,
-        BOTH
+        BOTH,
+        LOGICAL_TWICE
     }
 
     @RegisterExtension
@@ -229,6 +232,51 @@ class OpenTelemetryGrpcFilterTest {
                 ));
     }
 
+    @ParameterizedTest(name = "{displayName} [{index}]: error={0}")
+    @ValueSource(booleans = {true, false})
+    void nestedRequesterFiltersProduceOneClientSpan(boolean error) throws Exception {
+        setUp(error, ClientFilterPosition.LOGICAL_TWICE);
+
+        if (error) {
+            assertThrows(GrpcStatusException.class, () -> client.asBlockingClient().test(newRequest()));
+        } else {
+            client.asBlockingClient().test(newRequest());
+        }
+        awaitOutermostClientAndServerSpans(otelTesting);
+
+        otelTesting.assertTraces().hasTracesSatisfyingExactly(ta -> ta.hasSpansSatisfyingExactly(
+                span -> span.hasKind(SpanKind.CLIENT).hasName("opentelemetry.grpc.Tester/test"),
+                span -> span.hasKind(SpanKind.SERVER).hasName("opentelemetry.grpc.Tester/test")));
+        // The kept span carries the full set of attributes and the status of the call.
+        long statusCode = error ? 2 : 0;
+        assertGRpcAttributes(SpanKind.CLIENT, "test", statusCode);
+        assertThat(findSpanByKind(SpanKind.CLIENT).getStatus().getStatusCode())
+                .isEqualTo(error ? StatusCode.ERROR : StatusCode.UNSET);
+        assertThat(findSpanByKind(SpanKind.SERVER).getParentSpanId())
+                .isEqualTo(findSpanByKind(SpanKind.CLIENT).getSpanId());
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: clientFilterPosition={0}")
+    @EnumSource(value = ClientFilterPosition.class, names = {"LOGICAL", "CONNECTION"})
+    void sequentialCallsAreNotSuppressed(ClientFilterPosition clientFilterPosition) throws Exception {
+        setUp(false, clientFilterPosition);
+
+        // The second call is issued from a continuation of the first one.
+        client.test(newRequest()).flatMap(response -> client.test(newRequest())).toFuture().get();
+        client.asBlockingClient().test(newRequest());
+        awaitAtLeastSpans(otelTesting, 6);
+
+        assertThat(otelTesting.getSpans()).hasSize(6);
+        List<SpanData> clientSpans = new ArrayList<>();
+        for (SpanData span : otelTesting.getSpans()) {
+            if (span.getKind() == SpanKind.CLIENT) {
+                clientSpans.add(span);
+            }
+        }
+        assertThat(clientSpans).hasSize(3);
+        assertThat(clientSpans).allMatch(span -> !span.getParentSpanContext().isValid());
+    }
+
     private void setUp(boolean error, ClientFilterPosition clientFilterPosition) throws Exception {
         // Create gRPC server with unified OpenTelemetry HTTP service filter
         // The filter will automatically detect gRPC requests and handle them appropriately
@@ -250,7 +298,14 @@ class OpenTelemetryGrpcFilterTest {
                     if (clientFilterPosition != ClientFilterPosition.CONNECTION) {
                         builder.appendClientFilter(clientFilter);
                     }
-                    if (clientFilterPosition != ClientFilterPosition.LOGICAL) {
+                    if (clientFilterPosition == ClientFilterPosition.LOGICAL_TWICE) {
+                        // A distinct instance, with its own Instrumenter, like a second library or agent would add.
+                        builder.appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
+                                .openTelemetry(otelTesting.getOpenTelemetry())
+                                .build());
+                    }
+                    if (clientFilterPosition == ClientFilterPosition.CONNECTION ||
+                            clientFilterPosition == ClientFilterPosition.BOTH) {
                         builder.appendConnectionFilter(clientFilter);
                     }
                 })
