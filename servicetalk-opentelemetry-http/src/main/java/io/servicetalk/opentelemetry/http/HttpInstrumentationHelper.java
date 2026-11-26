@@ -1,5 +1,5 @@
 /*
- * Copyright © 2025 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2025-2026 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ final class HttpInstrumentationHelper extends InstrumentationHelper {
      * @return server instrumentation helper
      */
     static HttpInstrumentationHelper forServer(OpenTelemetryHttpServiceFilter.Builder builder) {
-        OpenTelemetry openTelemetry = builder.openTelemetry;
+        OpenTelemetry openTelemetry = builder.resolveOpenTelemetry();
         InstrumenterBuilder<RequestInfo, HttpResponseMetaData> serverInstrumenterBuilder =
                 Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, SERVER_SPAN_NAME_EXTRACTOR);
         serverInstrumenterBuilder.setSpanStatusExtractor(HttpSpanStatusExtractor.SERVER_INSTANCE);
@@ -124,7 +124,7 @@ final class HttpInstrumentationHelper extends InstrumentationHelper {
      * @return client instrumentation helper
      */
     static HttpInstrumentationHelper forClient(final OpenTelemetryHttpRequesterFilter.Builder builder) {
-        OpenTelemetry openTelemetry = builder.openTelemetry;
+        OpenTelemetry openTelemetry = builder.resolveOpenTelemetry();
 
         InstrumenterBuilder<RequestInfo, HttpResponseMetaData> clientInstrumenterBuilder =
                 Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, CLIENT_SPAN_NAME_EXTRACTOR);
