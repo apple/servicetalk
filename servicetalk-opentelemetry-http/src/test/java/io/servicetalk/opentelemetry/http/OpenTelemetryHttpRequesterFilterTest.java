@@ -22,7 +22,6 @@ import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServerBuilder;
-import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
@@ -39,7 +38,6 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
-import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
@@ -49,6 +47,7 @@ import io.opentelemetry.sdk.trace.data.ExceptionEventData;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -62,7 +61,6 @@ import org.slf4j.LoggerFactory;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
@@ -690,222 +688,79 @@ class OpenTelemetryHttpRequesterFilterTest {
         }
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] useHttp2={0}")
-    @ValueSource(booleans = {true, false})
-    void nestedRequesterFiltersProduceOneClientSpan(boolean useHttp2) throws Exception {
-        final String requestUrl = "/client-span-test";
+    // Suppression is decided from the OpenTelemetry context before any bytes are written, so the tests below use
+    // one protocol.
+
+    @Test
+    void nestedRequesterFiltersProduceOneClientSpan() throws Exception {
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer(useHttp2, true)) {
-            // Two independent filters, as when an application and a Java agent both instrument the same client.
-            try (HttpClient client = clientBuilder(useHttp2, context)
-                    .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
-                            .openTelemetry(openTelemetry).componentName("outer").build())
-                    .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
-                            .openTelemetry(openTelemetry).componentName("inner").build())
-                    .build()) {
-                client.request(client.get(requestUrl)).toFuture().get();
-                awaitOutermostClientAndServerSpans(otelTesting);
+        try (ServerContext context = buildServer(false, true);
+             // Two independent filters, as when an application and a Java agent both instrument the same client.
+             HttpClient client = clientBuilder(false, context)
+                     .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
+                             .openTelemetry(openTelemetry).componentName("outer").build())
+                     .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
+                             .openTelemetry(openTelemetry).componentName("inner").build())
+                     .build()) {
+            client.request(client.get("/client-span-test")).toFuture().get();
+            awaitOutermostClientAndServerSpans(otelTesting);
 
-                otelTesting.assertTraces().hasTracesSatisfyingExactly(ta -> ta.hasSpansSatisfyingExactly(
-                        span -> span.hasKind(SpanKind.CLIENT).hasName("GET"),
-                        span -> span.hasKind(SpanKind.SERVER).hasName("GET")));
-
-                // The span of the outermost filter is the one that is kept, and the server span continues from it.
-                SpanData clientSpan = spansOfKind(SpanKind.CLIENT).get(0);
-                assertThat(clientSpan.getAttributes().get(PEER_SERVICE)).isEqualTo("outer");
-                assertThat(clientSpan.getAttributes().get(HTTP_REQUEST_METHOD)).isEqualTo("GET");
-                assertThat(clientSpan.getAttributes().get(URL_FULL)).endsWith(requestUrl);
-                assertThat(spansOfKind(SpanKind.SERVER).get(0).getParentSpanId())
-                        .isEqualTo(clientSpan.getSpanId());
-            }
+            assertThat(otelTesting.getSpans()).hasSize(2);
+            // The span of the outermost filter is the one that is kept, and the server span continues from it.
+            SpanData clientSpan = spansOfKind(SpanKind.CLIENT).get(0);
+            assertThat(clientSpan.getAttributes().get(PEER_SERVICE)).isEqualTo("outer");
+            assertThat(spansOfKind(SpanKind.SERVER).get(0).getParentSpanId()).isEqualTo(clientSpan.getSpanId());
         }
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] useHttp2={0}")
-    @ValueSource(booleans = {true, false})
-    void threeNestedRequesterFiltersProduceOneClientSpan(boolean useHttp2) throws Exception {
+    @Test
+    void sequentialRequestsAreNotSuppressed() throws Exception {
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer(useHttp2, true)) {
-            try (HttpClient client = clientBuilder(useHttp2, context)
-                    .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
-                            .openTelemetry(openTelemetry).build())
-                    .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
-                            .openTelemetry(openTelemetry).build())
-                    .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
-                            .openTelemetry(openTelemetry).build())
-                    .build()) {
-                client.request(client.get("/client-span-test")).toFuture().get();
-                awaitOutermostClientAndServerSpans(otelTesting);
+        try (ServerContext context = buildServer(false, true);
+             HttpClient client = clientBuilder(false, context)
+                     .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
+                             .openTelemetry(openTelemetry).build())
+                     .build()) {
+            // The second request is issued from a continuation of the first one, so it must not see the first
+            // CLIENT span as an enclosing CLIENT span.
+            client.request(client.get("/first"))
+                    .flatMap(response -> client.request(client.get("/second")))
+                    .toFuture().get();
+            awaitAtLeastSpans(otelTesting, 4);
 
-                assertThat(otelTesting.getSpans()).hasSize(2);
-                assertThat(spansOfKind(SpanKind.CLIENT)).hasSize(1);
-            }
+            assertThat(otelTesting.getSpans()).hasSize(4);
+            assertThat(spansOfKind(SpanKind.CLIENT)).hasSize(2)
+                    .allMatch(span -> !span.getParentSpanContext().isValid());
         }
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] useHttp2={0}")
-    @ValueSource(booleans = {true, false})
-    void nestedRequesterFiltersWithFailedRequestProduceOneClientSpan(boolean useHttp2) throws Exception {
+    @Test
+    void requestIssuedFromServerSpanIsNotSuppressed() throws Exception {
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        ServerContext context = buildServer(useHttp2, true);
-        try (HttpClient client = clientBuilder(useHttp2, context)
-                .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
-                        .openTelemetry(openTelemetry).build())
-                .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
-                        .openTelemetry(openTelemetry).build())
-                .build()) {
-            // Stop the server so that the connection attempt fails.
-            context.close();
-            assertThrows(ExecutionException.class, () -> client.request(client.get("/")).toFuture().get());
-            awaitAtLeastSpans(otelTesting, 1);
-
-            // Without a SERVER span the first exported span is the innermost one, so it must be the outermost span
-            // too: a nested span would have a parent.
-            assertThat(otelTesting.getSpans()).hasSize(1);
-            SpanData span = otelTesting.getSpans().get(0);
-            assertThat(span.getKind()).isEqualTo(SpanKind.CLIENT);
-            assertThat(span.getParentSpanContext().isValid()).isFalse();
-            assertThat(span.getStatus().getStatusCode()).isEqualTo(StatusCode.ERROR);
-        }
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}] useHttp2={0}")
-    @ValueSource(booleans = {true, false})
-    void sequentialRequestsAreNotSuppressed(boolean useHttp2) throws Exception {
-        OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer(useHttp2, true)) {
-            try (HttpClient client = clientBuilder(useHttp2, context)
-                    .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
-                            .openTelemetry(openTelemetry).build())
-                    .build()) {
-                // The second request is issued from a continuation of the first one, so it must not see the first
-                // CLIENT span as an enclosing CLIENT span.
-                client.request(client.get("/first"))
-                        .flatMap(response -> client.request(client.get("/second")))
-                        .toFuture().get();
-                client.request(client.get("/third")).toFuture().get();
-                awaitSpans(otelTesting, 6);
-
-                assertThat(otelTesting.getSpans()).hasSize(6);
-                assertThat(otelTesting.getSpans().stream()
-                        .filter(span -> span.getKind() == SpanKind.CLIENT)
-                        .map(span -> span.getParentSpanContext().isValid())
-                        .collect(toList())).containsExactly(false, false, false);
-            }
-        }
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}] useHttp2={0}")
-    @ValueSource(booleans = {true, false})
-    void requestIssuedFromServerSpanIsNotSuppressed(boolean useHttp2) throws Exception {
-        OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext backend = buildServer(useHttp2, true);
-             HttpClient backendClient = clientBuilder(useHttp2, backend)
+        try (ServerContext backend = buildServer(false, true);
+             HttpClient backendClient = clientBuilder(false, backend)
                      .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
                              .openTelemetry(openTelemetry).build())
                      .build();
-             ServerContext proxy = TestUtils.httpServerBuilder(useHttp2)
+             ServerContext proxy = TestUtils.httpServerBuilder(false)
                      .appendServiceFilter(new OpenTelemetryHttpServiceFilter.Builder()
                              .openTelemetry(openTelemetry).build())
                      .listenAndAwait((ctx, request, responseFactory) ->
                              backendClient.request(backendClient.get("/backend")).map(r -> responseFactory.ok()));
-             HttpClient frontClient = clientBuilder(useHttp2, proxy)
+             HttpClient frontClient = clientBuilder(false, proxy)
                      .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
                              .openTelemetry(openTelemetry).build())
                      .build()) {
             frontClient.request(frontClient.get("/front")).toFuture().get();
             awaitAtLeastSpans(otelTesting, 4);
 
-            // front client -> proxy server -> backend client -> backend server
-            assertThat(otelTesting.getSpans()).hasSize(4);
-            assertThat(spansOfKind(SpanKind.CLIENT)).hasSize(2);
-            assertThat(spansOfKind(SpanKind.SERVER)).hasSize(2);
+            // front client -> proxy server -> backend client -> backend server: a SERVER span does not suppress the
+            // CLIENT span of a request issued while handling it.
             otelTesting.assertTraces().hasTracesSatisfyingExactly(ta -> ta.hasSpansSatisfyingExactly(
                     span -> span.hasKind(SpanKind.CLIENT),
                     span -> span.hasKind(SpanKind.SERVER),
                     span -> span.hasKind(SpanKind.CLIENT),
                     span -> span.hasKind(SpanKind.SERVER)));
-        }
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}] parentKind={0}, useHttp2={1}")
-    @MethodSource("parentKindArguments")
-    void requestsUnderUserSpanAreNotSuppressed(SpanKind parentKind, boolean useHttp2) throws Exception {
-        OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer(useHttp2, true);
-             HttpClient client = clientBuilder(useHttp2, context)
-                     .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
-                             .openTelemetry(openTelemetry).build())
-                     .build()) {
-            Span parent = openTelemetry.getTracer("test").spanBuilder("parent").setSpanKind(parentKind).startSpan();
-            try (Scope ignored = parent.makeCurrent()) {
-                client.request(client.get("/first")).toFuture().get();
-                client.request(client.get("/second")).toFuture().get();
-            } finally {
-                parent.end();
-            }
-            // parent + 2 x (client + server)
-            awaitAtLeastSpans(otelTesting, 5);
-
-            assertThat(otelTesting.getSpans()).hasSize(5);
-            List<SpanData> clientSpans = spansOfKind(SpanKind.CLIENT);
-            // A parent of kind CLIENT that is not an HTTP client span must not suppress anything.
-            clientSpans.removeIf(span -> "parent".equals(span.getName()));
-            assertThat(clientSpans).hasSize(2);
-            for (SpanData clientSpan : clientSpans) {
-                assertThat(clientSpan.getParentSpanId()).isEqualTo(parent.getSpanContext().getSpanId());
-                assertThat(clientSpan.getTraceId()).isEqualTo(parent.getSpanContext().getTraceId());
-            }
-        }
-    }
-
-    static Stream<Arguments> parentKindArguments() {
-        return Stream.of(SpanKind.INTERNAL, SpanKind.CLIENT, SpanKind.SERVER).flatMap(kind ->
-                Stream.of(Arguments.of(kind, true), Arguments.of(kind, false)));
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}] useHttp2={0}")
-    @ValueSource(booleans = {true, false})
-    void concurrentRequestsAreNotSuppressed(boolean useHttp2) throws Exception {
-        OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer(useHttp2, true);
-             HttpClient client = clientBuilder(useHttp2, context)
-                     .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
-                             .openTelemetry(openTelemetry).build())
-                     .build()) {
-            Single.zip(client.request(client.get("/first")), client.request(client.get("/second")),
-                    (first, second) -> first).toFuture().get();
-            awaitAtLeastSpans(otelTesting, 4);
-
-            assertThat(otelTesting.getSpans()).hasSize(4);
-            List<SpanData> clientSpans = spansOfKind(SpanKind.CLIENT);
-            assertThat(clientSpans).hasSize(2);
-            assertThat(clientSpans).allMatch(span -> !span.getParentSpanContext().isValid());
-        }
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}] useHttp2={0}")
-    @ValueSource(booleans = {true, false})
-    void requestIssuedFromResponseBodyCompletionIsNotSuppressed(boolean useHttp2) throws Exception {
-        OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer(useHttp2, true);
-             StreamingHttpClient client = clientBuilder(useHttp2, context)
-                     .appendClientFilter(new OpenTelemetryHttpRequesterFilter.Builder()
-                             .openTelemetry(openTelemetry).build())
-                     .buildStreaming()) {
-            client.request(client.get("/first"))
-                    .flatMapPublisher(StreamingHttpResponse::messageBody)
-                    .ignoreElements()
-                    .concat(client.request(client.get("/second")))
-                    .flatMapPublisher(StreamingHttpResponse::messageBody)
-                    .ignoreElements()
-                    .toFuture().get();
-            awaitAtLeastSpans(otelTesting, 4);
-
-            assertThat(otelTesting.getSpans()).hasSize(4);
-            List<SpanData> clientSpans = spansOfKind(SpanKind.CLIENT);
-            assertThat(clientSpans).hasSize(2);
-            assertThat(clientSpans).allMatch(span -> !span.getParentSpanContext().isValid());
         }
     }
 

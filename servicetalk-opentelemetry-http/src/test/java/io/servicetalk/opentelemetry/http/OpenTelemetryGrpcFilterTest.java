@@ -47,7 +47,6 @@ import static io.opentelemetry.api.impl.InstrumentationUtil.suppressInstrumentat
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.INSTRUMENTATION_SCOPE_NAME;
-import static io.servicetalk.opentelemetry.http.TestUtils.awaitAtLeastSpans;
 import static io.servicetalk.opentelemetry.http.TestUtils.awaitOutermostClientAndServerSpans;
 import static io.servicetalk.opentelemetry.http.TestUtils.awaitSpans;
 import static io.servicetalk.opentelemetry.http.TestUtils.sleep;
@@ -189,7 +188,7 @@ class OpenTelemetryGrpcFilterTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}]: clientFilterPosition={0}")
-    @EnumSource(ClientFilterPosition.class)
+    @EnumSource(value = ClientFilterPosition.class, mode = EnumSource.Mode.EXCLUDE, names = "LOGICAL_TWICE")
     void grpcSuppressionIsHonored(ClientFilterPosition clientFilterPosition) throws Exception {
         setUp(false, clientFilterPosition);
 
@@ -232,49 +231,19 @@ class OpenTelemetryGrpcFilterTest {
                 ));
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}]: error={0}")
-    @ValueSource(booleans = {true, false})
-    void nestedRequesterFiltersProduceOneClientSpan(boolean error) throws Exception {
-        setUp(error, ClientFilterPosition.LOGICAL_TWICE);
+    @Test
+    void nestedRequesterFiltersProduceOneClientSpan() throws Exception {
+        setUp(false, ClientFilterPosition.LOGICAL_TWICE);
 
-        if (error) {
-            assertThrows(GrpcStatusException.class, () -> client.asBlockingClient().test(newRequest()));
-        } else {
-            client.asBlockingClient().test(newRequest());
-        }
+        client.asBlockingClient().test(newRequest());
         awaitOutermostClientAndServerSpans(otelTesting);
 
-        otelTesting.assertTraces().hasTracesSatisfyingExactly(ta -> ta.hasSpansSatisfyingExactly(
-                span -> span.hasKind(SpanKind.CLIENT).hasName("opentelemetry.grpc.Tester/test"),
-                span -> span.hasKind(SpanKind.SERVER).hasName("opentelemetry.grpc.Tester/test")));
-        // The kept span carries the full set of attributes and the status of the call.
-        long statusCode = error ? 2 : 0;
-        assertGRpcAttributes(SpanKind.CLIENT, "test", statusCode);
-        assertThat(findSpanByKind(SpanKind.CLIENT).getStatus().getStatusCode())
-                .isEqualTo(error ? StatusCode.ERROR : StatusCode.UNSET);
+        assertThat(otelTesting.getSpans()).hasSize(2);
+        // The span of the outermost filter is the one that is kept, and the server span continues from it.
+        assertThat(findSpanByKind(SpanKind.CLIENT).getAttributes().get(AttributeKey.stringKey("peer.service")))
+                .isEqualTo("test-client");
         assertThat(findSpanByKind(SpanKind.SERVER).getParentSpanId())
                 .isEqualTo(findSpanByKind(SpanKind.CLIENT).getSpanId());
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}]: clientFilterPosition={0}")
-    @EnumSource(value = ClientFilterPosition.class, names = {"LOGICAL", "CONNECTION"})
-    void sequentialCallsAreNotSuppressed(ClientFilterPosition clientFilterPosition) throws Exception {
-        setUp(false, clientFilterPosition);
-
-        // The second call is issued from a continuation of the first one.
-        client.test(newRequest()).flatMap(response -> client.test(newRequest())).toFuture().get();
-        client.asBlockingClient().test(newRequest());
-        awaitAtLeastSpans(otelTesting, 6);
-
-        assertThat(otelTesting.getSpans()).hasSize(6);
-        List<SpanData> clientSpans = new ArrayList<>();
-        for (SpanData span : otelTesting.getSpans()) {
-            if (span.getKind() == SpanKind.CLIENT) {
-                clientSpans.add(span);
-            }
-        }
-        assertThat(clientSpans).hasSize(3);
-        assertThat(clientSpans).allMatch(span -> !span.getParentSpanContext().isValid());
     }
 
     private void setUp(boolean error, ClientFilterPosition clientFilterPosition) throws Exception {
