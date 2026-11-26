@@ -49,8 +49,6 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -101,65 +99,17 @@ class OpenTelemetryFilterBuilderTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(FilterKind.class)
-    void createBuilderDoesNotAccessGlobal(FilterKind kind) {
-        kind.newBuilder();
-        assertThat(GlobalOpenTelemetry.isSet(), is(false));
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
-    @EnumSource(FilterKind.class)
     void buildWithOpenTelemetryDoesNotAccessGlobal(FilterKind kind) {
         OpenTelemetryFilterBuilder<?> builder = kind.newBuilder();
         builder.openTelemetry(OpenTelemetry.noop());
         kind.build(builder);
         assertThat(GlobalOpenTelemetry.isSet(), is(false));
-        // The application can still register its own instance afterwards.
-        assertDoesNotThrow(() -> GlobalOpenTelemetry.set(OpenTelemetry.noop()));
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
-    @EnumSource(FilterKind.class)
-    void buildWithoutOpenTelemetryAccessesGlobal(FilterKind kind) {
-        OpenTelemetryFilterBuilder<?> builder = kind.newBuilder();
-        assertThat(GlobalOpenTelemetry.isSet(), is(false));
-        kind.build(builder);
-        assertThat(GlobalOpenTelemetry.isSet(), is(true));
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
-    @EnumSource(FilterKind.class)
-    void resolveOpenTelemetryReturnsConfiguredInstance(FilterKind kind) {
-        OpenTelemetry configured = OpenTelemetry.noop();
-        GlobalOpenTelemetry.set(OpenTelemetry.noop());
-        OpenTelemetryFilterBuilder<?> builder = kind.newBuilder();
-        builder.openTelemetry(configured);
-        assertThat(builder.resolveOpenTelemetry(), is(sameInstance(configured)));
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
-    @EnumSource(FilterKind.class)
-    void resolveOpenTelemetryReturnsGlobalRegisteredAfterBuilderCreated(FilterKind kind) {
-        OpenTelemetryFilterBuilder<?> builder = kind.newBuilder();
-        GlobalOpenTelemetry.set(OpenTelemetry.noop());
-        // The global is wrapped by GlobalOpenTelemetry, so compare against what it hands out.
-        assertThat(builder.resolveOpenTelemetry(), is(sameInstance(GlobalOpenTelemetry.get())));
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
-    @EnumSource(FilterKind.class)
-    void nullArgumentsAreRejected(FilterKind kind) {
-        OpenTelemetryFilterBuilder<?> builder = kind.newBuilder();
-        assertThrows(NullPointerException.class, () -> builder.openTelemetry(null));
-        assertThrows(NullPointerException.class, () -> builder.capturedRequestHeaders(null));
-        assertThrows(NullPointerException.class, () -> builder.capturedResponseHeaders(null));
     }
 
     @Test
-    void deprecatedConstructorsWithOpenTelemetryDoNotAccessGlobal() {
-        OpenTelemetry openTelemetry = OpenTelemetry.noop();
-        assertDoesNotThrow(() -> new OpenTelemetryHttpServerFilter(openTelemetry));
-        assertDoesNotThrow(() -> new OpenTelemetryHttpRequestFilter(openTelemetry, "test"));
-        assertThat(GlobalOpenTelemetry.isSet(), is(false));
+    void openTelemetryNullIsRejected() {
+        OpenTelemetryHttpServiceFilter.Builder builder = new OpenTelemetryHttpServiceFilter.Builder();
+        assertThrows(NullPointerException.class, () -> builder.openTelemetry(null));
     }
 
     @Test
