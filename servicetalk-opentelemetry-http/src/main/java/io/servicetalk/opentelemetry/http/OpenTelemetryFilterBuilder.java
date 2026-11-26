@@ -60,7 +60,7 @@ abstract class OpenTelemetryFilterBuilder<T extends OpenTelemetryFilterBuilder<T
      * @see HttpClientAttributesExtractorBuilder#setCapturedRequestHeaders(List)
      * @see HttpServerAttributesExtractorBuilder#setCapturedRequestHeaders(List)
      */
-    public final T capturedRequestHeaders(final List<String> capturedRequestHeaders) {
+    final T capturedRequestHeaders(final List<String> capturedRequestHeaders) {
         requireNonNull(capturedRequestHeaders, "capturedRequestHeaders");
         this.capturedRequestHeaders =
                 capturedRequestHeaders.isEmpty() ? emptyList() :
@@ -77,7 +77,7 @@ abstract class OpenTelemetryFilterBuilder<T extends OpenTelemetryFilterBuilder<T
      * @see HttpClientAttributesExtractorBuilder#setCapturedResponseHeaders(List)
      * @see HttpServerAttributesExtractorBuilder#setCapturedResponseHeaders(List)
      */
-    public final T capturedResponseHeaders(final List<String> capturedResponseHeaders) {
+    final T capturedResponseHeaders(final List<String> capturedResponseHeaders) {
         requireNonNull(capturedResponseHeaders, "capturedResponseHeaders");
         this.capturedResponseHeaders =
                 capturedResponseHeaders.isEmpty() ? emptyList() :

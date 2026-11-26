@@ -22,7 +22,6 @@ import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import org.junit.jupiter.api.Test;
 
-import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -35,24 +34,20 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 class OpenTelemetryFilterBuilderPublicApiTest {
 
     @Test
-    void serviceFilterBuilderConfiguresOpenTelemetryAndCapturedHeaders() {
+    void serviceFilterBuilderConfiguresOpenTelemetry() {
         OpenTelemetryHttpServiceFilter filter = assertDoesNotThrow(() ->
                 new OpenTelemetryHttpServiceFilter.Builder()
                         .openTelemetry(OpenTelemetry.noop())
-                        .capturedRequestHeaders(singletonList("x-request"))
-                        .capturedResponseHeaders(singletonList("x-response"))
                         .build());
         assertThat(filter, is(notNullValue()));
         assertThat(GlobalOpenTelemetry.isSet(), is(false));
     }
 
     @Test
-    void requesterFilterBuilderConfiguresOpenTelemetryAndCapturedHeaders() {
+    void requesterFilterBuilderConfiguresOpenTelemetry() {
         OpenTelemetryHttpRequesterFilter filter = assertDoesNotThrow(() ->
                 new OpenTelemetryHttpRequesterFilter.Builder()
                         .openTelemetry(OpenTelemetry.noop())
-                        .capturedRequestHeaders(singletonList("x-request"))
-                        .capturedResponseHeaders(singletonList("x-response"))
                         .componentName("test")
                         .build());
         assertThat(filter, is(notNullValue()));
